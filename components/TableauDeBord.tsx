@@ -7,6 +7,7 @@ import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { normaliserIdentifiant } from "@/lib/identifiant";
 import { actionEmettreRapport } from "@/app/actions-rapports";
+import { libelleNature } from "@/content/types";
 
 export interface ModuleResume {
   id: string;
@@ -36,12 +37,6 @@ export interface DocumentResume {
   niveaux: string[];
 }
 
-const NATURES: Record<string, string> = {
-  "procedure-interne": "Procédure interne",
-  reglementaire: "Référentiel",
-  "fiche-reflexe": "Fiche réflexe",
-  video: "Vidéo",
-};
 
 export interface PosteResume {
   id: string;
@@ -136,6 +131,8 @@ export function TableauDeBord({
   procedure,
   miseEnService,
   documents = [],
+  filiereInitiale = "",
+  niveauInitial = "",
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -149,9 +146,12 @@ export function TableauDeBord({
   miseEnService: string | null;
   /** Documents généraux déposés, proposés selon la filière et le niveau choisis. */
   documents?: DocumentResume[];
+  /** Filière et niveau du code de poste de la session, présélectionnés. */
+  filiereInitiale?: string;
+  niveauInitial?: string;
 }) {
-  const [posteId, setPosteId] = useState<string>("");
-  const [niveauCode, setNiveauCode] = useState<string>("");
+  const [posteId, setPosteId] = useState<string>(filiereInitiale);
+  const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
   const { resultats, emissions, marquerEmis, cleEmission } = useSessionFormation();
   const pseudonyme = conservation === "pseudonyme";
   // Mode « aucune » : nom et qualité restent sur le poste, pour l'en-tête du
@@ -338,7 +338,7 @@ export function TableauDeBord({
             <ul className="liste-nue documents-profil">
               {documentsVisibles.map((d) => (
                 <li key={d.id} className="carte">
-                  <span className="etiquette etiquette--neutre">{NATURES[d.nature] ?? d.nature}</span>{" "}
+                  <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
                   <a href={d.url} target="_blank" rel="noreferrer">
                     {d.titre}
                   </a>

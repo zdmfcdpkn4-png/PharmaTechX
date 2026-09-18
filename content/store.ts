@@ -3,7 +3,7 @@ import "server-only";
 import type { Module, Parcours, TypeParcours } from "./types";
 import { protectionOperateur } from "./modules/protection-operateur";
 import { comportementZac } from "./modules/comportement-zac";
-import { emplacements, parcours } from "./parcours";
+import { emplacements, parcours, voisins } from "./parcours";
 import { filieres } from "./habilitation";
 import { baseConfiguree, lireOrdonnancement } from "@/lib/db";
 import { lireBareme } from "@/lib/bareme-db";
@@ -156,4 +156,32 @@ export async function composerProgramme(parcoursId: TypeParcours): Promise<Progr
     parFiliere[f.id] = ordonner(duParcours.filter((m) => m.affectation === "poste" && m.postes.includes(f.id)));
   }
   return { troncCommun: ordonner(duParcours.filter((m) => m.affectation === "tronc-commun")), parFiliere };
+}
+
+export interface PositionParcours {
+  /** `tronc-commun` ou l'identifiant de la filière. */
+  liste: string;
+  libelle: string;
+  precedent: Module | null;
+  suivant: Module | null;
+  rang: number;
+  total: number;
+}
+
+/**
+ * Place d'un module dans le parcours : sa liste (socle, puis chaque filière),
+ * le précédent et le suivant — pour enchaîner les modules comme un parcours
+ * de formation (transposé de l'enchaînement des sessions du Lecteur QIM · QCM).
+ */
+export async function positionDansParcours(parcoursId: TypeParcours, moduleId: string): Promise<PositionParcours | null> {
+  const p = await composerProgramme(parcoursId);
+  const listes: { liste: string; libelle: string; modules: Module[] }[] = [
+    { liste: "tronc-commun", libelle: "Socle transversal", modules: p.troncCommun },
+    ...filieres.filter((f) => f.id !== "socle").map((f) => ({ liste: f.id, libelle: f.libelle, modules: p.parFiliere[f.id] ?? [] })),
+  ];
+  for (const { liste, libelle, modules } of listes) {
+    const v = voisins(modules, moduleId);
+    if (v) return { liste, libelle, ...v };
+  }
+  return null;
 }

@@ -124,6 +124,15 @@ Deux modes de passation : **évaluation** (correction à la fin, résultat port�
 au rapport) et **entraînement** (une question à la fois, correction
 immédiate avec justification et source, jamais enregistré ni comptabilisé).
 
+**En fin de test** (transposé du Lecteur QIM · QCM, 18/09/2026) : le
+**document de synthèse** du module s'affiche après la correction (fiche de
+synthèse déposée par les tuteurs ; PDF et images en ligne, autres fichiers
+par un lien), les **questions ratées se retravaillent** en entraînement sur
+ces questions seulement, et le **module suivant du parcours** est proposé.
+La page d'un module situe celui-ci dans sa liste (socle ou filière) avec le
+précédent et le suivant ; un code de poste ouvre le programme sur sa filière
+et son niveau.
+
 ## 7. Banque de questions, modules et documents déposés (profils tuteur et admin)
 
 `/admin/questions` — création dans un formulaire (QCM, QIM, schéma avec
@@ -146,7 +155,8 @@ rattachent.
 
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
-niveaux) et apparaît sur le programme de ces profils.
+niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
+synthèse**, rattachée à un module, s'affiche en fin de test.
 
 Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`. Une
 question déposée se rattache à n'importe quel critère, rédigé ou non : un
@@ -233,8 +243,8 @@ d'import (texte et JSON), décision (bande de garde, non concluant,
 exclusions, arbitrage, bande de garde réglable), barème réglable
 (normalisation, QIM et schéma paramétrés, libellés), identifiants d'agents,
 famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
-table), constructeur de rapport (identifiant, nom hors sceau, barème porté),
-registre CSV et JSON, archive zip.
+table), voisins du parcours, constructeur de rapport (identifiant, nom hors
+sceau, barème porté), registre CSV et JSON, archive zip.
 `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
@@ -249,7 +259,8 @@ pseudonyme puis avec le nom porté à l'édition, paquet d'archivage, registre e
 répertoire CSV sans nom, journal sans nom, purge, clôture de l'identifiant,
 dépôt de document, module déposé (brouillon invisible, publié au programme
 d'une filière et d'un niveau, questions importées, seuil propre), barème
-réglé puis rétabli, document général par profil, connexion tuteur, mode
+réglé puis rétabli, document général par profil, fin de test (document de
+synthèse, question ratée rejouée, module suivant), connexion tuteur, mode
 entraînement, limiteur de connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
 
 ## 11. Reste à faire et questions ouvertes
@@ -271,6 +282,9 @@ code (décision du 18/09/2026, question 10).
   l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
   annulés seulement.
 - Les sessions durent 12 h et ne sont pas révocables individuellement.
+- La progression d'un apprenant vit dans l'onglet : pas de reprise d'une
+  session interrompue, pas d'historique d'une session à l'autre (décision à
+  prendre, `docs/QUESTIONS-OUVERTES.md`, F).
 - Le rapport téléchargé référence les logos par l'adresse du site.
 - Une question de la banque versionnée signalée se corrige dans le code.
 - Fichiers en base limités à 15 Mo ; les vidéos relèvent d'un store d'objets.

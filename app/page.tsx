@@ -3,6 +3,7 @@ import { composerProgramme, comptesQuestionsBase, getParcours } from "@/content/
 import { miseEnService, modeConservation, procedureReference } from "@/lib/config";
 import { lireBareme } from "@/lib/bareme-db";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { libelleQim, libelleSchema, resumeBareme, type Bareme } from "@/content/bareme";
 import {
   arbitrageEnAttente,
@@ -133,12 +134,16 @@ export default async function Accueil({
   const parcoursId: TypeParcours =
     params.parcours === "maintien" ? "maintien" : "integration";
   const parcours = getParcours(parcoursId)!;
-  const [enBase, bareme, programme] = await Promise.all([
+  const [enBase, bareme, programme, session] = await Promise.all([
     comptesQuestionsBase(),
     lireBareme(),
     composerProgramme(parcoursId),
+    getSession(),
   ]);
   const conservation = modeConservation();
+  // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
+  const filiereInitiale = filieres.some((f) => f.id !== "socle" && f.id === session?.filiere) ? session!.filiere! : "";
+  const niveauInitial = niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "";
 
   const troncCommun = programme.troncCommun.map((m) => resumer(m, enBase));
   const parPoste: Record<string, ModuleResume[]> = {};
@@ -227,6 +232,8 @@ export default async function Accueil({
           procedure={procedureReference()}
           miseEnService={miseEnService()}
           documents={documents}
+          filiereInitiale={filiereInitiale}
+          niveauInitial={niveauInitial}
         />
       </section>
 

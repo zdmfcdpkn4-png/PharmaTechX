@@ -94,3 +94,23 @@ export const parcoursMaintien: Parcours = {
 };
 
 export const parcours: Parcours[] = [parcoursIntegration, parcoursMaintien];
+
+export interface Voisins<T> {
+  precedent: T | null;
+  suivant: T | null;
+  /** Rang du module dans la liste, à partir de 1. */
+  rang: number;
+  total: number;
+}
+
+/** Précédent et suivant d'un module dans une liste ordonnée ; `null` s'il n'y figure pas. */
+export function voisins<T extends { id: string }>(liste: T[], id: string): Voisins<T> | null {
+  const i = liste.findIndex((m) => m.id === id);
+  if (i < 0) return null;
+  return {
+    precedent: i > 0 ? liste[i - 1] : null,
+    suivant: i + 1 < liste.length ? liste[i + 1] : null,
+    rang: i + 1,
+    total: liste.length,
+  };
+}

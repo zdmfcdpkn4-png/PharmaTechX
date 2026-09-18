@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet } from "@/content/store";
-import { banquePublique } from "@/content/types";
+import { getModuleComplet, positionDansParcours } from "@/content/store";
+import { syntheseDuModule } from "@/lib/synthese";
+import { A_PRECISER, banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
@@ -15,7 +16,11 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
-  const bareme = await lireBareme();
+  const [bareme, syntheses, position] = await Promise.all([
+    lireBareme(),
+    syntheseDuModule(mod),
+    positionDansParcours("integration", mod.id),
+  ]);
 
   // Les bonnes réponses et les justifications sont retirées ici : elles ne
   // quittent le serveur qu'après soumission, via la route de correction.
@@ -26,7 +31,7 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
     <article>
       <p className="fil">
         <Link href="/">Programme</Link> ›{" "}
-        <Link href={`/module/${mod.id}`}>{typeof mod.critereId === "string" ? mod.critereId : mod.titre}</Link> › Évaluation
+        <Link href={`/module/${mod.id}`}>{typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}</Link> › Évaluation
       </p>
 
       <section className="panneau-titre">
@@ -45,6 +50,8 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
         seuil={mod.seuilReussite}
         bareme={bareme}
         signalementPossible={baseConfiguree()}
+        syntheses={syntheses}
+        suivant={position?.suivant ? { id: position.suivant.id, titre: position.suivant.titre } : null}
       />
     </article>
   );

@@ -486,9 +486,9 @@ B. Mauvaise (F)
 Justification : justification une.
 
 QIM 2. Question déposée deux, indiquer les propositions exactes.
-A. Vraie (V)
-B. Fausse (F)
-C. Vraie (V)
+A. Première vraie (V)
+B. Deuxième fausse (F)
+C. Troisième vraie (V)
 Justification : justification deux.`;
   await page.goto(BASE + "/admin/questions/import?module=" + idModule);
   await page.selectOption("select[name=moduleId]", idModule);
@@ -553,6 +553,43 @@ Justification : justification deux.`;
   await page.selectOption("label:has-text('Niveau visé') select", "N2");
   assert.equal(await page.locator("a:has-text('Document profil chimio')").count(), 0, "invisible au niveau N2");
   ok("document général proposé aux profils Chimiothérapie · N1c seulement");
+
+  // 12f. fin de test : document de synthèse, rejeu des questions ratées, module suivant du parcours
+  await page.goto(BASE + "/admin/documents");
+  await page.setInputFiles("input[name=fichier]", PNG);
+  await page.fill("input[name=titre]", "Synthèse du module déposé");
+  await page.selectOption("select[name=nature]", "synthese");
+  await page.selectOption("select[name=moduleId]", idModule);
+  await page.click("button:has-text('Déposer')");
+  await page.waitForSelector("text=Document déposé");
+  await page.waitForSelector("text=Fiche de synthèse");
+  await page.goto(BASE + "/module/" + idModule + "/evaluation");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  const fsDepot = page.locator("fieldset.question");
+  assert.equal(await fsDepot.count(), 2);
+  for (let i = 0; i < 2; i++) {
+    const f = fsDepot.nth(i);
+    if (await f.locator(".proposition").count()) {
+      for (const [texte, vrai] of [["Première vraie", true], ["Deuxième fausse", false], ["Troisième vraie", true]]) {
+        await f.locator(".proposition", { hasText: texte }).locator(`label:has-text('${vrai ? "Vrai" : "Faux"}') input`).check();
+      }
+    } else {
+      // QCM : réponse fausse volontaire, pour avoir une question à retravailler
+      await f.locator("label.option", { hasText: "Mauvaise" }).locator("input").check();
+    }
+  }
+  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await page.waitForSelector(".resultat-entete");
+  await page.waitForSelector("h2:has-text('Document de synthèse')");
+  await page.waitForSelector("img.synthese-image");
+  await page.click("button:has-text('Retravailler la question ratée')");
+  await page.waitForSelector("text=À revoir · 1 question ratée");
+  assert.equal(await page.locator("fieldset.question").count(), 1);
+  await page.goto(BASE + "/module/comportement-zac");
+  await page.waitForSelector("a:has-text('Module suivant')");
+  await page.waitForSelector("text=Parcours : Socle transversal, module");
+  ok("fin de test : document de synthèse affiché, question ratée rejouée en entraînement, module suivant du parcours");
 
   // 13. déconnexion, connexion tuteur, journal interdit
   await page.evaluate(() => window.scrollTo(0, 0));

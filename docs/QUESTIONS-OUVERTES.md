@@ -189,6 +189,21 @@ telle. Ordre : ce qui change le déploiement en premier.
     lien identifiant ↔ personne repose sur la correspondance tenue hors du
     site, `[à préciser]` sur quel support et avec quel accès.
 
+## F. Parcours de formation (transposition du Lecteur QIM · QCM)
+
+37. **Progression persistante** : la progression d'un apprenant (résultats,
+    modules lus, session en cours) vit aujourd'hui dans l'onglet et disparaît
+    à sa fermeture ; seuls les rapports émis sont conservés. `[à préciser]` :
+    a) rester ainsi ; b) conserver la progression sur le poste (navigateur),
+    ce qui la partage entre les agents d'un même ordinateur et n'est pas
+    tenable en salle de production ; c) la conserver en base sous
+    l'identifiant d'agent, ce qui étend la fiche RGPD (nouvelle catégorie de
+    données, durée, information) et ouvre reprise de session, historique et
+    courbes comme sur le site de Flore.
+38. **Évaluation transversale** (« session mixte » du site de Flore) : non
+    transposée, un rapport couvrant un critère et un seul. `[à préciser]` si
+    un tirage sur plusieurs critères est voulu pour l'entraînement seulement.
+
 ## E. Présentation
 
 28. **Mode sombre** : décision antérieure « plus tard » (hérité).

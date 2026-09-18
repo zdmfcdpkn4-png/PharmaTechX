@@ -339,6 +339,13 @@ export async function depotsGeneraux(): Promise<LigneDepot[]> {
   return r.rows;
 }
 
+/** Type MIME des fichiers conservés en base, par identifiant (pour l'affichage en ligne). */
+export async function typesFichiers(ids: string[]): Promise<Record<string, string>> {
+  if (ids.length === 0) return {};
+  const r = await sql<{ id: string; type: string }>`SELECT id, type FROM fichiers WHERE id = ANY(${ids}::text[])`;
+  return Object.fromEntries(r.rows.map((x) => [x.id, x.type]));
+}
+
 export async function compterDepotsDuModule(moduleId: string): Promise<number> {
   const r = await sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM depots WHERE module_id = ${moduleId}`;
   return r.rows[0]?.n ?? 0;

@@ -26,6 +26,7 @@ import {
 import { journaliser } from "@/lib/journal";
 import { moduleExiste } from "@/content/store";
 import { filtrerProfils } from "@/content/modules-db";
+import { estNatureDocument } from "@/content/types";
 import {
   TAILLE_MAX_FICHIER,
   deposerFichier,
@@ -130,7 +131,8 @@ export async function actionDeposer(formData: FormData) {
   if (!typeAdmis(fichier.type)) redirect("/admin/documents?erreur=type-refuse");
 
   const titre = String(formData.get("titre") ?? "").trim().slice(0, 200) || fichier.name;
-  const nature = String(formData.get("nature") ?? "procedure-interne");
+  const natureBrute = String(formData.get("nature") ?? "");
+  const nature = estNatureDocument(natureBrute) ? natureBrute : "procedure-interne";
   const moduleId = String(formData.get("moduleId") ?? "") || null;
   const critereId = String(formData.get("critereId") ?? "") || null;
   if (moduleId && !(await moduleExiste(moduleId))) redirect("/admin/documents?erreur=module-inconnu");

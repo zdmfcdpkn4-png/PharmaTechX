@@ -156,6 +156,48 @@ QIM · QCM. Les valeurs à retenir restent à arrêter (`docs/QUESTIONS-OUVERTES
 B). L'ordonnancement enregistré est désormais appliqué au programme : il
 était enregistré sans être lu.
 
+## Transposé du Lecteur QIM · QCM pour le parcours de formation (18/09/2026)
+
+Demande du pharmacien responsable : s'inspirer du site de Flore pour la
+modularité et les fonctions, transposées à un e-learning à modules et
+parcours, avec un document de synthèse en fin de test.
+
+**Repris.**
+
+- Le support de révision cité par le corrigé devient le **document de
+  synthèse** du module : un document de nature « fiche de synthèse »
+  (déposé, ou ressource du code), affiché en fin d'évaluation et
+  d'entraînement, après la correction ; PDF et images en ligne
+  (`lib/synthese.ts`, composant `Synthese`).
+- « Rejouer les ratées » devient **retravailler les questions ratées** en
+  entraînement, sur ces questions seulement, sans enregistrement
+  (`sousEnsemble` dans `components/Evaluation.tsx`).
+- L'enchaînement des sessions devient le **module suivant du parcours** :
+  place du module dans sa liste (socle, puis chaque filière), précédent et
+  suivant sur la page du module et en fin de test
+  (`positionDansParcours`, `voisins`).
+- Le profil de l'utilisateur devient la **filière et le niveau du code de
+  poste**, présélectionnés sur le programme.
+- Déjà repris avant : formats, schéma à compléter, dépôt en deux temps,
+  statuts, signalements, limiteur, portabilité (voir plus haut).
+
+**Non repris, et pourquoi.**
+
+- Badges, poussins, confettis, série de réussites, salutation, avatar : le
+  brief exclut toute gamification.
+- Sessions passées, courbes d'évolution, historique par question, difficulté
+  calculée, reprise d'une session interrompue, réglages mémorisés :
+  demandent une **progression persistante** hors de l'onglet ; sur le poste,
+  elle serait partagée entre les agents d'un même ordinateur ; en base, elle
+  serait rattachée à l'identifiant d'agent et changerait la fiche RGPD.
+  Décision à prendre : `docs/QUESTIONS-OUVERTES.md`, F.37.
+- Session mixte : un rapport couvre un critère et un seul (décision
+  d'origine) ; une évaluation transversale n'a pas de ligne dans la fiche.
+- Ouverture du PDF à la page citée, lecture de PDF dans la page, détection
+  de figures : la banque cite des références, pas des pages ; les documents
+  s'ouvrent dans un onglet.
+- Khôlles et examens blancs au format des sujets déposés : sans objet.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

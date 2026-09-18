@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet } from "@/content/store";
+import { getModuleComplet, positionDansParcours } from "@/content/store";
 import { getCritere, blocsCompetence } from "@/content/habilitation";
-import { A_PRECISER } from "@/content/types";
+import { A_PRECISER, libelleNature } from "@/content/types";
 import { baseConfiguree, depotsDuModule } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { STATUTS_MODULE } from "@/content/modules-db";
@@ -10,13 +10,6 @@ import { Corps } from "@/components/Corps";
 import { LectureModule } from "@/components/LectureModule";
 
 export const dynamic = "force-dynamic";
-
-const NATURES: Record<string, string> = {
-  "procedure-interne": "Procédure interne",
-  reglementaire: "Référentiel",
-  "fiche-reflexe": "Fiche réflexe",
-  video: "Vidéo",
-};
 
 export default async function PageModule({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,6 +26,7 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
     mod.questions.filter((q) => q.eliminatoire).length +
     mod.misesEnSituation.reduce((s, x) => s + x.questions.filter((q) => q.eliminatoire).length, 0);
   const depots = baseConfiguree() ? await depotsDuModule(mod.id).catch(() => []) : [];
+  const position = await positionDansParcours("integration", mod.id);
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
   const contenu = (
@@ -82,7 +76,7 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
           <ul className="liste-nue">
             {depots.map((d) => (
               <li key={`d-${d.id}`}>
-                <span className="etiquette etiquette--neutre">{NATURES[d.nature] ?? d.nature}</span>{" "}
+                <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
                 <a href={d.url} target="_blank" rel="noreferrer">
                   {d.titre}
                 </a>{" "}
@@ -91,7 +85,7 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
             ))}
             {mod.ressources.map((r) => (
               <li key={r.id} className={r.url ? "" : "est-vide"}>
-                <span className="etiquette etiquette--neutre">{NATURES[r.nature] ?? r.nature}</span>{" "}
+                <span className="etiquette etiquette--neutre">{libelleNature(r.nature)}</span>{" "}
                 {r.url ? (
                   <a href={r.url} target="_blank" rel="noreferrer">
                     {r.titre}
@@ -126,10 +120,22 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
             <>Les tuteurs peuvent en déposer une depuis l&apos;administration.</>
           )}
         </p>
+        {position && (
+          <p className="legende" style={{ marginBottom: ".75rem" }}>
+            Parcours : {position.libelle}, module {position.rang} sur {position.total}
+            {position.precedent ? <> · précédent : <Link href={`/module/${position.precedent.id}`}>{position.precedent.titre}</Link></> : null}
+            {position.suivant ? <> · suivant : <Link href={`/module/${position.suivant.id}`}>{position.suivant.titre}</Link></> : " · dernier de la liste"}
+          </p>
+        )}
         <div className="actions" style={{ marginTop: 0 }}>
           {nbQuestions > 0 && (
             <Link href={`/module/${mod.id}/evaluation`} className="bouton">
               Passer l&apos;évaluation
+            </Link>
+          )}
+          {position?.suivant && (
+            <Link href={`/module/${position.suivant.id}`} className="bouton bouton--secondaire">
+              Module suivant
             </Link>
           )}
           <Link href="/" className="bouton bouton--secondaire">

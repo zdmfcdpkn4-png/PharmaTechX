@@ -46,11 +46,42 @@ export interface Reference {
   localisation?: string;
 }
 
+/** Natures d'un document rattaché ; « synthese » est affichée en fin de test. */
+export type NatureDocument = "procedure-interne" | "reglementaire" | "fiche-reflexe" | "video" | "synthese";
+
+export const NATURES_DOCUMENT: Record<NatureDocument, string> = {
+  "procedure-interne": "Procédure interne",
+  reglementaire: "Référentiel",
+  "fiche-reflexe": "Fiche réflexe",
+  video: "Vidéo",
+  synthese: "Fiche de synthèse",
+};
+
+export function estNatureDocument(v: unknown): v is NatureDocument {
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(NATURES_DOCUMENT, v);
+}
+
+export function libelleNature(nature: string): string {
+  return estNatureDocument(nature) ? NATURES_DOCUMENT[nature] : nature;
+}
+
+/**
+ * Document de synthèse d'un module, affiché en fin d'évaluation et
+ * d'entraînement (transposé du support de révision du Lecteur QIM · QCM) :
+ * un PDF ou une image s'affichent en ligne, tout autre fichier par un lien.
+ */
+export interface SyntheseDocument {
+  id: string;
+  titre: string;
+  url: string;
+  affichage: "pdf" | "image" | "lien";
+}
+
 export interface Ressource {
   id: string;
   titre: string;
-  /** Nature : procédure interne, fiche réflexe, texte réglementaire, vidéo. */
-  nature: "procedure-interne" | "reglementaire" | "fiche-reflexe" | "video";
+  /** Nature : procédure interne, fiche réflexe, texte réglementaire, vidéo, fiche de synthèse. */
+  nature: NatureDocument;
   /**
    * URL externe pour une source publique, ou chemin de document interne.
    * `null` = emplacement à alimenter par la PUI.

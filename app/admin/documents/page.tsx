@@ -2,6 +2,7 @@ import { listerDepots } from "@/lib/db";
 import { modeStockage, stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { filieres, niveaux } from "@/content/habilitation";
+import { NATURES_DOCUMENT, libelleNature } from "@/content/types";
 import { actionDeposer, actionSupprimerDepot } from "@/app/actions";
 import { etiquetteModule, titreModule } from "../questions/commun";
 
@@ -30,9 +31,11 @@ export default async function Documents({
       <section className="panneau-titre">
         <h1>Documents rattachés</h1>
         <p>
-          Procédures internes, fiches réflexes, référentiels et vidéos, rattachés à un module (du
-          code ou déposé) ou généraux. Un document général se propose à tous les profils, ou aux
-          filières et niveaux cochés : il apparaît alors sur le programme de ces profils. Stockage :{" "}
+          Procédures internes, fiches réflexes, référentiels, vidéos et fiches de synthèse,
+          rattachés à un module (du code ou déposé) ou généraux. Une <strong>fiche de synthèse</strong>{" "}
+          rattachée à un module s&apos;affiche en fin de test, après la correction (PDF et images en
+          ligne). Un document général se propose à tous les profils, ou aux filières et niveaux
+          cochés : il apparaît alors sur le programme de ces profils. Stockage :{" "}
           {mode === "blob" ? "Vercel Blob" : mode === "base" ? "base de données (portable, sans service supplémentaire)" : "aucun"}.
         </p>
       </section>
@@ -62,10 +65,12 @@ export default async function Documents({
             <label className="champ">
               <span>Nature</span>
               <select name="nature" defaultValue="procedure-interne">
-                <option value="procedure-interne">Procédure interne</option>
-                <option value="fiche-reflexe">Fiche réflexe</option>
-                <option value="reglementaire">Référentiel</option>
-                <option value="video">Vidéo</option>
+                {(Object.keys(NATURES_DOCUMENT) as (keyof typeof NATURES_DOCUMENT)[]).map((n) => (
+                  <option key={n} value={n}>
+                    {NATURES_DOCUMENT[n]}
+                    {n === "synthese" ? " — affichée en fin de test" : ""}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="champ">
@@ -117,7 +122,7 @@ export default async function Documents({
       <ul className="liste-nue">
         {depots.map((d) => (
           <li key={d.id} className="carte">
-            <span className="etiquette etiquette--neutre">{d.nature}</span>{" "}
+            <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
             <a href={d.url} target="_blank" rel="noreferrer">
               {d.titre}
             </a>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
-import { libelleBareme, libelleFormat } from "@/content/types";
+import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { libelleBande, type Bareme } from "@/content/bareme";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
@@ -128,6 +128,32 @@ function classeCorrection(d: DetailQuestion): string {
   return "correction--erronee";
 }
 
+/** Document de synthèse du module, affiché en fin de test : PDF et images en ligne, sinon un lien. */
+function Synthese({ docs }: { docs: SyntheseDocument[] }) {
+  if (docs.length === 0) return null;
+  return (
+    <section className="carte synthese" aria-labelledby="t-synthese">
+      <h2 id="t-synthese" style={{ marginTop: 0 }}>Document de synthèse</h2>
+      <p className="legende">À lire après l&apos;épreuve : l&apos;essentiel du module, déposé par les tuteurs.</p>
+      {docs.map((d) => (
+        <div key={d.id} className="synthese-doc">
+          <p style={{ margin: "0 0 .5rem" }}>
+            <a href={d.url} target="_blank" rel="noreferrer">
+              {d.titre}
+            </a>{" "}
+            <span className="legende">— ouvrir dans un nouvel onglet</span>
+          </p>
+          {d.affichage === "pdf" && <iframe src={d.url} title={d.titre} className="synthese-cadre" />}
+          {d.affichage === "image" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={d.url} alt={d.titre} className="synthese-image" />
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
+
 /** Signalement d'une question — motif fermé, note libre, rien de nominatif. */
 function Signaler({ questionId, moduleId }: { questionId: string; moduleId: string }) {
   const [motif, setMotif] = useState<string>(MOTIFS_SIGNALEMENT[0]);
@@ -189,6 +215,8 @@ export function Evaluation({
   bareme,
   qimEnVraiFaux = true,
   signalementPossible = false,
+  syntheses = [],
+  suivant = null,
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -198,6 +226,10 @@ export function Evaluation({
   bareme: Bareme;
   qimEnVraiFaux?: boolean;
   signalementPossible?: boolean;
+  /** Documents de synthèse du module, affichés en fin de test. */
+  syntheses?: SyntheseDocument[];
+  /** Module suivant dans le parcours, proposé en fin de test. */
+  suivant?: { id: string; titre: string } | null;
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -218,15 +250,20 @@ export function Evaluation({
   const [indexCourant, setIndexCourant] = useState(0);
   const [corrections, setCorrections] = useState<Record<string, DetailQuestion>>({});
   const [entrainementFini, setEntrainementFini] = useState(false);
+  // Rejeu des questions ratées (transposé du « Rejouer les ratées » du Lecteur
+  // QIM · QCM) : un sous-ensemble de la banque, en entraînement seulement.
+  const [sousEnsemble, setSousEnsemble] = useState<string[] | null>(null);
   const { enregistrer } = useSessionFormation();
 
   const posees = useMemo(
-    () => tirer(banque, DIFFICULTES[difficulte].nb),
+    () => (sousEnsemble ? banque.filter((q) => sousEnsemble.includes(q.id)) : tirer(banque, DIFFICULTES[difficulte].nb)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [banque, difficulte, graine],
+    [banque, difficulte, graine, sousEnsemble],
   );
 
-  const libelleTirage = `${DIFFICULTES[difficulte].libelle} · ${posees.length} question${posees.length > 1 ? "s" : ""}${mode === "entrainement" ? " · entraînement" : ""}`;
+  const libelleTirage = sousEnsemble
+    ? `À revoir · ${posees.length} question${posees.length > 1 ? "s" : ""} · entraînement`
+    : `${DIFFICULTES[difficulte].libelle} · ${posees.length} question${posees.length > 1 ? "s" : ""}${mode === "entrainement" ? " · entraînement" : ""}`;
 
   const basculer = (q: QuestionPublique, optionId: string) => {
     setReponses((prec) => {
@@ -332,9 +369,40 @@ export function Evaluation({
     setCorrections({});
     setIndexCourant(0);
     setEntrainementFini(false);
+    setSousEnsemble(null);
     setGraine((g) => g + 1);
     setDemarre(false);
   };
+
+  /** Repasse les questions ratées, une à la fois, en entraînement : rien n'est enregistré. */
+  const rejouerRatees = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setResultat(null);
+    setReponses({});
+    setQim({});
+    setLegendes({});
+    setCorrections({});
+    setIndexCourant(0);
+    setEntrainementFini(false);
+    setMode("entrainement");
+    setSousEnsemble(ids);
+    setGraine((g) => g + 1);
+    setDemarre(true);
+    window.scrollTo({ top: 0 });
+  };
+
+  const boutonRatees = (ids: string[]) =>
+    ids.length > 0 ? (
+      <button type="button" className="bouton bouton--secondaire" onClick={() => rejouerRatees(ids)}>
+        Retravailler {ids.length === 1 ? "la question ratée" : `les ${ids.length} questions ratées`} (entraînement)
+      </button>
+    ) : null;
+
+  const lienSuivant = suivant ? (
+    <Link href={`/module/${suivant.id}`} className="bouton bouton--secondaire">
+      Module suivant : {suivant.titre.length > 48 ? `${suivant.titre.slice(0, 48)}…` : suivant.titre}
+    </Link>
+  ) : null;
 
   // ───────────────────────────────────────────────────── réglage du tirage
   if (!demarre && !resultat) {
@@ -569,6 +637,8 @@ export function Evaluation({
 
         {resultat.detail.map((d, i) => rendreCorrection(d, i, posees.find((q) => q.id === d.questionId)))}
 
+        <Synthese docs={syntheses} />
+
         <p className="encart">
           <strong>Ce résultat ne vaut pas habilitation.</strong> Il constitue la preuve de
           l&apos;étape 2 sur 6 : exportez le rapport depuis l&apos;accueil et remettez-le pour votre
@@ -579,6 +649,8 @@ export function Evaluation({
           <button type="button" className="bouton" onClick={recommencer}>
             Nouveau tirage
           </button>
+          {boutonRatees(resultat.detail.filter((d) => !d.correct).map((d) => d.questionId))}
+          {lienSuivant}
           <Link href="/#rapport" className="bouton bouton--secondaire">
             Rapport de session
           </Link>
@@ -608,10 +680,13 @@ export function Evaluation({
             </div>
           </div>
           {posees.map((q, i) => corrections[q.id] && rendreCorrection(corrections[q.id], i, q))}
+          <Synthese docs={syntheses} />
           <div className="actions">
             <button type="button" className="bouton" onClick={recommencer}>
               Nouveau tirage
             </button>
+            {boutonRatees(posees.filter((q) => corrections[q.id] && !corrections[q.id].correct).map((q) => q.id))}
+            {lienSuivant}
             <Link href={`/module/${moduleId}`} className="bouton bouton--secondaire">
               Revoir le module
             </Link>
@@ -624,6 +699,12 @@ export function Evaluation({
     const nbSituation = q.situation ? posees.filter((x) => x.situation?.id === q.situation!.id).length : 0;
     return (
       <div style={{ paddingBottom: "120px" }}>
+        {sousEnsemble && (
+          <p className="encart">
+            À revoir · {posees.length} question{posees.length > 1 ? "s" : ""} ratée{posees.length > 1 ? "s" : ""} : entraînement sur ces
+            questions seulement, rien n&apos;est enregistré.
+          </p>
+        )}
         {rendreVignette(q, nbSituation)}
         {rendreQuestion(q, indexCourant, posees.length, Boolean(correction))}
         {erreur && <p className="encart encart--attention">{erreur}</p>}
