@@ -11,12 +11,17 @@
 # au moment du déploiement. Un identifiant inconnu est refusé par Render à
 # « Apply », jamais remplacé en silence.
 #
-# Après « New → Blueprint » : AUTH_SECRET est généré par Render ; DATABASE_URL
-# est branchée sur la base créée ici. Le schéma est appliqué au premier accès.
-# Avant tout usage comme preuve : docs/DEPLOIEMENT.md, « Mise en service ».
+# Le service en ligne (https://pharmatechx.onrender.com) a été créé à la main
+# le 18/09/2026, hors blueprint : ce fichier décrit la configuration cible
+# (plans, région, variables, contrôle de santé) à vérifier dans le tableau de
+# bord, et permet de recréer le service. [à vérifier] avant « Apply » sur un
+# compte qui porte déjà le service : Render créerait un doublon ou refuserait
+# le nom. AUTH_SECRET est généré par Render ; DATABASE_URL est branchée sur la
+# base créée ici ; le schéma est appliqué au premier accès. Avant tout usage
+# comme preuve : docs/DEPLOIEMENT.md, « Mise en service ».
 services:
   - type: web
-    name: formation-pharmacotechnie
+    name: pharmatechx
     runtime: node
     plan: starter               # [à vérifier] plus petit plan payant, sans mise en veille
     region: frankfurt
@@ -29,7 +34,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: formation-pharmacotechnie-db
+          name: pharmatechx-db
           property: connectionString
       - key: DATABASE_SSL
         value: disable            # réseau interne Render ; « require » pour une base externe
@@ -43,7 +48,7 @@ services:
         value: ""                 # référence de la procédure interne — [à compléter]
 
 databases:
-  - name: formation-pharmacotechnie-db
+  - name: pharmatechx-db
     plan: basic-256mb           # [à vérifier] plus petit plan payant, avec sauvegardes
     region: frankfurt
     databaseName: formation

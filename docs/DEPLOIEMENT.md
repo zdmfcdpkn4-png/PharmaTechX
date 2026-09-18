@@ -37,14 +37,33 @@ SHA-256, pas un HMAC).
 
 ## Render
 
-1. Pousser le dépôt sur GitHub.
-2. Sur render.com : **New → Blueprint**, choisir le dépôt. Render lit
-   `render.yaml` : un service web Node et une base PostgreSQL managée, tous
-   deux en région Francfort, `DATABASE_URL` branchée, `AUTH_SECRET` généré.
-3. **Apply**. Le premier déploiement construit le site (`npm ci && npm run build`).
-4. Ouvrir `https://<service>.onrender.com/api/sante` : `base: "joignable"`.
-5. Ouvrir `/connexion` → **Créer l'administrateur initial** : le code n'est
-   affiché qu'une fois.
+**Service en ligne : <https://pharmatechx.onrender.com>**, créé à la main le
+18/09/2026 (hors blueprint). Le dépôt GitHub n'a qu'une branche
+(`claude/relaxed-brahmagupta-hktyk5`) : c'est elle que Render déploie, et
+chaque poussée reconstruit le site en ligne tant qu'une branche de production
+distincte n'est pas créée `[à préciser]`.
+
+À vérifier dans le tableau de bord Render, et à consigner :
+
+1. **Plan du service** et **plan de la base** : payants (voir « Plans »
+   ci-dessous) ; région Francfort pour les deux.
+2. **Base** : une base PostgreSQL Render existe et `DATABASE_URL` pointe sur
+   sa chaîne interne ; `DATABASE_SSL=disable` ; `DATABASE_POOL_MAX` petit.
+3. **Variables** : `AUTH_SECRET` (≥ 32 caractères), `NODE_ENV=production`,
+   `CONSERVATION_RAPPORTS`, `PROCEDURE_HABILITATION` — voir « Mise en
+   service ».
+4. **Contrôle de santé** : `healthCheckPath` = `/api/sante` ; auto-déploiement
+   sur la branche voulue.
+5. `https://pharmatechx.onrender.com/api/sante` : `base: "joignable"`,
+   `secret: "defini"`, `conservation` attendue, `commit` = commit déployé.
+6. `/connexion` → **Créer l'administrateur initial** : le code n'est affiché
+   qu'une fois.
+
+Pour recréer le service à partir du blueprint : **New → Blueprint** sur le
+dépôt ; Render lit `render.yaml` (service `pharmatechx` et base
+`pharmatechx-db`, Francfort, `DATABASE_URL` branchée, `AUTH_SECRET` généré) ;
+`[à vérifier]` le comportement de Render si un service du même nom existe
+déjà (doublon ou refus).
 
 **Plans.** Le blueprint demande les plus petits plans payants connus au
 18/09/2026 (`starter` pour le service, `basic-256mb` pour la base). La
@@ -71,15 +90,15 @@ de Render est `[à vérifier]`.
 ## Mise en service comme preuve
 
 À dérouler dans l'ordre, et à consigner au dossier qualité avec la date et le
-commit déployé (`git rev-parse HEAD`) :
+commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
 
 1. **DPO** : fiche de registre et texte d'information validés (`docs/RGPD.md`),
    base légale arrêtée, contrat de sous-traitance de Render et mécanisme de
    transfert vérifiés.
 2. **DSI** : accord sur l'hébergement externe, nom de domaine, accès depuis le
    réseau de l'établissement, responsable des sauvegardes.
-3. **Blueprint** appliqué sur plans payants, `/api/sante` joignable, `horloge`
-   comparée à une référence.
+3. **Service** sur plans payants, `/api/sante` joignable, `commit` égal à la
+   version validée, `horloge` comparée à une référence.
 4. **Variables** : `CONSERVATION_RAPPORTS=pseudonyme`, `PROCEDURE_HABILITATION`
    renseignée (le marqueur `[à compléter]` disparaît des écrans et des
    rapports), `RAPPORTS_CONSERVATION_MOIS` si une durée est annoncée.
