@@ -30,11 +30,15 @@ page de connexion et doit être levé avant tout usage comme preuve.
 
 ## 2. Déployer
 
-`docs/DEPLOIEMENT.md` détaille Render (blueprint `render.yaml` : service Node
-+ base Postgres, rien à saisir) et Vercel (Postgres Neon + Blob facultatif).
-Le schéma de la base est appliqué automatiquement au premier accès. Puis
-`/connexion` → **Créer l'administrateur initial** : le code n'est affiché
-qu'une fois.
+Hébergeur retenu le 18/09/2026 : **Render**, service en ligne
+<https://pharmatechx.onrender.com>, plans payants et région Francfort à
+vérifier dans le tableau de bord. `docs/DEPLOIEMENT.md` détaille les
+vérifications du service existant, le blueprint `render.yaml` pour le
+recréer, les sauvegardes et la **liste de mise en service** (DPO, DSI,
+variables, comptes, essai de restauration, procédure) ; Vercel y reste
+documenté en repli. Le schéma de la base est appliqué automatiquement au
+premier accès. Puis `/connexion` → **Créer l'administrateur initial** : le
+code n'est affiché qu'une fois.
 
 ## 3. Les trois rôles
 
@@ -209,7 +213,8 @@ La liste complète, ordonnée par impact, est dans
 `docs/QUESTIONS-OUVERTES.md` ; les choix d'intégration dans
 `docs/DECISIONS.md`. En tête : la validation RGPD du mode pseudonyme par le
 DPO (`docs/RGPD.md`), la procédure interne et la source de temps qu'exige le
-statut opposable, l'hébergeur, les paramètres de la décision (bande de garde,
+statut opposable, l'accord DSI/DPO sur l'hébergement Render et la vérification
+des plans du service en ligne, les paramètres de la décision (bande de garde,
 minimum de questions), les barèmes à confirmer, les 56 modules à rédiger.
 
 ## 12. Limites connues

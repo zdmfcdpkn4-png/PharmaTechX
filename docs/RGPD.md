@@ -53,7 +53,7 @@ marqués `[à compléter]` ; ceux qui demandent un arbitrage du DPO sont marqué
 | Données jamais traitées par le site | Nom, prénom, matricule, adresse électronique ; adresse IP en clair (empreinte salée pour le limiteur de connexion) ; réponses hors émission ; entraînements. Le nom porté à l'édition d'un rapport n'est ni enregistré, ni journalisé, ni transmis dans une adresse. |
 | Données sensibles (art. 9) | Aucune |
 | Destinataires | Tuteurs (profil « tuteur ») ; pharmacien responsable et administrateur du site (profil « admin ») ; aucun tiers |
-| Sous-traitant, hébergeur | `[à compléter]` hébergeur retenu (Render ou Vercel, voir `docs/QUESTIONS-OUVERTES.md`, point A.4), localisation des serveurs, contrat de sous-traitance (art. 28) ; `[à vérifier]` garanties en cas de transfert hors Union européenne (chapitre V) |
+| Sous-traitant, hébergeur | **Render** (décision du 18/09/2026, question 8, choix a ; service en ligne `pharmatechx.onrender.com`) : service et base PostgreSQL en région Francfort, Union européenne. Société de droit américain : `[à vérifier]` dénomination et adresse de l'entité contractante, contrat de sous-traitance (art. 28, « Data Processing Addendum » de Render), liste des sous-traitants ultérieurs (fournisseur d'infrastructure de la région Francfort). Un accès à distance depuis les États-Unis est un transfert au sens du chapitre V : `[à vérifier]` mécanisme retenu, certification au cadre de protection des données UE–États-Unis (décision d'adéquation du 10 juillet 2023) ou clauses contractuelles types. Les données transmises ne comportent aucun nom. |
 | Durée de conservation | Jusqu'à purge manuelle par l'administrateur, sans purge automatique (décision du 18/09/2026, question 5, choix d). Durée de référence `[à préciser]` par le pharmacien responsable avec le DPO ; la durée d'archivage du dossier d'habilitation `[à vérifier]` fait référence. Journal : `[à préciser]`. Image de signature : jusqu'à son retrait, les rapports clos gardant l'image incrustée. |
 | Mesures de sécurité | Pseudonymisation dès la conception (aucun nom en base, identifiant généré, aucun champ libre sur l'agent) ; codes d'accès hachés (scrypt, sel par code) ; sessions signées (HMAC), 12 h ; contrôle des rôles côté serveur ; limiteur d'échecs de connexion ; résultats scellés par le serveur et empreinte SHA-256 des rapports ; rapports non modifiables (annulation motivée) ; journal des actions ; purge manuelle confirmée et journalisée ; chiffrement en transit, chiffrement au repos et sauvegardes `[à vérifier]` selon l'hébergeur. |
 | Information des personnes | Page `/donnees-personnelles` du site, liée depuis le formulaire d'émission et le pied de page ; `[à compléter]` note de service ou mention au dossier d'habilitation. |
@@ -80,9 +80,11 @@ dossier d'habilitation.
 
 1. `[à vérifier]` DPO : base légale retenue ; rattachement à la fiche
    « gestion du personnel » ou fiche propre ; nécessité d'une analyse
-   d'impact ; hébergeur et clauses de sous-traitance ; transfert hors UE.
+   d'impact ; contrat de sous-traitance de Render, sous-traitants ultérieurs
+   et mécanisme de transfert hors UE.
 2. `[à compléter]` Établissement : responsable de traitement, contact du DPO,
-   hébergeur et localisation, support de la correspondance identifiant ↔ nom.
+   entité contractante de Render, support de la correspondance
+   identifiant ↔ nom.
 3. `[à préciser]` Pharmacien responsable : durée de référence de conservation
    des rapports et du journal ; mode d'information des agents en plus de la
    page du site.

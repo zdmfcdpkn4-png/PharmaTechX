@@ -102,6 +102,22 @@ preuve repose sur les signatures manuscrites du rapport téléchargé. Ce que le
 code ne garantit pas reste consigné dans `docs/QUESTIONS-OUVERTES.md`, A.3 :
 source de temps de l'hébergeur, durée de référence, sauvegardes, procédure.
 
+**Hébergeur** (question 8, choix a, 18/09/2026) : **Render**, service en ligne
+`pharmatechx.onrender.com` créé à la main le 18/09/2026, région Francfort,
+plans payants exigés par le statut opposable. Le blueprint `render.yaml` porte
+les noms du service et décrit la configuration cible ; la page de santé expose
+le commit et la branche déployés. La documentation de Render n'était pas
+joignable depuis l'environnement de travail : identifiants de plan et contenu
+des sauvegardes marqués `[à vérifier]` dans le blueprint et dans
+`docs/DEPLOIEMENT.md`, qui porte aussi les vérifications du service existant,
+la liste de mise en service (DPO, DSI, plans, variables, comptes, essai de
+restauration, procédure) et la sauvegarde `pg_dump` conservée dans
+l'établissement. Le cadrage RGPD (`docs/RGPD.md`) nomme Render comme
+sous-traitant, transfert hors UE à vérifier par le DPO. Le dépôt n'a qu'une
+branche, déployée à chaque poussée : une branche de production distincte est
+à décider. Vercel non retenu, documentation conservée en repli ; hébergement
+interne écarté.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

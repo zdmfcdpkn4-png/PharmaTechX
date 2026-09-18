@@ -44,11 +44,21 @@ telle. Ordre : ce qui change le déploiement en premier.
    conservation, alignée sur celle du dossier d'habilitation (point 2) ;
    `[à préciser]` sauvegardes (point 9) ; `[à préciser]` la codification du
    modèle de rapport dans le système documentaire (version du modèle).
-4. **Hébergeur** : `[à préciser]` Render (processus Node, base Postgres
-   managée, plan gratuit avec mise en veille) ou Vercel (fonctions Node, base
-   Neon, Blob facultatif). Les deux sont prêts (`render.yaml`, variables
-   documentées). Localisation des données d'agents hors de l'établissement :
-   `[à préciser]` accord de la DSI / du DPO.
+4. **Hébergeur** — tranché le 18/09/2026 (question 8, choix a) : **Render**,
+   service Node et base PostgreSQL managée en région Francfort, plans payants
+   exigés par le statut opposable (point 3). Service créé à la main le
+   18/09/2026 (<https://pharmatechx.onrender.com>), hors blueprint :
+   `[à vérifier]` dans le tableau de bord que ses plans, sa base, sa région et
+   ses variables suivent `render.yaml`. Restent aussi : `[à vérifier]` les
+   identifiants de plan du blueprint et le contenu des plans (mise en veille,
+   sauvegardes, rétention, connexions), la documentation de Render n'étant pas
+   joignable depuis l'environnement de travail ; `[à vérifier]` par le DPO :
+   contrat de sous-traitance, sous-traitants ultérieurs, transfert hors UE
+   (société américaine, données à Francfort) ; `[à préciser]` accord de la DSI
+   (hébergement externe, nom de domaine, accès réseau, responsable des
+   sauvegardes). Le dépôt n'a qu'une branche, déployée à chaque poussée :
+   `[à préciser]` créer une branche de production distincte. Vercel reste
+   documenté en repli, non retenu ; l'hébergement interne est écarté.
 5. **Rôle « pharmacien »** : `[à préciser]` le visa du pharmacien responsable
    est porté par un code d'administration (choix posé), ou un rôle distinct
    est créé.
@@ -60,7 +70,11 @@ telle. Ordre : ce qui change le déploiement en premier.
    aux sessions ouvertes par code.
 8. **Hachage des adresses pour le limiteur de connexion** (5 échecs → 15 min,
    doublement) : `[à préciser]` seuils acceptés ?
-9. **Sauvegarde** : `[à préciser]` fréquence de `pg_dump` et responsable.
+9. **Sauvegarde** : sauvegardes de Render sur le plan payant `[à vérifier]`
+   (contenu, rétention) et `pg_dump` conservé dans l'établissement
+   (`docs/DEPLOIEMENT.md`) ; `[à préciser]` fréquence (hebdomadaire proposée),
+   responsable, périodicité de l'essai de restauration ; un essai précède le
+   premier rapport réel.
 
 ## B. Barèmes et règles d'évaluation
 
