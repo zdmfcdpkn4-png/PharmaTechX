@@ -156,7 +156,11 @@ export default async function Admin({
         </form>
       </section>
 
-      <ul className="liste-nue" style={{ marginTop: "1rem" }}>
+      <p className="legende" style={{ marginTop: "1rem" }}>
+        Révoquer ou supprimer un code ferme, à la requête suivante, les sessions ouvertes avec lui ;
+        réactiver ne les rouvre pas.
+      </p>
+      <ul className="liste-nue" style={{ marginTop: ".5rem" }}>
         {acces.map((a) => (
           <li key={a.id} className="carte">
             <span className="etiquette">{a.role}</span> <strong>{a.libelle}</strong>{" "}

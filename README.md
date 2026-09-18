@@ -311,7 +311,11 @@ code (décision du 18/09/2026, question 10).
 - Pas de purge automatique des rapports (décision) : purge manuelle par
   l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
   annulés seulement.
-- Les sessions durent 12 h et ne sont pas révocables individuellement.
+- Les sessions durent 12 h au plus et sont liées à leur code d'accès
+  (décision du 18/09/2026, question 16, choix b) : révoquer ou supprimer un
+  code ferme ses sessions à la requête suivante, réactiver ne rouvre pas
+  celles d'avant. Pas d'interrupteur global ; changer `AUTH_SECRET` en tient
+  lieu.
 - Sans rattachement à un identifiant d'agent, la progression vit dans
   l'onglet : ni reprise ni historique. Rattachée, elle se conserve en base ;
   courbes d'évolution non faites.

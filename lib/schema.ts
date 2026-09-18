@@ -286,6 +286,9 @@ export const SCHEMA: string[] = [
 
   // ── colonnes ajoutées après la première version (idempotent) ──────────────
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS signature_id TEXT`,
+  // décision du 18/09/2026 (question 16, choix b) : date de la dernière
+  // révocation du code, qui ferme les sessions ouvertes avant elle
+  `ALTER TABLE acces ADD COLUMN IF NOT EXISTS ferme_le TIMESTAMPTZ`,
   // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
   // exclues du calcul (retirées de la banque après signalement), fixées au
   // premier acte de décision — NULL tant qu'elles ne le sont pas.

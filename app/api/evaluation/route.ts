@@ -6,6 +6,7 @@ import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
+import { refusApiSansSession } from "@/lib/auth";
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
 
@@ -131,6 +132,8 @@ function dictionnaireDeChaines(brut: unknown): Record<string, Record<string, str
 }
 
 export async function POST(request: Request) {
+  const refus = await refusApiSansSession();
+  if (refus) return refus;
   let corps: CorpsRequete;
   try {
     corps = await request.json();

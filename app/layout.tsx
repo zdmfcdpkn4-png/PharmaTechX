@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
-import { getSession } from "@/lib/auth";
+import { etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
 import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
@@ -22,7 +24,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = baseConfiguree() ? await getSession() : null;
+  const etat = baseConfiguree() ? await etatSession() : { session: null, fermee: false };
+  const session = etat.session;
+  if (etat.fermee) {
+    // Session liée à son code (question 16, choix b) : le filtre d'entrée n'a
+    // vérifié que la signature, le code a été retiré depuis. Retour à la
+    // connexion sur les pages gardées, que le filtre marque de la page demandée ;
+    // les pages publiques (connexion, données personnelles) restent servies.
+    const chemin = (await headers()).get("x-fp-chemin");
+    if (chemin) {
+      redirect(`/connexion?erreur=session-fermee${chemin === "/" ? "" : `&suite=${encodeURIComponent(chemin)}`}`);
+    }
+  }
   const gestionnaire = session && session.role !== "poste";
   const conservation = conservationActive();
   // Progression rattachée (question 11, choix c) : la mémoire de session du

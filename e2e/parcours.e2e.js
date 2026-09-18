@@ -772,6 +772,52 @@ Justification : justification deux.`;
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok("tout le site derrière un code : 401 sur documents et API sans session, pages renvoyées à la connexion, retour à la page demandée après le code");
+
+  // 14c. session liée à son code (question 16, choix b) : révoquer ou supprimer un code ferme ses sessions
+  //      à la requête suivante ; réactiver ne rouvre pas les sessions d'avant
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.selectOption("select[name=role]", "poste");
+  await page.fill("input[name=libelle]", "Poste jetable");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=/);
+  const codeJetable = new URL(page.url()).searchParams.get("nouveau");
+  const ctx2 = await browser.newContext();
+  const page2 = await ctx2.newPage();
+  const entrerJetable = async () => {
+    await page2.goto(BASE + "/connexion");
+    await page2.fill("input[name=code]", codeJetable);
+    await page2.click("button:has-text('Entrer')");
+    await page2.waitForURL(/\/$/);
+  };
+  const apiJetable = async () => (await page2.request.get(BASE + "/api/images/inconnu")).status();
+  await entrerJetable();
+  await page2.goto(BASE + "/module/comportement-zac");
+  await page2.waitForSelector("h1");
+  assert.equal(await apiJetable(), 404, "API servie avec une session valide (identifiant inconnu)");
+  await page.goto(BASE + "/admin");
+  const carteJetable = page.locator("li.carte", { hasText: "Poste jetable" });
+  await carteJetable.locator("button:has-text('Révoquer')").click();
+  await carteJetable.locator("text=révoqué").waitFor();
+  assert.equal(await apiJetable(), 401, "API refusée dès la révocation du code");
+  await page2.goto(BASE + "/module/comportement-zac");
+  await page2.waitForURL(/\/connexion\?erreur=session-fermee&suite=%2Fmodule%2Fcomportement-zac/);
+  await page2.waitForSelector("[role=alert]:has-text('Votre session a été fermée')");
+  await carteJetable.locator("button:has-text('Réactiver')").click();
+  await carteJetable.locator("button:has-text('Révoquer')").waitFor();
+  assert.equal(await apiJetable(), 401, "réactiver ne rouvre pas la session d'avant");
+  await entrerJetable();
+  assert.equal(await apiJetable(), 404, "nouvelle session valide après réactivation");
+  await carteJetable.locator("button:has-text('Supprimer')").click();
+  await page.waitForSelector("li.carte:has-text('Poste jetable')", { state: "detached" });
+  assert.equal(await apiJetable(), 401, "code supprimé : session fermée");
+  await ctx2.close();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
   // L'URL ne change pas d'un échec à l'autre : attendre la réponse de l'action,
   // pas une navigation, sinon les soumissions se chevauchent.
   const soumettreCode = async (code) => {

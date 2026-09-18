@@ -272,8 +272,21 @@ export async function creerAcces(
   return r.rows[0].id;
 }
 
+/**
+ * Révocation ou réactivation d'un code. La révocation date `ferme_le` : les
+ * sessions ouvertes avant restent fermées même si le code est réactivé
+ * (décision du 18/09/2026, question 16, choix b).
+ */
 export async function basculerAcces(id: number, actif: boolean): Promise<void> {
-  await sql`UPDATE acces SET actif = ${actif} WHERE id = ${id}`;
+  if (actif) await sql`UPDATE acces SET actif = TRUE WHERE id = ${id}`;
+  else await sql`UPDATE acces SET actif = FALSE, ferme_le = NOW() WHERE id = ${id}`;
+}
+
+/** État d'un code d'accès, pour lier une session à son code ; null si le code a été supprimé. */
+export async function lireEtatAcces(id: number): Promise<{ actif: boolean; ferme: number | null } | null> {
+  const r = await sql<{ actif: boolean; ferme: number | null }>`
+    SELECT actif, EXTRACT(EPOCH FROM ferme_le)::float8 AS ferme FROM acces WHERE id = ${id}`;
+  return r.rows[0] ?? null;
 }
 
 export async function supprimerAcces(id: number): Promise<void> {

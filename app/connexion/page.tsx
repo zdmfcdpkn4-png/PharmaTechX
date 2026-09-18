@@ -10,6 +10,8 @@ const MESSAGES: Record<string, string> = {
   "code-invalide": "Code non reconnu. Vérifiez la saisie, ou entrez sans code : la consultation reste ouverte.",
   "non-configure": "Le contrôle d'accès n'est pas encore actif : la base de données n'est pas branchée.",
   "deja-amorce": "Un administrateur existe déjà : l'amorçage est fermé.",
+  "session-fermee":
+    "Votre session a été fermée : le code d'accès qui l'avait ouverte a été révoqué, remplacé ou supprimé. Entrez un code en cours de validité.",
 };
 
 export default async function Connexion({

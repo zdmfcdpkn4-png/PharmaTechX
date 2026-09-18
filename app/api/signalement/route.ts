@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { refusApiSansSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { enregistrerSignalement } from "@/content/banque-db";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
  * arbitre depuis l'administration.
  */
 export async function POST(request: Request) {
+  const refus = await refusApiSansSession();
+  if (refus) return refus;
   if (!baseConfiguree()) {
     return NextResponse.json({ erreur: "Signalement indisponible sans base de données." }, { status: 503 });
   }

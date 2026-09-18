@@ -163,8 +163,11 @@ telle. Ordre : ce qui change le déploiement en premier.
 26. **Logos** dans le rapport téléchargé : adresses absolues vers le site
     (l'impression suppose le site joignable). `[à préciser]` incorporer les
     images dans le fichier.
-27. **Sessions** de 12 h non révocables individuellement (hérité) :
-    `[à préciser]` conserver.
+27. **Sessions** — tranché le 18/09/2026 (question 16, choix b) : douze heures
+    au plus, liées à leur code d'accès ; révoquer ou supprimer le code ferme
+    ses sessions à la requête suivante, réactiver ne rouvre pas celles
+    d'avant. Pas d'interrupteur global « fermer toutes les sessions » (choix c
+    écarté) ; changer `AUTH_SECRET` en tient lieu.
 31. **Paramètres de la décision** (`lib/decision.ts`) — **réglables** depuis
     `/admin/bareme` (question 10) : largeur de la bande de garde égale au
     poids d'une question du tirage (défaut ; 70 à 89 % pour un seuil de 80 %

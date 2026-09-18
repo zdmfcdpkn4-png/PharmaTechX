@@ -272,6 +272,20 @@ durée suffit au registre. Le point C.17 (statut à l'import) est clos par
 conséquence de la question 12 : une question importée ne peut pas être
 validée d'office, aucun second code n'étant intervenu.
 
+**Session liée à son code** (question 16, choix b, 18/09/2026) : dès qu'une
+base est configurée, une session ne vaut que si le code d'accès qui l'a
+ouverte existe encore, est actif et n'a pas été révoqué depuis son ouverture
+(`acces.ferme_le`, `debut` dans le cookie). Révoquer ou supprimer un code
+ferme donc ses sessions à la requête suivante ; réactiver un code ne rouvre
+pas les sessions d'avant. Le filtre d'entrée, sans base, garde la seule
+vérification de signature et marque les chemins gardés d'un en-tête interne ;
+le gabarit racine renvoie une session fermée à la connexion, avec le motif et
+la page demandée ; actions et routes d'API refusent (redirection ou 401).
+Une base injoignable n'est pas prise pour une session fermée. Au premier
+déploiement de cette version, les sessions ouvertes avant elle, sans date
+d'ouverture, sont fermées une fois. Durée de douze heures inchangée ; pas
+d'interrupteur global (choix c écarté), changer `AUTH_SECRET` en tient lieu.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

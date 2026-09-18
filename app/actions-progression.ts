@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, sessionRequise } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
@@ -40,6 +40,7 @@ async function acteur() {
 
 export async function actionRattacher(formData: FormData) {
   if (!baseConfiguree() || !conservationActive()) retour("indisponible");
+  await sessionRequise("poste");
   const minutes = await minutesDeBlocage();
   if (minutes > 0) retour("bloque", `&minutes=${minutes}`);
   const identifiant = normaliserIdentifiant(chaine(formData, "identifiant", 20));
@@ -66,6 +67,7 @@ export async function actionRattacher(formData: FormData) {
 
 export async function actionDefinirCode(formData: FormData) {
   if (!baseConfiguree() || !conservationActive()) retour("indisponible");
+  await sessionRequise("poste");
   const minutes = await minutesDeBlocage();
   if (minutes > 0) retour("bloque", `&minutes=${minutes}`);
   const identifiant = normaliserIdentifiant(chaine(formData, "identifiant", 20));

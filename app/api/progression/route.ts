@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { refusApiSansSession } from "@/lib/auth";
 import { moduleExiste } from "@/content/store";
 import {
   effacerEnCours,
@@ -18,6 +19,8 @@ export const dynamic = "force-dynamic";
  * elles, sont conservées par la route de correction, avec leur sceau.
  */
 export async function POST(request: Request) {
+  const refus = await refusApiSansSession();
+  if (refus) return refus;
   const r = await rattachement();
   if (!r) return NextResponse.json({ ok: false, raison: "non-rattache" }, { headers: { "Cache-Control": "no-store" } });
   let corps: { nature?: unknown; moduleId?: unknown; etat?: unknown; justes?: unknown; total?: unknown; points?: unknown; tirage?: unknown };

@@ -1,8 +1,11 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { baseConfiguree, codesActifs, marquerUsage, type Role } from "./db";
+import { baseConfiguree, codesActifs, lireEtatAcces, marquerUsage, type Role } from "./db";
+import { etatDeSession, type EtatAcces } from "./session-etat";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 
@@ -18,7 +21,10 @@ import { SECRET_DEVELOPPEMENT } from "./jeton-web";
  * de les relire. Perdu, un code se remplace, il ne se retrouve pas.
  *
  * La session est un cookie signé HMAC contenant le rôle, le libellé du profil
- * et une échéance. Aucun nom, aucun identifiant de personne.
+ * et une échéance. Aucun nom, aucun identifiant de personne. Dès qu'une base
+ * est configurée, la session est liée à son code d'accès (décision du
+ * 18/09/2026, question 16, choix b) : révoquer ou supprimer le code la ferme
+ * à la requête suivante.
  */
 
 export type { Role };
@@ -30,11 +36,14 @@ export interface Session {
   filiere: string | null;
   niveau: string | null;
   /**
-   * Identifiant du code d'accès qui a ouvert la session — sert à retrouver la
-   * signature déposée par un pharmacien (code admin). Absent des sessions
-   * ouvertes avant cette version : elles fonctionnent, sans signature.
+   * Identifiant du code d'accès qui a ouvert la session : la session vaut
+   * tant que ce code existe, reste actif et n'a pas été révoqué depuis ;
+   * sert aussi à retrouver la signature déposée par un pharmacien (code
+   * admin). Une session sans lui est fermée dès qu'une base est configurée.
    */
   acces?: number | null;
+  /** Ouverture, en secondes epoch : une révocation postérieure ferme la session. */
+  debut?: number;
   /** Échéance, en secondes epoch. */
   exp: number;
 }
@@ -124,14 +133,39 @@ function decoder(jeton: string): Session | null {
   return decoderJeton<Session>(jeton);
 }
 
-export async function getSession(): Promise<Session | null> {
+const etatAcces = cache((id: number): Promise<EtatAcces | null> => lireEtatAcces(id));
+
+export interface EtatSession {
+  session: Session | null;
+  /** Cookie signé et non expiré, mais code révoqué, remplacé ou supprimé depuis. */
+  fermee: boolean;
+}
+
+/**
+ * Session liée à son code (décision du 18/09/2026, question 16, choix b) :
+ * dès qu'une base est configurée, la signature du cookie ne suffit plus ; le
+ * code qui a ouvert la session doit exister encore, être actif et n'avoir pas
+ * été révoqué depuis. Le filtre d'entrée (`middleware.ts`), sans base, ne
+ * vérifie que la signature ; pages, actions et API passent par ici. Une base
+ * injoignable n'est jamais prise pour une session fermée : l'erreur remonte.
+ * La lecture du code est mémorisée le temps d'une requête.
+ */
+export async function etatSession(): Promise<EtatSession> {
   const jeton = (await cookies()).get(COOKIE)?.value;
-  return jeton ? decoder(jeton) : null;
+  const decodee = jeton ? decoder(jeton) : null;
+  if (!decodee || !baseConfiguree()) return etatDeSession(decodee, baseConfiguree(), undefined);
+  const acces = decodee.acces ? await etatAcces(decodee.acces) : undefined;
+  return etatDeSession(decodee, true, acces);
+}
+
+export async function getSession(): Promise<Session | null> {
+  return (await etatSession()).session;
 }
 
 export async function ouvrirSession(s: Omit<Session, "exp">): Promise<void> {
   const session: Session = {
     ...s,
+    debut: Date.now() / 1000,
     exp: Math.floor(Date.now() / 1000) + DUREE_HEURES * 3600,
   };
   (await cookies()).set(COOKIE, encoder(session), {
@@ -197,10 +231,26 @@ export function auMoins(role: Role, minimum: Role): boolean {
  * repose jamais sur le fait qu'un écran soit affiché ou non.
  */
 export async function sessionRequise(minimum: Role): Promise<Session> {
-  const s = await getSession();
-  if (!s) redirect("/connexion");
+  const { session: s, fermee } = await etatSession();
+  if (!s) redirect(fermee ? "/connexion?erreur=session-fermee" : "/connexion");
   if (!auMoins(s.role, minimum)) redirect("/");
   return s;
+}
+
+/**
+ * Porte des routes d'API ouvertes à tout rôle : refus 401 dès qu'une base est
+ * configurée et qu'aucune session valide n'accompagne l'appel — le filtre
+ * d'entrée a laissé passer la signature, la base dit si le code tient encore.
+ * Sans base (mode ouvert), rien n'est refusé.
+ */
+export async function refusApiSansSession(): Promise<NextResponse | null> {
+  if (!baseConfiguree()) return null;
+  const { session, fermee } = await etatSession();
+  if (session) return null;
+  return NextResponse.json(
+    { erreur: fermee ? "Session fermée : le code d'accès a été retiré." : "Session requise." },
+    { status: 401, headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export const LIBELLES_ROLE: Record<Role, string> = {

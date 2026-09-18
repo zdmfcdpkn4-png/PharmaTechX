@@ -43,7 +43,9 @@ preuve.
 Changer `AUTH_SECRET` déconnecte toutes les sessions et invalide les sceaux
 des résultats non encore émis (ceux tenus en mémoire des onglets ouverts) ;
 les rapports déjà enregistrés ne sont pas affectés (leur empreinte est un
-SHA-256, pas un HMAC).
+SHA-256, pas un HMAC). Depuis la décision du 18/09/2026 (question 16, choix b), une session est
+aussi fermée dès que son code d'accès est révoqué ou supprimé ; le premier
+déploiement de cette version ferme une fois les sessions ouvertes avant elle.
 
 ## Supabase (base)
 

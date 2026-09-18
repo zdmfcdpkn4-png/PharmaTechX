@@ -1,6 +1,6 @@
 "use server";
 
-import { getSession } from "@/lib/auth";
+import { getSession, sessionRequise } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
@@ -29,6 +29,7 @@ export async function actionEmettreRapport(entree: {
   if (!baseConfiguree() || !conservationActive()) {
     return { ok: false, erreur: "La conservation des rapports n'est pas activée sur ce site." };
   }
+  await sessionRequise("poste");
   // Apprenant rattaché à son identifiant (question 11) : l'identifiant vient du
   // rattachement, jamais du navigateur.
   const ratt = await rattachement();
