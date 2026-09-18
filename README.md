@@ -201,7 +201,11 @@ que l'identifiant existe et qu'il est actif, vérifie le sceau posé à la
 correction, attribue un numéro `RAP-AAAA-NNNN`, calcule l'empreinte SHA-256 et
 enregistre le visa apprenant. Le tuteur puis le pharmacien responsable visent
 depuis `/admin/rapports` ; chaque visa porte le profil de session, la date et
-l'empreinte — jamais un nom saisi. Un rapport ne se modifie pas : il s'annule
+l'empreinte — jamais un nom saisi. Le site n'exige pas que les deux visas
+viennent de deux codes distincts (décision du 18/09/2026, question 14,
+choix a) : un code d'administration satisfait aussi l'exigence « tutorat » ;
+deux personnes distinctes relèvent de la procédure interne, le rapport
+imprimant le profil de chaque acte. Un rapport ne se modifie pas : il s'annule
 avec motif. Tout est journalisé. `/admin/rapports/[id]/imprimer` rend le
 rapport A4 pseudonyme (GET) ; le même chemin en POST, depuis le formulaire
 « Éditer avec le nom », imprime le nom et la fonction saisis avec la mention

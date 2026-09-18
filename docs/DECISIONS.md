@@ -253,6 +253,15 @@ un outil interne d'une unité de production de cytotoxiques, dont les modules
 porteront des données locales, ne se lit pas sans contrôle sur l'internet ;
 la consigne « ne pas indexer » n'est pas une protection.
 
+**Quatre yeux et circuit des rapports** (question 14, choix a, 18/09/2026) :
+la règle des quatre yeux n'est pas étendue à l'arbitrage ni aux visas. Le
+site laisse donc un code d'administration, qui satisfait l'exigence
+« tutorat », arbitrer, viser comme tuteur puis viser comme pharmacien un même
+rapport ; chaque visa et l'arbitrage portent le profil et le libellé du code
+qui les a posés, imprimés sur le rapport, ce qui rend le cumul visible à la
+lecture et en audit. Deux personnes distinctes pour les deux visas relèvent
+de la procédure interne (`docs/QUESTIONS-OUVERTES.md`, D.33), pas du code.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

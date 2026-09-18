@@ -177,13 +177,15 @@ telle. Ordre : ce qui change le déploiement en premier.
     question est retirée plus tard. `[à préciser]` conserver, ou bloquer le visa
     du pharmacien quand une question du tirage est retirée après le visa du
     tuteur.
-33. **Arbitrage et visas** : l'arbitrage est porté par tout profil tuteur ou
-    admin, sans exigence que l'arbitre soit distinct du tuteur qui vise ; un
-    code d'administration satisfait aussi l'exigence « tutorat », donc un seul
-    code d'administration peut arbitrer, viser comme tuteur puis viser comme
-    pharmacien le même rapport. La règle des quatre yeux du point 6 ne couvre
-    ni l'arbitrage ni les visas, `[à préciser]` si elle doit s'y étendre.
-    `[à préciser]` le motif doit-il être choisi dans une liste fermée ?
+33. **Arbitrage et visas** — tranché le 18/09/2026 (question 14, choix a) :
+    la règle des quatre yeux du point 6 n'est pas étendue à l'arbitrage ni
+    aux visas. Le site laisse un code d'administration, qui satisfait aussi
+    l'exigence « tutorat », arbitrer, viser comme tuteur puis viser comme
+    pharmacien le même rapport ; le rapport imprime le profil et le libellé
+    du code de chaque acte. `[à préciser]` la procédure interne exige deux
+    personnes pour les deux visas, le site ne le garantissant pas.
+    `[à préciser]` le motif d'arbitrage doit-il être choisi dans une liste
+    fermée ?
 34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
     par le navigateur (comme dans la console), conservée en base et non sur le
     poste ; donnée personnelle de plus à déclarer. `[à préciser]` une image de
