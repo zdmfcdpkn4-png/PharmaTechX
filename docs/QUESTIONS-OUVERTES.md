@@ -212,8 +212,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     fermée ?
 34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
     par le navigateur (comme dans la console), conservée en base et non sur le
-    poste ; donnée personnelle de plus à déclarer. `[à préciser]` une image de
-    signature pour le tuteur aussi (choix b de la question 2, écarté) ?
+    poste ; donnée personnelle de plus à déclarer. Tranché le 18/09/2026
+    (question 25, choix a) : **une seule image de signature**, celle du
+    pharmacien responsable. Le visa du tuteur reste une mention en toutes
+    lettres ; aucune image n'est collectée pour les tuteurs, une donnée
+    personnelle de moins. Ajoutable plus tard sans rien défaire.
 35. **Fichiers d'archivage** : CSV au séparateur « ; », UTF-8 avec marque
     d'ordre, dates lisibles en heure de Paris ; JSON complet ; zip sans
     compression. `[à préciser]` si un autre outil que le tableur doit lire ces

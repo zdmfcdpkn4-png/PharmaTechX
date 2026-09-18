@@ -385,6 +385,20 @@ carré. Écartés : a (ne rien changer sur les rapports) et c (tout changer
 maintenant, en pleine phase d'essai — recevable, mais le repère de version
 manquerait).
 
+**Signature du tuteur** (question 25, choix a, 18/09/2026) : une seule image
+de signature, celle du pharmacien responsable, incrustée à la clôture du
+rapport. Le visa du tuteur reste une mention en toutes lettres — profil,
+libellé du code, horodatage. Ce qui fait la valeur probante du rapport est le
+sceau du serveur, l'horodatage et l'identité du code, non un dessin
+copiable ; l'image du pharmacien a été retenue parce que ce document sort de
+l'unité et que l'usage attend la signature du responsable. L'étendre aux
+tuteurs ajouterait une donnée personnelle par tuteur, à porter au registre,
+sans rien ajouter à la preuve. Réserve assumée : un document où un visa est
+signé et l'autre non peut surprendre un auditeur. Le mécanisme étant écrit,
+le choix b reste ajoutable plus tard sans rien défaire ; c (aucune image,
+pharmacien compris) est écarté, la signature du responsable étant attendue
+sur la pièce qui clôt l'habilitation.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
