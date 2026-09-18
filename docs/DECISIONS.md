@@ -324,6 +324,15 @@ titre indicatif (`retraitsPosterieurs`, `decisionSiExclues`, calculés à la
 lecture, sans changement de schéma). Le visa n'est pas bloqué (choix c
 écarté) : le pharmacien vise ou annule en connaissance de cause.
 
+**Logos incorporés** (question 20, choix c, 18/09/2026) : un document
+conservé comme preuve doit rester lisible pendant toute sa durée de
+conservation sans dépendre du site. Les deux logos sont encodés en data URI
+dans chaque rendu du rapport : lus une fois depuis `public/` côté serveur
+(`lib/logos.ts`, impression et paquet d'archivage), récupérés depuis le site
+au moment du téléchargement côté navigateur. Surcoût d'une trentaine de
+kilo-octets par fichier ; à défaut de lecture, l'adresse du fichier sert,
+comme avant. Écartés : a (logos par adresse) et b (deux chemins de rendu).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

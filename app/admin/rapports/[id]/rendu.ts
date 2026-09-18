@@ -4,6 +4,7 @@ import { contexteDecision, type RapportComplet } from "@/lib/rapports";
 import { dataUri, lireSignature } from "@/lib/signatures";
 import type { EditionRapport } from "@/lib/registre";
 import { construireRapport, type VisaRapport } from "@/lib/rapport";
+import { logosIncorpores } from "@/lib/logos";
 
 /**
  * Rendu HTML autoportant d'un rapport enregistré : décision (verdict brut,
@@ -45,6 +46,7 @@ export async function rendreRapportEnregistre(r: RapportComplet, edition?: Editi
       procedure: procedureReference(),
       miseEnService: miseEnService(),
       dateEdition: edition?.le ?? new Date(r.emis_le),
+      logos: await logosIncorpores(),
       decision: {
         decision: ctx.decision,
         verdictFinal: ctx.verdictFinal,

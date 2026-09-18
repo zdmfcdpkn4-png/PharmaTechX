@@ -361,7 +361,10 @@ Justification : cf. procédure interne.`,
     page.locator(".ligne-rapport button:has-text('Télécharger')").first().click(),
   ]);
   assert.match(dl.suggestedFilename(), /^rapport-evaluation-rap-\d{4}-\d{4}-ag-001-/);
-  ok("rapport téléchargé : " + dl.suggestedFilename());
+  // question 20 (choix c) : le fichier téléchargé incorpore les logos, il se lit sans le site
+  const contenuTelecharge = fs.readFileSync(await dl.path(), "utf8");
+  assert.ok(contenuTelecharge.includes('<img class="hdv" src="data:image/png;base64,') && contenuTelecharge.includes('<img class="pharmaco" src="data:image/png;base64,'), "logos incorporés dans le rapport téléchargé");
+  ok("rapport téléchargé, logos incorporés : " + dl.suggestedFilename());
 
   // 10. verrou : signalement ouvert sur le tirage, aucun visa possible
   await page.goto(BASE + "/admin/rapports");
@@ -426,6 +429,7 @@ Justification : cf. procédure interne.`,
   assert.ok(html.includes("Verdict brut : indéterminé"));
   assert.ok(html.includes("Retrait postérieur à la décision") && html.includes("retirée de la banque après la décision"), "retrait postérieur signalé sur le rapport");
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,'));
+  assert.ok(html.includes('<img class="hdv" src="data:image/png;base64,') && html.includes('<img class="pharmaco" src="data:image/png;base64,'), "logos incorporés dans le rapport imprimé");
   const imprNom = await page.request.post(urlRapport + "/imprimer", { form: { nom: "Apprenant Test", qualite: "Préparateur" } });
   const htmlNom = await imprNom.text();
   assert.ok(htmlNom.includes("Apprenant Test") && htmlNom.includes("Préparateur"));

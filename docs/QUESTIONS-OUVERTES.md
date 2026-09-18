@@ -165,9 +165,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     l'administrateur, jamais automatique ; seuls les rapports clos ou annulés
     sont purgeables, confirmation par recopie du numéro ou du mot PURGER,
     numéros consignés au journal.
-26. **Logos** dans le rapport téléchargé : adresses absolues vers le site
-    (l'impression suppose le site joignable). `[à préciser]` incorporer les
-    images dans le fichier.
+26. **Logos** — tranché le 18/09/2026 (question 20, choix c) : incorporés en
+    data URI dans chaque rendu du rapport, téléchargé par l'apprenant, imprimé
+    depuis l'administration ou archivé dans le paquet ; le fichier reste
+    lisible sans le site. À défaut de lecture, l'adresse du fichier sert.
 27. **Sessions** — tranché le 18/09/2026 (question 16, choix b) : douze heures
     au plus, liées à leur code d'accès ; révoquer ou supprimer le code ferme
     ses sessions à la requête suivante, réactiver ne rouvre pas celles

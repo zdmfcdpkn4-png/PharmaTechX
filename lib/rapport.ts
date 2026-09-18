@@ -69,6 +69,11 @@ export interface OptionsRapport {
   visas?: VisaRapport[];
   /** Préfixe des adresses de logos (origine du site) ; vide pour un rendu serveur. */
   baseUrl?: string;
+  /**
+   * Logos encodés en data URI (décision du 18/09/2026, question 20, choix c) :
+   * le fichier reste lisible hors du site. Absents, l'adresse `baseUrl` sert.
+   */
+  logos?: { hdv?: string; pharmaco?: string };
   conservation?: "aucune" | "pseudonyme";
   dureeConservationMois?: number | null;
   /** Date d'édition, sinon maintenant. */
@@ -432,9 +437,9 @@ ${bandeauEssai}
 <table class="page">
   <thead><tr><td>
     <div class="entete-page">
-      <img class="hdv" src="${base}/hdv.png" alt="Hôpitaux de Vendée">
+      <img class="hdv" src="${options.logos?.hdv ?? `${base}/hdv.png`}" alt="Hôpitaux de Vendée">
       <span class="sep"></span>
-      <img class="pharmaco" src="${base}/pharmaco-web.png" alt="Pharmacotechnie">
+      <img class="pharmaco" src="${options.logos?.pharmaco ?? `${base}/pharmaco-web.png`}" alt="Pharmacotechnie">
       <div class="t"><strong>CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie</strong><span>Rapport d'évaluation des connaissances — fiche d'habilitation, chapitre III</span></div>
       <span class="ref">${options.numero ? `${echapper(options.numero)} · ` : ""}édité le ${echapper(date)}</span>
     </div>
@@ -465,14 +470,38 @@ export function nomFichierRapport(nom: string, numero?: string): string {
   return `rapport-evaluation-${numero ? `${numero.toLowerCase()}-` : ""}${propre}-${jour}.html`;
 }
 
-/** Construit et télécharge le rapport sur le poste, sans passer par le serveur. */
-export function telechargerRapport(
+/** Logos lus depuis le site et encodés en data URI, pour un fichier téléchargé autoportant ; à défaut, leur adresse sert. */
+async function logosDepuisLeSite(origine: string): Promise<{ hdv?: string; pharmaco?: string }> {
+  const lire = async (nom: string): Promise<string | undefined> => {
+    try {
+      const reponse = await fetch(`${origine}/${nom}`);
+      if (!reponse.ok) return undefined;
+      const blob = await reponse.blob();
+      return await new Promise<string>((resoudre, rejeter) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resoudre(String(lecteur.result));
+        lecteur.onerror = () => rejeter(lecteur.error);
+        lecteur.readAsDataURL(blob);
+      });
+    } catch {
+      return undefined;
+    }
+  };
+  const [hdv, pharmaco] = await Promise.all([lire("hdv.png"), lire("pharmaco-web.png")]);
+  return { ...(hdv ? { hdv } : {}), ...(pharmaco ? { pharmaco } : {}) };
+}
+
+/** Construit et télécharge le rapport sur le poste, sans passer par le serveur ; logos incorporés (question 20, choix c). */
+export async function telechargerRapport(
   entete: EnTeteRapport,
   resultats: ResultatRapport[],
   options: OptionsRapport = {},
-): void {
+): Promise<void> {
+  const origine = typeof window !== "undefined" ? window.location.origin : "";
+  const logos = origine ? await logosDepuisLeSite(origine) : {};
   const html = construireRapport(entete, resultats, {
-    baseUrl: typeof window !== "undefined" ? window.location.origin : "",
+    baseUrl: origine,
+    logos,
     ...options,
   });
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });

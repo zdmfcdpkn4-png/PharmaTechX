@@ -331,6 +331,8 @@ code (décision du 18/09/2026, question 10).
 - Sans rattachement à un identifiant d'agent, la progression vit dans
   l'onglet : ni reprise ni historique. Rattachée, elle se conserve en base ;
   courbes d'évolution non faites.
-- Le rapport téléchargé référence les logos par l'adresse du site.
+- Les logos sont incorporés dans chaque rendu du rapport, téléchargé, imprimé
+  ou archivé (décision du 18/09/2026, question 20, choix c) : le fichier
+  reste lisible hors du site.
 - Une question de la banque versionnée signalée se corrige dans le code.
 - Fichiers en base limités à 15 Mo ; les vidéos relèvent d'un store d'objets.

@@ -494,7 +494,7 @@ export function TableauDeBord({
                     <button
                       type="button"
                       className="bouton bouton--compact bouton--secondaire"
-                      onClick={() => telechargerRapport(entete(), [r], optionsDe(r))}
+                      onClick={() => void telechargerRapport(entete(), [r], optionsDe(r))}
                     >
                       Télécharger
                     </button>
@@ -520,7 +520,7 @@ export function TableauDeBord({
             type="button"
             className="bouton"
             disabled={resultats.length === 0}
-            onClick={() => telechargerRapport(entete(), resultats, { conservation, procedure, miseEnService })}
+            onClick={() => void telechargerRapport(entete(), resultats, { conservation, procedure, miseEnService })}
           >
             Télécharger le rapport de session
           </button>

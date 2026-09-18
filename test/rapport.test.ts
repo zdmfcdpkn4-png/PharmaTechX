@@ -164,3 +164,13 @@ test("un retrait postérieur à la décision est signalé sur le rapport, sans c
   assert.ok(html.includes("retirée de la banque après la décision"));
   assert.ok(!html.includes('class="exclue"'), "la question retirée après la décision n'est pas exclue du calcul");
 });
+
+test("les logos incorporés remplacent les adresses ; sans eux, l'adresse du site sert (question 20)", () => {
+  const avec = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat], {
+    logos: { hdv: "data:image/png;base64,HDV", pharmaco: "data:image/png;base64,PH" },
+  });
+  assert.ok(avec.includes('<img class="hdv" src="data:image/png;base64,HDV"'));
+  assert.ok(avec.includes('<img class="pharmaco" src="data:image/png;base64,PH"'));
+  const sans = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat], { baseUrl: "https://site" });
+  assert.ok(sans.includes('src="https://site/hdv.png"') && sans.includes('src="https://site/pharmaco-web.png"'));
+});
