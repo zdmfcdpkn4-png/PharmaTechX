@@ -591,6 +591,93 @@ Justification : justification deux.`;
   await page.waitForSelector("text=Parcours : Socle transversal, module");
   ok("fin de test : document de synthèse affiché, question ratée rejouée en entraînement, module suivant du parcours");
 
+  // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
+  // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "ag 1");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/progression=clos/);
+  await page.goto(BASE + "/admin/personnel");
+  await page.click("button:has-text('Créer un identifiant')");
+  await page.waitForURL(/ok=cree&identifiant=AG-002/);
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "ag 2");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/premiere=AG-002/);
+  await page.fill("input[name=nouveauCode]", "1234");
+  await page.fill("input[name=confirmation]", "1234");
+  await page.click("button:has-text('Choisir ce code')");
+  await page.waitForURL(/progression=ok/);
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  await page.waitForSelector("a[title='Progression rattachée']:has-text('AG-002')");
+  await page.goto(BASE + "/module/" + idModule + "/evaluation");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  const fsProg = page.locator("fieldset.question");
+  const nProg = await fsProg.count();
+  for (let i = 0; i < nProg; i++) {
+    const f = fsProg.nth(i);
+    if (await f.locator(".proposition").count()) {
+      for (const [texte, vrai] of [["Première vraie", true], ["Deuxième fausse", false], ["Troisième vraie", true]]) {
+        await f.locator(".proposition", { hasText: texte }).locator(`label:has-text('${vrai ? "Vrai" : "Faux"}') input`).check();
+      }
+    } else {
+      await f.locator("label.option", { hasText: "Bonne" }).locator("input").check();
+    }
+  }
+  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await page.waitForSelector(".resultat-entete");
+  // rechargement complet : la mémoire de session repart des évaluations conservées
+  await page.goto(BASE + "/#progression");
+  await page.waitForSelector("#progression td:has-text('Module déposé test')");
+  await page.waitForSelector("#progression td:has-text('100 %')");
+  await page.waitForSelector("h2:has-text('Mes évaluations')");
+  assert.equal(await page.getAttribute("input[name=identifiant][readonly]", "value"), "AG-002");
+  ok("progression rattachée : identifiant clos refusé, code personnel choisi, évaluation conservée et relue après rechargement, identifiant verrouillé à l'émission");
+
+  // 12h. évaluation interrompue : sauvegardée, reprise avec la réponse conservée, effacée après correction
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  const premierQcm = page.locator("fieldset.question").filter({ has: page.locator("label.option") }).first();
+  const enonceRepris = (await premierQcm.locator(".question-enonce").innerText()).trim();
+  await premierQcm.locator("label.option input").first().check();
+  await page.waitForTimeout(1500); // sauvegarde regroupée (700 ms) puis réponse du serveur
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.waitForSelector("text=interrompue");
+  await page.click("button:has-text('Reprendre')");
+  await page.waitForSelector("fieldset.question");
+  const repris = page.locator("fieldset.question").filter({ hasText: enonceRepris });
+  assert.equal(await repris.locator("label.option input").first().isChecked(), true, "réponse conservée à la reprise");
+  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await page.waitForSelector(".resultat-entete");
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.waitForSelector("button:has-text('Commencer')");
+  assert.equal(await page.locator("text=interrompue").count(), 0, "session en cours effacée après correction");
+  ok("évaluation interrompue : sauvegardée sous l'identifiant, reprise avec la réponse conservée, effacée après correction");
+
+  // 12i. tutorat : traces de l'agent, purge confirmée, code réinitialisé, détachement, nouveau code exigé
+  await page.goto(BASE + "/admin/personnel");
+  const ligneAg2 = page.locator("tr:has(code:has-text('AG-002'))");
+  await ligneAg2.locator("td:has-text('défini')").waitFor();
+  await ligneAg2.locator("a[href^='/admin/personnel/']").click();
+  await page.waitForURL(/\/admin\/personnel\/\d+$/);
+  await page.waitForSelector("h1:has-text('Progression de AG-002')");
+  assert.ok((await page.locator("table.tableau tbody tr").count()) >= 2, "au moins deux évaluations conservées");
+  await page.fill("input[name=confirmation]", "AG-002");
+  await page.click("button:has-text('Purger les')");
+  await page.waitForURL(/ok=purge/);
+  await page.click("button:has-text('Réinitialiser le code personnel')");
+  await page.waitForURL(/ok=code/);
+  await page.locator("tr:has(code:has-text('AG-002')) td:has-text('absent')").waitFor();
+  await page.goto(BASE + "/#progression");
+  await page.click("#progression button:has-text('Se détacher')");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  await page.fill("#progression input[name=identifiant]", "AG-002");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/premiere=AG-002/);
+  ok("tutorat : traces listées, purge confirmée par recopie, code réinitialisé, détachement, nouveau code exigé au retour");
+
   // 13. déconnexion, connexion tuteur, journal interdit
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);

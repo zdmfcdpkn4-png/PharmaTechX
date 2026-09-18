@@ -49,9 +49,42 @@ interface Contexte {
 
 const SessionContexte = createContext<Contexte | null>(null);
 
-export function SessionFormation({ children }: { children: React.ReactNode }) {
-  const [resultats, setResultats] = useState<ResultatSession[]>([]);
-  const [emissions, setEmissions] = useState<Record<string, EmissionSession>>({});
+/** Rapport émis par l'agent, tel que le serveur le connaît (progression rattachée). */
+export interface EmissionInitiale extends EmissionSession {
+  moduleId: string | null;
+  horodatageIso: string | null;
+}
+
+/** Numérote les tentatives par module, dans l'ordre chronologique. */
+function numeroter(liste: ResultatEvaluation[]): ResultatSession[] {
+  const compte: Record<string, number> = {};
+  return liste.map((r) => ({ ...r, tentative: (compte[r.moduleId] = (compte[r.moduleId] ?? 0) + 1) }));
+}
+
+/** Retrouve, pour chaque évaluation conservée, le rapport émis qui lui correspond. */
+function indexer(resultats: ResultatSession[], emissions: EmissionInitiale[]): Record<string, EmissionSession> {
+  const out: Record<string, EmissionSession> = {};
+  for (const r of resultats) {
+    const e = emissions.find((x) => x.moduleId === r.moduleId && x.horodatageIso === r.horodatageIso);
+    if (e) out[`${r.moduleId}#${r.tentative}`] = { id: e.id, numero: e.numero, empreinte: e.empreinte, emisLe: e.emisLe, identifiant: e.identifiant };
+  }
+  return out;
+}
+
+export function SessionFormation({
+  children,
+  initialResultats = [],
+  initialEmissions = [],
+}: {
+  children: React.ReactNode;
+  /** Évaluations conservées sous l'identifiant rattaché (question 11) : la mémoire de session part de là. */
+  initialResultats?: ResultatEvaluation[];
+  initialEmissions?: EmissionInitiale[];
+}) {
+  const [resultats, setResultats] = useState<ResultatSession[]>(() => numeroter(initialResultats));
+  const [emissions, setEmissions] = useState<Record<string, EmissionSession>>(() =>
+    indexer(numeroter(initialResultats), initialEmissions),
+  );
 
   const enregistrer = useCallback((r: ResultatEvaluation) => {
     setResultats((prec) => {

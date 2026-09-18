@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getModuleComplet, positionDansParcours } from "@/content/store";
 import { syntheseDuModule } from "@/lib/synthese";
+import { lireEnCours, rattachement } from "@/lib/progression";
 import { A_PRECISER, banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -16,11 +17,13 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
-  const [bareme, syntheses, position] = await Promise.all([
+  const [bareme, syntheses, position, ratt] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     positionDansParcours("integration", mod.id),
+    rattachement(),
   ]);
+  const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
 
   // Les bonnes réponses et les justifications sont retirées ici : elles ne
   // quittent le serveur qu'après soumission, via la route de correction.
@@ -52,6 +55,8 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
         signalementPossible={baseConfiguree()}
         syntheses={syntheses}
         suivant={position?.suivant ? { id: position.suivant.id, titre: position.suivant.titre } : null}
+        rattache={Boolean(ratt)}
+        enCoursInitial={enCours}
       />
     </article>
   );

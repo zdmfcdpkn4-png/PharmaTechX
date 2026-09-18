@@ -5,7 +5,7 @@ import { listerAgents } from "@/lib/agents";
 import { normaliserIdentifiant } from "@/lib/identifiant";
 import { LIBELLES_STATUT_RAPPORT, repertoirePersonnel } from "@/lib/rapports";
 import { decisionEnregistree } from "@/lib/registre";
-import { actionBasculerAgent, actionCreerAgent } from "./actions";
+import { actionBasculerAgent, actionCreerAgent, actionReinitialiserCode } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ const MESSAGES: Record<string, (identifiant: string) => string> = {
   cree: (i) => `Identifiant ${i} créé. Notez la correspondance avec l'agent dans la liste tenue hors du site, puis remettez-lui l'identifiant : c'est ce qu'il saisira pour émettre ses rapports.`,
   clos: (i) => `Identifiant ${i} clos : plus aucun rapport ne peut lui être rattaché ; son historique reste jusqu'à purge manuelle.`,
   rouvert: (i) => `Identifiant ${i} rouvert.`,
+  code: (i) => `Code personnel de ${i} réinitialisé : l'agent en choisira un nouveau à son prochain rattachement.`,
 };
 
 function date(iso: string): string {
@@ -76,7 +77,9 @@ export default async function Personnel({
         <p className="legende">
           Le site génère l&apos;identifiant (AG-001, AG-002…) et n&apos;enregistre rien d&apos;autre sur
           l&apos;agent : ni nom, ni fonction, ni champ libre. Un identifiant se clôt au départ de
-          l&apos;agent ; il ne se supprime pas tant que des rapports s&apos;y rattachent.
+          l&apos;agent ; il ne se supprime pas tant que des rapports s&apos;y rattachent. L&apos;agent
+          rattache sa progression avec un code personnel qu&apos;il choisit (question 11) ; oublié,
+          il se réinitialise ici.
         </p>
         <form action={actionCreerAgent}>
           <div className="actions" style={{ marginTop: 0 }}>
@@ -86,7 +89,7 @@ export default async function Personnel({
         {agents.length > 0 && (
           <table className="tableau" style={{ marginTop: "1rem" }}>
             <thead>
-              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Rapports</th><th></th></tr>
+              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Rapports</th><th>Progression</th><th>Code personnel</th><th></th></tr>
             </thead>
             <tbody>
               {agents.map((a) => (
@@ -99,6 +102,19 @@ export default async function Personnel({
                   </td>
                   <td>
                     {a.nb_rapports > 0 ? <Link href={`/admin/personnel?agent=${a.identifiant}`}>{a.nb_rapports}</Link> : "0"}
+                  </td>
+                  <td>
+                    <Link href={`/admin/personnel/${a.id}`}>{a.nb_traces} trace{a.nb_traces > 1 ? "s" : ""}</Link>
+                    {a.derniere_activite ? <span className="legende"> · {date(a.derniere_activite)}</span> : null}
+                  </td>
+                  <td>
+                    <span className={`etiquette ${a.code_defini ? "etiquette--ok" : "etiquette--neutre"}`}>{a.code_defini ? "défini" : "absent"}</span>{" "}
+                    {a.code_defini && (
+                      <form action={actionReinitialiserCode} style={{ display: "inline" }}>
+                        <input type="hidden" name="id" value={a.id} />
+                        <button type="submit" className="bouton bouton--compact bouton--discret">Réinitialiser</button>
+                      </form>
+                    )}
                   </td>
                   <td>
                     <form action={actionBasculerAgent}>

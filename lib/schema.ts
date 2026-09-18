@@ -41,6 +41,8 @@ export const TABLES = [
   "modules_deposes",
   "reglages_modules",
   "parametres",
+  "progression",
+  "en_cours",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -258,6 +260,30 @@ export const SCHEMA: string[] = [
      modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
    )`,
 
+  // ── progression d'apprentissage sous identifiant d'agent (décision du
+  // 18/09/2026, question 11, choix c) : évaluations (résultat scellé complet),
+  // entraînements (score) et lectures, rattachés à l'agent qui s'est
+  // identifié par son identifiant et son code personnel ; session d'évaluation
+  // en cours pour la reprise. Données pseudonymisées : docs/RGPD.md.
+  `CREATE TABLE IF NOT EXISTS progression (
+     id        SERIAL PRIMARY KEY,
+     agent_id  INTEGER NOT NULL REFERENCES agents(id),
+     module_id TEXT NOT NULL,
+     nature    TEXT NOT NULL CHECK (nature IN ('evaluation','entrainement','lecture')),
+     resultat  JSONB,
+     score     INTEGER,
+     verdict   TEXT,
+     cree_le   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS progression_agent ON progression (agent_id, cree_le)`,
+  `CREATE TABLE IF NOT EXISTS en_cours (
+     agent_id  INTEGER NOT NULL REFERENCES agents(id),
+     module_id TEXT NOT NULL,
+     etat      JSONB NOT NULL,
+     maj_le    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     PRIMARY KEY (agent_id, module_id)
+   )`,
+
   // ── colonnes ajoutées après la première version (idempotent) ──────────────
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS signature_id TEXT`,
   // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
@@ -276,6 +302,9 @@ export const SCHEMA: string[] = [
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id)`,
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_identifiant TEXT`,
   `ALTER TABLE visas DROP COLUMN IF EXISTS nom`,
+  // code personnel de l'agent (haché, scrypt) pour rattacher sa progression — question 11
+  `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_hash TEXT`,
+  `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_maj_le TIMESTAMPTZ`,
   // documents liés à un ou plusieurs profils (filières, niveaux) — question 10
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,

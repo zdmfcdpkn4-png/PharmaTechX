@@ -4,6 +4,7 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
+import { emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
 import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
@@ -24,6 +25,15 @@ export default async function RootLayout({
   const session = baseConfiguree() ? await getSession() : null;
   const gestionnaire = session && session.role !== "poste";
   const conservation = conservationActive();
+  // Progression rattachée (question 11, choix c) : la mémoire de session du
+  // navigateur part des évaluations conservées sous l'identifiant.
+  const ratt = conservation ? await rattachement() : null;
+  const [evaluations, emissions] = ratt
+    ? await Promise.all([
+        evaluationsDeLAgent(ratt.agentId).catch(() => []),
+        emissionsDeLAgent(ratt.agentId).catch(() => []),
+      ])
+    : [[], []];
   const procedure = procedureReference();
   const enService = miseEnService();
 
@@ -55,7 +65,18 @@ export default async function RootLayout({
           <span className="forme-4" />
         </div>
 
-        <SessionFormation>
+        <SessionFormation
+          initialResultats={evaluations}
+          initialEmissions={emissions.map((e) => ({
+            id: e.id,
+            numero: e.numero,
+            empreinte: e.empreinte,
+            emisLe: new Date(e.emis_le).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" }),
+            identifiant: e.identifiant,
+            moduleId: e.module_id,
+            horodatageIso: e.horodatage_iso,
+          }))}
+        >
           <Chrome>
             <div className="logos">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -92,6 +113,11 @@ export default async function RootLayout({
               <Link href="/#evaluation">L&apos;évaluation</Link>
               <Link href="/#questions">Questions</Link>
               {gestionnaire && <Link href="/admin">Administration</Link>}
+              {ratt && (
+                <Link href="/#progression" className="bouton bouton--compact bouton--secondaire" title="Progression rattachée">
+                  {ratt.identifiant}
+                </Link>
+              )}
               {session ? (
                 <form action={actionDeconnexion}>
                   <button type="submit" className="bouton bouton--compact">
@@ -116,9 +142,11 @@ export default async function RootLayout({
                 <p>
                   <strong>Aucun nom n&apos;est enregistré.</strong> Les réponses transmises au
                   serveur ne comportent ni nom, ni matricule. Les résultats vivent en mémoire de
-                  l&apos;onglet le temps de la session. Seul le rapport que l&apos;apprenant choisit
-                  d&apos;émettre est enregistré, sous son identifiant d&apos;agent, pour le circuit de
-                  visas du tuteur et du pharmacien responsable ; le nom n&apos;est porté qu&apos;à
+                  l&apos;onglet le temps de la session, sauf si l&apos;apprenant rattache sa
+                  progression à son identifiant d&apos;agent avec son code personnel : elle est
+                  alors conservée sous cet identifiant, sans nom. Le rapport qu&apos;il choisit
+                  d&apos;émettre est enregistré sous le même identifiant, pour le circuit de visas
+                  du tuteur et du pharmacien responsable ; le nom n&apos;est porté qu&apos;à
                   l&apos;édition. <Link href="/donnees-personnelles">Vos données et vos droits</Link>.
                   Un repère de lecture reste sur le poste, et il ne désigne personne.
                 </p>

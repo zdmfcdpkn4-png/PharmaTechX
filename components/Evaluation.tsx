@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
 import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
+import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
 import { libelleBande, type Bareme } from "@/content/bareme";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
@@ -217,6 +218,8 @@ export function Evaluation({
   signalementPossible = false,
   syntheses = [],
   suivant = null,
+  rattache = false,
+  enCoursInitial = null,
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -230,6 +233,10 @@ export function Evaluation({
   syntheses?: SyntheseDocument[];
   /** Module suivant dans le parcours, proposé en fin de test. */
   suivant?: { id: string; titre: string } | null;
+  /** Apprenant rattaché à son identifiant : l'évaluation en cours est sauvegardée, la fin d'un entraînement notée. */
+  rattache?: boolean;
+  /** Évaluation interrompue, conservée sous l'identifiant, proposée à la reprise. */
+  enCoursInitial?: EtatEnCours | null;
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -250,20 +257,78 @@ export function Evaluation({
   const [indexCourant, setIndexCourant] = useState(0);
   const [corrections, setCorrections] = useState<Record<string, DetailQuestion>>({});
   const [entrainementFini, setEntrainementFini] = useState(false);
-  // Rejeu des questions ratées (transposé du « Rejouer les ratées » du Lecteur
-  // QIM · QCM) : un sous-ensemble de la banque, en entraînement seulement.
-  const [sousEnsemble, setSousEnsemble] = useState<string[] | null>(null);
+  // Questions fixées d'avance : rejeu des ratées (transposé du « Rejouer les
+  // ratées » du Lecteur QIM · QCM, entraînement seulement) ou reprise d'une
+  // évaluation interrompue (mêmes questions, réponses conservées).
+  const [sousEnsemble, setSousEnsemble] = useState<{ ids: string[]; libelle: string; revoir: boolean } | null>(null);
+  const [enCours, setEnCours] = useState<EtatEnCours | null>(enCoursInitial);
   const { enregistrer } = useSessionFormation();
 
   const posees = useMemo(
-    () => (sousEnsemble ? banque.filter((q) => sousEnsemble.includes(q.id)) : tirer(banque, DIFFICULTES[difficulte].nb)),
+    () => (sousEnsemble ? banque.filter((q) => sousEnsemble.ids.includes(q.id)) : tirer(banque, DIFFICULTES[difficulte].nb)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [banque, difficulte, graine, sousEnsemble],
   );
 
   const libelleTirage = sousEnsemble
-    ? `À revoir · ${posees.length} question${posees.length > 1 ? "s" : ""} · entraînement`
+    ? sousEnsemble.libelle
     : `${DIFFICULTES[difficulte].libelle} · ${posees.length} question${posees.length > 1 ? "s" : ""}${mode === "entrainement" ? " · entraînement" : ""}`;
+
+  /** Trace de progression envoyée au serveur ; ignorée sans rattachement. */
+  const tracer = (corps: Record<string, unknown>) =>
+    fetch("/api/progression", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moduleId, ...corps }),
+    }).catch(() => undefined);
+
+  // Sauvegarde de l'évaluation en cours, regroupée (700 ms), tant qu'elle n'est
+  // ni corrigée ni terminée ; jamais pour un rejeu des ratées.
+  const minuteurSauvegarde = useRef<number | null>(null);
+  useEffect(() => {
+    if (!rattache || !demarre || resultat || entrainementFini || sousEnsemble?.revoir) return;
+    if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
+    minuteurSauvegarde.current = window.setTimeout(() => {
+      const etat: EtatEnCours = {
+        questionIds: posees.map((q) => q.id),
+        mode,
+        difficulte,
+        libelle: libelleTirage,
+        reponses,
+        qim,
+        legendes,
+        indexCourant,
+        corrections,
+        maj: new Date().toISOString(),
+      };
+      void tracer({ nature: "en_cours", etat });
+    }, 700);
+    return () => {
+      if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, indexCourant, corrections]);
+
+  const effacerEnCours = () => {
+    if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
+    setEnCours(null);
+    if (rattache) void tracer({ nature: "en_cours", etat: null });
+  };
+
+  const reprendre = (e: EtatEnCours) => {
+    setMode(e.mode);
+    setDifficulte(e.difficulte);
+    setReponses(e.reponses);
+    setQim(e.qim);
+    setLegendes(e.legendes);
+    setIndexCourant(e.indexCourant);
+    setCorrections(e.corrections as Record<string, DetailQuestion>);
+    setEntrainementFini(false);
+    setResultat(null);
+    setSousEnsemble({ ids: e.questionIds, libelle: e.libelle || "Reprise", revoir: false });
+    setEnCours(null);
+    setDemarre(true);
+  };
 
   const basculer = (q: QuestionPublique, optionId: string) => {
     setReponses((prec) => {
@@ -313,6 +378,7 @@ export function Evaluation({
       juges,
       legendes: legs,
       tirage: libelleTirage,
+      mode,
     };
   };
 
@@ -372,6 +438,7 @@ export function Evaluation({
     setSousEnsemble(null);
     setGraine((g) => g + 1);
     setDemarre(false);
+    effacerEnCours();
   };
 
   /** Repasse les questions ratées, une à la fois, en entraînement : rien n'est enregistré. */
@@ -385,10 +452,19 @@ export function Evaluation({
     setIndexCourant(0);
     setEntrainementFini(false);
     setMode("entrainement");
-    setSousEnsemble(ids);
+    setSousEnsemble({ ids, libelle: `À revoir · ${ids.length} question${ids.length > 1 ? "s" : ""} · entraînement`, revoir: true });
     setGraine((g) => g + 1);
     setDemarre(true);
     window.scrollTo({ top: 0 });
+  };
+
+  /** Fin d'un entraînement : la trace est notée si l'apprenant est rattaché (jamais pour un rejeu des ratées). */
+  const terminerEntrainement = () => {
+    setEntrainementFini(true);
+    if (!rattache || sousEnsemble?.revoir) return;
+    const justes = posees.filter((q) => corrections[q.id]?.correct).length;
+    const points = posees.reduce((s, q) => s + (corrections[q.id]?.note ?? 0), 0);
+    void tracer({ nature: "entrainement", justes, total: posees.length, points, tirage: libelleTirage });
   };
 
   const boutonRatees = (ids: string[]) =>
@@ -426,6 +502,25 @@ export function Evaluation({
             La banque de ce critère compte {banque.length} question{banque.length > 1 ? "s" : ""} validée{banque.length > 1 ? "s" : ""} sur les{" "}
             {MIN_QUESTIONS_HABILITATION} requises : seul le tirage Découverte est ouvert, non concluant, pour se situer.
           </p>
+        )}
+        {enCours && rattache && (
+          <div className="encart encart--attention" role="status">
+            <p style={{ margin: "0 0 .5rem" }}>
+              <strong>Une {enCours.mode === "entrainement" ? "séance d'entraînement" : "évaluation"} interrompue</strong> a été
+              conservée sous votre identifiant le{" "}
+              {new Date(enCours.maj).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" })} :{" "}
+              {enCours.libelle || `${enCours.questionIds.length} questions`}, {questionsRenseignees(enCours)} question
+              {questionsRenseignees(enCours) > 1 ? "s" : ""} renseignée{questionsRenseignees(enCours) > 1 ? "s" : ""}.
+            </p>
+            <div className="actions" style={{ marginTop: 0 }}>
+              <button type="button" className="bouton bouton--compact" onClick={() => reprendre(enCours)}>
+                Reprendre
+              </button>
+              <button type="button" className="bouton bouton--compact bouton--secondaire" onClick={effacerEnCours}>
+                Abandonner
+              </button>
+            </div>
+          </div>
         )}
         <fieldset className="choix-difficulte">
           <legend className="champ-titre">Tirage</legend>
@@ -699,7 +794,7 @@ export function Evaluation({
     const nbSituation = q.situation ? posees.filter((x) => x.situation?.id === q.situation!.id).length : 0;
     return (
       <div style={{ paddingBottom: "120px" }}>
-        {sousEnsemble && (
+        {sousEnsemble?.revoir && (
           <p className="encart">
             À revoir · {posees.length} question{posees.length > 1 ? "s" : ""} ratée{posees.length > 1 ? "s" : ""} : entraînement sur ces
             questions seulement, rien n&apos;est enregistré.
@@ -734,7 +829,7 @@ export function Evaluation({
                 type="button"
                 className="bouton"
                 onClick={() => {
-                  if (indexCourant + 1 >= posees.length) setEntrainementFini(true);
+                  if (indexCourant + 1 >= posees.length) terminerEntrainement();
                   else setIndexCourant(indexCourant + 1);
                   const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
                   window.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" });

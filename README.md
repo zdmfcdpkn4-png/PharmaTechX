@@ -65,14 +65,23 @@ jamais seulement par l'affichage.
 `fichiers`), `questions` / `situations` / `images` / `depots_questions`
 (banque déposée), `modules_deposes` (modules ajoutés depuis
 l'administration), `reglages_modules` (seuil réglé d'un module du code),
-`parametres` (barème réglé), `signalements` (sans identité), `journal` (rôle
-et libellé de profil), `tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
+`parametres` (barème réglé), `progression` et `en_cours` (progression
+rattachée à un identifiant d'agent, décision du 18/09/2026, question 11 :
+évaluations scellées, entraînements, lectures, évaluation interrompue),
+`signalements` (sans identité), `journal` (rôle et libellé de profil),
+`tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
 au niveau des lignes sans politique et les rôles de l'API de données de
 Supabase n'y ont aucun droit : la base n'est lisible que par le service.
 
-**Jamais stocké** : les réponses transmises pour correction (identifiants de
-module et d'options seulement), les résultats — ils vivent en mémoire de
-l'onglet, puis dans le rapport que l'apprenant télécharge.
+**Jamais stocké sans décision de l'apprenant** : les réponses transmises
+pour correction (identifiants de module et d'options seulement) et les
+résultats vivent en mémoire de l'onglet, puis dans le rapport téléchargé.
+**Sur rattachement** (« Ma progression », identifiant d'agent et code
+personnel de 4 à 8 chiffres choisi par l'agent, conservé haché) : les
+évaluations complètes, la fin des entraînements, les modules lus et
+l'évaluation en cours sont conservés sous l'identifiant, relus à chaque
+ouverture, et l'émission se fait sous cet identifiant. Un tuteur réinitialise
+un code oublié ; l'administrateur purge une progression, journalisé.
 
 **Sur décision seulement** (`CONSERVATION_RAPPORTS=pseudonyme`) : les
 rapports que l'apprenant choisit d'**émettre** sont enregistrés sous son
@@ -241,7 +250,8 @@ répertoire par identifiant et par critère (export CSV).
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
 d'import (texte et JSON), décision (bande de garde, non concluant,
 exclusions, arbitrage, bande de garde réglable), barème réglable
-(normalisation, QIM et schéma paramétrés, libellés), identifiants d'agents,
+(normalisation, QIM et schéma paramétrés, libellés), état d'une évaluation
+en cours (contrôle de forme), identifiants d'agents,
 famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
 table), voisins du parcours, constructeur de rapport (identifiant, nom hors
 sceau, barème porté), registre CSV et JSON, archive zip.
@@ -260,8 +270,11 @@ répertoire CSV sans nom, journal sans nom, purge, clôture de l'identifiant,
 dépôt de document, module déposé (brouillon invisible, publié au programme
 d'une filière et d'un niveau, questions importées, seuil propre), barème
 réglé puis rétabli, document général par profil, fin de test (document de
-synthèse, question ratée rejouée, module suivant), connexion tuteur, mode
-entraînement, limiteur de connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
+synthèse, question ratée rejouée, module suivant), progression rattachée
+(code personnel, évaluation conservée et relue, évaluation interrompue
+reprise, traces vues du tutorat, purge, code réinitialisé), connexion
+tuteur, mode entraînement, limiteur de connexion. Voir l'en-tête de
+`e2e/parcours.e2e.js`.
 
 ## 11. Reste à faire et questions ouvertes
 
@@ -282,9 +295,9 @@ code (décision du 18/09/2026, question 10).
   l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
   annulés seulement.
 - Les sessions durent 12 h et ne sont pas révocables individuellement.
-- La progression d'un apprenant vit dans l'onglet : pas de reprise d'une
-  session interrompue, pas d'historique d'une session à l'autre (décision à
-  prendre, `docs/QUESTIONS-OUVERTES.md`, F).
+- Sans rattachement à un identifiant d'agent, la progression vit dans
+  l'onglet : ni reprise ni historique. Rattachée, elle se conserve en base ;
+  courbes d'évolution non faites.
 - Le rapport téléchargé référence les logos par l'adresse du site.
 - Une question de la banque versionnée signalée se corrige dans le code.
 - Fichiers en base limités à 15 Mo ; les vidéos relèvent d'un store d'objets.

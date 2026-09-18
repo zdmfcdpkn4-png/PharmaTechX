@@ -4,6 +4,8 @@ import { miseEnService, modeConservation, procedureReference } from "@/lib/confi
 import { lireBareme } from "@/lib/bareme-db";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { rattachement } from "@/lib/progression";
+import { Progression } from "@/components/Progression";
 import { libelleQim, libelleSchema, resumeBareme, type Bareme } from "@/content/bareme";
 import {
   arbitrageEnAttente,
@@ -128,19 +130,20 @@ const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
 export default async function Accueil({
   searchParams,
 }: {
-  searchParams: Promise<{ parcours?: string }>;
+  searchParams: Promise<{ parcours?: string; progression?: string; premiere?: string; minutes?: string }>;
 }) {
   const params = await searchParams;
   const parcoursId: TypeParcours =
     params.parcours === "maintien" ? "maintien" : "integration";
   const parcours = getParcours(parcoursId)!;
-  const [enBase, bareme, programme, session] = await Promise.all([
+  const conservation = modeConservation();
+  const [enBase, bareme, programme, session, ratt] = await Promise.all([
     comptesQuestionsBase(),
     lireBareme(),
     composerProgramme(parcoursId),
     getSession(),
+    conservation === "pseudonyme" ? rattachement() : Promise.resolve(null),
   ]);
-  const conservation = modeConservation();
   // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
   const filiereInitiale = filieres.some((f) => f.id !== "socle" && f.id === session?.filiere) ? session!.filiere! : "";
   const niveauInitial = niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "";
@@ -234,8 +237,13 @@ export default async function Accueil({
           documents={documents}
           filiereInitiale={filiereInitiale}
           niveauInitial={niveauInitial}
+          identifiantRattache={ratt?.identifiant ?? null}
         />
       </section>
+
+      {conservation === "pseudonyme" && baseConfiguree() && (
+        <Progression rattache={ratt} message={params.progression} premiere={params.premiere} minutes={params.minutes} />
+      )}
 
       {/* ───────────────────────────────────────────────── le dispositif */}
       <section id="dispositif" className="section">

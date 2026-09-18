@@ -48,6 +48,21 @@ export function LectureModule({
     }
   }, [cle]);
 
+  // Progression rattachée (question 11) : la lecture est notée quand la
+  // dernière section est atteinte, une fois par ouverture ; sans rattachement,
+  // le serveur ignore la trace.
+  const lectureNotee = useRef(false);
+  useEffect(() => {
+    if (lectureNotee.current || !courante || sommaire.length === 0) return;
+    if (courante !== sommaire[sommaire.length - 1].id) return;
+    lectureNotee.current = true;
+    void fetch("/api/progression", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nature: "lecture", moduleId }),
+    }).catch(() => undefined);
+  }, [courante, sommaire, moduleId]);
+
   useEffect(() => {
     let enCours = false;
     const traiter = () => {

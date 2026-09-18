@@ -191,15 +191,17 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 ## F. Parcours de formation (transposition du Lecteur QIM · QCM)
 
-37. **Progression persistante** : la progression d'un apprenant (résultats,
-    modules lus, session en cours) vit aujourd'hui dans l'onglet et disparaît
-    à sa fermeture ; seuls les rapports émis sont conservés. `[à préciser]` :
-    a) rester ainsi ; b) conserver la progression sur le poste (navigateur),
-    ce qui la partage entre les agents d'un même ordinateur et n'est pas
-    tenable en salle de production ; c) la conserver en base sous
-    l'identifiant d'agent, ce qui étend la fiche RGPD (nouvelle catégorie de
-    données, durée, information) et ouvre reprise de session, historique et
-    courbes comme sur le site de Flore.
+37. **Progression persistante** — tranché le 18/09/2026 (question 11,
+    choix c) : conservée en base sous l'identifiant d'agent, sur rattachement
+    de l'agent par son identifiant et un code personnel (4 à 8 chiffres,
+    choisi par lui, haché ; réinitialisable par un tuteur : choix posé).
+    Restent : `[à préciser]` la durée de conservation des traces de
+    progression, distincte de celle des rapports ; `[à vérifier]` par le DPO
+    la nouvelle catégorie de données (`docs/RGPD.md`) et l'information des
+    agents ; `[à préciser]` si un tuteur peut rattacher un agent à sa place
+    (non : l'agent seul connaît son code) ; `[à préciser]` courbes
+    d'évolution et historique par question (données présentes, affichage non
+    fait).
 38. **Évaluation transversale** (« session mixte » du site de Flore) : non
     transposée, un rapport couvrant un critère et un seul. `[à préciser]` si
     un tirage sur plusieurs critères est voulu pour l'entraînement seulement.

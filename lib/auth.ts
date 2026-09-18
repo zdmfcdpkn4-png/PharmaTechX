@@ -88,12 +88,13 @@ function signer(charge: string): string {
   return createHmac("sha256", secret()).update(charge).digest("base64url");
 }
 
-function encoder(s: Session): string {
-  const charge = Buffer.from(JSON.stringify(s)).toString("base64url");
+/** Jeton signé (HMAC, secret du site) portant une charge à échéance — sessions et rattachements. */
+export function encoderJeton<T extends { exp: number }>(v: T): string {
+  const charge = Buffer.from(JSON.stringify(v)).toString("base64url");
   return `${charge}.${signer(charge)}`;
 }
 
-function decoder(jeton: string): Session | null {
+export function decoderJeton<T extends { exp: number }>(jeton: string): T | null {
   const [charge, sig] = jeton.split(".");
   if (!charge || !sig) return null;
   const attendue = signer(charge);
@@ -104,7 +105,7 @@ function decoder(jeton: string): Session | null {
     return null;
   }
   try {
-    const s = JSON.parse(Buffer.from(charge, "base64url").toString()) as Session;
+    const s = JSON.parse(Buffer.from(charge, "base64url").toString()) as T;
     if (typeof s.exp !== "number" || s.exp < Math.floor(Date.now() / 1000)) {
       return null;
     }
@@ -112,6 +113,14 @@ function decoder(jeton: string): Session | null {
   } catch {
     return null;
   }
+}
+
+function encoder(s: Session): string {
+  return encoderJeton(s);
+}
+
+function decoder(jeton: string): Session | null {
+  return decoderJeton<Session>(jeton);
 }
 
 export async function getSession(): Promise<Session | null> {

@@ -133,6 +133,7 @@ export function TableauDeBord({
   documents = [],
   filiereInitiale = "",
   niveauInitial = "",
+  identifiantRattache = null,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -149,6 +150,8 @@ export function TableauDeBord({
   /** Filière et niveau du code de poste de la session, présélectionnés. */
   filiereInitiale?: string;
   niveauInitial?: string;
+  /** Progression rattachée (question 11) : l'émission se fait sous cet identifiant, sans le ressaisir. */
+  identifiantRattache?: string | null;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -159,7 +162,7 @@ export function TableauDeBord({
   // et transmis ; aucun nom, ni ici ni en base (décision du 18/09/2026).
   const [nom, setNom] = useState("");
   const [qualite, setQualite] = useState("");
-  const [identifiant, setIdentifiant] = useState("");
+  const [identifiant, setIdentifiant] = useState(identifiantRattache ?? "");
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -355,8 +358,10 @@ export function TableauDeBord({
       )}
 
       <div className="section-titre" id="rapport">
-        <h2>Rapport de session</h2>
-        <span className="compte">{resultats.length} évaluation(s)</span>
+        <h2>{identifiantRattache ? "Mes évaluations" : "Rapport de session"}</h2>
+        <span className="compte">
+          {resultats.length} évaluation(s){identifiantRattache ? ` · conservées sous ${identifiantRattache}` : ""}
+        </span>
       </div>
       <section className="carte">
         {miseEnService ? (
@@ -402,11 +407,21 @@ export function TableauDeBord({
                 placeholder="AG-001"
                 autoComplete="off"
                 inputMode="text"
+                readOnly={Boolean(identifiantRattache)}
               />
             </label>
             <p className="legende" style={{ alignSelf: "end", margin: 0 }}>
-              Remis par votre tuteur. Vérifiez-le avant d&apos;émettre : le tuteur contrôle la
-              correspondance à son visa, et un rapport mal rattaché s&apos;annule.
+              {identifiantRattache ? (
+                <>
+                  Progression rattachée : les rapports s&apos;émettent sous cet identifiant.{" "}
+                  <Link href="/#progression">Se détacher</Link>.
+                </>
+              ) : (
+                <>
+                  Remis par votre tuteur. Vérifiez-le avant d&apos;émettre : le tuteur contrôle la
+                  correspondance à son visa, et un rapport mal rattaché s&apos;annule.
+                </>
+              )}
             </p>
           </div>
         ) : (

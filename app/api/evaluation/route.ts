@@ -6,6 +6,7 @@ import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
+import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +22,12 @@ export const dynamic = "force-dynamic";
  * Ce que fait le serveur : il corrige, renvoie le résultat et le scelle
  * (`jeton`) pour que le rapport émis plus tard soit bien celui-ci.
  *
- * Ce que le serveur écrit : rien. Le résultat n'existe que dans la réponse
- * HTTP, puis dans la mémoire de l'onglet, puis dans le rapport que l'apprenant
- * émet — et, seulement si la conservation des rapports est activée (mode
- * pseudonyme), dans la table des rapports à ce moment-là, sous un identifiant
- * d'agent.
+ * Ce que le serveur écrit : rien, sauf dans deux cas. Si l'apprenant s'est
+ * rattaché à son identifiant d'agent (question 11, choix c), une évaluation
+ * complète (`mode: "evaluation"`) est conservée dans sa progression, avec son
+ * sceau ; et, si la conservation des rapports est activée, le rapport qu'il
+ * émet ensuite entre dans la table des rapports sous cet identifiant. Un
+ * entraînement, corrigé question par question, n'est jamais conservé ici.
  */
 
 interface CorpsRequete {
@@ -38,6 +40,8 @@ interface CorpsRequete {
   legendes?: unknown;
   /** Libellé du tirage, informatif (« Habilitation · 9 questions »). */
   tirage?: unknown;
+  /** `evaluation` (tirage complet, conservé si l'apprenant est rattaché) ou `entrainement`. */
+  mode?: unknown;
 }
 
 export interface DetailLegende {
@@ -256,6 +260,12 @@ export async function POST(request: Request) {
   };
 
   const resultat: ResultatEvaluation = { ...sansJeton, jeton: sceller(sansJeton) };
+
+  // Progression rattachée : l'évaluation complète est conservée avec son sceau.
+  if (corps.mode === "evaluation") {
+    const r = await rattachement();
+    if (r) await enregistrerEvaluation(r.agentId, resultat).catch(() => undefined);
+  }
 
   return NextResponse.json(resultat, {
     headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },

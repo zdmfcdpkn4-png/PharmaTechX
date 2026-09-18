@@ -198,6 +198,28 @@ parcours, avec un document de synthèse en fin de test.
   s'ouvrent dans un onglet.
 - Khôlles et examens blancs au format des sujets déposés : sans objet.
 
+**Progression persistante** (question 11, choix c, 18/09/2026) : la
+progression de l'apprenant est conservée en base sous son identifiant
+d'agent, comme le mode serveur du site de Flore. L'agent se **rattache**
+depuis « Ma progression » avec son identifiant et un code personnel de 4 à
+8 chiffres qu'il choisit à la première fois (haché par scrypt, comme les
+codes d'accès ; cinq échecs bloquent l'adresse un quart d'heure ; un tuteur
+le réinitialise sans le lire) ; le rattachement est un cookie signé de douze
+heures, distinct de la session de rôle. Rattaché : chaque évaluation complète
+est conservée avec son résultat scellé (`progression`), la fin d'un
+entraînement et la lecture d'un module sont notées, l'évaluation en cours
+est sauvegardée pour la reprise (`en_cours`, questions par identifiant et
+réponses, effacée à la correction ou à l'abandon), la mémoire de session du
+navigateur repart des évaluations conservées à chaque ouverture, et
+l'émission d'un rapport se fait sous l'identifiant rattaché sans le
+ressaisir. Sans rattachement, rien ne change : l'onglet seul. Le tutorat lit
+la progression d'un agent depuis Personnel ; l'administrateur la purge,
+journalisé, sans toucher aux rapports émis. Fiche RGPD et page
+d'information mises à jour (`docs/RGPD.md`) : nouvelle catégorie de données
+pseudonymisées, durée `[à préciser]`. Non fait : courbes d'évolution et
+historique par question (les données sont là ; le tracé attend une décision
+d'affichage).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

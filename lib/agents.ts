@@ -18,6 +18,11 @@ export interface LigneAgent {
   cree_le: string;
   clos_le: string | null;
   nb_rapports: number;
+  /** Code personnel de rattachement défini (question 11, choix c). */
+  code_defini: boolean;
+  /** Traces de progression (évaluations, entraînements, lectures) et dernière activité. */
+  nb_traces: number;
+  derniere_activite: string | null;
 }
 
 /** Crée un identifiant ; le numéro vient de la séquence, sans trou concurrent. */
@@ -35,7 +40,10 @@ export async function creerAgent(): Promise<{ id: number; identifiant: string }>
 export async function listerAgents(): Promise<LigneAgent[]> {
   const r = await sql<LigneAgent>`
     SELECT a.id, a.identifiant, a.actif, a.cree_le::text, a.clos_le::text,
-           (SELECT COUNT(*) FROM rapports r WHERE r.agent_id = a.id)::int AS nb_rapports
+           (SELECT COUNT(*) FROM rapports r WHERE r.agent_id = a.id)::int AS nb_rapports,
+           (a.code_hash IS NOT NULL) AS code_defini,
+           (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
+           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite
     FROM agents a ORDER BY a.id`;
   return r.rows;
 }
@@ -67,4 +75,16 @@ export async function compterAgents(): Promise<{ actifs: number; clos: number }>
     else out.clos = l.n;
   }
   return out;
+}
+
+/** Un agent par son numéro interne (écrans d'administration). */
+export async function lireAgent(id: number): Promise<LigneAgent | null> {
+  const r = await sql<LigneAgent>`
+    SELECT a.id, a.identifiant, a.actif, a.cree_le::text, a.clos_le::text,
+           (SELECT COUNT(*) FROM rapports r WHERE r.agent_id = a.id)::int AS nb_rapports,
+           (a.code_hash IS NOT NULL) AS code_defini,
+           (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
+           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite
+    FROM agents a WHERE a.id = ${id}`;
+  return r.rows[0] ?? null;
 }
