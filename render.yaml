@@ -57,3 +57,7 @@ services:
         value: ""                 # référence de la procédure interne — [à compléter]
       - key: MISE_EN_SERVICE
         value: ""                 # AAAA-MM-JJ à la mise en service ; vide = phase d'essai
+      - key: BASE_ATTENDUE
+        value: ""                 # « service » à la mise en service (question 23, choix b) :
+                                  # la base s'étiquette au premier accès et n'est plus servie
+                                  # qu'à un environnement qui la réclame. Vide pendant l'essai.

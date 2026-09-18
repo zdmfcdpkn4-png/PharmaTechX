@@ -18,7 +18,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const base = baseConfiguree();
-  const etat = base ? await etatBase() : { joignable: false, erreur: null };
+  const etat = base
+    ? await etatBase()
+    : { joignable: false, erreur: null, instance: null, refus: null };
   let baseIp: string;
   try {
     baseIp = libelleFamille(familleIp());
@@ -28,9 +30,17 @@ export async function GET() {
   return NextResponse.json(
     {
       ok: true,
-      base: base ? (etat.joignable ? "joignable" : "injoignable") : "non-configuree",
+      base: base
+        ? etat.refus ? "refusee"
+        : etat.joignable ? "joignable"
+        : "injoignable"
+        : "non-configuree",
       base_ip: baseIp,
       base_erreur: etat.erreur,
+      // Étiquette d'instance et refus (question 23, choix b) : la base servie
+      // n'est pas celle que l'environnement déclare (`BASE_ATTENDUE`).
+      base_instance: etat.instance,
+      base_refus: etat.refus,
       stockage: modeStockage(),
       conservation: modeConservation(),
       secret: secretConfigure() ? "defini" : "absent",

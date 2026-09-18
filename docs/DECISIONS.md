@@ -349,6 +349,26 @@ unique. Écartés : a (une seule branche déployée à chaque poussée, acceptab
 en essai seulement) et b (déploiement manuel depuis le tableau de bord, qui
 laisse la trace de la version en service chez le seul hébergeur).
 
+**Étiquette d'instance de la base** (question 23, choix b, 18/09/2026) : la
+branche de production garantit le code en service, pas les données. Le schéma
+s'applique au premier accès et retire des colonnes ; une version d'essai
+branchée par erreur sur la base en service la ferait évoluer et y écrirait ses
+rapports d'essai. La base porte donc une étiquette (`parametres`, clé
+`instance` : `service` ou `essai`) et l'environnement déclare celle qu'il
+attend (`BASE_ATTENDUE`). La règle est dirigée par l'étiquette inscrite, non
+par la présence de la variable — sans quoi le garde-fou manquerait justement
+l'accident visé, un poste de développement branché sur la base en service.
+Une base étiquetée n'est servie qu'à l'environnement qui la réclame : sinon
+le schéma n'est pas appliqué, aucune requête n'aboutit, `/api/sante` répond
+503 (`base: "refusee"`) et le journal porte le refus. Base sans étiquette et
+environnement muet : rien n'est vérifié, le développement local ne change pas.
+Le contrôle vit dans `garantirSchema()`, par où passe tout accès à la base ;
+la règle est pure et testée (`lib/instance.ts`). Écartés : a (séparation par
+l'usage seulement, qui n'interdit rien) et c (deux projets Supabase, qui
+suppose un second service payant pour garder un site d'essai en ligne et
+n'isole que des données fictives) — c reste possible plus tard, l'étiquette
+le rendant sûr.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

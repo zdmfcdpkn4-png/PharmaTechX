@@ -130,7 +130,14 @@ Justification : cf. procédure interne.`,
   assert.match(String(sante.mise_en_service), /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(sante.base_ip, "4", "base jointe en IPv4 par défaut (DATABASE_IP)");
   assert.equal(sante.base_erreur, null);
-  ok("santé : base joignable, conservation pseudonyme, horloge du serveur exposée");
+  // étiquette d'instance (question 23, choix b) : la base servie est bien
+  // celle que l'environnement déclare, sinon la page de santé la refuserait
+  assert.ok("base_instance" in sante, "page de santé : étiquette d'instance exposée");
+  assert.equal(sante.base_refus, null, "aucun refus d'instance");
+  if (process.env.BASE_ATTENDUE) {
+    assert.equal(sante.base_instance, process.env.BASE_ATTENDUE, "étiquette inscrite dans la base");
+  }
+  ok("santé : base joignable, conservation pseudonyme, horloge et étiquette d'instance exposées");
 
   // 1. amorçage
   await page.goto(BASE + "/connexion");

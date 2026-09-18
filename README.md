@@ -44,8 +44,11 @@ du projet Supabase, l'API de données à couper, le branchement du service, la
 reprise des données par `pg_dump`, le blueprint `render.yaml` pour recréer le
 service, la **branche `production`** et les étiquettes de version (question
 21, choix c : la version en service est fusionnée dans `production` et
-étiquetée `vN`, la branche de travail restant celle de l'essai), les
-sauvegardes et la **liste de mise en service** (DPO, DSI, plans,
+étiquetée `vN`, la branche de travail restant celle de l'essai),
+l'**étiquette d'instance de la base** (question 23, choix b : la base porte
+`service` ou `essai`, l'environnement déclare celle qu'il attend par
+`BASE_ATTENDUE`, et une base étiquetée n'est servie qu'à l'environnement qui
+la réclame), les sauvegardes et la **liste de mise en service** (DPO, DSI, plans,
 variables, comptes, essai de restauration, procédure) ; Vercel y reste
 documenté en repli. Au 18/09/2026, service et base sont sur les plans
 gratuits : phase d'essai, `MISE_EN_SERVICE` absente. Le schéma de la base est

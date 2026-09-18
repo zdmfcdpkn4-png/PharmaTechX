@@ -69,7 +69,11 @@ telle. Ordre : ce qui change le déploiement en premier.
    service, la branche de travail le reste, chaque mise en service étant une
    fusion et une étiquette `vN` ; `[à vérifier]` dans le tableau de bord, à
    la mise en service seulement, la branche déployée mise sur `production`
-   (pendant l'essai, le site suit la branche de travail). Vercel reste documenté en repli, non retenu ; l'hébergement
+   (pendant l'essai, le site suit la branche de travail). Base d'essai et base en
+   service tranchées le 18/09/2026 (question 23, choix b) : un seul projet
+   Supabase, la base portant une étiquette d'instance que l'environnement doit
+   réclamer (`BASE_ATTENDUE`) ; `[à vérifier]` à la mise en service que
+   `/api/sante` donne `base_instance: "service"`. Vercel reste documenté en repli, non retenu ; l'hébergement
    interne est écarté. Constat du 18/09/2026 : service et base sur plans
    gratuits, donc phase d'essai (`MISE_EN_SERVICE` absente) ; `pg_dump`
    pendant l'essai, plans payants avant la mise en service.

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { SCHEMA } from "./schema";
 import { fabriqueSocket, familleIp } from "./reseau";
+import { conformiteInstance } from "./instance";
 
 /**
  * Accès à la base — PostgreSQL standard via `pg`.
@@ -59,7 +60,12 @@ function optionsTls(u: URL): false | { rejectUnauthorized: boolean; ca?: string 
 }
 
 /** Un seul pool par processus, y compris à travers les rechargements de dev. */
-const g = globalThis as unknown as { __fpPool?: Pool; __fpSchema?: Promise<void> };
+const g = globalThis as unknown as {
+  __fpPool?: Pool;
+  __fpSchema?: Promise<void>;
+  /** Refus d'instance déjà journalisé : une ligne par processus, pas par requête. */
+  __fpRefusSignale?: boolean;
+};
 
 function pool(): Pool {
   if (g.__fpPool) return g.__fpPool;
@@ -84,9 +90,37 @@ function pool(): Pool {
   return g.__fpPool;
 }
 
+/** Étiquette d'instance inscrite dans la base ; `null` si la table ou la clé manque. */
+async function etiquetteInscrite(c: Pool | PoolClient): Promise<string | null> {
+  const t = await c.query<{ existe: string | null }>(
+    "SELECT to_regclass('public.parametres')::text AS existe",
+  );
+  if (!t.rows[0]?.existe) return null;
+  const r = await c.query<{ valeur: unknown }>(
+    "SELECT valeur FROM parametres WHERE cle = 'instance'",
+  );
+  const v = r.rows[0]?.valeur;
+  return typeof v === "string" ? v : null;
+}
+
+/** Refus d'instance : code stable pour la page de santé, une ligne au journal. */
+function refusInstance(raison: string): Error {
+  if (!g.__fpRefusSignale) {
+    g.__fpRefusSignale = true;
+    console.error(`[base] refus d'instance : ${raison}`);
+  }
+  return Object.assign(new Error(raison), { code: "INSTANCE_REFUSEE" });
+}
+
 /**
  * Applique le schéma une fois par processus. Le verrou consultatif
  * transactionnel sérialise les instances qui démarrent ensemble.
+ *
+ * L'étiquette d'instance (question 23, choix b) est contrôlée dans la même
+ * transaction, avant la première instruction : une base étiquetée n'est
+ * servie que par un environnement qui la réclame (`BASE_ATTENDUE`), sans quoi
+ * rien n'est appliqué et l'erreur remonte à chaque accès. L'étiquette
+ * s'inscrit après le schéma, la table `parametres` devant exister.
  */
 export function garantirSchema(): Promise<void> {
   if (g.__fpSchema) return g.__fpSchema;
@@ -95,7 +129,17 @@ export function garantirSchema(): Promise<void> {
     try {
       await c.query("BEGIN");
       await c.query("SELECT pg_advisory_xact_lock(7452026)");
+      const conformite = conformiteInstance(process.env.BASE_ATTENDUE, await etiquetteInscrite(c));
+      if (!conformite.ok) throw refusInstance(conformite.raison ?? "instance refusée");
       for (const instruction of SCHEMA) await c.query(instruction);
+      if (conformite.aInscrire) {
+        await c.query(
+          `INSERT INTO parametres (cle, valeur, modifie_par)
+           VALUES ('instance', to_jsonb($1::text), 'environnement')
+           ON CONFLICT (cle) DO NOTHING`,
+          [conformite.aInscrire],
+        );
+      }
       await c.query("COMMIT");
     } catch (e) {
       await c.query("ROLLBACK").catch(() => undefined);
@@ -186,13 +230,26 @@ export interface EtatBase {
   joignable: boolean;
   /** Code de l'erreur de connexion (`ENOTFOUND`, `ECONNREFUSED`, `28P01`…), jamais la chaîne de connexion. */
   erreur: string | null;
+  /** Étiquette d'instance inscrite dans la base (question 23) : « service », « essai » ou `null`. */
+  instance: string | null;
+  /** Refus d'instance, en clair ; `null` si la base est servie. */
+  refus: string | null;
+}
+
+/** Étiquette lue hors du contrôle, pour la page de santé : ne lève jamais. */
+async function etiquetteSansControle(): Promise<string | null> {
+  try {
+    return await etiquetteInscrite(pool());
+  } catch {
+    return null;
+  }
 }
 
 /** Ping pour la page de santé. */
 export async function etatBase(): Promise<EtatBase> {
   try {
     await sql`SELECT 1`;
-    return { joignable: true, erreur: null };
+    return { joignable: true, erreur: null, instance: await etiquetteSansControle(), refus: null };
   } catch (e) {
     const err = e as { code?: unknown; name?: unknown; message?: unknown };
     const message = typeof err.message === "string" ? err.message : "";
@@ -203,7 +260,15 @@ export async function etatBase(): Promise<EtatBase> {
       : message.includes("timeout exceeded") ? "DELAI_CONNEXION"
       : typeof err.name === "string" ? err.name
       : "inconnue";
-    return { joignable: false, erreur: code };
+    if (code === "INSTANCE_REFUSEE") {
+      return {
+        joignable: false,
+        erreur: code,
+        instance: await etiquetteSansControle(),
+        refus: message,
+      };
+    }
+    return { joignable: false, erreur: code, instance: null, refus: null };
   }
 }
 

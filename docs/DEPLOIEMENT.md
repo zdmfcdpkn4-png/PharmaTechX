@@ -32,6 +32,7 @@ preuve.
 | `DATABASE_URL` | oui (hors mode ouvert) | chaîne PostgreSQL ; avec Supabase, la chaîne « Session pooler » (port 5432, utilisateur `postgres.<ref>`, hôte `*.pooler.supabase.com`) ; `POSTGRES_URL` (Vercel) est lue en repli |
 | `DATABASE_IP` | non | famille d'adresses pour joindre la base : `4` (défaut), `6`, `auto` ; en `4`, l'hôte est résolu en IPv4 seulement, à chaque connexion, et un hôte sans adresse IPv4 échoue avec un message explicite |
 | `AUTH_SECRET` | oui | signature des sessions et des sceaux de résultats, ≥ 32 caractères (`openssl rand -base64 32`) |
+| `BASE_ATTENDUE` | non | `service` ou `essai` : étiquette d'instance attendue de la base (question 23). Absente et base sans étiquette : aucun contrôle. Une base étiquetée n'est servie qu'à l'environnement qui la réclame |
 | `DATABASE_SSL` | non | `disable` (défaut sur hôte local), `require` (défaut ailleurs : chiffre sans vérifier l'autorité), `verify` (+ `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE`, certificat de l'autorité de Supabase) |
 | `DATABASE_POOL_MAX` | non | connexions simultanées, 5 par défaut ; 3 avec le pooler de session |
 | `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max). Les adresses Blob sont publiques : incompatible avec la réserve des documents aux sessions (question 13), à laisser vide |
@@ -211,12 +212,46 @@ d'essai. Une fois changé, le site en ligne ne bouge plus qu'aux mises en
 service, et la branche de travail ne se vérifie plus qu'en local — un second
 service Render pour l'essai coûterait un second plan payant.
 
-**L'étiquette ne dit rien de la base.** Le schéma s'applique de lui-même au
-premier accès (`lib/schema.ts`, `CREATE`/`ALTER` idempotents) : une version
-d'essai branchée sur la base en service la ferait évoluer, et le code ne sait
-pas revenir en arrière. Une seule version à la fois se branche sur la base en
-service. `[à préciser]` : base d'essai distincte du projet Supabase en
-service, ou base unique.
+**L'étiquette de version ne dit rien de la base : celle-ci porte la sienne**
+(question 23, choix b, du 18/09/2026). Le schéma s'applique de lui-même au
+premier accès (`lib/schema.ts`) et il ne fait pas qu'ajouter : trois
+instructions retirent des colonnes. Une version d'essai branchée sur la base
+en service la ferait évoluer sans retour possible, et y écrirait ses rapports
+d'essai, au milieu de ceux qui valent preuve.
+
+La base porte donc une étiquette — table `parametres`, clé `instance`,
+valeur `service` ou `essai` — et l'environnement déclare celle qu'il attend
+(`BASE_ATTENDUE`). La règle est dirigée par l'étiquette inscrite, non par la
+présence de la variable :
+
+| Étiquette de la base | Environnement | Effet |
+|---|---|---|
+| aucune | ne déclare rien | rien n'est vérifié — développement local |
+| aucune | `essai` ou `service` | l'étiquette s'inscrit au premier accès |
+| `service` ou `essai` | la même | la base est servie |
+| `service` ou `essai` | rien, ou une autre | **refus** |
+
+Refus : le schéma n'est pas appliqué, aucune requête n'aboutit, le journal du
+service porte `[base] refus d'instance : …`, et `/api/sante` répond 503 avec
+`base: "refusee"`, `base_instance` et `base_refus`. Le contrôle de santé
+échoue donc comme pour une base injoignable — `[à vérifier]` les conséquences
+côté Render (point 4 plus haut). L'écran de connexion, lui, s'affiche encore :
+il ne touche pas à la base ; toute action qui l'exige échoue.
+
+**À la mise en service.** La base est aujourd'hui sans étiquette et le
+service ne déclare rien : le contrôle est inactif, et il n'y a rien à
+protéger. Poser `BASE_ATTENDUE=service` dans le tableau de bord au moment de
+la mise en service suffit — l'étiquette s'inscrit au premier accès, et la
+base n'est plus servie qu'à un environnement qui la réclame. Pour rétiqueter
+une base déjà marquée (une base d'essai devenue base en service) :
+
+```sql
+UPDATE parametres SET valeur = to_jsonb('service'::text), modifie_par = 'mise en service'
+ WHERE cle = 'instance';
+```
+
+Vérifier une fois : `/api/sante` doit donner `base_instance: "service"` et
+`base_refus: null`.
 
 **Plans.** Le blueprint demande le plus petit plan payant connu au
 18/09/2026 (`starter`). La documentation de Render n'était pas joignable
@@ -264,7 +299,10 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    à une référence.
 4. **Variables** : `CONSERVATION_RAPPORTS=pseudonyme`, `PROCEDURE_HABILITATION`
    renseignée (le marqueur `[à compléter]` disparaît des écrans et des
-   rapports), `RAPPORTS_CONSERVATION_MOIS` si une durée est annoncée.
+   rapports), `RAPPORTS_CONSERVATION_MOIS` si une durée est annoncée,
+   `BASE_ATTENDUE=service` (étiquette d'instance : `/api/sante` doit ensuite
+   donner `base_instance: "service"`), et branche déployée mise sur
+   `production`.
 5. **Comptes** : administrateur initial créé puis remplacé par des codes
    nominaux de fonction (jamais des noms), codes tuteur, signature du
    pharmacien déposée, identifiants d'agents créés et correspondance tenue hors
