@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useSessionFormation } from "./SessionFormation";
+import { useSessionFormation, type ResultatSession } from "./SessionFormation";
 import { telechargerRapport } from "@/lib/rapport";
+import { actionEmettreRapport } from "@/app/actions-rapports";
 
 export interface ModuleResume {
   id: string;
@@ -45,6 +46,7 @@ function Marqueur({ valeur }: { valeur: string }) {
 function CarteModule({ m }: { m: ModuleResume }) {
   const { dernierPourModule } = useSessionFormation();
   const resultat = dernierPourModule(m.id);
+  const evaluable = m.nbQuestions > 0;
 
   const corps = (
     <article className={`carte carte--module${m.redige ? "" : " est-vide"}`}>
@@ -55,14 +57,13 @@ function CarteModule({ m }: { m: ModuleResume }) {
         <li className="etiquette etiquette--neutre">
           Critère <Marqueur valeur={m.critereId} />
         </li>
-        {m.redige ? (
+        {evaluable ? (
           <li className="etiquette">
-            {m.nbQuestions} questions · {m.nbSituations} mise
-            {m.nbSituations > 1 ? "s" : ""} en situation
+            {m.nbQuestions} question{m.nbQuestions > 1 ? "s" : ""}
+            {m.nbSituations > 0 ? ` · ${m.nbSituations} mise${m.nbSituations > 1 ? "s" : ""} en situation` : ""}
           </li>
-        ) : (
-          <li className="etiquette etiquette--attention">À rédiger</li>
-        )}
+        ) : null}
+        {!m.redige && <li className="etiquette etiquette--attention">Module à rédiger</li>}
       </ul>
 
       <h3>{m.titre}</h3>
@@ -71,10 +72,7 @@ function CarteModule({ m }: { m: ModuleResume }) {
       </p>
 
       {resultat && (
-        <p
-          className={`resultat-ligne ${resultat.reussi ? "ok" : "ko"}`}
-          aria-live="polite"
-        >
+        <p className={`resultat-ligne ${resultat.reussi ? "ok" : "ko"}`} aria-live="polite">
           <strong>{resultat.score}&nbsp;%</strong> —{" "}
           {resultat.reussi ? "critère acquis" : "critère non acquis"}
           {resultat.echecEliminatoire && " (question éliminatoire manquée)"}
@@ -82,13 +80,14 @@ function CarteModule({ m }: { m: ModuleResume }) {
       )}
 
       <p className="legende">
-        Niveaux&nbsp;: <Marqueur valeur={m.niveaux.join(", ")} /> · Revalidation
-        tous les <Marqueur valeur={m.periodiciteMois} /> mois
+        Niveaux&nbsp;: <Marqueur valeur={m.niveaux.join(", ")} /> · Revalidation tous les{" "}
+        <Marqueur valeur={m.periodiciteMois} /> mois
+        {!m.redige && evaluable ? " · évaluation disponible sans le texte du module" : ""}
       </p>
     </article>
   );
 
-  return m.redige ? (
+  return m.redige || evaluable ? (
     <Link href={`/module/${m.id}`} className="carte-lien">
       {corps}
     </Link>
@@ -97,24 +96,32 @@ function CarteModule({ m }: { m: ModuleResume }) {
   );
 }
 
+function nombre(n: number): string {
+  return String(Math.round(n * 100) / 100).replace(".", ",");
+}
+
 export function TableauDeBord({
   troncCommun,
   parPoste,
   postes,
   niveaux,
   parcoursTitre,
+  conservation,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
   postes: PosteResume[];
   niveaux: NiveauResume[];
   parcoursTitre: string;
+  conservation: "aucune" | "nominative";
 }) {
   const [posteId, setPosteId] = useState<string>("");
   const [niveauCode, setNiveauCode] = useState<string>("");
-  const { resultats } = useSessionFormation();
+  const { resultats, emissions, marquerEmis, cleEmission } = useSessionFormation();
   const [nom, setNom] = useState("");
   const [qualite, setQualite] = useState("");
+  const [enCours, setEnCours] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
 
   const parNiveau = (liste: ModuleResume[]) =>
     niveauCode ? liste.filter((m) => m.niveaux.includes(niveauCode)) : liste;
@@ -122,39 +129,68 @@ export function TableauDeBord({
   const socle = parNiveau(troncCommun);
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
-  const programme = useMemo(
-    () => [...socle, ...modulesPoste],
-    [socle, modulesPoste],
-  );
+  const programme = useMemo(() => [...socle, ...modulesPoste], [socle, modulesPoste]);
 
-  const rediges = programme.filter((m) => m.redige);
+  const evaluables = programme.filter((m) => m.nbQuestions > 0);
   const evalues = new Set(resultats.map((r) => r.moduleId));
   const acquis = resultats.filter((r) => r.reussi).length;
   const avancement =
-    rediges.length === 0
+    evaluables.length === 0
       ? 0
-      : Math.round(
-          (rediges.filter((m) => evalues.has(m.id)).length / rediges.length) *
-            100,
-        );
+      : Math.round((evaluables.filter((m) => evalues.has(m.id)).length / evaluables.length) * 100);
+
+  const parcoursLibelle = `${parcoursTitre}${
+    posteId ? ` — ${postes.find((p) => p.id === posteId)?.libelle}` : " — tronc commun"
+  }`;
+
+  const optionsDe = (r: ResultatSession) => {
+    const e = emissions[cleEmission(r)];
+    return e
+      ? {
+          numero: e.numero,
+          empreinte: e.empreinte,
+          conservation,
+          visas: [{ qualite: "apprenant" as const, nom, date: e.emisLe }],
+        }
+      : { conservation };
+  };
+
+  const emettre = async (r: ResultatSession) => {
+    setErreur(null);
+    if (nom.trim().length < 2) {
+      setErreur("Renseignez votre nom pour émettre un rapport enregistré.");
+      return;
+    }
+    setEnCours(cleEmission(r));
+    try {
+      const { tentative: _t, ...resultat } = r;
+      const rep = await actionEmettreRapport({ resultat, nom, qualite });
+      if (!rep.ok) {
+        setErreur(rep.erreur);
+        return;
+      }
+      marquerEmis(r, { id: rep.id, numero: rep.numero, empreinte: rep.empreinte, emisLe: rep.emisLe });
+    } catch {
+      setErreur("L'émission a échoué. Réessayez, ou téléchargez le rapport sans l'enregistrer.");
+    } finally {
+      setEnCours(null);
+    }
+  };
 
   return (
     <>
       <section className="carte" aria-labelledby="t-filtres">
         <h2 id="t-filtres">Composer le programme</h2>
         <p className="legende">
-          Le programme d&apos;un agent se compose du socle transversal (blocs 1
-          et 3), exigé de tous, puis des critères de sa filière et de son niveau
-          — conformément au chapitre III de la fiche d&apos;habilitation.
+          Le programme d&apos;un agent se compose du socle transversal (blocs 1 et 3), exigé de
+          tous, puis des critères de sa filière et de son niveau — conformément au chapitre III de
+          la fiche d&apos;habilitation.
         </p>
 
         <div className="rangee">
           <label className="champ">
             <span>Filière</span>
-            <select
-              value={posteId}
-              onChange={(e) => setPosteId(e.target.value)}
-            >
+            <select value={posteId} onChange={(e) => setPosteId(e.target.value)}>
               <option value="">Socle transversal seul</option>
               {postes.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -166,10 +202,7 @@ export function TableauDeBord({
 
           <label className="champ">
             <span>Niveau visé</span>
-            <select
-              value={niveauCode}
-              onChange={(e) => setNiveauCode(e.target.value)}
-            >
+            <select value={niveauCode} onChange={(e) => setNiveauCode(e.target.value)}>
               <option value="">Tous niveaux</option>
               {niveaux.map((n) => (
                 <option key={n.code} value={n.code}>
@@ -187,8 +220,8 @@ export function TableauDeBord({
           <span className="libelle">critères au programme</span>
         </div>
         <div className="tuile">
-          <span className="valeur">{rediges.length}</span>
-          <span className="libelle">modules disponibles</span>
+          <span className="valeur">{evaluables.length}</span>
+          <span className="libelle">évaluations disponibles</span>
         </div>
         <div className="tuile">
           <span className="valeur">{resultats.length}</span>
@@ -204,15 +237,15 @@ export function TableauDeBord({
         <span style={{ width: `${avancement}%` }} />
       </div>
       <p className="legende">
-        {avancement}&nbsp;% des modules disponibles ont été évalués dans cette
-        session — {parcoursTitre.toLowerCase()}.
+        {avancement}&nbsp;% des évaluations disponibles ont été passées dans cette session —{" "}
+        {parcoursTitre.toLowerCase()}. Ce n&apos;est pas un avancement d&apos;habilitation.
       </p>
 
       <div className="section-titre">
         <h2>Socle transversal</h2>
         <span className="compte">
-          {socle.length} critère{socle.length > 1 ? "s" : ""} — blocs 1 et 3,
-          prérequis aux deux parcours
+          {socle.length} critère{socle.length > 1 ? "s" : ""} — blocs 1 et 3, prérequis aux deux
+          parcours
         </span>
       </div>
       <div className="grille">
@@ -224,9 +257,7 @@ export function TableauDeBord({
       <div className="section-titre">
         <h2>Critères de la filière</h2>
         <span className="compte">
-          {posteId
-            ? `${modulesPoste.length} critère(s)`
-            : "aucune filière choisie"}
+          {posteId ? `${modulesPoste.length} critère(s)` : "aucune filière choisie"}
         </span>
       </div>
       {posteId ? (
@@ -237,22 +268,31 @@ export function TableauDeBord({
         </div>
       ) : (
         <p className="encart">
-          Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou
-          Encadrement — pour afficher les critères qui s&apos;y rattachent.
+          Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
+          afficher les critères qui s&apos;y rattachent.
         </p>
       )}
 
-      <div className="section-titre">
+      <div className="section-titre" id="rapport">
         <h2>Rapport de session</h2>
         <span className="compte">{resultats.length} évaluation(s)</span>
       </div>
       <section className="carte">
-        <p>
-          Le rapport reprend chaque critère évalué, sa note et le détail question
-          par question. Il est écrit sur le poste de l&apos;apprenant : le nom
-          saisi ci-dessous n&apos;est envoyé nulle part, il ne sert qu&apos;à
-          renseigner l&apos;en-tête du fichier au moment du téléchargement.
-        </p>
+        {conservation === "nominative" ? (
+          <p>
+            Deux issues pour chaque évaluation : <strong>télécharger</strong> le rapport sur ce
+            poste, ou <strong>l&apos;émettre</strong> — il est alors enregistré avec votre nom,
+            numéroté, scellé et soumis au visa du tuteur puis du pharmacien responsable. Les
+            entraînements n&apos;apparaissent pas ici.
+          </p>
+        ) : (
+          <p>
+            Le rapport reprend chaque critère évalué, sa note et le détail question par question.
+            Il est écrit sur le poste de l&apos;apprenant : le nom saisi ci-dessous n&apos;est
+            envoyé nulle part, il ne sert qu&apos;à renseigner l&apos;en-tête du fichier. Les
+            entraînements n&apos;apparaissent pas ici.
+          </p>
+        )}
 
         <div className="rangee">
           <label className="champ">
@@ -277,32 +317,68 @@ export function TableauDeBord({
           </label>
         </div>
 
+        {erreur && (
+          <p className="encart encart--attention" role="alert">
+            {erreur}
+          </p>
+        )}
+
+        {resultats.length > 0 && (
+          <ul className="liste-nue" style={{ margin: "1rem 0" }}>
+            {resultats.map((r) => {
+              const e = emissions[cleEmission(r)];
+              return (
+                <li key={cleEmission(r)} className="ligne-rapport">
+                  <div>
+                    <strong>{r.moduleTitre}</strong>
+                    <br />
+                    <span className="legende">
+                      {r.critereId ? `${r.critereId} · ` : ""}
+                      {r.tirage} · tentative {r.tentative} · {r.score} % ({nombre(r.pointsObtenus)} /{" "}
+                      {r.pointsTotal}) · {r.reussi ? "acquis" : "non acquis"} · {r.horodatage}
+                      {e ? ` · émis sous le n° ${e.numero}` : ""}
+                    </span>
+                  </div>
+                  <div className="actions" style={{ marginTop: ".5rem" }}>
+                    <button
+                      type="button"
+                      className="bouton bouton--compact bouton--secondaire"
+                      onClick={() =>
+                        telechargerRapport({ nom, qualite, parcours: parcoursLibelle }, [r], optionsDe(r))
+                      }
+                    >
+                      Télécharger
+                    </button>
+                    {conservation === "nominative" && !e && (
+                      <button
+                        type="button"
+                        className="bouton bouton--compact"
+                        disabled={enCours === cleEmission(r)}
+                        onClick={() => void emettre(r)}
+                      >
+                        {enCours === cleEmission(r) ? "Émission…" : "Émettre et enregistrer"}
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
         <div className="actions">
           <button
             type="button"
             className="bouton"
             disabled={resultats.length === 0}
             onClick={() =>
-              telechargerRapport(
-                {
-                  nom,
-                  qualite,
-                  parcours: `${parcoursTitre}${
-                    posteId
-                      ? ` — ${postes.find((p) => p.id === posteId)?.libelle}`
-                      : " — tronc commun"
-                  }`,
-                },
-                resultats,
-              )
+              telechargerRapport({ nom, qualite, parcours: parcoursLibelle }, resultats, { conservation })
             }
           >
-            Télécharger le rapport
+            Télécharger le rapport de session
           </button>
           {resultats.length === 0 && (
-            <span className="legende">
-              Aucune évaluation passée dans cette session.
-            </span>
+            <span className="legende">Aucune évaluation passée dans cette session.</span>
           )}
         </div>
       </section>

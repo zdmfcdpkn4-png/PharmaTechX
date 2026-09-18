@@ -2,7 +2,6 @@ import type { Bloc, Module, NiveauHabilitation, Parcours } from "./types";
 import {
   blocsCompetence,
   criteres,
-  filieres,
   maintien,
   type Critere,
 } from "./habilitation";

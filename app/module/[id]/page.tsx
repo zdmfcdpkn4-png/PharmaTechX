@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModule, getTousModules } from "@/content/store";
+import { getModuleComplet } from "@/content/store";
+import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER } from "@/content/types";
+import { baseConfiguree, depotsDuModule } from "@/lib/db";
 import { Corps } from "@/components/Corps";
+import { LectureModule } from "@/components/LectureModule";
 
-export function generateStaticParams() {
-  return getTousModules()
-    .filter((m) => m.redige)
-    .map((m) => ({ id: m.id }));
-}
+export const dynamic = "force-dynamic";
 
 const NATURES: Record<string, string> = {
   "procedure-interne": "Procédure interne",
@@ -17,146 +16,122 @@ const NATURES: Record<string, string> = {
   video: "Vidéo",
 };
 
-export default async function PageModule({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PageModule({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const mod = getModule(id);
+  const mod = await getModuleComplet(id);
   if (!mod) notFound();
 
-  const nbQuestions =
-    mod.questions.length +
-    mod.misesEnSituation.reduce((s, x) => s + x.questions.length, 0);
+  const critere = typeof mod.critereId === "string" ? getCritere(mod.critereId) : undefined;
+  const bloc = typeof mod.bloc === "number" ? blocsCompetence.find((b) => b.numero === mod.bloc) : undefined;
+  const nbQuestions = mod.questions.length + mod.misesEnSituation.reduce((s, x) => s + x.questions.length, 0);
+  const nbElim =
+    mod.questions.filter((q) => q.eliminatoire).length +
+    mod.misesEnSituation.reduce((s, x) => s + x.questions.filter((q) => q.eliminatoire).length, 0);
+  const depots = baseConfiguree() ? await depotsDuModule(mod.id).catch(() => []) : [];
+  const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
-  return (
-    <article>
-      <p className="fil">
-        <Link href="/">Programme</Link> › {mod.titre}
-      </p>
-
-      <section className="panneau-titre">
-        <h1>{mod.titre}</h1>
-        <p>{mod.objectif}</p>
-      </section>
-
-      <ul className="meta-module">
-        <li className="etiquette etiquette--neutre">
-          Bloc{" "}
-          {typeof mod.bloc === "number" ? (
-            mod.bloc
-          ) : (
-            <code className="a-preciser">{A_PRECISER}</code>
-          )}
-        </li>
-        <li className="etiquette etiquette--neutre">
-          {mod.affectation === "tronc-commun"
-            ? "Tronc commun — tous postes"
-            : "Critère de poste"}
-        </li>
-        <li className="etiquette etiquette--neutre">
-          Critère{" "}
-          {mod.critereId === A_PRECISER ? (
-            <code className="a-preciser">{A_PRECISER}</code>
-          ) : (
-            mod.critereId
-          )}
-        </li>
-        <li className="etiquette">
-          {typeof mod.dureeMinutes === "number"
-            ? `${mod.dureeMinutes} min`
-            : "durée à préciser"}
-        </li>
-        <li className="etiquette">Seuil {mod.seuilReussite} %</li>
-      </ul>
-
-      {!mod.redige && (
-        <p className="encart encart--attention">
-          Ce critère est un emplacement ouvert : son contenu reste à rédiger.
-        </p>
+  const contenu = (
+    <>
+      {mod.sections.length > 0 && (
+        <div className="corps-module">
+          {mod.sections.map((s, i) => (
+            <section key={i} id={`section-${i + 1}`} aria-labelledby={`titre-section-${i + 1}`}>
+              <p className="sur-titre">Section {i + 1} sur {mod.sections.length}</p>
+              <h2 id={`titre-section-${i + 1}`} tabIndex={-1}>{s.titre}</h2>
+              <Corps texte={s.corps} />
+              {s.references && s.references.length > 0 && (
+                <details className="sources">
+                  <summary>Sources de cette section</summary>
+                  <ul>
+                    {s.references.map((r, j) => (
+                      <li key={j}>
+                        {r.url ? (
+                          <a href={r.url} target="_blank" rel="noreferrer">
+                            {r.source} — {r.libelle}
+                          </a>
+                        ) : (
+                          <>
+                            {r.source} — {r.libelle}
+                          </>
+                        )}
+                        {r.localisation ? ` · ${r.localisation}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </section>
+          ))}
+        </div>
       )}
 
-      <div className="corps-module">
-        {mod.sections.map((s, i) => (
-          <section key={i}>
-            <h2>{s.titre}</h2>
-            <Corps texte={s.corps} />
-            {s.references && s.references.length > 0 && (
-              <div className="references">
-                <strong>Sources de cette section</strong>
-                <ul>
-                  {s.references.map((r, j) => (
-                    <li key={j}>
-                      {r.url ? (
-                        <a href={r.url} target="_blank" rel="noreferrer">
-                          {r.source} — {r.libelle}
-                        </a>
-                      ) : (
-                        <>
-                          {r.source} — {r.libelle}
-                        </>
-                      )}
-                      {r.localisation ? ` · ${r.localisation}` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </section>
-        ))}
-      </div>
-
-      {mod.ressources.length > 0 && (
-        <>
-          <div className="section-titre">
+      {(mod.ressources.length > 0 || depots.length > 0) && (
+        <section className="carte" style={{ marginTop: "1.5rem" }}>
+          <div className="section-titre" style={{ marginTop: 0 }}>
             <h2>Documents rattachés</h2>
-            <span className="compte">{mod.ressources.length}</span>
+            <span className="compte">
+              {mod.ressources.length + depots.length}
+              {mod.ressources.some((r) => !r.url) ? ` · ${mod.ressources.filter((r) => !r.url).length} encore à rattacher` : ""}
+            </span>
           </div>
           <ul className="liste-nue">
+            {depots.map((d) => (
+              <li key={`d-${d.id}`}>
+                <span className="etiquette etiquette--neutre">{NATURES[d.nature] ?? d.nature}</span>{" "}
+                <a href={d.url} target="_blank" rel="noreferrer">
+                  {d.titre}
+                </a>{" "}
+                <span className="legende">— déposé le {new Date(d.depose_le).toLocaleDateString("fr-FR")}</span>
+              </li>
+            ))}
             {mod.ressources.map((r) => (
               <li key={r.id} className={r.url ? "" : "est-vide"}>
-                <span className="etiquette etiquette--neutre">
-                  {NATURES[r.nature] ?? r.nature}
-                </span>{" "}
+                <span className="etiquette etiquette--neutre">{NATURES[r.nature] ?? r.nature}</span>{" "}
                 {r.url ? (
                   <a href={r.url} target="_blank" rel="noreferrer">
                     {r.titre}
                   </a>
                 ) : (
                   <>
-                    {r.titre} —{" "}
-                    <span className="legende">
-                      {r.commentaire ?? "document à déposer"}
-                    </span>
+                    {r.titre} — <code className="a-preciser">à rattacher</code>{" "}
+                    <span className="legende">{r.commentaire ?? "document à déposer"}</span>
                   </>
                 )}
               </li>
             ))}
           </ul>
-        </>
+        </section>
       )}
 
-      {mod.misesEnSituation.length > 0 && (
-        <p className="encart">
-          L&apos;évaluation de ce critère comporte {nbQuestions} questions —
-          QCM, QIM et {mod.misesEnSituation.length} mise
-          {mod.misesEnSituation.length > 1 ? "s" : ""} en situation. Les
-          questions marquées éliminatoires invalident le critère en cas
-          d&apos;erreur, quel que soit le score global.
+      <section className="encart" style={{ marginTop: "1.5rem" }}>
+        <h2 style={{ fontSize: "1.1rem", marginBottom: ".25rem" }}>
+          {nbQuestions > 0
+            ? `L'évaluation de ce critère comporte ${nbQuestions} question${nbQuestions > 1 ? "s" : ""}`
+            : "Ce critère n'a pas encore d'évaluation"}
+        </h2>
+        <p style={{ marginBottom: nbQuestions > 0 ? ".75rem" : 0 }}>
+          {nbQuestions > 0 ? (
+            <>
+              QCM, QIM{mod.questions.some((q) => q.type === "SCH") ? ", schémas" : ""}
+              {mod.misesEnSituation.length > 0 ? ` et ${mod.misesEnSituation.length} mise${mod.misesEnSituation.length > 1 ? "s" : ""} en situation` : ""}
+              {nbElim > 0 ? ` — ${nbElim} question${nbElim > 1 ? "s" : ""} éliminatoire${nbElim > 1 ? "s" : ""}` : ""}.
+              Réussir cette évaluation ne vaut pas habilitation : elle constitue la preuve de l&apos;étape 2 sur 6.
+            </>
+          ) : (
+            <>Les tuteurs peuvent en déposer une depuis l&apos;administration.</>
+          )}
         </p>
-      )}
-
-      <div className="actions">
-        {nbQuestions > 0 && (
-          <Link href={`/module/${mod.id}/evaluation`} className="bouton">
-            Passer l&apos;évaluation
+        <div className="actions" style={{ marginTop: 0 }}>
+          {nbQuestions > 0 && (
+            <Link href={`/module/${mod.id}/evaluation`} className="bouton">
+              Passer l&apos;évaluation
+            </Link>
+          )}
+          <Link href="/" className="bouton bouton--secondaire">
+            Retour au programme
           </Link>
-        )}
-        <Link href="/" className="bouton bouton--secondaire">
-          Retour au programme
-        </Link>
-      </div>
+        </div>
+      </section>
 
       {mod.bibliographie.length > 0 && (
         <div className="references" style={{ marginTop: "2rem" }}>
@@ -177,6 +152,63 @@ export default async function PageModule({
             ))}
           </ol>
         </div>
+      )}
+    </>
+  );
+
+  return (
+    <article>
+      <p className="fil">
+        <Link href="/">Programme</Link> › {typeof mod.critereId === "string" ? mod.critereId : mod.titre}
+      </p>
+
+      <section className="panneau-titre">
+        <ul className="meta-module" style={{ margin: 0 }}>
+          <li className="etiquette etiquette--code">
+            {mod.critereId === A_PRECISER ? <code className="a-preciser">{A_PRECISER}</code> : mod.critereId}
+          </li>
+          {critere?.obligatoire && <li className="etiquette etiquette--obligatoire">Obligatoire</li>}
+          <li className="legende">
+            {bloc ? `Bloc ${bloc.numero} — ` : ""}
+            {mod.affectation === "tronc-commun" ? "tronc commun, tous postes" : "critère de poste"}
+            {" · "}niveau{mod.niveaux.length > 1 ? "x" : ""} {mod.niveaux.join(", ")}
+            {" · "}revalidation {typeof mod.periodiciteMois === "number" ? `${mod.periodiciteMois} mois` : A_PRECISER}
+          </li>
+        </ul>
+        <h1>{mod.titre}</h1>
+        <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>{mod.objectif}</p>
+        <ul className="meta-module" style={{ margin: 0 }}>
+          {mod.sections.length > 0 && (
+            <li className="etiquette etiquette--neutre">
+              {mod.sections.length} section{mod.sections.length > 1 ? "s" : ""}
+              {typeof mod.dureeMinutes === "number" && mod.dureeMinutes > 0 ? ` · ${mod.dureeMinutes} min` : ""}
+            </li>
+          )}
+          {nbQuestions > 0 && (
+            <li className="etiquette etiquette--neutre">
+              {nbQuestions} question{nbQuestions > 1 ? "s" : ""}
+              {mod.misesEnSituation.length > 0 ? ` · ${mod.misesEnSituation.length} mise${mod.misesEnSituation.length > 1 ? "s" : ""} en situation` : ""}
+            </li>
+          )}
+          <li className="etiquette etiquette--neutre">
+            Seuil {mod.seuilReussite} %{nbElim > 0 ? ` · ${nbElim} éliminatoire${nbElim > 1 ? "s" : ""}` : ""}
+          </li>
+        </ul>
+      </section>
+
+      {!mod.redige && (
+        <p className="encart encart--attention">
+          Ce critère est un emplacement ouvert : son contenu de formation reste à rédiger.
+          {nbQuestions > 0 ? " Son évaluation, elle, est disponible à partir des questions déposées." : ""}
+        </p>
+      )}
+
+      {sommaire.length > 0 ? (
+        <LectureModule moduleId={mod.id} sommaire={sommaire}>
+          {contenu}
+        </LectureModule>
+      ) : (
+        contenu
       )}
     </article>
   );

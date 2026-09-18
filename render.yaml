@@ -1,0 +1,42 @@
+# Blueprint Render (https://render.com/docs/blueprint-spec) : un service web
+# Node et une base PostgreSQL managée, plan gratuit pour les deux.
+#
+# Après « New → Blueprint » : AUTH_SECRET est généré par Render ; DATABASE_URL
+# est branchée sur la base créée ici. Rien d'autre à saisir pour un premier
+# déploiement. Le schéma est appliqué au premier accès.
+#
+# Limites du plan gratuit (à vérifier sur render.com au moment du déploiement) :
+# mise en veille après inactivité — la première ouverture prend jusqu'à une
+# minute —, et base gratuite expirant après une période donnée : [à vérifier].
+services:
+  - type: web
+    name: formation-pharmacotechnie
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/sante
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: formation-pharmacotechnie-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: disable            # réseau interne Render ; « require » pour une base externe
+      - key: DATABASE_POOL_MAX
+        value: "3"
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: CONSERVATION_RAPPORTS
+        value: aucune             # « nominative » après décision RGPD — voir docs/QUESTIONS-OUVERTES.md
+
+databases:
+  - name: formation-pharmacotechnie-db
+    plan: free
+    region: frankfurt
+    databaseName: formation
+    user: formation

@@ -1,0 +1,190 @@
+import Link from "next/link";
+import { getSession } from "@/lib/auth";
+import { comptesParModule, listerQuestions, type StatutQuestion } from "@/content/banque-db";
+import { getTousModules } from "@/content/store";
+import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
+import { LIBELLES_STATUT } from "./commun";
+
+export const dynamic = "force-dynamic";
+
+const MESSAGES: Record<string, string> = {
+  creee: "Question créée.",
+  modifiee: "Question enregistrée.",
+};
+
+export default async function Questions({
+  searchParams,
+}: {
+  searchParams: Promise<{ module?: string; statut?: string; ok?: string }>;
+}) {
+  const p = await searchParams;
+  const session = (await getSession())!;
+  const modules = getTousModules();
+  const statut = (["a_verifier", "valide", "retire"] as const).includes(p.statut as StatutQuestion)
+    ? (p.statut as StatutQuestion)
+    : undefined;
+  const moduleId = modules.some((m) => m.id === p.module) ? p.module : undefined;
+  const [questions, comptes] = await Promise.all([
+    listerQuestions({ moduleId, statut }),
+    comptesParModule(),
+  ]);
+  const parModule = new Map<string, typeof questions>();
+  for (const q of questions) {
+    const liste = parModule.get(q.module_id) ?? [];
+    liste.push(q);
+    parModule.set(q.module_id, liste);
+  }
+  const retour = `/admin/questions?${new URLSearchParams({
+    ...(moduleId ? { module: moduleId } : {}),
+    ...(statut ? { statut } : {}),
+  }).toString()}`;
+  const titreModule = (id: string) => {
+    const m = modules.find((x) => x.id === id);
+    return m ? `${typeof m.critereId === "string" ? m.critereId : "—"} — ${m.titre}` : id;
+  };
+
+  return (
+    <>
+      <section className="panneau-titre">
+        <h1>Banque de questions</h1>
+        <p>
+          Questions déposées par les tuteurs et administrateurs, en complément de la banque
+          versionnée avec le site. Seules les questions <strong>validées</strong> entrent dans les
+          tirages ; une question importée ou créée reste « à vérifier » jusqu&apos;à relecture.
+        </p>
+        <div className="actions" style={{ marginTop: 0 }}>
+          <Link href={`/admin/questions/nouvelle${moduleId ? `?module=${encodeURIComponent(moduleId)}` : ""}`} className="bouton">
+            Nouvelle question
+          </Link>
+          <Link href="/admin/questions/import" className="bouton bouton--secondaire">
+            Déposer un texte ou un fichier
+          </Link>
+          <Link href="/admin/questions/situations" className="bouton bouton--secondaire">
+            Mises en situation
+          </Link>
+        </div>
+      </section>
+
+      {p.ok && MESSAGES[p.ok] && <p className="encart encart--ok">{MESSAGES[p.ok]}</p>}
+
+      <form method="get" className="carte filtres">
+        <div className="rangee">
+          <label className="champ">
+            <span>Module</span>
+            <select name="module" defaultValue={moduleId ?? ""}>
+              <option value="">Tous les modules</option>
+              {modules.map((m) => {
+                const c = comptes[m.id];
+                return (
+                  <option key={m.id} value={m.id}>
+                    {typeof m.critereId === "string" ? m.critereId : "—"} — {m.titre.slice(0, 60)}
+                    {c ? ` (${c.valides} validée${c.valides > 1 ? "s" : ""}, ${c.aVerifier} à vérifier)` : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <label className="champ">
+            <span>Statut</span>
+            <select name="statut" defaultValue={statut ?? ""}>
+              <option value="">Tous</option>
+              <option value="a_verifier">À vérifier</option>
+              <option value="valide">Validées</option>
+              <option value="retire">Retirées</option>
+            </select>
+          </label>
+        </div>
+        <div className="actions">
+          <button type="submit" className="bouton bouton--compact bouton--secondaire">
+            Filtrer
+          </button>
+          <span className="legende">{questions.length} question{questions.length > 1 ? "s" : ""}</span>
+        </div>
+      </form>
+
+      {questions.length === 0 && (
+        <p className="encart">Aucune question en base pour ce filtre. La banque versionnée avec le site n&apos;apparaît pas ici : elle se modifie dans <code>content/modules/</code>.</p>
+      )}
+
+      {[...parModule.entries()].map(([mid, liste]) => (
+        <section key={mid} className="section">
+          <div className="section-titre">
+            <h2 style={{ fontSize: "1.15rem" }}>{titreModule(mid)}</h2>
+            <span className="compte">
+              <Link href={`/module/${mid}`}>voir le module</Link>
+            </span>
+          </div>
+          <ul className="liste-nue">
+            {liste.map((q) => (
+              <li key={q.id} className="carte question-ligne">
+                <div className="etape-tete">
+                  <span className="etiquette etiquette--site">{q.format === "SCH" ? "Schéma" : q.format}</span>
+                  <span className={`etiquette ${q.statut === "valide" ? "etiquette--ok" : q.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
+                    {LIBELLES_STATUT[q.statut]}
+                  </span>
+                  {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
+                  {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
+                  <span className="legende" style={{ marginLeft: "auto" }}>
+                    v{q.version} · créée par {q.cree_par}
+                    {q.valide_par ? ` · validée par ${q.valide_par}` : ""}
+                  </span>
+                </div>
+                <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
+                {q.format === "SCH" ? (
+                  <p className="legende">
+                    {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : "écrire"}
+                    {q.image_id ? "" : " · image manquante"}
+                  </p>
+                ) : (
+                  <ul className="apercu-options">
+                    {q.options.map((o) => (
+                      <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
+                        <span className="num">{o.id.toUpperCase()}</span> {o.texte}{" "}
+                        <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="actions" style={{ marginTop: ".5rem" }}>
+                  <Link href={`/admin/questions/${q.id}`} className="bouton bouton--compact bouton--secondaire">
+                    Modifier
+                  </Link>
+                  {q.statut !== "valide" && (
+                    <form action={actionChangerStatutQuestion}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <input type="hidden" name="statut" value="valide" />
+                      <input type="hidden" name="retour" value={retour} />
+                      <button type="submit" className="bouton bouton--compact">Valider</button>
+                    </form>
+                  )}
+                  {q.statut === "valide" && (
+                    <form action={actionChangerStatutQuestion}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <input type="hidden" name="statut" value="a_verifier" />
+                      <input type="hidden" name="retour" value={retour} />
+                      <button type="submit" className="bouton bouton--compact bouton--secondaire">Remettre à vérifier</button>
+                    </form>
+                  )}
+                  {q.statut !== "retire" && (
+                    <form action={actionChangerStatutQuestion}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <input type="hidden" name="statut" value="retire" />
+                      <input type="hidden" name="retour" value={retour} />
+                      <button type="submit" className="bouton bouton--compact bouton--secondaire">Retirer</button>
+                    </form>
+                  )}
+                  {session.role === "admin" && (
+                    <form action={actionSupprimerQuestion}>
+                      <input type="hidden" name="id" value={q.id} />
+                      <button type="submit" className="bouton bouton--compact bouton--discret">Supprimer</button>
+                    </form>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}

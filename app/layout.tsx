@@ -4,6 +4,7 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
+import { conservationNominative } from "@/lib/config";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
 
@@ -21,6 +22,7 @@ export default async function RootLayout({
 }) {
   const session = baseConfiguree() ? await getSession() : null;
   const gestionnaire = session && session.role !== "poste";
+  const nominative = conservationNominative();
 
   return (
     <html lang="fr">
@@ -82,10 +84,10 @@ export default async function RootLayout({
             </div>
 
             <nav className="nav-sections" aria-label="Sections">
-              <a href="#modules">Mes modules</a>
-              <a href="#dispositif">Le dispositif</a>
-              <a href="#evaluation">L&apos;évaluation</a>
-              <a href="#questions">Questions</a>
+              <Link href="/#modules">Mes modules</Link>
+              <Link href="/#dispositif">Le dispositif</Link>
+              <Link href="/#evaluation">L&apos;évaluation</Link>
+              <Link href="/#questions">Questions</Link>
               {gestionnaire && <Link href="/admin">Administration</Link>}
               {session ? (
                 <form action={actionDeconnexion}>
@@ -107,15 +109,25 @@ export default async function RootLayout({
 
           <footer className="pied">
             <div className="pied-interne">
-              <p>
-                <strong>Rien de nominatif n&apos;est enregistré.</strong> Les
-                réponses transmises au serveur ne comportent ni nom, ni
-                matricule, ni identifiant. Les résultats vivent en mémoire de
-                l&apos;onglet le temps de la session, puis dans le rapport que
-                l&apos;apprenant télécharge sur son poste. Seul un repère de
-                lecture est conservé localement, sur le poste, et il ne désigne
-                personne.
-              </p>
+              {nominative ? (
+                <p>
+                  <strong>Les réponses transmises au serveur ne comportent ni nom, ni matricule.</strong>{" "}
+                  Les résultats vivent en mémoire de l&apos;onglet le temps de la session. Seul le
+                  rapport que l&apos;apprenant choisit d&apos;émettre est enregistré, avec le nom
+                  qu&apos;il saisit, pour le circuit de visas du tuteur et du pharmacien
+                  responsable. Un repère de lecture reste sur le poste, et il ne désigne personne.
+                </p>
+              ) : (
+                <p>
+                  <strong>Rien de nominatif n&apos;est enregistré.</strong> Les
+                  réponses transmises au serveur ne comportent ni nom, ni
+                  matricule, ni identifiant. Les résultats vivent en mémoire de
+                  l&apos;onglet le temps de la session, puis dans le rapport que
+                  l&apos;apprenant télécharge sur son poste. Seul un repère de
+                  lecture est conservé localement, sur le poste, et il ne désigne
+                  personne.
+                </p>
+              )}
               <p>
                 Statut du dispositif (outil pédagogique ou preuve opposable en
                 audit BPP&nbsp;2023 / ISO&nbsp;9001)&nbsp;:{" "}

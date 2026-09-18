@@ -1,7 +1,9 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { baseConfiguree, codesActifs, marquerUsage, type Role } from "./db";
+import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 
 /**
  * Contrôle d'accès par rôle.
@@ -133,15 +135,22 @@ export async function fermerSession(): Promise<void> {
 
 export type ResultatConnexion =
   | { ok: true; session: Omit<Session, "exp"> }
-  | { ok: false; raison: "non-configure" | "code-invalide" };
+  | { ok: false; raison: "non-configure" | "code-invalide" | "bloque"; minutes?: number };
 
+/**
+ * Connexion par code. Les échecs sont comptés par adresse (empreinte salée,
+ * jamais l'adresse en clair) : cinq échecs bloquent un quart d'heure.
+ */
 export async function connecter(code: string): Promise<ResultatConnexion> {
   if (!baseConfiguree()) return { ok: false, raison: "non-configure" };
+  const minutes = await minutesDeBlocage();
+  if (minutes > 0) return { ok: false, raison: "bloque", minutes };
   const propre = code.trim().toUpperCase().replace(/\s+/g, "");
   const lignes = await codesActifs();
   for (const l of lignes) {
     if (verifierCode(propre, l.code_hash)) {
       await marquerUsage(l.id);
+      await effacerEchecs();
       return {
         ok: true,
         session: {
@@ -153,6 +162,7 @@ export async function connecter(code: string): Promise<ResultatConnexion> {
       };
     }
   }
+  await enregistrerEchec();
   return { ok: false, raison: "code-invalide" };
 }
 
@@ -163,6 +173,24 @@ const RANG: Record<Role, number> = { poste: 0, tuteur: 1, admin: 2 };
 export function auMoins(role: Role, minimum: Role): boolean {
   return RANG[role] >= RANG[minimum];
 }
+
+/**
+ * Session exigée dans une action ou une page : redirige vers la connexion
+ * sans session, vers l'accueil si le rôle est insuffisant. La protection ne
+ * repose jamais sur le fait qu'un écran soit affiché ou non.
+ */
+export async function sessionRequise(minimum: Role): Promise<Session> {
+  const s = await getSession();
+  if (!s) redirect("/connexion");
+  if (!auMoins(s.role, minimum)) redirect("/");
+  return s;
+}
+
+export const LIBELLES_ROLE: Record<Role, string> = {
+  admin: "Administration",
+  tuteur: "Tutorat",
+  poste: "Poste de travail",
+};
 
 /** Qui peut créer ou révoquer un code d'un rôle donné. */
 export function peutGererRole(acteur: Role, cible: Role): boolean {

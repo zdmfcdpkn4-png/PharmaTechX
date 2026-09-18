@@ -12,6 +12,9 @@
 /** Marqueur d'un élément non encore arbitré par le pharmacien responsable. */
 export const A_PRECISER = "[à préciser]" as const;
 
+import { motAttendu, verdictLegende, type Legende, type Repere } from "./schema";
+export type { Legende, Repere };
+
 /**
  * Niveaux d'habilitation de l'unité.
  * Socle transversal N1a ; parcours Chimiothérapie N1c → N2 → N3 ;
@@ -77,8 +80,23 @@ export type Option = {
  * - `QIM` — question à interprétation multiple. Chaque proposition est jugée
  *   vraie ou fausse indépendamment ; la note dépend du nombre de discordances
  *   (propositions cochées à tort + propositions exactes non cochées).
+ * - `SCH` — schéma à compléter (repris du Lecteur QIM · QCM) : une image dont
+ *   les légendes ont été masquées ; l'apprenant écrit chaque légende (mode
+ *   « écrire ») ou l'attribue parmi une liste mélangée (mode « choisir »).
  */
-export type TypeQuestion = "QCM" | "QIM";
+export type TypeQuestion = "QCM" | "QIM" | "SCH";
+
+export type ModeReponse = "ecrire" | "choisir";
+
+/** Image d'un schéma à compléter, servie par `/api/images/[id]`. */
+export interface ImageQuestion {
+  id: string;
+  url: string;
+  largeur: number;
+  hauteur: number;
+  /** Description lue à la place de l'image par un lecteur d'écran. */
+  alt: string;
+}
 
 /**
  * Barème des QIM, exprimé en fraction du point.
@@ -92,6 +110,15 @@ export const BAREME_QIM: Record<number, number> = {
 };
 /** Au-delà d'une discordance, la question ne rapporte rien. */
 export const BAREME_QIM_AU_DELA = 0;
+
+/**
+ * Barème d'un schéma à compléter, repris du Lecteur QIM · QCM : 1 point au
+ * plus quel que soit le nombre de légendes, chacune valant 1/n — juste elle
+ * l'ajoute, fausse elle le retire, laissée vide elle ne compte pas — et
+ * plancher zéro. Valeur à confirmer par le pharmacien responsable :
+ * [à préciser].
+ */
+export const BAREME_SCH = { max: 1, plancher: 0 } as const;
 
 /**
  * Question d'évaluation.
@@ -116,6 +143,14 @@ export interface Question {
    */
   eliminatoire?: boolean;
   references?: Reference[];
+  /** Schéma à compléter : les légendes à écrire, avec leur place sur l'image. */
+  legendes?: Legende[];
+  /** Schéma à compléter : l'image. */
+  image?: ImageQuestion;
+  /** Schéma à compléter : écrire la légende, ou la choisir dans une liste. */
+  modeReponse?: ModeReponse;
+  /** `code` pour une question versionnée avec le site, `base` pour une question déposée. */
+  origine?: "code" | "base";
 }
 
 /**
@@ -196,21 +231,46 @@ export interface Parcours {
   blocs: Bloc[];
 }
 
+/** Légende telle qu'elle est envoyée au navigateur : sa place, jamais son mot. */
+export interface LegendePublique {
+  id: string;
+  repere: Repere;
+}
+
 /** Question telle qu'elle est envoyée au navigateur : sans les réponses. */
 export type QuestionPublique = Omit<
   Question,
-  "bonnesReponses" | "justification"
+  "bonnesReponses" | "justification" | "legendes"
 > & {
   /** Vignette de rattachement, `null` pour une question isolée. */
   situation: { id: string; titre: string; contexte: string } | null;
+  /** Schéma à compléter : les repères, sans les mots. */
+  legendes?: LegendePublique[];
+  /** Mode « choisir » : les mots attendus, mélangés, sans leur place. */
+  etiquettes?: string[];
 };
+
+function melangerTexte(xs: string[]): string[] {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export function sanitizeQuestion(
   q: Question,
   situation: QuestionPublique["situation"] = null,
 ): QuestionPublique {
-  const { bonnesReponses: _b, justification: _j, ...reste } = q;
-  return { ...reste, situation };
+  const { bonnesReponses: _b, justification: _j, legendes, ...reste } = q;
+  if (q.type !== "SCH") return { ...reste, situation };
+  const publiques = (legendes ?? []).map((l) => ({ id: l.id, repere: l.repere }));
+  const etiquettes =
+    q.modeReponse === "choisir"
+      ? melangerTexte((legendes ?? []).map((l) => motAttendu(l.attendu)))
+      : undefined;
+  return { ...reste, situation, legendes: publiques, ...(etiquettes ? { etiquettes } : {}) };
 }
 
 /** Banque complète d'un module : questions isolées puis mises en situation. */
@@ -235,27 +295,48 @@ export function banquePublique(m: Module): QuestionPublique[] {
 }
 
 /**
+ * Réponse d'un apprenant à une question.
+ *
+ * - `choix` : identifiants des options cochées (QCM) ou jugées vraies (QIM) ;
+ * - `juges` : QIM en Vrai/Faux, identifiants des propositions effectivement
+ *   jugées — une proposition laissée sans réponse compte alors comme une
+ *   discordance, ce qui ne peut pas être déduit de `choix` seul ;
+ * - `legendes` : schéma à compléter, le mot écrit (ou choisi) par légende.
+ */
+export interface ReponseApprenant {
+  choix: string[];
+  juges?: string[];
+  legendes?: Record<string, string>;
+}
+
+export interface NoteQuestion {
+  /** Sur 1 point, arrondi au centième. */
+  note: number;
+  /** Propositions mal classées, ou légendes fausses ou vides. */
+  discordances: number;
+  /** Propositions ou légendes laissées sans réponse. */
+  nonJugees: number;
+}
+
+function arrondi(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
  * Note d'une question, sur 1 point.
  *
- * QCM : tout ou rien. QIM : barème à discordance.
- *
- * `juges` porte, pour une QIM présentée en Vrai/Faux, les identifiants des
- * propositions auxquelles l'apprenant a effectivement répondu. Une proposition
- * laissée sans réponse compte alors comme une discordance — c'est la règle
- * annoncée à l'écran, et elle ne peut pas être déduite de `choix` seul :
- * « non cochée » et « non jugée » y seraient confondues.
- *
- * Quand `juges` est absent (QIM présentée en cases à cocher), on retombe sur
- * l'ancien comportement : non cochée vaut jugée fausse.
+ * QCM : tout ou rien. QIM : barème à discordance. SCH : chaque légende vaut
+ * 1/n, juste elle l'ajoute, fausse elle le retire, vide elle ne compte pas ;
+ * plancher zéro. Dans les trois formats, `discordances === 0` signifie que la
+ * réponse est entièrement exacte — c'est ce que lit la règle des questions
+ * éliminatoires.
  */
-export function noterQuestion(
-  q: Question,
-  choix: string[],
-  juges?: string[],
-): { note: number; discordances: number; nonJugees: number } {
+export function noterQuestion(q: Question, rep: ReponseApprenant): NoteQuestion {
+  if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {});
+
   const attendues = new Set(q.bonnesReponses);
-  const cochees = new Set(choix);
-  const jugees = juges ? new Set(juges) : null;
+  const cochees = new Set(rep.choix);
+  const jugees = rep.juges ? new Set(rep.juges) : null;
 
   let discordances = 0;
   let nonJugees = 0;
@@ -279,4 +360,53 @@ export function noterQuestion(
 
   const note = BAREME_QIM[discordances] ?? BAREME_QIM_AU_DELA;
   return { note, discordances, nonJugees };
+}
+
+function noterSchema(q: Question, reponses: Record<string, string>): NoteQuestion {
+  const legendes = q.legendes ?? [];
+  const n = legendes.length;
+  if (n === 0) return { note: 0, discordances: 0, nonJugees: 0 };
+  const unite = BAREME_SCH.max / n;
+  let brut = 0;
+  let discordances = 0;
+  let nonJugees = 0;
+  for (const l of legendes) {
+    const v = verdictLegende(reponses[l.id], l.attendu);
+    if (v === "juste") brut += unite;
+    else if (v === "fausse") {
+      brut -= unite;
+      discordances += 1;
+    } else {
+      nonJugees += 1;
+      discordances += 1;
+    }
+  }
+  const note = arrondi(Math.min(BAREME_SCH.max, Math.max(BAREME_SCH.plancher, brut)));
+  return { note, discordances, nonJugees };
+}
+
+/** Libellé lisible d'un format, tel qu'il s'annonce à l'apprenant. */
+export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse">): string {
+  if (q.type === "QIM") return "QIM — barème à la discordance";
+  if (q.type === "SCH") {
+    return q.modeReponse === "choisir"
+      ? "Schéma — légendes à attribuer"
+      : "Schéma — légendes à écrire";
+  }
+  return q.enonce.includes("plusieurs")
+    ? "QCM — plusieurs réponses"
+    : "QCM — une seule réponse";
+}
+
+/** Barème lisible d'un format, annoncé sous chaque énoncé. */
+export function libelleBareme(q: Pick<Question, "type" | "enonce">): string {
+  if (q.type === "QIM") {
+    return "0 discordance → 1 point ; 1 discordance → 0,5 ; 2 ou plus → 0.";
+  }
+  if (q.type === "SCH") {
+    return "1 point au plus : chaque légende vaut sa part, une légende fausse la retire, une légende vide ne compte pas ; jamais moins de 0.";
+  }
+  return q.enonce.includes("plusieurs")
+    ? "Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu."
+    : "1 point si la réponse est exacte, 0 sinon.";
 }

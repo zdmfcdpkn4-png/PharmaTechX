@@ -1,39 +1,194 @@
 import "server-only";
-import { sql } from "@vercel/postgres";
+import { readFileSync } from "node:fs";
+import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { SCHEMA } from "./schema";
 
 /**
- * Accès à la base.
+ * Accès à la base — PostgreSQL standard via `pg`.
  *
- * Trois tables seulement, et aucune ne porte d'identité :
- *   - `acces`          : codes de rôle, stockés hachés
- *   - `ordonnancement` : rang des modules dans un parcours
- *   - `depots`         : index des documents déposés (le fichier est en Blob)
+ * Portable : la même chaîne de connexion sert sur Render (Postgres managé),
+ * Supabase, Neon / Vercel ou en local. `DATABASE_URL` est lue en premier,
+ * `POSTGRES_URL` (nom posé automatiquement par Vercel) en repli.
  *
- * Les résultats d'évaluation ne sont toujours écrits nulle part : ils vivent
- * en mémoire de l'onglet puis dans le rapport téléchargé. Cette base sert à la
- * configuration du site, pas au suivi des personnes.
+ * TLS (`DATABASE_SSL`) : `disable` | `require` (chiffre sans vérifier
+ * l'autorité — nécessaire avec l'autorité privée de Supabase) | `verify`
+ * (vérifie la chaîne avec `DATABASE_SSL_CA` en PEM ou `DATABASE_SSL_CA_FILE`).
+ * Défaut : `disable` sur un hôte local, `require` ailleurs. Le paramètre
+ * `sslmode` de l'URL est retiré pour que ce réglage soit le seul qui compte.
+ *
+ * Le schéma (`lib/schema.ts`) est appliqué au premier accès, sous verrou
+ * consultatif : plusieurs instances peuvent démarrer en même temps.
+ *
+ * Le site fonctionne sans base : le contrôle d'accès est alors inactif et les
+ * écrans d'administration affichent la marche à suivre.
  */
 
-/**
- * Le site fonctionne sans base : dans ce cas le contrôle d'accès est inactif
- * et les écrans d'administration affichent la marche à suivre. Cela permet de
- * déployer avant d'avoir provisionné les stores.
- */
+export function urlBase(): string | undefined {
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || undefined;
+}
+
 export function baseConfiguree(): boolean {
-  return Boolean(process.env.POSTGRES_URL);
+  return Boolean(urlBase());
 }
 
 export function blobConfigure(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
+function hoteLocal(u: URL): boolean {
+  return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(u.hostname);
+}
+
+function optionsTls(u: URL): false | { rejectUnauthorized: boolean; ca?: string } {
+  const mode = (process.env.DATABASE_SSL ?? (hoteLocal(u) ? "disable" : "require")).toLowerCase();
+  if (mode === "disable" || mode === "false" || mode === "0") return false;
+  if (mode === "verify") {
+    const ca =
+      process.env.DATABASE_SSL_CA ||
+      (process.env.DATABASE_SSL_CA_FILE
+        ? readFileSync(process.env.DATABASE_SSL_CA_FILE, "utf8")
+        : undefined);
+    return { rejectUnauthorized: true, ...(ca ? { ca } : {}) };
+  }
+  return { rejectUnauthorized: false };
+}
+
+/** Un seul pool par processus, y compris à travers les rechargements de dev. */
+const g = globalThis as unknown as { __fpPool?: Pool; __fpSchema?: Promise<void> };
+
+function pool(): Pool {
+  if (g.__fpPool) return g.__fpPool;
+  const brut = urlBase();
+  if (!brut) throw new Error("Base de données non configurée (DATABASE_URL).");
+  const u = new URL(brut);
+  for (const p of ["sslmode", "ssl", "sslcert", "sslkey", "sslrootcert"]) u.searchParams.delete(p);
+  g.__fpPool = new Pool({
+    connectionString: u.toString(),
+    ssl: optionsTls(u),
+    max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  });
+  return g.__fpPool;
+}
+
+/**
+ * Applique le schéma une fois par processus. Le verrou consultatif
+ * transactionnel sérialise les instances qui démarrent ensemble.
+ */
+export function garantirSchema(): Promise<void> {
+  if (g.__fpSchema) return g.__fpSchema;
+  g.__fpSchema = (async () => {
+    const c = await pool().connect();
+    try {
+      await c.query("BEGIN");
+      await c.query("SELECT pg_advisory_xact_lock(7452026)");
+      for (const instruction of SCHEMA) await c.query(instruction);
+      await c.query("COMMIT");
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => undefined);
+      g.__fpSchema = undefined;
+      throw e;
+    } finally {
+      c.release();
+    }
+  })();
+  return g.__fpSchema;
+}
+
+/** Réinitialise l'application du schéma (tests). */
+export function oublierSchema(): void {
+  g.__fpSchema = undefined;
+}
+
+export interface Resultat<T> {
+  rows: T[];
+  rowCount: number;
+}
+
+/**
+ * Requête paramétrée en gabarit : `sql\`SELECT … WHERE id = ${id}\`` devient
+ * `SELECT … WHERE id = $1`. Les valeurs ne sont jamais interpolées dans le
+ * texte de la requête.
+ */
+export async function sql<T extends QueryResultRow = QueryResultRow>(
+  morceaux: TemplateStringsArray,
+  ...valeurs: unknown[]
+): Promise<Resultat<T>> {
+  await garantirSchema();
+  const r = await pool().query<T>(texteRequete(morceaux), valeurs);
+  return { rows: r.rows, rowCount: r.rowCount ?? 0 };
+}
+
+/**
+ * Requête paramétrée écrite en clair (`$1`, `$2`…), pour les cas où une
+ * partie constante du texte — une liste de colonnes — ne doit pas être
+ * paramétrée. Les valeurs, elles, le sont toujours.
+ */
+export async function requete<T extends QueryResultRow = QueryResultRow>(
+  texte: string,
+  valeurs: unknown[] = [],
+): Promise<Resultat<T>> {
+  await garantirSchema();
+  const r = await pool().query<T>(texte, valeurs);
+  return { rows: r.rows, rowCount: r.rowCount ?? 0 };
+}
+
+/** Même gabarit, sur un client de transaction. */
+export function sqlSur(client: PoolClient) {
+  return async <T extends QueryResultRow = QueryResultRow>(
+    morceaux: TemplateStringsArray,
+    ...valeurs: unknown[]
+  ): Promise<Resultat<T>> => {
+    const r = await client.query<T>(texteRequete(morceaux), valeurs);
+    return { rows: r.rows, rowCount: r.rowCount ?? 0 };
+  };
+}
+
+export async function transaction<T>(travail: (client: PoolClient) => Promise<T>): Promise<T> {
+  await garantirSchema();
+  const c = await pool().connect();
+  try {
+    await c.query("BEGIN");
+    const r = await travail(c);
+    await c.query("COMMIT");
+    return r;
+  } catch (e) {
+    await c.query("ROLLBACK").catch(() => undefined);
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+export function texteRequete(morceaux: TemplateStringsArray): string {
+  let texte = "";
+  morceaux.forEach((m, i) => {
+    texte += m;
+    if (i < morceaux.length - 1) texte += `$${i + 1}`;
+  });
+  return texte;
+}
+
+/** Ping pour la page de santé. */
+export async function baseJoignable(): Promise<boolean> {
+  try {
+    await sql`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ──────────────────────────────────────────────────────────── accès et codes
+
+export type Role = "admin" | "tuteur" | "poste";
+
 export interface LigneAcces {
   id: number;
   role: Role;
   libelle: string;
-  /** Filière à laquelle ce code donne accès (null = tout). */
   filiere: string | null;
-  /** Niveau visé par ce profil de poste (null = tous). */
   niveau: string | null;
   actif: boolean;
   cree_le: string;
@@ -45,58 +200,22 @@ export interface LigneDepot {
   titre: string;
   nature: string;
   url: string;
-  /** Module auquel le document est rattaché, null si document général. */
   module_id: string | null;
   critere_id: string | null;
   depose_le: string;
   depose_par: Role;
 }
 
-export type Role = "admin" | "tuteur" | "poste";
-
-/** Crée les tables si besoin. Idempotent, appelé au premier accès admin. */
+/** Conservé pour compatibilité : le schéma est désormais appliqué automatiquement. */
 export async function initSchema(): Promise<void> {
-  await sql`
-    CREATE TABLE IF NOT EXISTS acces (
-      id            SERIAL PRIMARY KEY,
-      code_hash     TEXT NOT NULL,
-      role          TEXT NOT NULL CHECK (role IN ('admin','tuteur','poste')),
-      libelle       TEXT NOT NULL,
-      filiere       TEXT,
-      niveau        TEXT,
-      actif         BOOLEAN NOT NULL DEFAULT TRUE,
-      cree_le       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      dernier_usage TIMESTAMPTZ
-    );
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS ordonnancement (
-      module_id TEXT NOT NULL,
-      parcours  TEXT NOT NULL,
-      rang      INTEGER NOT NULL,
-      PRIMARY KEY (module_id, parcours)
-    );
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS depots (
-      id         SERIAL PRIMARY KEY,
-      titre      TEXT NOT NULL,
-      nature     TEXT NOT NULL,
-      url        TEXT NOT NULL,
-      module_id  TEXT,
-      critere_id TEXT,
-      depose_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      depose_par TEXT NOT NULL
-    );
-  `;
+  await garantirSchema();
 }
 
 export async function listerAcces(): Promise<LigneAcces[]> {
   const r = await sql<LigneAcces>`
     SELECT id, role, libelle, filiere, niveau, actif,
            cree_le::text, dernier_usage::text
-    FROM acces ORDER BY role, libelle;
-  `;
+    FROM acces ORDER BY role, libelle`;
   return r.rows;
 }
 
@@ -106,72 +225,68 @@ export async function creerAcces(
   libelle: string,
   filiere: string | null,
   niveau: string | null,
-): Promise<void> {
-  await sql`
+): Promise<number> {
+  const r = await sql<{ id: number }>`
     INSERT INTO acces (code_hash, role, libelle, filiere, niveau)
-    VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau});
-  `;
+    VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}) RETURNING id`;
+  return r.rows[0].id;
 }
 
 export async function basculerAcces(id: number, actif: boolean): Promise<void> {
-  await sql`UPDATE acces SET actif = ${actif} WHERE id = ${id};`;
+  await sql`UPDATE acces SET actif = ${actif} WHERE id = ${id}`;
 }
 
 export async function supprimerAcces(id: number): Promise<void> {
-  await sql`DELETE FROM acces WHERE id = ${id};`;
+  await sql`DELETE FROM acces WHERE id = ${id}`;
 }
 
-/** Codes actifs, pour vérification à la connexion. */
 export async function codesActifs(): Promise<
   { id: number; code_hash: string; role: Role; libelle: string; filiere: string | null; niveau: string | null }[]
 > {
   const r = await sql<{
     id: number; code_hash: string; role: Role; libelle: string;
     filiere: string | null; niveau: string | null;
-  }>`
-    SELECT id, code_hash, role, libelle, filiere, niveau
-    FROM acces WHERE actif = TRUE;
-  `;
+  }>`SELECT id, code_hash, role, libelle, filiere, niveau FROM acces WHERE actif = TRUE`;
   return r.rows;
 }
 
 export async function marquerUsage(id: number): Promise<void> {
-  await sql`UPDATE acces SET dernier_usage = NOW() WHERE id = ${id};`;
+  await sql`UPDATE acces SET dernier_usage = NOW() WHERE id = ${id}`;
 }
 
-/** Y a-t-il au moins un code admin ? Sinon, amorçage nécessaire. */
 export async function existeAdmin(): Promise<boolean> {
-  const r = await sql`SELECT 1 FROM acces WHERE role = 'admin' AND actif = TRUE LIMIT 1;`;
-  return (r.rowCount ?? 0) > 0;
+  const r = await sql`SELECT 1 FROM acces WHERE role = 'admin' AND actif = TRUE LIMIT 1`;
+  return r.rowCount > 0;
 }
 
-export async function lireOrdonnancement(
-  parcours: string,
-): Promise<Record<string, number>> {
+// ─────────────────────────────────────────────────────────── ordonnancement
+
+export async function lireOrdonnancement(parcours: string): Promise<Record<string, number>> {
   const r = await sql<{ module_id: string; rang: number }>`
-    SELECT module_id, rang FROM ordonnancement WHERE parcours = ${parcours};
-  `;
+    SELECT module_id, rang FROM ordonnancement WHERE parcours = ${parcours}`;
   return Object.fromEntries(r.rows.map((x) => [x.module_id, x.rang]));
 }
 
-export async function ecrireRang(
-  moduleId: string,
-  parcours: string,
-  rang: number,
-): Promise<void> {
+export async function ecrireRang(moduleId: string, parcours: string, rang: number): Promise<void> {
   await sql`
     INSERT INTO ordonnancement (module_id, parcours, rang)
     VALUES (${moduleId}, ${parcours}, ${rang})
-    ON CONFLICT (module_id, parcours) DO UPDATE SET rang = EXCLUDED.rang;
-  `;
+    ON CONFLICT (module_id, parcours) DO UPDATE SET rang = EXCLUDED.rang`;
 }
+
+// ───────────────────────────────────────────────────── documents déposés
 
 export async function listerDepots(): Promise<LigneDepot[]> {
   const r = await sql<LigneDepot>`
-    SELECT id, titre, nature, url, module_id, critere_id,
-           depose_le::text, depose_par
-    FROM depots ORDER BY depose_le DESC;
-  `;
+    SELECT id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par
+    FROM depots ORDER BY depose_le DESC`;
+  return r.rows;
+}
+
+export async function depotsDuModule(moduleId: string): Promise<LigneDepot[]> {
+  const r = await sql<LigneDepot>`
+    SELECT id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par
+    FROM depots WHERE module_id = ${moduleId} ORDER BY depose_le DESC`;
   return r.rows;
 }
 
@@ -185,13 +300,10 @@ export async function enregistrerDepot(
 ): Promise<void> {
   await sql`
     INSERT INTO depots (titre, nature, url, module_id, critere_id, depose_par)
-    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${role});
-  `;
+    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${role})`;
 }
 
 export async function supprimerDepot(id: number): Promise<string | null> {
-  const r = await sql<{ url: string }>`
-    DELETE FROM depots WHERE id = ${id} RETURNING url;
-  `;
+  const r = await sql<{ url: string }>`DELETE FROM depots WHERE id = ${id} RETURNING url`;
   return r.rows[0]?.url ?? null;
 }

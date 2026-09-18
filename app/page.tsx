@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { composerProgramme, getParcours } from "@/content/store";
+import { composerProgramme, comptesQuestionsBase, getParcours } from "@/content/store";
+import { modeConservation } from "@/lib/config";
 import {
   arbitrageEnAttente,
   blocsCompetence,
@@ -12,7 +13,7 @@ import {
 import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type ModuleResume } from "@/components/TableauDeBord";
 
-function resumer(m: Module): ModuleResume {
+function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
     id: m.id,
     titre: m.titre,
@@ -27,7 +28,8 @@ function resumer(m: Module): ModuleResume {
     redige: m.redige,
     nbQuestions:
       m.questions.length +
-      m.misesEnSituation.reduce((s, x) => s + x.questions.length, 0),
+      m.misesEnSituation.reduce((s, x) => s + x.questions.length, 0) +
+      (enBase[m.id] ?? 0),
     nbSituations: m.misesEnSituation.length,
     periodiciteMois:
       typeof m.periodiciteMois === "number"
@@ -78,14 +80,21 @@ const FORMATS = [
   },
 ];
 
-const QUESTIONS_FREQUENTES = [
+const questionsFrequentes = (conservation: "aucune" | "nominative") => [
   {
     q: "Si je valide le module, suis-je habilité ?",
     r: "Non. Ce site couvre les étapes 1 et 2 sur 6. L'habilitation est prononcée par le pharmacien responsable après le compagnonnage et l'évaluation pratique au poste, au vu des preuves réunies.",
   },
   {
     q: "Mes résultats sont-ils enregistrés quelque part ?",
-    r: "Non. Ils vivent en mémoire de l'onglet le temps de la session et disparaissent à sa fermeture. La seule trace durable est le rapport que vous téléchargez sur votre poste et remettez pour votre dossier.",
+    r:
+      conservation === "nominative"
+        ? "Pas tant que vous ne l'avez pas décidé. Ils vivent en mémoire de l'onglet le temps de la session. Si vous émettez un rapport, il est enregistré avec le nom que vous saisissez, numéroté et scellé, pour être visé par le tuteur puis le pharmacien responsable. Les entraînements ne sont jamais enregistrés."
+        : "Non. Ils vivent en mémoire de l'onglet le temps de la session et disparaissent à sa fermeture. La seule trace durable est le rapport que vous téléchargez sur votre poste et remettez pour votre dossier.",
+  },
+  {
+    q: "Quelle différence entre évaluation et entraînement ?",
+    r: "L'entraînement corrige chaque question dès la réponse, avec sa justification et sa source, et n'est ni enregistré ni comptabilisé. L'évaluation corrige à la fin et produit le résultat porté au rapport.",
   },
   {
     q: "Le site sait-il qui je suis ?",
@@ -101,7 +110,7 @@ const QUESTIONS_FREQUENTES = [
   },
   {
     q: "Pourquoi certains critères sont-ils marqués « à rédiger » ?",
-    r: "Les 58 critères de la fiche d'habilitation sont tous référencés, mais deux modules seulement sont écrits à ce jour. Les autres apparaissent pour que le programme complet soit visible.",
+    r: "Les 58 critères de la fiche d'habilitation sont tous référencés, mais deux modules seulement sont écrits à ce jour. Les autres apparaissent pour que le programme complet soit visible ; les tuteurs peuvent déjà y déposer des questions.",
   },
 ];
 
@@ -114,18 +123,20 @@ export default async function Accueil({
   const parcoursId: TypeParcours =
     params.parcours === "maintien" ? "maintien" : "integration";
   const parcours = getParcours(parcoursId)!;
+  const enBase = await comptesQuestionsBase();
+  const conservation = modeConservation();
 
-  const troncCommun = composerProgramme(parcoursId, null).troncCommun.map(
-    resumer,
+  const troncCommun = composerProgramme(parcoursId, null).troncCommun.map((m) =>
+    resumer(m, enBase),
   );
   const parPoste: Record<string, ModuleResume[]> = {};
   for (const f of filieres) {
     if (f.id === "socle") continue;
-    parPoste[f.id] = composerProgramme(parcoursId, f.id).poste.map(resumer);
+    parPoste[f.id] = composerProgramme(parcoursId, f.id).poste.map((m) => resumer(m, enBase));
   }
 
   const rediges = [...troncCommun, ...Object.values(parPoste).flat()].filter(
-    (m) => m.redige,
+    (m) => m.redige || m.nbQuestions > 0,
   );
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
 
@@ -149,9 +160,8 @@ export default async function Accueil({
           </a>
         </div>
         <p className="mentions-hero">
-          Aucun compte nominatif · résultats non conservés · {rediges.length}{" "}
-          module{rediges.length > 1 ? "s" : ""} en ligne sur {criteres.length}{" "}
-          critères
+          Aucun compte nominatif · {conservation === "nominative" ? "rapports enregistrés sur émission" : "résultats non conservés"} · {rediges.length}{" "}
+          critère{rediges.length > 1 ? "s" : ""} évaluable{rediges.length > 1 ? "s" : ""} sur {criteres.length}
         </p>
       </section>
 
@@ -190,6 +200,7 @@ export default async function Accueil({
             filiere: n.filiere,
           }))}
           parcoursTitre={parcours.titre}
+          conservation={conservation}
         />
       </section>
 
@@ -317,7 +328,7 @@ export default async function Accueil({
       <section id="questions" className="section">
         <h2>Questions</h2>
         <div style={{ display: "grid", gap: ".5rem" }}>
-          {QUESTIONS_FREQUENTES.map((x) => (
+          {questionsFrequentes(conservation).map((x) => (
             <details key={x.q} className="bloc">
               <summary>{x.q}</summary>
               <div className="contenu-bloc">

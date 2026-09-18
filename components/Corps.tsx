@@ -4,9 +4,10 @@ import React from "react";
  * Rendu du corps des modules.
  *
  * Markdown volontairement restreint — paragraphes, listes à puces, listes
- * numérotées, **gras**, *italique* — pour que le contenu reste rédigeable par
- * un pharmacien sans connaissance du HTML et sans introduire d'injection.
- * Aucun HTML brut n'est interprété.
+ * numérotées, **gras**, *italique*, et un paragraphe commençant par « > »
+ * pour un point clé (filet rose à gauche, amorce en gras) — pour que le
+ * contenu reste rédigeable par un pharmacien sans connaissance du HTML et
+ * sans introduire d'injection. Aucun HTML brut n'est interprété.
  */
 
 function enrichir(texte: string, cle: string): React.ReactNode[] {
@@ -87,6 +88,14 @@ export function Corps({ texte }: { texte: string }) {
                 </li>
               ))}
             </ol>
+          );
+        }
+
+        if (lignes.every((l) => /^\s*>\s?/.test(l))) {
+          return (
+            <p key={i} className="point-cle">
+              {enrichir(lignes.map((l) => l.replace(/^\s*>\s?/, "")).join(" "), `${i}`)}
+            </p>
           );
         }
 
