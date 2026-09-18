@@ -130,9 +130,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     18/09/2026 (question 10, choix a) : dans le code, par le pharmacien
     responsable ; aucun éditeur de texte en base. En complément, modules
     déposés depuis `/admin/modules` (présentation courte, profils, seuil,
-    questions et documents rattachés). `[à préciser]` réserver la publication
-    d'un module déposé à l'administrateur (choix posé : tuteur et
-    administrateur publient) ; `[à préciser]` un module déposé rattaché à un
+    questions et documents rattachés). Publication, retrait et modification
+    d'un module publié réservés à l'administration (question 12, point 6) ;
+    `[à préciser]` un module déposé rattaché à un
     critère de la fiche s'ajoute à l'emplacement du critère sans le
     remplacer (choix posé).
 19. **Marquage « O » des critères obligatoires** et **correspondance blocs ↔
@@ -145,8 +145,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     du kit de déversement, circuit de déclaration — `[à préciser]` (hérité).
 22. **Procédures internes à rattacher** : CHD-FT1647, CHD-FT1645, CHD-FT482,
     PHAR-FT160, DSN-FT001… (hérité) — via l'écran Documents.
-23. **Signalements anonymes** : `[à préciser]` les garder ouverts à tout
-    apprenant (choix posé) ou réservés aux sessions par code.
+23. **Signalements anonymes** : depuis la question 13 (choix c), tout le
+    site exige une session par code, un signalement provient donc toujours
+    d'une session (au moins un code de poste) ; son contenu reste anonyme
+    (motif fermé, note libre, aucun identifiant d'agent). `[à préciser]`
+    conserver ainsi, ou le réserver aux codes de tutorat.
 
 ## D. Rapports enregistrés (si mode nominatif)
 
@@ -174,11 +177,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     question est retirée plus tard. `[à préciser]` conserver, ou bloquer le visa
     du pharmacien quand une question du tirage est retirée après le visa du
     tuteur.
-33. **Arbitrage** : porté par tout profil tuteur ou admin, sans exigence que
-    l'arbitre soit distinct du tuteur qui vise ; la règle des quatre yeux du
-    point 6 ne couvre pas l'arbitrage ni les visas, `[à préciser]` si elle
-    doit s'y étendre. `[à préciser]` le motif doit-il être choisi dans une
-    liste fermée ?
+33. **Arbitrage et visas** : l'arbitrage est porté par tout profil tuteur ou
+    admin, sans exigence que l'arbitre soit distinct du tuteur qui vise ; un
+    code d'administration satisfait aussi l'exigence « tutorat », donc un seul
+    code d'administration peut arbitrer, viser comme tuteur puis viser comme
+    pharmacien le même rapport. La règle des quatre yeux du point 6 ne couvre
+    ni l'arbitrage ni les visas, `[à préciser]` si elle doit s'y étendre.
+    `[à préciser]` le motif doit-il être choisi dans une liste fermée ?
 34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
     par le navigateur (comme dans la console), conservée en base et non sur le
     poste ; donnée personnelle de plus à déclarer. `[à préciser]` une image de
