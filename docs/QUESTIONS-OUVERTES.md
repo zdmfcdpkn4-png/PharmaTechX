@@ -7,14 +7,13 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 ## A. Avant le déploiement effectif
 
-1. **Référence « métrologie » pour la signature et la gestion des rapports.**
-   Aucune application ni document de métrologie n'a été trouvé dans les dépôts
-   GitHub accessibles (PharmaTechX, Quiz-Flore, PMP-PHARMACOTECHNIE, PHARMACO),
-   les artefacts Claude ni Notion. Le circuit implémenté (numéro séquentiel,
-   empreinte SHA-256, visas apprenant → tuteur → pharmacien, annulation
-   motivée, journal, rapport A4) transpose la pratique ISO 10012.
-   `[à préciser]` : (a) conforme à ce que fait la métrologie, ou (b) différent —
-   partager l'application ou le document de référence.
+1. **Référence « métrologie »** — tranché le 18/09/2026 : la console de
+   vérification des enregistreurs (« Blocage série », `README_portage.md`).
+   Décisions prises : signature = visas par clic + image du pharmacien
+   incrustée (choix c) ; rapports = paquet d'archivage à la demande, registre
+   CSV, écran Personnel (choix b) ; verrou et arbitrage = bande de garde,
+   arbitrage motivé, non concluant, verrou signalement (choix c). Voir
+   `docs/DECISIONS.md`. Restent les paramètres du point D.31.
 2. **Conservation nominative des rapports** (`CONSERVATION_RAPPORTS`).
    `[à préciser]` : `aucune` (rapport téléchargé, signé sur papier, rien
    d'enregistré — état livré) ou `nominative` (rapports enregistrés avec le
@@ -94,6 +93,28 @@ telle. Ordre : ce qui change le déploiement en premier.
     images dans le fichier.
 27. **Sessions** de 12 h non révocables individuellement (hérité) :
     `[à préciser]` conserver.
+31. **Paramètres de la décision** (`lib/decision.ts`) : `[à préciser]` largeur
+    de la bande de garde égale au poids d'une question du tirage (70 à 89 %
+    pour un seuil de 80 % sur dix questions ; choix posé), ou une demi-question,
+    ou une largeur fixe en points ; `[à préciser]` minimum de 10 questions
+    validées pour conclure (taille du tirage d'habilitation ; choix posé).
+32. **Exclusions** : une question retirée de la banque après signalement est
+    exclue du calcul, les exclusions étant fixées au premier acte de décision
+    (arbitrage ou visa du tuteur) et jamais modifiées ensuite, même si une
+    question est retirée plus tard. `[à préciser]` conserver, ou bloquer le visa
+    du pharmacien quand une question du tirage est retirée après le visa du
+    tuteur.
+33. **Arbitrage** : porté par tout profil tuteur ou admin, sans exigence que
+    l'arbitre soit distinct du tuteur qui vise (même règle que le point 6).
+    `[à préciser]` le motif doit-il être choisi dans une liste fermée ?
+34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
+    par le navigateur (comme dans la console), conservée en base et non sur le
+    poste ; donnée personnelle de plus à déclarer. `[à préciser]` une image de
+    signature pour le tuteur aussi (choix b de la question 2, écarté) ?
+35. **Fichiers d'archivage** : CSV au séparateur « ; », UTF-8 avec marque
+    d'ordre, dates lisibles en heure de Paris ; JSON complet ; zip sans
+    compression. `[à préciser]` si un autre outil que le tableur doit lire ces
+    fichiers (registre qualité, GED).
 
 ## E. Présentation
 

@@ -28,6 +28,12 @@ export interface Session {
   libelle: string;
   filiere: string | null;
   niveau: string | null;
+  /**
+   * Identifiant du code d'accès qui a ouvert la session — sert à retrouver la
+   * signature déposée par un pharmacien (code admin). Absent des sessions
+   * ouvertes avant cette version : elles fonctionnent, sans signature.
+   */
+  acces?: number | null;
   /** Échéance, en secondes epoch. */
   exp: number;
 }
@@ -158,6 +164,7 @@ export async function connecter(code: string): Promise<ResultatConnexion> {
           libelle: l.libelle,
           filiere: l.filiere,
           niveau: l.niveau,
+          acces: l.id,
         },
       };
     }

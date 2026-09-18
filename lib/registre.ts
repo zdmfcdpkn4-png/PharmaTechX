@@ -1,0 +1,209 @@
+import type { ArbitrageRapport, ExclusionQuestion, LigneRepertoire, LigneVisa, RapportComplet } from "./rapports";
+import { decider, verdictFinal, LIBELLES_COURTS_VERDICT, type Decision, type Verdict } from "./decision";
+
+/**
+ * Registre et répertoire — les fichiers de traçabilité du modèle métrologique
+ * (« archive_campagne_<date>.csv », « repertoire_metrologie_<date>.csv »,
+ * « campagne_<date>.json »), transposés aux rapports d'évaluation.
+ *
+ * CSV : séparateur « ; », guillemets doublés, fin de ligne CRLF, marque
+ * d'ordre UTF-8 en tête — le format que le tableur français ouvre sans
+ * assistant d'import. [à préciser] si un autre outil consomme ces fichiers.
+ */
+
+export const SEPARATEUR_CSV = ";";
+
+export function champCsv(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  const s = typeof v === "number" ? String(v).replace(".", ",") : String(v);
+  return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function csv(colonnes: string[], lignes: Record<string, unknown>[]): string {
+  const tete = colonnes.join(SEPARATEUR_CSV);
+  const corps = lignes.map((l) => colonnes.map((c) => champCsv(l[c])).join(SEPARATEUR_CSV));
+  return "﻿" + [tete, ...corps].join("\r\n") + "\r\n";
+}
+
+function dateLisible(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
+}
+
+function dateIso(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+/** Décision d'un rapport telle qu'elle est enregistrée (exclusions fixées, sinon aucune). */
+export function decisionEnregistree(r: {
+  resultat: RapportComplet["resultat"];
+  arbitrage: ArbitrageRapport | null;
+  exclusions: ExclusionQuestion[] | null;
+}): { decision: Decision; verdictFinal: Verdict } {
+  const decision = decider(r.resultat.detail, r.resultat.seuilReussite, {
+    exclues: (r.exclusions ?? []).map((e) => e.questionId),
+    minQuestions: r.resultat.minQuestions,
+  });
+  return { decision, verdictFinal: verdictFinal(decision, r.arbitrage) };
+}
+
+export const COLONNES_REGISTRE = [
+  "numero",
+  "statut",
+  "emis_le",
+  "apprenant_nom",
+  "apprenant_qualite",
+  "critere",
+  "module_id",
+  "module_titre",
+  "tirage",
+  "nb_questions",
+  "nb_exclues",
+  "score",
+  "seuil",
+  "bande_basse",
+  "bande_haute",
+  "echec_eliminatoire",
+  "verdict_brut",
+  "verdict_final",
+  "arbitrage_verdict",
+  "arbitrage_motif",
+  "arbitrage_par",
+  "arbitrage_le",
+  "visa_apprenant_le",
+  "visa_tuteur_nom",
+  "visa_tuteur_le",
+  "visa_pharmacien_nom",
+  "visa_pharmacien_le",
+  "annule_le",
+  "annule_motif",
+  "empreinte",
+];
+
+const STATUTS_LISIBLES: Record<string, string> = {
+  emis: "émis",
+  vise_tuteur: "visé tuteur",
+  clos: "clos",
+  annule: "annulé",
+};
+
+/** Une ligne de registre par rapport. */
+export function ligneRegistre(r: RapportComplet): Record<string, unknown> {
+  const { decision, verdictFinal: vf } = decisionEnregistree(r);
+  const visa = (q: LigneVisa["qualite"]) => r.visas.find((v) => v.qualite === q);
+  return {
+    numero: r.numero,
+    statut: STATUTS_LISIBLES[r.statut] ?? r.statut,
+    emis_le: dateLisible(r.emis_le),
+    apprenant_nom: r.apprenant_nom,
+    apprenant_qualite: r.apprenant_qualite,
+    critere: r.critere_id ?? "",
+    module_id: r.module_id,
+    module_titre: r.module_titre,
+    tirage: r.tirage,
+    nb_questions: decision.nbQuestions,
+    nb_exclues: decision.nbExclues,
+    score: decision.score,
+    seuil: decision.seuil,
+    bande_basse: decision.bandeBasse,
+    bande_haute: decision.bandeHaute,
+    echec_eliminatoire: decision.echecEliminatoire ? "oui" : "non",
+    verdict_brut: LIBELLES_COURTS_VERDICT[decision.verdictBrut],
+    verdict_final: LIBELLES_COURTS_VERDICT[vf],
+    arbitrage_verdict: r.arbitrage ? LIBELLES_COURTS_VERDICT[r.arbitrage.verdict] : "",
+    arbitrage_motif: r.arbitrage?.motif ?? "",
+    arbitrage_par: r.arbitrage?.nom ?? "",
+    arbitrage_le: dateLisible(r.arbitrage?.le),
+    visa_apprenant_le: dateLisible(visa("apprenant")?.signe_le),
+    visa_tuteur_nom: visa("tuteur")?.nom ?? "",
+    visa_tuteur_le: dateLisible(visa("tuteur")?.signe_le),
+    visa_pharmacien_nom: visa("pharmacien")?.nom ?? "",
+    visa_pharmacien_le: dateLisible(visa("pharmacien")?.signe_le),
+    annule_le: dateLisible(r.annule_le),
+    annule_motif: r.annule_motif ?? "",
+    empreinte: r.empreinte,
+  };
+}
+
+export function csvRegistre(rapports: RapportComplet[]): string {
+  return csv(COLONNES_REGISTRE, rapports.map(ligneRegistre));
+}
+
+/** Le rapport entier, de quoi refaire la décision hors de l'outil. */
+export function jsonArchive(r: RapportComplet): string {
+  const { decision, verdictFinal: vf } = decisionEnregistree(r);
+  return JSON.stringify(
+    {
+      format: "formation-pharmacotechnie/rapport/1",
+      numero: r.numero,
+      statut: r.statut,
+      emis_le: dateIso(r.emis_le),
+      apprenant: { nom: r.apprenant_nom, qualite: r.apprenant_qualite },
+      module: { id: r.module_id, titre: r.module_titre, critere: r.critere_id },
+      tirage: r.tirage,
+      empreinte: r.empreinte,
+      decision: { ...decision, verdictFinal: vf },
+      arbitrage: r.arbitrage,
+      exclusions: r.exclusions ?? [],
+      visas: r.visas.map((v) => ({
+        qualite: v.qualite,
+        nom: v.nom,
+        role_session: v.role_session,
+        libelle_session: v.libelle_session,
+        commentaire: v.commentaire,
+        empreinte: v.empreinte,
+        signe_le: dateIso(v.signe_le),
+        signature_incrustee: Boolean(v.signature_id),
+      })),
+      annulation: r.annule_le ? { le: dateIso(r.annule_le), motif: r.annule_motif } : null,
+      resultat: r.resultat,
+    },
+    null,
+    2,
+  );
+}
+
+export const COLONNES_REPERTOIRE = [
+  "apprenant_nom",
+  "apprenant_qualite",
+  "critere",
+  "module_titre",
+  "dernier_rapport",
+  "emis_le",
+  "statut",
+  "score",
+  "verdict_final",
+  "nb_rapports",
+  "nb_clos",
+];
+
+export function ligneRepertoire(l: LigneRepertoire): Record<string, unknown> {
+  const { decision, verdictFinal: vf } = decisionEnregistree(l);
+  return {
+    apprenant_nom: l.apprenant_nom,
+    apprenant_qualite: l.apprenant_qualite,
+    critere: l.critere,
+    module_titre: l.module_titre,
+    dernier_rapport: l.numero,
+    emis_le: dateLisible(l.emis_le),
+    statut: STATUTS_LISIBLES[l.statut] ?? l.statut,
+    score: decision.score,
+    verdict_final: LIBELLES_COURTS_VERDICT[vf],
+    nb_rapports: l.nb_rapports,
+    nb_clos: l.nb_clos,
+  };
+}
+
+export function csvRepertoire(lignes: LigneRepertoire[]): string {
+  return csv(COLONNES_REPERTOIRE, lignes.map(ligneRepertoire));
+}
+
+/** Nom de fichier daté, à la manière des dépôts de la console (« archive_campagne_<date> »). */
+export function nomDate(prefixe: string, extension: string, date = new Date()): string {
+  return `${prefixe}_${date.toISOString().slice(0, 10)}.${extension}`;
+}

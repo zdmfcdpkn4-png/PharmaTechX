@@ -24,26 +24,45 @@ PDF côté navigateur (pdf.js), la détection de figures dans les PDF.
 
 ## « Comme pour la métrologie »
 
-Aucune application ni document de métrologie n'a été trouvé dans les dépôts
-GitHub accessibles, les artefacts Claude ni Notion. Le circuit implémenté
-transpose la pratique documentaire d'un système métrologique (ISO 10012,
-données attribuables, lisibles, contemporaines, originales, exactes) :
+La référence est la **console de vérification métrologique des enregistreurs
+de température** (travail « Blocage série », dossier de portage
+`README_portage.md` du 18/09/2026, fourni par le pharmacien). Ce qu'elle fait
+pour la signature et les rapports, et ce qui en est transposé ici :
 
-- un rapport **émis** reçoit un numéro (`RAP-AAAA-NNNN`) et une empreinte
-  SHA-256 de son contenu scellé ; il ne se modifie plus ;
-- **visas** successifs — apprenant (à l'émission), tuteur, pharmacien —, chacun
-  portant le nom saisi, le rôle et le libellé de la session, la date et
-  l'empreinte du rapport à cet instant ;
-- **annulation motivée** au lieu de correction, nouvelle émission ensuite ;
-- **journal** de chaque action ;
-- **rapport A4** imprimable avec les visas électroniques, repris de la maquette.
+| Console métrologique | Site de formation |
+|---|---|
+| Une image de signature du pharmacien, déposée une fois (600 px), conservée sur le poste, incrustée dans chaque rapport HTML autoportant | Image déposée depuis `/admin/signature`, réduite à 600 px par le navigateur, **rattachée au code d'accès admin** et conservée en base ; incrustée au visa du pharmacien, qui clôt le rapport ; le visa référence l'image de l'instant (`visas.signature_id`) |
+| « Enregistrer le rapport » (HTML, sans inscription au répertoire) puis « Valider et archiver » (datation, trois fichiers : CSV d'une ligne par appareil, JSON de la campagne, HTML du rapport) | Émission par l'apprenant (numéro, empreinte, visa apprenant), visa du tuteur, clôture par le pharmacien ; sur un rapport clos, **« Paquet d'archivage »** produit à la demande un zip avec le HTML signé, la ligne CSV du registre et le JSON complet (`/admin/rapports/[id]/paquet`). Rien n'est téléchargé automatiquement : le serveur tient le registre |
+| Répertoire de traçabilité « Parc & historique », construit depuis les campagnes validées, export CSV | **« Personnel & historique »** (`/admin/personnel`) : une ligne par agent et par critère, dernier rapport non annulé, verdict, rapports clos ; export `repertoire_personnel_<date>.csv` ; registre cumulatif `registre_rapports_<date>.csv` (une ligne par rapport, tous statuts) |
+| Verdict par bande de garde (\|b\| + U ≤ EMT conforme ; \|b\| − U > EMT non conforme ; sinon indéterminé), arbitrage pharmacien explicite et motivé, verdict brut conservé (`r.vMetro`) à côté du verdict arbitré | `lib/decision.ts` : la mesure est le score, la limite le seuil, l'incertitude le **poids d'une question** (100 / n). Acquis si score − bande ≥ seuil, non acquis si score + bande < seuil, sinon **indéterminé** : arbitrage motivé du **tuteur** avant son visa, verdict brut conservé et imprimé. Échec éliminatoire = non acquis sans arbitrage |
+| « Non concluant » sous un taux d'appariement minimal : l'outil refuse de conclure | **Non concluant** sous 10 questions (taille du tirage d'habilitation) : aucun rapport ne peut être émis ; si la banque du critère n'atteint pas 10 questions validées, seul le tirage Découverte reste ouvert |
+| Étape Rapport verrouillée tant qu'une décision pharmacien est en attente | Visas et arbitrage **verrouillés** tant qu'un signalement est ouvert sur une question du tirage ; une question retirée de la banque est **exclue du calcul**, les exclusions étant fixées au premier acte de décision (arbitrage ou visa du tuteur) et jamais modifiées ensuite |
+| Rapport A4 au registre document, palette officielle, imprimé par le navigateur | Rapport A4 de la maquette, décision complète (verdict final, verdict brut, bande, arbitrage, exclusions), visas et signature incrustée, autoportant |
 
-Le résultat lui-même est **scellé par le serveur** à la correction (HMAC) et
-vérifié à l'émission : un résultat retouché dans le navigateur est refusé.
+Décisions prises avec le pharmacien le 18/09/2026 : signature (question 2,
+choix c : visas par clic conservés + image du pharmacien incrustée), gestion
+des rapports (question 3, choix b : paquet à la demande, registre exportable,
+écran Personnel), verrou et arbitrage (question 4, choix c : bande de garde,
+arbitrage motivé, non concluant, verrou signalement). Paramètres posés et
+marqués `[à préciser]` : largeur de la bande (une question), minimum de 10
+questions, séparateur CSV « ; ».
 
-Tout cela n'existe que si `CONSERVATION_RAPPORTS=nominative`. Par défaut, le
-site reste dans l'état livré par la conception initiale : rien de nominatif,
-rapport téléchargé et signé sur papier. Voir `docs/QUESTIONS-OUVERTES.md`.
+Inchangé : un rapport **émis** reçoit un numéro (`RAP-AAAA-NNNN`) et une
+empreinte SHA-256 de son contenu scellé ; il ne se modifie plus. Les **visas**
+portent nom saisi, rôle et libellé de session, date et empreinte.
+**Annulation motivée** au lieu de correction. **Journal** de chaque action
+(dont `arbitrage-rapport`, `signature:depot`, `export:paquet`,
+`export:registre`, `export:repertoire`). Le résultat est **scellé par le
+serveur** à la correction (HMAC) et vérifié à l'émission.
+
+Ni l'image incrustée ni le visa par clic ne valent signature électronique au
+sens eIDAS, pas plus que dans la console : la valeur de preuve vient du
+registre, de l'empreinte et du journal.
+
+Tout cela n'existe que si `CONSERVATION_RAPPORTS=nominative` — le choix c de la
+question 2 le suppose, puisque les visas portent des noms. Par défaut, le site
+reste dans l'état livré : rien de nominatif, rapport téléchargé et signé sur
+papier. Voir `docs/QUESTIONS-OUVERTES.md`.
 
 ## Inspiration PandaSuite (interactivité)
 

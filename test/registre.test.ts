@@ -1,0 +1,118 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { COLONNES_REGISTRE, champCsv, csv, csvRegistre, jsonArchive, ligneRegistre } from "../lib/registre";
+import type { RapportComplet } from "../lib/rapports";
+import type { ResultatEvaluation } from "../app/api/evaluation/route";
+
+function resultat(notes: number[]): ResultatEvaluation {
+  const detail = notes.map((note, i) => ({
+    questionId: `q${i + 1}`,
+    enonce: `Question ${i + 1}`,
+    type: "QCM" as const,
+    situation: null,
+    note,
+    discordances: note === 1 ? 0 : 1,
+    nonJugees: 0,
+    correct: note === 1,
+    eliminatoire: false,
+    choixApprenant: ["A"],
+    reponsesAttendues: ["B"],
+    justification: "",
+    sources: [],
+  }));
+  const obtenus = notes.reduce((s, n) => s + n, 0);
+  return {
+    moduleId: "critere-b1-02",
+    moduleTitre: "Module « test »",
+    critereId: "B1-02",
+    seuilReussite: 80,
+    pointsObtenus: obtenus,
+    pointsTotal: notes.length,
+    score: Math.round((obtenus / notes.length) * 100),
+    echecEliminatoire: false,
+    reussi: false,
+    verdict: "indetermine",
+    bande: 10,
+    bandeBasse: 70,
+    bandeHaute: 89,
+    concluant: true,
+    minQuestions: 10,
+    detail,
+    horodatage: "18 septembre 2026 à 14:02",
+    horodatageIso: "2026-09-18T12:02:00.000Z",
+    tirage: "Complet · 10 questions",
+    jeton: "x",
+  };
+}
+
+const rapport: RapportComplet = {
+  id: "abc",
+  numero: "RAP-2026-0007",
+  module_id: "critere-b1-02",
+  module_titre: "Module « test »",
+  critere_id: "B1-02",
+  apprenant_nom: "Dupont; Marie",
+  apprenant_qualite: "Préparatrice",
+  tirage: "Complet · 10 questions",
+  resultat: resultat([1, 1, 1, 1, 1, 1, 1, 1, 0, 0]),
+  empreinte: "ff00",
+  statut: "clos",
+  emis_le: "2026-09-18T12:02:00.000Z",
+  annule_motif: null,
+  annule_le: null,
+  arbitrage: {
+    verdict: "acquis",
+    motif: "Bonne maîtrise en situation",
+    nom: "T. Tuteur",
+    role_session: "tuteur",
+    libelle_session: "Tuteur test",
+    le: "2026-09-18T13:00:00.000Z",
+    score: 80,
+    verdictBrut: "indetermine",
+  },
+  exclusions: [],
+  visas: [
+    { id: 1, rapport_id: "abc", qualite: "apprenant", nom: "Dupont; Marie", role_session: "poste", libelle_session: "", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T12:02:00.000Z", signature_id: null },
+    { id: 2, rapport_id: "abc", qualite: "tuteur", nom: "T. Tuteur", role_session: "tuteur", libelle_session: "Tuteur test", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T13:05:00.000Z", signature_id: null },
+    { id: 3, rapport_id: "abc", qualite: "pharmacien", nom: "P. Pharmacien", role_session: "admin", libelle_session: "Administrateur initial", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T14:00:00.000Z", signature_id: "sig1" },
+  ],
+};
+
+test("champ CSV : point-virgule, guillemets et retours protégés, virgule décimale", () => {
+  assert.equal(champCsv("Dupont; Marie"), '"Dupont; Marie"');
+  assert.equal(champCsv('dit "oui"'), '"dit ""oui"""');
+  assert.equal(champCsv("a\nb"), '"a\nb"');
+  assert.equal(champCsv(7.5), "7,5");
+  assert.equal(champCsv(null), "");
+});
+
+test("csv : marque d'ordre, entête, CRLF", () => {
+  const texte = csv(["a", "b"], [{ a: 1, b: "x" }]);
+  assert.equal(texte, "﻿a;b\r\n1;x\r\n");
+});
+
+test("ligne de registre : verdict brut conservé à côté du verdict arbitré, visas datés", () => {
+  const l = ligneRegistre(rapport);
+  assert.equal(l.numero, "RAP-2026-0007");
+  assert.equal(l.verdict_brut, "indéterminé");
+  assert.equal(l.verdict_final, "acquis");
+  assert.equal(l.arbitrage_par, "T. Tuteur");
+  assert.equal(l.visa_pharmacien_nom, "P. Pharmacien");
+  assert.equal(l.score, 80);
+  assert.equal(l.bande_basse, 70);
+  const texte = csvRegistre([rapport]);
+  const lignes = texte.split("\r\n");
+  assert.equal(lignes[0], "﻿" + COLONNES_REGISTRE.join(";"));
+  assert.ok(lignes[1].startsWith('RAP-2026-0007;clos;'));
+  assert.ok(lignes[1].includes('"Dupont; Marie"'));
+});
+
+test("json d'archive : décision, arbitrage, visas et résultat complet", () => {
+  const j = JSON.parse(jsonArchive(rapport));
+  assert.equal(j.numero, "RAP-2026-0007");
+  assert.equal(j.decision.verdictBrut, "indetermine");
+  assert.equal(j.decision.verdictFinal, "acquis");
+  assert.equal(j.visas.length, 3);
+  assert.equal(j.visas[2].signature_incrustee, true);
+  assert.equal(j.resultat.detail.length, 10);
+});

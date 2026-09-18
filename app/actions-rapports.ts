@@ -39,6 +39,12 @@ export async function actionEmettreRapport(entree: {
     return { ok: false, erreur: "Ce résultat n'a pas été produit par le serveur : émission refusée." };
   }
   if (!getModule(r.moduleId)) return { ok: false, erreur: "Module inconnu." };
+  if (r.verdict === "non_concluant" || r.concluant === false) {
+    return {
+      ok: false,
+      erreur: `Tirage non concluant (${r.pointsTotal} question${r.pointsTotal > 1 ? "s" : ""}, ${r.minQuestions} requises) : aucun rapport d'habilitation ne peut être émis. Repassez un tirage d'habilitation.`,
+    };
+  }
 
   const session = await getSession();
   const hash = empreinte({ ...sansJeton, apprenant: nom, qualite });
@@ -54,7 +60,7 @@ export async function actionEmettreRapport(entree: {
     { role: session?.role ?? "poste", libelle: session?.libelle ?? "sans code" },
     "emission-rapport",
     `rapport:${emis.numero}`,
-    { moduleId: r.moduleId, score: r.score, reussi: r.reussi },
+    { moduleId: r.moduleId, score: r.score, verdict: r.verdict },
   );
   return {
     ok: true,

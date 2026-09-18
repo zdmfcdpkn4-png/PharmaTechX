@@ -55,10 +55,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link href="/admin/questions/situations">Mises en situation</Link>
         <Link href="/admin/documents">Documents</Link>
         {conservationNominative() && <Link href="/admin/rapports">Rapports</Link>}
+        {conservationNominative() && <Link href="/admin/personnel">Personnel</Link>}
         <Link href="/admin/signalements">
           Signalements{ouverts > 0 ? ` (${ouverts})` : ""}
         </Link>
         <Link href="/admin/ordonnancement">Ordre</Link>
+        {session.role === "admin" && <Link href="/admin/signature">Signature</Link>}
         {session.role === "admin" && <Link href="/admin/journal">Journal</Link>}
       </nav>
       {children}

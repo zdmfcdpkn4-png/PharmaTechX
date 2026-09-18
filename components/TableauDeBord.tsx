@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSessionFormation, type ResultatSession } from "./SessionFormation";
 import { telechargerRapport } from "@/lib/rapport";
+import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 
 export interface ModuleResume {
@@ -73,9 +74,9 @@ function CarteModule({ m }: { m: ModuleResume }) {
 
       {resultat && (
         <p className={`resultat-ligne ${resultat.reussi ? "ok" : "ko"}`} aria-live="polite">
-          <strong>{resultat.score}&nbsp;%</strong> —{" "}
-          {resultat.reussi ? "critère acquis" : "critère non acquis"}
+          <strong>{resultat.score}&nbsp;%</strong> — critère {LIBELLES_COURTS_VERDICT[resultat.verdict]}
           {resultat.echecEliminatoire && " (question éliminatoire manquée)"}
+          {resultat.verdict === "indetermine" && " — arbitrage du tuteur au visa"}
         </p>
       )}
 
@@ -335,8 +336,11 @@ export function TableauDeBord({
                     <span className="legende">
                       {r.critereId ? `${r.critereId} · ` : ""}
                       {r.tirage} · tentative {r.tentative} · {r.score} % ({nombre(r.pointsObtenus)} /{" "}
-                      {r.pointsTotal}) · {r.reussi ? "acquis" : "non acquis"} · {r.horodatage}
+                      {r.pointsTotal}) · {LIBELLES_COURTS_VERDICT[r.verdict]} · {r.horodatage}
                       {e ? ` · émis sous le n° ${e.numero}` : ""}
+                      {conservation === "nominative" && r.verdict === "non_concluant"
+                        ? ` · tirage non concluant : pas d'émission (${r.minQuestions} questions requises)`
+                        : ""}
                     </span>
                   </div>
                   <div className="actions" style={{ marginTop: ".5rem" }}>
@@ -349,7 +353,7 @@ export function TableauDeBord({
                     >
                       Télécharger
                     </button>
-                    {conservation === "nominative" && !e && (
+                    {conservation === "nominative" && !e && r.verdict !== "non_concluant" && (
                       <button
                         type="button"
                         className="bouton bouton--compact"

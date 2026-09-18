@@ -6,6 +6,7 @@ import type { QuestionPublique } from "@/content/types";
 import { libelleBareme, libelleFormat } from "@/content/types";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
+import { LIBELLES_VERDICT, MIN_QUESTIONS_HABILITATION, decider, expliquerVerdict } from "@/lib/decision";
 import { useSessionFormation } from "./SessionFormation";
 import { SchemaQuestion } from "./SchemaQuestion";
 
@@ -191,7 +192,10 @@ export function Evaluation({
   qimEnVraiFaux?: boolean;
   signalementPossible?: boolean;
 }) {
-  const [difficulte, setDifficulte] = useState<Difficulte>("habilitation");
+  // Tirage d'habilitation par défaut ; Découverte seule si la banque du
+  // critère ne peut pas réunir un tirage concluant.
+  const banqueSuffisante = banque.length >= MIN_QUESTIONS_HABILITATION;
+  const [difficulte, setDifficulte] = useState<Difficulte>(banqueSuffisante ? "habilitation" : "decouverte");
   const [mode, setMode] = useState<Mode>("evaluation");
   const [demarre, setDemarre] = useState(false);
   const [graine, setGraine] = useState(0);
@@ -335,29 +339,40 @@ export function Evaluation({
         </p>
         <p className="encart">
           Seuil de réussite <strong>{seuil}&nbsp;%</strong>. Une erreur sur une question éliminatoire
-          rend le critère non acquis, quel que soit le score.
+          rend le critère non acquis, quel que soit le score. Autour du seuil, à plus ou moins le poids
+          d&apos;une question, le verdict est <strong>indéterminé</strong> et le tuteur l&apos;arbitre au
+          visa du rapport. Un tirage de moins de {MIN_QUESTIONS_HABILITATION} questions est{" "}
+          <strong>non concluant</strong> : il ne peut pas être porté au rapport d&apos;habilitation.
         </p>
+        {!banqueSuffisante && (
+          <p className="encart encart--attention">
+            La banque de ce critère compte {banque.length} question{banque.length > 1 ? "s" : ""} validée{banque.length > 1 ? "s" : ""} sur les{" "}
+            {MIN_QUESTIONS_HABILITATION} requises : seul le tirage Découverte est ouvert, non concluant, pour se situer.
+          </p>
+        )}
         <fieldset className="choix-difficulte">
           <legend className="champ-titre">Tirage</legend>
           {(Object.keys(DIFFICULTES) as Difficulte[]).map((d) => {
             const vise = DIFFICULTES[d].nb;
             const reel = vise === null ? banque.length : Math.min(vise, banque.length);
+            const concluant = reel >= MIN_QUESTIONS_HABILITATION;
+            const ferme = d !== "decouverte" && !banqueSuffisante;
             return (
-              <label key={d} className={`option${difficulte === d ? " est-choisie" : ""}`}>
+              <label key={d} className={`option${difficulte === d ? " est-choisie" : ""}${ferme ? " est-fermee" : ""}`}>
                 <input
                   type="radio"
                   name="difficulte"
                   checked={difficulte === d}
+                  disabled={ferme}
                   onChange={() => setDifficulte(d)}
                 />
                 <span>
                   <strong>{DIFFICULTES[d].libelle}</strong> — {reel} question{reel > 1 ? "s" : ""}
+                  {concluant ? "" : " · non concluant"}
                   <br />
                   <span className="legende">
                     {DIFFICULTES[d].description}
-                    {vise !== null && vise > banque.length
-                      ? " La banque du critère en compte moins : toutes sont posées."
-                      : ""}
+                    {ferme ? ` Fermé : ${MIN_QUESTIONS_HABILITATION} questions validées sont nécessaires.` : ""}
                   </span>
                 </span>
               </label>
@@ -517,30 +532,31 @@ export function Evaluation({
 
   // ────────────────────────────────────────────────────────────── correction
   if (resultat) {
+    const decision = decider(resultat.detail, resultat.seuilReussite, { minQuestions: resultat.minQuestions });
+    const classeVerdict =
+      decision.verdictBrut === "acquis"
+        ? "resultat-entete--acquis"
+        : decision.verdictBrut === "non_acquis"
+          ? "resultat-entete--refuse"
+          : decision.verdictBrut === "indetermine"
+            ? "resultat-entete--indetermine"
+            : "resultat-entete--non-concluant";
     return (
       <>
-        <div
-          className={`resultat-entete ${resultat.reussi ? "resultat-entete--acquis" : "resultat-entete--refuse"}`}
-          role="status"
-        >
+        <div className={`resultat-entete ${classeVerdict}`} role="status">
           <span className="score">{resultat.score}&nbsp;%</span>
           <div>
-            <h2 style={{ margin: 0 }}>
-              {resultat.reussi ? "Critère acquis pour cette évaluation" : "Critère non acquis"}
-            </h2>
+            <h2 style={{ margin: 0 }}>{LIBELLES_VERDICT[decision.verdictBrut]}</h2>
             <p style={{ margin: ".25rem 0 0" }}>
               {nombre(resultat.pointsObtenus)} / {resultat.pointsTotal} points — seuil de réussite {seuil}&nbsp;%
-              — {resultat.tirage}
+              — bande de garde {decision.bandeBasse} à {decision.bandeHaute}&nbsp;% — {resultat.tirage}
             </p>
           </div>
         </div>
 
-        {resultat.echecEliminatoire && (
-          <p className="encart encart--attention">
-            <strong>Échec sur une question éliminatoire :</strong> le critère est non acquis quel que
-            soit le score.
-          </p>
-        )}
+        <p className={`encart${decision.verdictBrut === "acquis" ? "" : " encart--attention"}`}>
+          {expliquerVerdict(decision)}
+        </p>
 
         {resultat.detail.map((d, i) => rendreCorrection(d, i, posees.find((q) => q.id === d.questionId)))}
 

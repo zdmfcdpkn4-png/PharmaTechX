@@ -128,6 +128,22 @@ apprenant. Le tuteur puis le pharmacien responsable visent depuis
 empreinte. Un rapport ne se modifie pas : il s'annule avec motif. Tout est
 journalisé. `/admin/rapports/[id]/imprimer` rend le rapport A4 avec ses visas.
 
+**Décision** (`lib/decision.ts`, modèle de la console métrologique) : verdict
+brut acquis / non acquis / **indéterminé** (score dans la bande de garde, soit
+le seuil à plus ou moins le poids d'une question) / **non concluant** (moins
+de 10 questions : pas de rapport). Un verdict indéterminé est tranché par un
+**arbitrage motivé du tuteur** avant son visa ; le verdict brut reste imprimé
+à côté. Un signalement ouvert sur une question du tirage **verrouille** visas
+et arbitrage ; une question retirée de la banque est exclue du calcul.
+
+**Signature** : le pharmacien dépose une image depuis `/admin/signature`
+(réduite à 600 px par le navigateur, rattachée à son code admin) ; elle est
+incrustée dans le rapport à son visa, qui clôt le rapport. **Archivage** : sur
+un rapport clos, « Paquet d'archivage » livre un zip avec le HTML signé
+autoportant, la ligne CSV du registre et le JSON complet ; le registre
+cumulatif s'exporte depuis `/admin/rapports`, et `/admin/personnel` tient le
+répertoire par agent et par critère (export CSV).
+
 ## 9. Où éditer quoi
 
 | Besoin | Fichier |
@@ -137,7 +153,10 @@ journalisé. `/admin/rapports/[id]/imprimer` rend le rapport A4 avec ses visas.
 | Formats, barèmes, notation | `content/types.ts`, `content/schema.ts` |
 | Banque déposée (requêtes) | `content/banque-db.ts` |
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
-| Rapport A4 | `lib/rapport.ts` ; enregistrement et visas `lib/rapports.ts` |
+| Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
+| Règle de décision (bande de garde, non concluant) | `lib/decision.ts` |
+| Registre, répertoire, JSON d'archive, zip | `lib/registre.ts`, `lib/zip.ts` |
+| Signature du pharmacien | `lib/signatures.ts`, `app/admin/signature` |
 | Schéma de la base | `lib/schema.ts` (appliqué par `lib/db.ts`) |
 | Stockage des documents | `lib/stockage.ts` ; images `lib/images.ts` |
 | Rôles, codes, sessions, limiteur | `lib/auth.ts`, `lib/limiteur.ts` |
@@ -148,24 +167,28 @@ journalisé. `/admin/rapports/[id]/imprimer` rend le rapport A4 avec ses visas.
 ## 10. Tests
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
-d'import (texte et JSON), constructeur de rapport. `npm run verifier` enchaîne
-typecheck, lint et tests.
+d'import (texte et JSON), décision (bande de garde, non concluant,
+exclusions, arbitrage), constructeur de rapport, registre CSV et JSON,
+archive zip. `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
 serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=nominative` :
-amorçage, codes, création et import de questions avec image, éditeur de
-schéma, évaluation complète, signalement, émission d'un rapport, visas tuteur
-et pharmacien, rapport A4, dépôt de document, connexion tuteur, mode
-entraînement, limiteur de connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
+amorçage, codes, dépôt de la signature, création et import de dix questions
+avec image, éditeur de schéma, évaluation à 80 % (verdict indéterminé),
+signalement qui verrouille les visas, émission d'un rapport, arbitrage,
+visas tuteur et pharmacien avec signature incrustée, rapport A4, paquet
+d'archivage, registre et répertoire CSV, dépôt de document, connexion tuteur,
+mode entraînement, limiteur de connexion. Voir l'en-tête de
+`e2e/parcours.e2e.js`.
 
 ## 11. Reste à faire et questions ouvertes
 
 La liste complète, ordonnée par impact, est dans
 `docs/QUESTIONS-OUVERTES.md` ; les choix d'intégration dans
-`docs/DECISIONS.md`. En tête : la référence « métrologie » du circuit de
-signature, la décision de conservation nominative (RGPD), le statut du
-dispositif en audit, l'hébergeur, les barèmes à confirmer, les 56 modules à
-rédiger.
+`docs/DECISIONS.md`. En tête : la décision de conservation nominative (RGPD),
+le statut du dispositif en audit, l'hébergeur, les paramètres de la décision
+(bande de garde, minimum de questions), les barèmes à confirmer, les 56
+modules à rédiger.
 
 ## 12. Limites connues
 

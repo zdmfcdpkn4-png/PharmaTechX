@@ -4,6 +4,7 @@ import { ordreLecture, motAttendu, verdictLegende } from "@/content/schema";
 import { banqueDuModule, noterQuestion } from "@/content/types";
 import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
+import { MIN_QUESTIONS_HABILITATION, decider, type Verdict } from "@/lib/decision";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +72,19 @@ export interface ResultatEvaluation {
   pointsTotal: number;
   score: number;
   echecEliminatoire: boolean;
+  /** `true` si et seulement si le verdict brut est « acquis ». */
   reussi: boolean;
+  /**
+   * Verdict brut (voir `lib/decision.ts`) : acquis, non acquis, indéterminé
+   * (bande de garde, arbitrage du tuteur) ou non concluant (tirage trop court).
+   */
+  verdict: Verdict;
+  /** Largeur de la bande de garde, en points de pourcentage, et ses bornes. */
+  bande: number;
+  bandeBasse: number;
+  bandeHaute: number;
+  concluant: boolean;
+  minQuestions: number;
   detail: DetailQuestion[];
   horodatage: string;
   horodatageIso: string;
@@ -206,10 +219,7 @@ export async function POST(request: Request) {
     return base;
   });
 
-  const pointsTotal = posees.length;
-  const pointsObtenus = Math.round(detail.reduce((s, d) => s + d.note, 0) * 100) / 100;
-  const score = pointsTotal === 0 ? 0 : Math.round((pointsObtenus / pointsTotal) * 100);
-  const echecEliminatoire = detail.some((d) => d.eliminatoire && !d.correct);
+  const decision = decider(detail, mod.seuilReussite, { minQuestions: MIN_QUESTIONS_HABILITATION });
   const maintenant = new Date();
 
   const sansJeton: Omit<ResultatEvaluation, "jeton"> = {
@@ -217,11 +227,17 @@ export async function POST(request: Request) {
     moduleTitre: mod.titre,
     critereId: typeof mod.critereId === "string" && mod.critereId !== "[à préciser]" ? mod.critereId : null,
     seuilReussite: mod.seuilReussite,
-    pointsObtenus,
-    pointsTotal,
-    score,
-    echecEliminatoire,
-    reussi: score >= mod.seuilReussite && !echecEliminatoire,
+    pointsObtenus: decision.pointsObtenus,
+    pointsTotal: decision.pointsTotal,
+    score: decision.score,
+    echecEliminatoire: decision.echecEliminatoire,
+    reussi: decision.verdictBrut === "acquis",
+    verdict: decision.verdictBrut,
+    bande: decision.bande,
+    bandeBasse: decision.bandeBasse,
+    bandeHaute: decision.bandeHaute,
+    concluant: decision.concluant,
+    minQuestions: decision.minQuestions,
     detail,
     horodatage: maintenant.toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",

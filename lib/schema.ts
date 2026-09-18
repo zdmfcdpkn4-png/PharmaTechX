@@ -166,6 +166,28 @@ export const SCHEMA: string[] = [
      bloque_jusqua TIMESTAMPTZ,
      maj_le        TIMESTAMPTZ NOT NULL DEFAULT NOW()
    )`,
+
+  // ── signature du pharmacien (modèle métrologie : une image, déposée une
+  //    fois, incrustée dans chaque rapport clos) — une par code admin ─────────
+  `CREATE TABLE IF NOT EXISTS signatures (
+     id       TEXT PRIMARY KEY,
+     acces_id INTEGER REFERENCES acces(id) ON DELETE SET NULL,
+     type     TEXT NOT NULL CHECK (type IN ('image/png','image/jpeg')),
+     octets   BYTEA NOT NULL,
+     largeur  INTEGER NOT NULL CHECK (largeur > 0),
+     hauteur  INTEGER NOT NULL CHECK (hauteur > 0),
+     cree_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+
+  // ── colonnes ajoutées après la première version (idempotent) ──────────────
+  `ALTER TABLE acces ADD COLUMN IF NOT EXISTS signature_id TEXT`,
+  // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
+  // exclues du calcul (retirées de la banque après signalement), fixées au
+  // premier acte de décision — NULL tant qu'elles ne le sont pas.
+  `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS arbitrage JSONB`,
+  `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS exclusions JSONB`,
+  // le visa du pharmacien référence l'image de signature incrustée
+  `ALTER TABLE visas ADD COLUMN IF NOT EXISTS signature_id TEXT`,
 ];
 
 /** Numéro d'un rapport : RAP-2026-0001. */

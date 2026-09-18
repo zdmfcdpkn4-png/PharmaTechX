@@ -71,14 +71,14 @@ export async function actionAmorcage(): Promise<void> {
   if (!baseConfiguree()) return;
   if (await existeAdmin()) redirect("/connexion?erreur=deja-amorce");
   const code = genererCode();
-  await creerAcces(hacherCode(code), "admin", "Administrateur initial", null, null);
+  const accesId = await creerAcces(hacherCode(code), "admin", "Administrateur initial", null, null);
   await journaliser({ role: "systeme", libelle: "amorçage" }, "creation-code", "admin", {
     libelle: "Administrateur initial",
   });
   // La session de cet administrateur est ouverte dans la foulée : sans elle,
   // l'écran d'administration renverrait vers la connexion et le code —
   // affiché une seule fois — serait perdu.
-  await ouvrirSession({ role: "admin", libelle: "Administrateur initial", filiere: null, niveau: null });
+  await ouvrirSession({ role: "admin", libelle: "Administrateur initial", filiere: null, niveau: null, acces: accesId });
   // Le code n'est montré qu'ici, une seule fois, via le paramètre d'URL.
   redirect(`/admin?amorce=${encodeURIComponent(code)}`);
 }

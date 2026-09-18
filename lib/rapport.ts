@@ -1,4 +1,12 @@
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
+import {
+  LIBELLES_COURTS_VERDICT,
+  LIBELLES_VERDICT,
+  decider,
+  expliquerVerdict,
+  type Decision,
+  type Verdict,
+} from "./decision";
 
 /**
  * Rapport d'évaluation — document A4 imprimable, repris de la maquette
@@ -23,6 +31,16 @@ export interface VisaRapport {
   /** Date lisible (« 18 septembre 2026 à 14:02 »). */
   date: string;
   commentaire?: string;
+  /** Image de signature incrustée (adresse `data:`), visa du pharmacien. */
+  signatureDataUri?: string;
+}
+
+/** Décision telle qu'elle s'imprime : verdict brut, arbitrage, exclusions. */
+export interface DecisionImprimable {
+  decision: Decision;
+  verdictFinal: Verdict;
+  arbitrage?: { verdict: "acquis" | "non_acquis"; motif: string; nom: string; date: string } | null;
+  exclusions?: { questionId: string; motif: string }[];
 }
 
 export interface EnTeteRapport {
@@ -44,6 +62,17 @@ export interface OptionsRapport {
   dureeConservationMois?: number | null;
   /** Date d'édition, sinon maintenant. */
   dateEdition?: Date;
+  /** Décision enregistrée ; sinon elle est recalculée du résultat seul, sans exclusion ni arbitrage. */
+  decision?: DecisionImprimable;
+}
+
+function decisionParDefaut(r: ResultatRapport): DecisionImprimable {
+  const decision = decider(r.detail, r.seuilReussite, { minQuestions: r.minQuestions });
+  return { decision, verdictFinal: decision.verdictBrut, arbitrage: null, exclusions: [] };
+}
+
+function couleurVerdict(v: Verdict): string {
+  return v === "acquis" ? "#1f6b45" : v === "non_acquis" ? "#99271f" : v === "indetermine" ? "#8a5a00" : "#566370";
 }
 
 export type ResultatRapport = ResultatEvaluation & { tentative?: number };
@@ -97,11 +126,16 @@ function tableauVisas(visas: VisaRapport[], empreinte?: string): string {
   const lignes = QUALITES_VISA.map((q) => {
     const v = visas.find((x) => x.qualite === q.qualite);
     if (v) {
+      const signature = v.signatureDataUri
+        ? `<img class="signature" src="${v.signatureDataUri}" alt="Signature de ${echapper(v.nom)}">`
+        : "";
+      // Le visa de l'apprenant porte l'attestation en commentaire : ne pas la répéter.
+      const commentaire = v.commentaire && v.commentaire !== q.objet ? v.commentaire : "";
       return `<tr>
         <td class="q">${q.libelle}</td>
-        <td>${echapper(q.objet)}${v.commentaire ? `<br><em>${echapper(v.commentaire)}</em>` : ""}</td>
+        <td>${echapper(q.objet)}${commentaire ? `<br><em>${echapper(commentaire)}</em>` : ""}</td>
         <td>${echapper(v.date)}</td>
-        <td><strong>${echapper(v.nom)}</strong><br><span class="petit">visa électronique${empreinte ? ` · ${empreinte.slice(0, 12)}` : ""}</span></td>
+        <td>${signature}<strong>${echapper(v.nom)}</strong><br><span class="petit">visa électronique${empreinte ? ` · ${empreinte.slice(0, 12)}` : ""}</span></td>
       </tr>`;
     }
     return `<tr>
@@ -119,23 +153,33 @@ function tableauVisas(visas: VisaRapport[], empreinte?: string): string {
 }
 
 function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRapport, premiere: boolean): string {
-  const verdict = r.reussi ? "Critère acquis pour cette évaluation" : "Critère non acquis";
-  const motif = r.reussi
-    ? "Le seuil est atteint et aucune question éliminatoire n'est en échec. La suite du parcours reste à réaliser au poste."
-    : r.echecEliminatoire
-      ? "Échec sur une question éliminatoire : le critère est non acquis quel que soit le score global. Reprise du module puis nouveau tirage."
-      : "Le seuil de réussite n'est pas atteint. Reprise du module puis nouveau tirage.";
+  const dec = o.decision ?? decisionParDefaut(r);
+  const d = dec.decision;
+  const vf = dec.verdictFinal;
+  const exclues = new Map((dec.exclusions ?? []).map((e) => [e.questionId, e.motif]));
+  const verdict = LIBELLES_VERDICT[vf];
+  const motif = dec.arbitrage
+    ? `Arbitrage du tuteur : <strong>${LIBELLES_COURTS_VERDICT[dec.arbitrage.verdict]}</strong> — ${echapper(dec.arbitrage.motif)} <span class="petit">(${echapper(dec.arbitrage.nom)}, ${echapper(dec.arbitrage.date)})</span>`
+    : echapper(expliquerVerdict(d));
+  const brut = dec.arbitrage
+    ? `Verdict brut : ${LIBELLES_COURTS_VERDICT[d.verdictBrut]} (score ${d.score} %, bande de garde ${d.bandeBasse} à ${d.bandeHaute} %), conservé avec l'arbitrage.`
+    : `Bande de garde : ${d.bandeBasse} à ${d.bandeHaute} % — seuil de ${d.seuil} % à plus ou moins le poids d'une question.`;
+  const exclusionsTexte =
+    d.nbExclues > 0
+      ? `${d.nbExclues} question${d.nbExclues > 1 ? "s" : ""} exclue${d.nbExclues > 1 ? "s" : ""} du calcul (retirée${d.nbExclues > 1 ? "s" : ""} de la banque après signalement) ; score initial ${r.score} % sur ${r.pointsTotal} questions.`
+      : "";
 
   const synthese = r.detail
-    .map(
-      (d, i) => `<tr>
+    .map((q, i) => {
+      const exclue = exclues.has(q.questionId);
+      return `<tr${exclue ? ' class="exclue"' : ""}>
       <td class="mono">${i + 1}</td>
-      <td>${formatDe(d)}${d.eliminatoire ? " · éliminatoire" : ""}</td>
-      <td>${echapper(objetDe(d))}</td>
-      <td><strong>${etatDe(d)}</strong></td>
-      <td class="mono droite">${nombre(d.note)} / 1</td>
-    </tr>`,
-    )
+      <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}</td>
+      <td>${echapper(objetDe(q))}</td>
+      <td><strong>${etatDe(q)}</strong>${exclue ? '<br><span class="petit">exclue du calcul</span>' : ""}</td>
+      <td class="mono droite">${exclue ? "—" : `${nombre(q.note)} / 1`}</td>
+    </tr>`;
+    })
     .join("");
 
   const identification = `<table class="ident">
@@ -149,6 +193,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
 
   const details = r.detail
     .map((d, i) => {
+      const exclusion = exclues.get(d.questionId);
       const legendes = d.legendes
         ? `<table class="legendes"><thead><tr><th>N°</th><th>Réponse donnée</th><th>Attendu</th><th>Verdict</th></tr></thead><tbody>${d.legendes
             .map(
@@ -166,6 +211,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
           ${d.eliminatoire ? '<span class="elim">Éliminatoire</span>' : ""}
           <span class="mono points">${nombre(d.note)} / 1 point</span>
         </div>
+        ${exclusion ? `<p class="petit"><strong>Exclue du calcul</strong> — ${echapper(exclusion)}.</p>` : ""}
         ${d.situation ? `<p class="petit">Mise en situation — ${echapper(d.situation)}</p>` : ""}
         <p class="enonce">${echapper(d.enonce)}</p>
         ${legendes}
@@ -186,14 +232,17 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
       <tbody><tr>
         <td class="v">
           <div class="lib">Verdict de l'évaluation</div>
-          <div class="grand" style="color:${r.reussi ? "#1f6b45" : "#99271f"}">${verdict}</div>
+          <div class="grand" style="color:${couleurVerdict(vf)}">${verdict}</div>
           <div>${motif}</div>
+          <div class="petit">${brut}</div>
+          ${exclusionsTexte ? `<div class="petit">${exclusionsTexte}</div>` : ""}
         </td>
         <td class="s">
           <div class="lib">Score</div>
-          <div class="score">${r.score} %</div>
-          <div class="petit">${nombre(r.pointsObtenus)} / ${r.pointsTotal} points</div>
-          <div>Seuil de réussite : <strong>${r.seuilReussite} %</strong></div>
+          <div class="score">${d.score} %</div>
+          <div class="petit">${nombre(d.pointsObtenus)} / ${d.pointsTotal} points${d.nbExclues > 0 ? " comptés" : ""}</div>
+          <div>Seuil de réussite : <strong>${d.seuil} %</strong></div>
+          ${d.concluant ? "" : `<div class="petit">Tirage non concluant : ${d.minQuestions} questions requises.</div>`}
         </td>
       </tr></tbody>
     </table>
@@ -285,6 +334,8 @@ export function construireRapport(
   .synthese th, .legendes th { text-align: left; background: #005586; color: #fff; font-size: 9pt; letter-spacing: .04em; text-transform: uppercase; border-color: #005586; }
   .visas th { text-align: left; background: #f0f2f4; font-size: 9pt; letter-spacing: .04em; text-transform: uppercase; }
   .visas td.vide { height: 56px; }
+  .visas img.signature { display: block; max-height: 46px; max-width: 170px; margin-bottom: 3px; }
+  .synthese tr.exclue td { color: #566370; background: #f7f8f9; }
   .aide { color: #566370; }
   .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
   .droite { text-align: right; }

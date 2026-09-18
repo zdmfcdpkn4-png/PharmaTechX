@@ -9,6 +9,12 @@
  * Le scénario crée l'administrateur initial : il ne se rejoue que sur une
  * base réinitialisée. Il termine par le blocage volontaire de l'adresse après
  * cinq échecs de connexion (quinze minutes).
+ *
+ * Le parcours de décision (modèle métrologie) est joué avec une banque de dix
+ * questions dont le scénario connaît le corrigé : score de 80 % dans la bande
+ * de garde, signalement qui verrouille les visas, arbitrage du tuteur, visa
+ * du pharmacien avec signature incrustée, paquet d'archivage, registre et
+ * répertoire du personnel.
  */
 const path = require("node:path");
 const fs = require("node:fs");
@@ -47,29 +53,44 @@ const PNG = pngDeTest();
 const etapes = [];
 const ok = (m) => { etapes.push("✔ " + m); console.log("✔", m); };
 
-const TEXTE_IMPORT = `QCM 1. Quelle est la voie d'exposition prépondérante ? (plusieurs réponses)
-A. L'inhalation (F)
-B. La voie cutanée (V)
-C. L'ingestion (F)
-D. La piqûre seule (F)
-Justification : les mesures de contamination surfacique montrent une exposition cutanée.
-Source : INRS — TF 255 — 2020 — https://www.inrs.fr/media.html?refINRS=TF+255
-Éliminatoire : oui
+/*
+ * Banque déposée : huit QCM, un QIM, un schéma. Le scénario connaît le
+ * corrigé et répond faux aux QCM 2 et 3 : 8 / 10 = 80 %, dans la bande de
+ * garde (70 à 89 %), donc verdict indéterminé.
+ */
+const QCMS = [
+  { enonce: "Quelle est la voie d'exposition prépondérante ? (plusieurs réponses)", options: [["L'inhalation", false], ["La voie cutanée", true], ["L'ingestion", false], ["La piqûre seule", false]], justification: "Les mesures de contamination surfacique montrent une exposition cutanée.", source: "INRS — TF 255 — 2020 — https://www.inrs.fr/media.html?refINRS=TF+255", eliminatoire: true },
+  { enonce: "Quel grade correspond à un poste de travail en isolateur ?", options: [["Grade A", true], ["Grade B", false], ["Grade C", false], ["Grade D", false]], justification: "Le volume de travail est de classe A.", faux: true },
+  { enonce: "Combien de paires de gants porte-t-on sous isolateur ?", options: [["Aucune", false], ["Une", false], ["Deux", true], ["Trois", false]], justification: "Double gantage.", faux: true },
+  { enonce: "À quelle fréquence change-t-on les gants de l'isolateur ?", options: [["Selon la procédure interne", true], ["Jamais", false], ["Une fois par an", false], ["À chaque préparation", false]], justification: "Selon procédure." },
+  { enonce: "Que faire en cas de rupture de gant ?", options: [["Continuer", false], ["Arrêter et changer le gant", true], ["Ignorer", false], ["Rincer à l'eau", false]], justification: "Arrêt immédiat." },
+  { enonce: "Quel document trace la préparation ?", options: [["La fiche de fabrication", true], ["Le cahier de liaison", false], ["Rien", false], ["Le planning", false]], justification: "Traçabilité." },
+  { enonce: "Qui libère la préparation ?", options: [["Le préparateur seul", false], ["Le pharmacien", true], ["L'infirmier", false], ["Le patient", false]], justification: "Libération pharmaceutique." },
+  { enonce: "Quelle est la durée maximale de conservation d'un flacon entamé sans donnée de stabilité ?", options: [["Selon le RCP", true], ["Une semaine", false], ["Un mois", false], ["Illimitée", false]], justification: "RCP." },
+];
+const QIM = {
+  enonce: "Concernant les ZAC, indiquer les propositions exactes.",
+  propositions: [["ISO 5 = 3 520 particules par m³", true], ["Grade A : ISO 5 au repos et en activité", true], ["Le comptage particulaire renseigne sur la charge microbiologique", false], ["L'opérateur est le principal contributeur", true], ["Une sortie brève dispense de refaire l'habillage", false]],
+};
+const SCHEMA = { enonce: "Légendez les éléments repérés sur cette coupe d'isolateur.", mots: ["sas de transfert", "filtre terminal", "plan de travail", "bas"] };
 
-QIM 2. Concernant les ZAC, indiquer les propositions exactes.
-A. ISO 5 = 3 520 particules par m³ (V)
-B. Grade A : ISO 5 au repos et en activité (V)
-C. Le comptage particulaire renseigne sur la charge microbiologique (F)
-D. L'opérateur est le principal contributeur (V)
-E. Une sortie brève dispense de refaire l'habillage (F)
-
-SCHÉMA 1. Légendez les éléments repérés sur cette coupe d'isolateur.
+const TEXTE_IMPORT = [
+  ...QCMS.map((q, i) => {
+    const lignes = [`QCM ${i + 1}. ${q.enonce}`];
+    q.options.forEach(([texte, vrai], k) => lignes.push(`${"ABCD"[k]}. ${texte} (${vrai ? "V" : "F"})`));
+    lignes.push(`Justification : ${q.justification}`);
+    if (q.source) lignes.push(`Source : ${q.source}`);
+    if (q.eliminatoire) lignes.push("Éliminatoire : oui");
+    return lignes.join("\n");
+  }),
+  [`QIM 9. ${QIM.enonce}`, ...QIM.propositions.map(([t, v], k) => `${"ABCDE"[k]}. ${t} (${v ? "V" : "F"})`)].join("\n"),
+  `SCHÉMA 1. ${SCHEMA.enonce}
 Image : isolateur-coupe.png
 1. sas de transfert (8, 12, 33, 25)
 2. filtre HEPA | filtre terminal (54, 12, 37, 25)
 3. plan de travail (8, 56, 83, 31)
-Justification : cf. procédure interne.
-`;
+Justification : cf. procédure interne.`,
+].join("\n\n") + "\n";
 
 (async () => {
   const browser = await chromium.launch();
@@ -106,6 +127,15 @@ Justification : cf. procédure interne.
   assert.match(codeTuteur, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
   ok("code tuteur créé : " + codeTuteur);
 
+  // 2b. signature du pharmacien déposée (image réduite dans le navigateur)
+  await page.goto(BASE + "/admin/signature");
+  await page.waitForSelector("text=Aucune signature déposée");
+  await page.setInputFiles("input[name=fichier]", PNG);
+  await page.waitForSelector("text=Signature enregistrée");
+  await page.reload();
+  await page.waitForSelector("img[alt='Signature déposée']");
+  ok("signature du pharmacien déposée et rattachée au code admin");
+
   // 3. nouvelle question QCM validée
   await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
   await page.fill("textarea[name=enonce]", "Question de test créée dans le formulaire ?");
@@ -132,20 +162,20 @@ Justification : cf. procédure interne.
   await page.waitForSelector("[role=alert]:has-text('au moins une proposition exacte')");
   ok("formulaire : erreur affichée sans perdre la saisie");
 
-  // 4. import texte + image
+  // 4. import texte + image : dix questions
   await page.goto(BASE + "/admin/questions/import");
   await page.selectOption("select[name=moduleId]", "critere-b1-02");
   await page.fill("textarea[name=texte]", TEXTE_IMPORT);
   await page.setInputFiles("input[name=images]", PNG);
   await page.click("button:has-text('Analyser')");
-  await page.waitForSelector("h2:has-text('Aperçu — 3 questions')");
+  await page.waitForSelector("h2:has-text('Aperçu — 10 questions')");
   assert.equal(await page.locator("text=Image appariée").count(), 1);
   await page.click("button:has-text('Ajouter à la banque')");
-  await page.waitForSelector("text=3 questions ajoutées");
-  ok("import : 3 questions reconnues, image appariée, ajoutées à vérifier");
+  await page.waitForSelector("text=10 questions ajoutées");
+  ok("import : 10 questions reconnues, image appariée, ajoutées à vérifier");
 
-  // 5. validation des 3 questions importées
-  for (let i = 0; i < 3; i++) {
+  // 5. validation des questions importées
+  for (let i = 0; i < 12; i++) {
     await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
     if (!(await bouton.count())) break;
@@ -153,8 +183,8 @@ Justification : cf. procédure interne.
     await page.waitForLoadState("networkidle");
   }
   await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
-  assert.equal(await page.locator(".question-ligne").count(), 3);
-  ok("3 questions importées validées");
+  assert.equal(await page.locator(".question-ligne").count(), 10);
+  ok("10 questions importées validées");
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
   await page.locator(".question-ligne:has-text('Schéma') a:has-text('Modifier')").first().click();
@@ -170,40 +200,49 @@ Justification : cf. procédure interne.
   await page.waitForURL(/ok=modifiee/);
   ok("éditeur de schéma : légende posée au clic et enregistrée (4 légendes)");
 
-  // 7. apprenant : module évaluable sans texte, évaluation complète
+  // 7. apprenant : tirage complet de dix questions, corrigé connu, 8 / 10
   await page.goto(BASE + "/module/critere-b1-02");
   await page.waitForSelector("a:has-text(\"Passer l'évaluation\")");
   await page.click("a:has-text(\"Passer l'évaluation\")");
   await page.waitForSelector("text=Régler l'évaluation");
+  assert.equal(await page.locator("input[name=difficulte]:disabled").count(), 0);
   await page.check("input[name=difficulte] >> nth=2"); // Complet
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("fieldset.question");
   const fieldsets = page.locator("fieldset.question");
   const n = await fieldsets.count();
-  assert.equal(n, 3);
+  assert.equal(n, 10);
   for (let i = 0; i < n; i++) {
     const f = fieldsets.nth(i);
+    const enonce = (await f.locator(".question-enonce").innerText()).trim();
     if (await f.locator(".schema").count()) {
       const inputs = f.locator(".schema-legendes input");
       const ni = await inputs.count();
-      const mots = ["sas de transfert", "filtre terminal", "plan de travail", "bas"];
-      for (let k = 0; k < ni; k++) await inputs.nth(k).fill(mots[k] ?? "x");
+      assert.equal(ni, 4);
+      for (let k = 0; k < ni; k++) await inputs.nth(k).fill(SCHEMA.mots[k]);
     } else if (await f.locator(".proposition").count()) {
-      const props = f.locator(".proposition");
-      const np = await props.count();
-      for (let k = 0; k < np; k++) await props.nth(k).locator("label:has-text('Vrai') input").check();
+      for (const [texte, vrai] of QIM.propositions) {
+        await f.locator(".proposition", { hasText: texte }).locator(`label:has-text('${vrai ? "Vrai" : "Faux"}') input`).check();
+      }
     } else {
-      await f.locator("label.option input").nth(1).check();
+      const q = QCMS.find((x) => x.enonce === enonce);
+      assert.ok(q, "QCM inconnu : " + enonce);
+      const [bonne] = q.options.find(([, v]) => v);
+      const [mauvaise] = q.options.find(([, v]) => !v);
+      await f.locator("label.option", { hasText: q.faux ? mauvaise : bonne }).locator("input").check();
     }
   }
   await page.click("button:has-text(\"Valider l'évaluation\")");
   await page.waitForSelector(".resultat-entete");
-  const score = await page.locator(".resultat-entete .score").innerText();
-  ok("évaluation complète corrigée : " + score.replace(/\s+/g, " "));
+  const score = (await page.locator(".resultat-entete .score").innerText()).replace(/\s+/g, " ");
+  assert.equal(score, "80 %");
+  await page.waitForSelector(".resultat-entete--indetermine");
+  await page.waitForSelector("h2:has-text('Verdict indéterminé')");
+  ok("évaluation complète corrigée : 80 %, verdict indéterminé (bande de garde 70 à 89 %)");
   assert.equal(await page.locator(".schema-legendes--revele").count(), 1);
   assert.equal(await page.locator(".schema-legendes--revele .legende-juste").count(), 4);
 
-  // 8. signalement
+  // 8. signalement sur la première question du tirage
   await page.locator("details.signaler summary").first().click();
   await page.locator("details.signaler select").first().selectOption("Ambigu");
   await page.locator("details.signaler textarea").first().fill("Test de signalement e2e");
@@ -230,32 +269,82 @@ Justification : cf. procédure interne.
   assert.match(dl.suggestedFilename(), /^rapport-evaluation-rap-\d{4}-\d{4}-apprenant-test-/);
   ok("rapport téléchargé : " + dl.suggestedFilename());
 
-  // 10. visas tuteur puis pharmacien (session admin)
+  // 10. verrou : signalement ouvert sur le tirage, aucun visa possible
   await page.goto(BASE + "/admin/rapports");
+  await page.waitForSelector(`text=${numero}`);
+  await page.waitForSelector("text=arbitrage attendu");
   await page.click(`a:has-text('${numero}')`);
-  await page.waitForSelector("h3:has-text('Visa du tuteur')");
-  await page.fill("form:has(input[value=tuteur]) input[name=nom]", "Tuteur Test");
-  await page.click("button:has-text('Apposer le visa tuteur')");
-  await page.waitForSelector("text=Visa enregistré");
-  await page.waitForSelector("h3:has-text('Visa du pharmacien')");
-  await page.fill("form:has(input[value=pharmacien]) input[name=nom]", "Pharmacien Test");
-  await page.click("button:has-text('Apposer le visa pharmacien')");
-  await page.waitForSelector("text=Clos — visé par le pharmacien responsable");
-  ok("circuit de visas : tuteur puis pharmacien, rapport clos");
-  const impr = await page.request.get(page.url().replace(/\?.*$/, "") + "/imprimer");
-  const html = await impr.text();
-  assert.ok(html.includes("visa électronique") && html.includes(numero) && html.includes("Pharmacien Test"));
-  ok("rapport A4 imprimable avec visas électroniques");
+  await page.waitForSelector("text=Visas verrouillés");
+  const titreVisaTuteur = page.getByRole("heading", { level: 3, name: "Visa du tuteur (N3)", exact: true });
+  const titreArbitrage = page.getByRole("heading", { level: 3, name: "Arbitrage du tuteur", exact: true });
+  assert.equal(await titreVisaTuteur.count(), 0);
+  assert.equal(await titreArbitrage.count(), 0);
+  const urlRapport = page.url().replace(/\?.*$/, "");
+  ok("visas verrouillés par le signalement ouvert : ni visa ni arbitrage");
 
-  // 11. signalements et journal
+  // 10b. le signalement est traité : l'arbitrage s'ouvre
   await page.goto(BASE + "/admin/signalements");
   await page.waitForSelector("text=Test de signalement e2e");
   await page.locator("button:has-text('Clore — traité')").first().click();
   await page.waitForSelector("text=Traité par");
+  await page.goto(urlRapport);
+  await titreArbitrage.waitFor();
+  assert.equal(await titreVisaTuteur.count(), 0);
+  ok("signalement clos : arbitrage requis avant le visa du tuteur");
+
+  // 10c. arbitrage motivé, puis visas tuteur et pharmacien (signature incrustée)
+  await page.check("input[name=verdict][value=acquis]");
+  await page.fill("form:has(input[name=verdict]) input[name=nom]", "Tuteur Test");
+  await page.fill("textarea[name=motif]", "Les deux erreurs portent sur des points revus en compagnonnage.");
+  await page.click("button:has-text(\"Enregistrer l'arbitrage\")");
+  await page.waitForSelector("text=Arbitrage enregistré");
+  await page.waitForSelector("text=Arbitrage du tuteur : acquis");
+  await titreVisaTuteur.waitFor();
+  await page.fill("form:has(input[value=tuteur]) input[name=nom]", "Tuteur Test");
+  await page.click("button:has-text('Apposer le visa tuteur')");
+  await page.waitForSelector("text=Visa enregistré");
+  await page.waitForSelector("h3:has-text('Visa du pharmacien')");
+  await page.waitForSelector("text=Votre signature déposée sera incrustée");
+  await page.fill("form:has(input[value=pharmacien]) input[name=nom]", "Pharmacien Test");
+  await page.click("button:has-text('Apposer le visa pharmacien')");
+  await page.waitForSelector("text=Clos — visé par le pharmacien responsable");
+  await page.waitForSelector("img[alt='Signature de Pharmacien Test']");
+  ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée");
+
+  // 10d. rapport A4, paquet d'archivage, registre, répertoire
+  const impr = await page.request.get(urlRapport + "/imprimer");
+  const html = await impr.text();
+  assert.ok(html.includes("visa électronique") && html.includes(numero) && html.includes("Pharmacien Test"));
+  assert.ok(html.includes("Arbitrage du tuteur : <strong>acquis</strong>"));
+  assert.ok(html.includes("Verdict brut : indéterminé"));
+  assert.ok(html.includes('<img class="signature" src="data:image/png;base64,'));
+  ok("rapport A4 : verdict arbitré, verdict brut conservé, signature incrustée");
+  const paquet = await page.request.get(urlRapport + "/paquet");
+  assert.equal(paquet.status(), 200);
+  assert.equal(paquet.headers()["content-type"], "application/zip");
+  const octets = await paquet.body();
+  assert.equal(octets.readUInt32LE(0), 0x04034b50);
+  for (const ext of ["html", "csv", "json"]) assert.ok(octets.includes(Buffer.from(`${numero}.${ext}`)), ext);
+  ok("paquet d'archivage : zip avec HTML, CSV et JSON");
+  const registre = await page.request.get(BASE + "/admin/rapports/registre.csv");
+  const csv = await registre.text();
+  assert.ok(csv.startsWith("﻿numero;statut;"));
+  assert.ok(csv.includes(`${numero};clos;`) && csv.includes(";indéterminé;acquis;acquis;"));
+  ok("registre cumulatif CSV : ligne du rapport, verdict brut et verdict final");
+  await page.goto(BASE + "/admin/personnel");
+  await page.waitForSelector("td:has-text('Apprenant Test')");
+  await page.waitForSelector("td:has-text('80 % · acquis')");
+  const repertoire = await page.request.get(BASE + "/admin/personnel/repertoire.csv");
+  assert.ok((await repertoire.text()).includes("Apprenant Test;Préparateur;B1-02;"));
+  ok("personnel & historique : ligne par agent et critère, export CSV");
+
+  // 11. journal
   await page.goto(BASE + "/admin/journal");
   await page.waitForSelector("code:has-text('emission-rapport')");
+  await page.waitForSelector("code:has-text('arbitrage-rapport')");
   await page.waitForSelector("code:has-text('visa:pharmacien')");
-  ok("signalement clos, journal renseigné");
+  await page.waitForSelector("code:has-text('signature:depot')");
+  ok("journal renseigné : émission, arbitrage, visas, signature");
 
   // 12. documents : dépôt en base
   await page.goto(BASE + "/admin/documents");
