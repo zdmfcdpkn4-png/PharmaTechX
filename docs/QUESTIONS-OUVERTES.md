@@ -226,9 +226,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     fichiers (registre qualité, GED).
 36. **Identifiants d'agents** (question 6, choix a) : format `AG-NNN` généré
     par le site sur une séquence globale, jamais saisi ni réattribué ; clôture
-    sans suppression ; créés et clos par un tuteur ou l'administrateur (choix
-    posé). `[à préciser]` réserver la création et la clôture à
-    l'administrateur ? `[à préciser]` faut-il porter la fonction de l'agent
+    sans suppression ; créés et clos par un tuteur ou l'administrateur,
+    tranché le 18/09/2026 (question 27, choix a) : réserver ces actes au
+    pharmacien n'aurait rien protégé, le tuteur devant déjà savoir qui est
+    l'agent pour viser son rapport ; la correspondance n'est donc pas connue
+    du seul pharmacien. `[à préciser]` faut-il porter la fonction de l'agent
     (préparateur, interne…) sur le rapport autrement qu'à l'édition — une liste
     fermée en base resterait pseudonyme mais rétrécit l'anonymat dans une
     petite équipe. Le nom porté à l'édition n'est pas couvert par le sceau : le

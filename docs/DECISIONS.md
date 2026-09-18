@@ -414,6 +414,19 @@ sait reconnaître un nom de façon fiable ; la garantie est donc procédurale :
 motif, et l'administrateur peut annuler un rapport dont le motif en porterait
 un.
 
+**Création des identifiants d'agents** (question 27, choix a, 18/09/2026) :
+un tuteur ou l'administrateur crée et clôt les identifiants `AG-NNN`, comme
+aujourd'hui. Réserver ces actes au pharmacien (choix b) aurait fait passer
+chaque arrivée par lui sans rien protéger : le tuteur vise les rapports, où
+l'agent n'apparaît que par son identifiant, et il doit donc déjà savoir de
+qui il s'agit pour viser en connaissance de cause. Le partage (choix c)
+ajoutait une asymétrie sans effet, un identifiant clos n'effaçant rien.
+Conséquence à porter au registre, et c'est la contrepartie du choix : la
+connaissance de la correspondance identifiant ↔ personne n'est pas confinée
+au pharmacien responsable, les tuteurs connaissant de fait celle des agents
+qu'ils créent et qu'ils suivent. Le support de la correspondance reste
+`[à préciser]`.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
