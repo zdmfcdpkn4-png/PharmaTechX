@@ -40,8 +40,8 @@ qu'une fois.
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions, documents, ordonnancement, signalements, journal, visa « pharmacien responsable », annulation des rapports |
-| **tuteur** | Banque de questions (créer, déposer, valider, retirer), mises en situation, documents, ordonnancement, signalements, codes de poste, visa « tuteur » |
+| **admin** | Tout : codes de tous rôles, banque de questions, documents, ordonnancement, signalements, journal, visa « pharmacien responsable », annulation et purge des rapports, signature |
+| **tuteur** | Banque de questions (créer, déposer, valider, retirer), mises en situation, documents, ordonnancement, signalements, codes de poste, identifiants d'agents, arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, exporter ou émettre son rapport. Profil par défaut : aucun code requis |
 
 Un code **ne désigne pas une personne** : il ouvre un profil. Les codes sont
@@ -62,10 +62,14 @@ jamais seulement par l'affichage.
 module et d'options seulement), les résultats — ils vivent en mémoire de
 l'onglet, puis dans le rapport que l'apprenant télécharge.
 
-**Sur décision seulement** (`CONSERVATION_RAPPORTS=nominative`) : les
-rapports que l'apprenant choisit d'**émettre** sont enregistrés avec le nom
-qu'il saisit (`rapports`, `visas`). C'est le seul endroit où un nom entre en
-base. Ce mode suppose un cadrage RGPD — voir `docs/QUESTIONS-OUVERTES.md`, A.2.
+**Sur décision seulement** (`CONSERVATION_RAPPORTS=pseudonyme`) : les
+rapports que l'apprenant choisit d'**émettre** sont enregistrés sous son
+identifiant d'agent (`agents`, `rapports`, `visas`). **Aucun nom n'entre en
+base** : l'identifiant est généré par le site (`AG-001`…), la correspondance
+avec la personne est tenue par le pharmacien hors du site, et le nom n'est
+porté qu'à l'édition du rapport. Un identifiant reste une donnée pseudonymisée,
+donc soumise au RGPD : fiche de registre et information des agents dans
+`docs/RGPD.md` et sur `/donnees-personnelles`, à valider par le DPO.
 
 **Invariant de confidentialité** : les bonnes réponses ne quittent jamais le
 serveur avant soumission. Garanti par `import "server-only"` dans
@@ -120,13 +124,17 @@ Sans conservation : le rapport A4 (verdict, identification à compléter,
 synthèse par question, tableau de visas, détail sourcé) est construit sur le
 poste de l'apprenant et téléchargé ; il se signe sur papier.
 
-Avec `CONSERVATION_RAPPORTS=nominative` : l'apprenant **émet** son rapport
-(nom requis) ; le serveur vérifie le sceau posé à la correction, attribue un
-numéro `RAP-AAAA-NNNN`, calcule l'empreinte SHA-256 et enregistre le visa
-apprenant. Le tuteur puis le pharmacien responsable visent depuis
-`/admin/rapports` ; chaque visa porte nom, profil de session, date et
-empreinte. Un rapport ne se modifie pas : il s'annule avec motif. Tout est
-journalisé. `/admin/rapports/[id]/imprimer` rend le rapport A4 avec ses visas.
+Avec `CONSERVATION_RAPPORTS=pseudonyme` : l'apprenant **émet** son rapport
+sous l'identifiant d'agent que son tuteur lui a remis ; le serveur vérifie
+que l'identifiant existe et qu'il est actif, vérifie le sceau posé à la
+correction, attribue un numéro `RAP-AAAA-NNNN`, calcule l'empreinte SHA-256 et
+enregistre le visa apprenant. Le tuteur puis le pharmacien responsable visent
+depuis `/admin/rapports` ; chaque visa porte le profil de session, la date et
+l'empreinte — jamais un nom saisi. Un rapport ne se modifie pas : il s'annule
+avec motif. Tout est journalisé. `/admin/rapports/[id]/imprimer` rend le
+rapport A4 pseudonyme (GET) ; le même chemin en POST, depuis le formulaire
+« Éditer avec le nom », imprime le nom et la fonction saisis avec la mention
+« hors sceau, non enregistré », sans rien conserver.
 
 **Décision** (`lib/decision.ts`, modèle de la console métrologique) : verdict
 brut acquis / non acquis / **indéterminé** (score dans la bande de garde, soit
@@ -140,9 +148,11 @@ et arbitrage ; une question retirée de la banque est exclue du calcul.
 (réduite à 600 px par le navigateur, rattachée à son code admin) ; elle est
 incrustée dans le rapport à son visa, qui clôt le rapport. **Archivage** : sur
 un rapport clos, « Paquet d'archivage » livre un zip avec le HTML signé
-autoportant, la ligne CSV du registre et le JSON complet ; le registre
-cumulatif s'exporte depuis `/admin/rapports`, et `/admin/personnel` tient le
-répertoire par agent et par critère (export CSV).
+autoportant, la ligne CSV du registre et le JSON complet, pseudonyme en GET
+ou avec le nom porté à l'édition en POST (HTML et JSON seulement, hors
+sceau) ; le registre cumulatif s'exporte depuis `/admin/rapports`, et
+`/admin/personnel` tient les identifiants d'agents (création, clôture) et le
+répertoire par identifiant et par critère (export CSV).
 
 ## 9. Où éditer quoi
 
@@ -154,6 +164,8 @@ répertoire par agent et par critère (export CSV).
 | Banque déposée (requêtes) | `content/banque-db.ts` |
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
+| Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |
+| Cadrage RGPD | `docs/RGPD.md`, `app/donnees-personnelles` |
 | Règle de décision (bande de garde, non concluant) | `lib/decision.ts` |
 | Registre, répertoire, JSON d'archive, zip | `lib/registre.ts`, `lib/zip.ts` |
 | Signature du pharmacien | `lib/signatures.ts`, `app/admin/signature` |
@@ -168,27 +180,30 @@ répertoire par agent et par critère (export CSV).
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
 d'import (texte et JSON), décision (bande de garde, non concluant,
-exclusions, arbitrage), constructeur de rapport, registre CSV et JSON,
-archive zip. `npm run verifier` enchaîne typecheck, lint et tests.
+exclusions, arbitrage), identifiants d'agents, constructeur de rapport
+(identifiant, nom hors sceau), registre CSV et JSON, archive zip.
+`npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
-serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=nominative` :
-amorçage, codes, dépôt de la signature, création et import de dix questions
-avec image, éditeur de schéma, évaluation à 80 % (verdict indéterminé),
-signalement qui verrouille les visas, émission d'un rapport, arbitrage,
-visas tuteur et pharmacien avec signature incrustée, rapport A4, paquet
-d'archivage, registre et répertoire CSV, dépôt de document, connexion tuteur,
-mode entraînement, limiteur de connexion. Voir l'en-tête de
-`e2e/parcours.e2e.js`.
+serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme` :
+amorçage, codes, dépôt de la signature, création d'un identifiant d'agent,
+création et import de dix questions avec image, éditeur de schéma, évaluation
+à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
+d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas
+tuteur et pharmacien avec signature incrustée sans nom saisi, rapport A4
+pseudonyme puis avec le nom porté à l'édition, paquet d'archivage, registre et
+répertoire CSV sans nom, journal sans nom, purge, clôture de l'identifiant,
+dépôt de document, connexion tuteur, mode entraînement, limiteur de
+connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
 
 ## 11. Reste à faire et questions ouvertes
 
 La liste complète, ordonnée par impact, est dans
 `docs/QUESTIONS-OUVERTES.md` ; les choix d'intégration dans
-`docs/DECISIONS.md`. En tête : la décision de conservation nominative (RGPD),
-le statut du dispositif en audit, l'hébergeur, les paramètres de la décision
-(bande de garde, minimum de questions), les barèmes à confirmer, les 56
-modules à rédiger.
+`docs/DECISIONS.md`. En tête : la validation RGPD du mode pseudonyme par le
+DPO (`docs/RGPD.md`), le statut du dispositif en audit, l'hébergeur, les
+paramètres de la décision (bande de garde, minimum de questions), les barèmes
+à confirmer, les 56 modules à rédiger.
 
 ## 12. Limites connues
 

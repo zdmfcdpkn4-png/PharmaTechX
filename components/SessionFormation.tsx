@@ -17,9 +17,10 @@ import type { ResultatEvaluation } from "@/app/api/evaluation/route";
  * Fermer l'onglet efface tout — c'est voulu, et c'est ce qui rend l'export du
  * rapport nécessaire à la fin du parcours.
  *
- * Quand la conservation nominative est activée, l'émission d'un rapport
- * l'enregistre côté serveur ; la mémoire de session garde alors le numéro et
- * l'empreinte reçus, pour les inscrire sur le fichier téléchargé.
+ * Quand la conservation des rapports est activée (mode pseudonyme),
+ * l'émission d'un rapport l'enregistre côté serveur sous l'identifiant
+ * d'agent saisi ; la mémoire de session garde alors le numéro, l'empreinte et
+ * l'identifiant reçus, pour les inscrire sur le fichier téléchargé.
  */
 
 export interface ResultatSession extends ResultatEvaluation {
@@ -32,6 +33,8 @@ export interface EmissionSession {
   numero: string;
   empreinte: string;
   emisLe: string;
+  /** Identifiant d'agent sous lequel le rapport est enregistré. */
+  identifiant: string;
 }
 
 interface Contexte {

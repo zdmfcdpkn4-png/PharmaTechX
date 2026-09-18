@@ -6,9 +6,11 @@
  * Portable : PostgreSQL standard, sans extension. Fonctionne sur Render
  * (Postgres managé), Supabase, Neon (Vercel) ou une instance locale.
  *
- * Ce qui porte une identité de personne — et seulement cela — est confiné aux
- * tables `rapports` et `visas`, alimentées uniquement quand la conservation
- * nominative des rapports est activée (`CONSERVATION_RAPPORTS=nominative`).
+ * Aucune table ne porte de nom d'agent. Les rapports enregistrés
+ * (`CONSERVATION_RAPPORTS=pseudonyme`) se rattachent à un identifiant d'agent
+ * généré (`agents`), dont la correspondance avec la personne est tenue hors
+ * du site ; les visas portent le rôle et le libellé du code de session.
+ * Décision du 18/09/2026 (question 6, choix a).
  */
 export const SCHEMA: string[] = [
   // ── accès par code de rôle (inchangé) ─────────────────────────────────────
@@ -116,7 +118,16 @@ export const SCHEMA: string[] = [
      reponse     TEXT
    )`,
 
-  // ── rapports d'évaluation et visas (conservation nominative, sur décision) ─
+  // ── agents pseudonymes : un identifiant généré, sans nom (décision Q6, a) ──
+  `CREATE TABLE IF NOT EXISTS agents (
+     id          SERIAL PRIMARY KEY,
+     identifiant TEXT NOT NULL UNIQUE,
+     actif       BOOLEAN NOT NULL DEFAULT TRUE,
+     cree_le     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     clos_le     TIMESTAMPTZ
+   )`,
+
+  // ── rapports d'évaluation et visas (conservation pseudonyme, sur décision) ─
   `CREATE SEQUENCE IF NOT EXISTS rapports_numero_seq`,
   `CREATE TABLE IF NOT EXISTS rapports (
      id                TEXT PRIMARY KEY,
@@ -124,8 +135,8 @@ export const SCHEMA: string[] = [
      module_id         TEXT NOT NULL,
      module_titre      TEXT NOT NULL,
      critere_id        TEXT,
-     apprenant_nom     TEXT NOT NULL,
-     apprenant_qualite TEXT NOT NULL DEFAULT '',
+     agent_id          INTEGER NOT NULL REFERENCES agents(id),
+     agent_identifiant TEXT NOT NULL,
      tirage            TEXT NOT NULL DEFAULT '',
      resultat          JSONB NOT NULL,
      empreinte         TEXT NOT NULL,
@@ -139,7 +150,6 @@ export const SCHEMA: string[] = [
      id              SERIAL PRIMARY KEY,
      rapport_id      TEXT NOT NULL REFERENCES rapports(id) ON DELETE CASCADE,
      qualite         TEXT NOT NULL CHECK (qualite IN ('apprenant','tuteur','pharmacien')),
-     nom             TEXT NOT NULL,
      role_session    TEXT NOT NULL,
      libelle_session TEXT NOT NULL DEFAULT '',
      commentaire     TEXT NOT NULL DEFAULT '',
@@ -188,6 +198,15 @@ export const SCHEMA: string[] = [
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS exclusions JSONB`,
   // le visa du pharmacien référence l'image de signature incrustée
   `ALTER TABLE visas ADD COLUMN IF NOT EXISTS signature_id TEXT`,
+  // décision du 18/09/2026 (question 6, choix a) : plus aucun nom en base ;
+  // les rapports se rattachent à un identifiant d'agent. Sur une base créée
+  // avant cette version (aucune en production), les colonnes nominatives
+  // disparaissent et les rapports existants perdent leur rattachement.
+  `ALTER TABLE rapports DROP COLUMN IF EXISTS apprenant_nom`,
+  `ALTER TABLE rapports DROP COLUMN IF EXISTS apprenant_qualite`,
+  `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id)`,
+  `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_identifiant TEXT`,
+  `ALTER TABLE visas DROP COLUMN IF EXISTS nom`,
 ];
 
 /** Numéro d'un rapport : RAP-2026-0001. */

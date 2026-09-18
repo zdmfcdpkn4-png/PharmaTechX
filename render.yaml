@@ -32,7 +32,7 @@ services:
       - key: AUTH_SECRET
         generateValue: true
       - key: CONSERVATION_RAPPORTS
-        value: aucune             # « nominative » après décision RGPD — voir docs/QUESTIONS-OUVERTES.md
+        value: aucune             # « pseudonyme » après validation RGPD — voir docs/RGPD.md
 
 databases:
   - name: formation-pharmacotechnie-db

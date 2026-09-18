@@ -1,0 +1,105 @@
+# Rapports d'évaluation enregistrés — fiche de registre et information des agents
+
+Proposition rédigée le 18/09/2026 pour le délégué à la protection des données
+(DPO) de l'établissement, à la suite de la décision du pharmacien responsable
+(question 6, choix a) : les rapports d'évaluation sont enregistrés sous un
+**identifiant d'agent généré par le site, sans nom** ; la correspondance
+identifiant ↔ agent est tenue par le pharmacien hors du site ; le nom n'est
+porté qu'à l'édition du rapport (impression, paquet d'archivage) et n'est
+jamais conservé.
+
+Ce document est une proposition : il ne vaut ni inscription au registre ni
+validation juridique. Les éléments que seul l'établissement détient sont
+marqués `[à compléter]` ; ceux qui demandent un arbitrage du DPO sont marqués
+`[à vérifier]` ; ceux qui attendent une décision du pharmacien responsable,
+`[à préciser]`. Rien n'y est posé par défaut.
+
+## 1. Pourquoi une fiche malgré la pseudonymisation
+
+- Un identifiant attribué à un agent et relié à ses résultats est une donnée
+  **pseudonymisée**, donc une donnée à caractère personnel : règlement (UE)
+  2016/679, art. 4 § 1 et § 5, considérant 26. Dans une équipe de petite
+  taille, l'identifiant, le critère, la date et le visa du tuteur suffisent à
+  retrouver la personne (critère d'individualisation : G29, avis 05/2014 sur
+  les techniques d'anonymisation, WP216).
+- Le traitement reste nominatif hors du site : le rapport imprimé avec le nom
+  entre au dossier d'habilitation, fichier au sens de l'art. 2 § 1 ; la
+  correspondance tenue par le pharmacien est elle-même un fichier.
+- La pseudonymisation est une mesure de protection dès la conception et de
+  sécurité (art. 25 et 32) : elle réduit le risque, en particulier vis-à-vis
+  d'un hébergeur hors de l'établissement, sans dispenser du registre (art. 30)
+  ni de l'information des personnes (art. 13).
+- `[à vérifier]` Le traitement « formation et habilitation du personnel » est
+  vraisemblablement déjà inscrit au registre de l'établissement au titre de la
+  gestion du personnel (référentiel CNIL du 21 novembre 2019). La question
+  pour le DPO est de savoir si cet outil, hébergé hors de l'établissement, s'y
+  rattache comme un simple moyen, ou fait l'objet d'une fiche propre, celle-ci.
+
+## 2. Fiche de registre (art. 30 § 1) — proposition
+
+| Rubrique | Contenu proposé |
+|---|---|
+| Responsable du traitement | `[à compléter]` Centre hospitalier départemental de Vendée, représenté par `[à compléter]` |
+| Délégué à la protection des données | `[à compléter]` nom et adresse de contact |
+| Service opérationnel | Pharmacie à usage intérieur, unité de pharmacotechnie — pharmacien responsable de l'unité |
+| Dénomination | Rapports d'évaluation des connaissances du personnel de pharmacotechnie (étape 2 de la chaîne d'habilitation) |
+| Finalités | 1. Documenter l'évaluation des connaissances (étape 2 sur 6) préalable à l'habilitation du personnel de l'unité. 2. En tenir la traçabilité : registre des rapports, répertoire par agent et par critère. 3. Tracer les actes de décision (arbitrage, visas) et d'administration (journal). Le rapport ne vaut pas habilitation. |
+| Base légale | `[à vérifier]` art. 6 § 1 e (exécution d'une mission d'intérêt public) ou art. 6 § 1 c (obligation légale de documentation de l'habilitation du personnel : bonnes pratiques de préparation, arrêté du 8 août 2023). Le traitement ne repose pas sur le consentement. |
+| Personnes concernées | Agents de l'unité évalués (préparateurs, internes, pharmaciens) ; tuteurs et pharmacien responsable au titre des visas, de l'arbitrage et de la signature |
+| Catégories de données — agents évalués | Identifiant pseudonyme généré (`AG-NNN`), état (actif ou clos) et dates ; par rapport émis : critère, tirage, réponses données et corrigé, score, verdict brut et verdict final, numéro, empreinte, dates ; arbitrage motivé du tuteur ; visas (qualité, profil de session, date, empreinte). |
+| Catégories de données — tuteurs et pharmacien | Profil de session (libellé du code d'accès, choisi par l'administrateur) ; image de signature du pharmacien, rattachée à son code, incrustée dans les rapports clos. |
+| Catégories de données — journal | Rôle, libellé de profil, action, cible (numéro de rapport, identifiant d'agent), date. |
+| Hors du site | Correspondance identifiant ↔ nom, tenue par le pharmacien responsable : `[à compléter]` support, lieu, accès. |
+| Données jamais traitées par le site | Nom, prénom, matricule, adresse électronique ; adresse IP en clair (empreinte salée pour le limiteur de connexion) ; réponses hors émission ; entraînements. Le nom porté à l'édition d'un rapport n'est ni enregistré, ni journalisé, ni transmis dans une adresse. |
+| Données sensibles (art. 9) | Aucune |
+| Destinataires | Tuteurs (profil « tuteur ») ; pharmacien responsable et administrateur du site (profil « admin ») ; aucun tiers |
+| Sous-traitant, hébergeur | `[à compléter]` hébergeur retenu (Render ou Vercel, voir `docs/QUESTIONS-OUVERTES.md`, point A.4), localisation des serveurs, contrat de sous-traitance (art. 28) ; `[à vérifier]` garanties en cas de transfert hors Union européenne (chapitre V) |
+| Durée de conservation | Jusqu'à purge manuelle par l'administrateur, sans purge automatique (décision du 18/09/2026, question 5, choix d). Durée de référence `[à préciser]` par le pharmacien responsable avec le DPO ; la durée d'archivage du dossier d'habilitation `[à vérifier]` fait référence. Journal : `[à préciser]`. Image de signature : jusqu'à son retrait, les rapports clos gardant l'image incrustée. |
+| Mesures de sécurité | Pseudonymisation dès la conception (aucun nom en base, identifiant généré, aucun champ libre sur l'agent) ; codes d'accès hachés (scrypt, sel par code) ; sessions signées (HMAC), 12 h ; contrôle des rôles côté serveur ; limiteur d'échecs de connexion ; résultats scellés par le serveur et empreinte SHA-256 des rapports ; rapports non modifiables (annulation motivée) ; journal des actions ; purge manuelle confirmée et journalisée ; chiffrement en transit, chiffrement au repos et sauvegardes `[à vérifier]` selon l'hébergeur. |
+| Information des personnes | Page `/donnees-personnelles` du site, liée depuis le formulaire d'émission et le pied de page ; `[à compléter]` note de service ou mention au dossier d'habilitation. |
+| Exercice des droits | Auprès du pharmacien responsable (qui tient la correspondance) ou du DPO. Accès ; rectification par annulation motivée et réémission (un rapport scellé ne se modifie pas) ; limitation ; opposition (art. 21, si base légale art. 6 § 1 e) ; effacement dans les limites de l'obligation de traçabilité de l'habilitation. |
+| Analyse d'impact (art. 35) | `[à vérifier]` a priori non requise : pas de données sensibles, pas de surveillance systématique, faible volume, pseudonymisation ; à confirmer par le DPO au regard des listes CNIL des traitements soumis ou exemptés. |
+
+## 3. Texte d'information des agents (art. 13)
+
+Le texte affiché sur la page `/donnees-personnelles` du site reprend, dans
+l'ordre de l'art. 13 : identité du responsable et contact du DPO
+(`[à compléter]`) ; finalités et base légale (`[à vérifier]`) ; catégories de
+données, en insistant sur ce qui n'est jamais enregistré ; destinataires ;
+hébergement (`[à compléter]`) ; durée de conservation (`[à préciser]`) ;
+droits et voie d'exercice ; droit de réclamation auprès de la CNIL. Il est
+lié depuis le formulaire d'émission, au moment où l'identifiant est saisi, et
+depuis le pied de page de chaque écran.
+
+Ce que l'agent doit comprendre en trois phrases : le site ne connaît que son
+identifiant ; le pharmacien responsable seul fait le lien avec son nom, hors
+du site ; son nom n'apparaît que sur le rapport imprimé qui rejoint son
+dossier d'habilitation.
+
+## 4. Ce qui reste à faire avant la mise en service
+
+1. `[à vérifier]` DPO : base légale retenue ; rattachement à la fiche
+   « gestion du personnel » ou fiche propre ; nécessité d'une analyse
+   d'impact ; hébergeur et clauses de sous-traitance ; transfert hors UE.
+2. `[à compléter]` Établissement : responsable de traitement, contact du DPO,
+   hébergeur et localisation, support de la correspondance identifiant ↔ nom.
+3. `[à préciser]` Pharmacien responsable : durée de référence de conservation
+   des rapports et du journal ; mode d'information des agents en plus de la
+   page du site.
+4. Compléter la page `/donnees-personnelles` et cette fiche avec les réponses,
+   puis activer `CONSERVATION_RAPPORTS=pseudonyme`.
+
+## Sources
+
+- Règlement (UE) 2016/679 du 27 avril 2016 (RGPD), art. 2 § 1, 4 § 1 et § 5,
+  6, 13, 21, 25, 28, 30, 32, 35 ; considérant 26.
+- Groupe de travail « article 29 », avis 05/2014 sur les techniques
+  d'anonymisation, WP216, 10 avril 2014.
+- Comité européen de la protection des données, lignes directrices 01/2025
+  sur la pseudonymisation, janvier 2025 `[à vérifier : version définitive
+  après consultation publique]`.
+- CNIL, référentiel relatif aux traitements de données à caractère personnel
+  mis en œuvre aux fins de gestion du personnel, délibération n° 2019-160 du
+  21 novembre 2019 `[à vérifier : numéro]`.
+- Arrêté du 8 août 2023 relatif aux bonnes pratiques de préparation :
+  exigence d'habilitation documentée du personnel.

@@ -19,7 +19,7 @@ tout usage du dispositif comme preuve.
 | `DATABASE_SSL` | non | `disable` (défaut sur hôte local ou réseau interne Render), `require` (défaut ailleurs), `verify` (+ `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE`) |
 | `DATABASE_POOL_MAX` | non | connexions simultanées, 5 par défaut ; 2 ou 3 sur un plan gratuit |
 | `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max) |
-| `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `nominative` — voir `docs/QUESTIONS-OUVERTES.md` avant d'activer |
+| `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `pseudonyme` (rapports enregistrés sous identifiant d'agent, sans nom) — voir `docs/RGPD.md` avant d'activer |
 | `RAPPORTS_CONSERVATION_MOIS` | non | durée annoncée sur les rapports enregistrés |
 
 Changer `AUTH_SECRET` déconnecte toutes les sessions et invalide les sceaux

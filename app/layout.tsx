@@ -4,7 +4,7 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
 
@@ -22,7 +22,7 @@ export default async function RootLayout({
 }) {
   const session = baseConfiguree() ? await getSession() : null;
   const gestionnaire = session && session.role !== "poste";
-  const nominative = conservationNominative();
+  const conservation = conservationActive();
 
   return (
     <html lang="fr">
@@ -109,13 +109,15 @@ export default async function RootLayout({
 
           <footer className="pied">
             <div className="pied-interne">
-              {nominative ? (
+              {conservation ? (
                 <p>
-                  <strong>Les réponses transmises au serveur ne comportent ni nom, ni matricule.</strong>{" "}
-                  Les résultats vivent en mémoire de l&apos;onglet le temps de la session. Seul le
-                  rapport que l&apos;apprenant choisit d&apos;émettre est enregistré, avec le nom
-                  qu&apos;il saisit, pour le circuit de visas du tuteur et du pharmacien
-                  responsable. Un repère de lecture reste sur le poste, et il ne désigne personne.
+                  <strong>Aucun nom n&apos;est enregistré.</strong> Les réponses transmises au
+                  serveur ne comportent ni nom, ni matricule. Les résultats vivent en mémoire de
+                  l&apos;onglet le temps de la session. Seul le rapport que l&apos;apprenant choisit
+                  d&apos;émettre est enregistré, sous son identifiant d&apos;agent, pour le circuit de
+                  visas du tuteur et du pharmacien responsable ; le nom n&apos;est porté qu&apos;à
+                  l&apos;édition. <Link href="/donnees-personnelles">Vos données et vos droits</Link>.
+                  Un repère de lecture reste sur le poste, et il ne désigne personne.
                 </p>
               ) : (
                 <p>

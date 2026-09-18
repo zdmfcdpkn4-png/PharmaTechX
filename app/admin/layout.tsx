@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { compterSignalementsOuverts } from "@/content/banque-db";
 
 export const dynamic = "force-dynamic";
@@ -54,8 +54,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link href="/admin/questions/import">Dépôt</Link>
         <Link href="/admin/questions/situations">Mises en situation</Link>
         <Link href="/admin/documents">Documents</Link>
-        {conservationNominative() && <Link href="/admin/rapports">Rapports</Link>}
-        {conservationNominative() && <Link href="/admin/personnel">Personnel</Link>}
+        {conservationActive() && <Link href="/admin/rapports">Rapports</Link>}
+        {conservationActive() && <Link href="/admin/personnel">Personnel</Link>}
         <Link href="/admin/signalements">
           Signalements{ouverts > 0 ? ` (${ouverts})` : ""}
         </Link>

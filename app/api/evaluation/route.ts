@@ -21,8 +21,9 @@ export const dynamic = "force-dynamic";
  *
  * Ce que le serveur écrit : rien. Le résultat n'existe que dans la réponse
  * HTTP, puis dans la mémoire de l'onglet, puis dans le rapport que l'apprenant
- * émet — et, seulement si la conservation nominative est activée, dans la
- * table des rapports à ce moment-là.
+ * émet — et, seulement si la conservation des rapports est activée (mode
+ * pseudonyme), dans la table des rapports à ce moment-là, sous un identifiant
+ * d'agent.
  */
 
 interface CorpsRequete {

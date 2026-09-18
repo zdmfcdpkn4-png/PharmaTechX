@@ -37,11 +37,11 @@ const resultat: ResultatRapport = {
 };
 
 test("le rapport A4 porte verdict, visas, synthèse, détail et échappe le HTML", () => {
-  const html = construireRapport({ nom: "A. Test", qualite: "Préparateur", parcours: "Intégration" }, [resultat], {
+  const html = construireRapport({ identifiant: "AG-007", nom: "A. Test", qualite: "Préparateur", parcours: "Intégration" }, [resultat], {
     numero: "RAP-2026-0001",
     empreinte: "abcdef0123456789",
-    visas: [{ qualite: "apprenant", nom: "A. Test", date: "18/09/2026" }],
-    conservation: "nominative",
+    visas: [{ qualite: "apprenant", signataire: "AG-007", date: "18/09/2026" }],
+    conservation: "pseudonyme",
     decision: {
       decision: {
         nbQuestions: 2, nbExclues: 0, pointsObtenus: 1.5, pointsTotal: 2, score: 75, seuil: 80, bande: 50,
@@ -61,6 +61,20 @@ test("le rapport A4 porte verdict, visas, synthèse, détail et échappe le HTML
   assert.ok(html.includes("sas de transfert"));
   assert.ok(html.includes("1,5 / 2 points"));
   assert.ok(html.includes("[à préciser]"));
+  // Conservation pseudonyme : l'identifiant est le seul rattachement, le nom est hors sceau.
+  assert.ok(html.includes("Identifiant d'agent"));
+  assert.ok(html.includes("AG-007"));
+  assert.ok(html.includes("porté à l'édition, hors sceau, non enregistré"));
+  assert.ok(html.includes("sous l'identifiant d'agent AG-007, sans nom"));
+});
+
+test("édition pseudonyme sans nom : identification à compléter d'après la correspondance", () => {
+  const html = construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "" }, [resultat], {
+    numero: "RAP-2026-0001",
+    conservation: "pseudonyme",
+  });
+  assert.ok(html.includes("à compléter à la main, d'après la correspondance tenue par le pharmacien responsable"));
+  assert.ok(!html.includes("porté à l'édition"));
 });
 
 test("sans conservation, l'identification se complète à la main et la décision se recalcule du résultat", () => {
@@ -77,18 +91,18 @@ test("verdict arbitré, question exclue et signature incrustée", () => {
     numero: "RAP-2026-0002",
     empreinte: "abcdef0123456789",
     visas: [
-      { qualite: "apprenant", nom: "A. Test", date: "18/09/2026" },
-      { qualite: "tuteur", nom: "T. Tuteur", date: "18/09/2026" },
-      { qualite: "pharmacien", nom: "P. Pharma", date: "19/09/2026", signatureDataUri: "data:image/png;base64,AAAA" },
+      { qualite: "apprenant", signataire: "AG-007", date: "18/09/2026" },
+      { qualite: "tuteur", signataire: "Tuteur test", date: "18/09/2026" },
+      { qualite: "pharmacien", signataire: "Administrateur initial", date: "19/09/2026", signatureDataUri: "data:image/png;base64,AAAA" },
     ],
-    conservation: "nominative",
+    conservation: "pseudonyme",
     decision: {
       decision: {
         nbQuestions: 1, nbExclues: 1, pointsObtenus: 1, pointsTotal: 1, score: 100, seuil: 80, bande: 100,
         bandeBasse: 0, bandeHaute: 100, echecEliminatoire: false, concluant: true, minQuestions: 1, verdictBrut: "indetermine",
       },
       verdictFinal: "acquis",
-      arbitrage: { verdict: "acquis", motif: "Maîtrise constatée <au poste>", nom: "T. Tuteur", date: "18/09/2026" },
+      arbitrage: { verdict: "acquis", motif: "Maîtrise constatée <au poste>", par: "Tuteur test", date: "18/09/2026" },
       exclusions: [{ questionId: "q2", motif: "question retirée de la banque après signalement" }],
     },
   });
@@ -98,6 +112,8 @@ test("verdict arbitré, question exclue et signature incrustée", () => {
   assert.ok(html.includes("1 question exclue du calcul"));
   assert.ok(html.includes('class="exclue"'));
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,AAAA"'));
+  assert.ok(html.includes("(Tuteur test, 18/09/2026)"));
+  assert.ok(html.includes("Signature — Administrateur initial"));
 });
 
 test("nom de fichier sûr", () => {

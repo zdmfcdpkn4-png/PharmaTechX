@@ -14,17 +14,22 @@ telle. Ordre : ce qui change le déploiement en premier.
    CSV, écran Personnel (choix b) ; verrou et arbitrage = bande de garde,
    arbitrage motivé, non concluant, verrou signalement (choix c). Voir
    `docs/DECISIONS.md`. Restent les paramètres du point D.31.
-2. **Conservation nominative des rapports** (`CONSERVATION_RAPPORTS`) — mode
-   `nominative` requis en production par le choix c de la question 2 (les
-   visas portent des noms). Durée — tranché le 18/09/2026 (question 5, choix
-   d) : **aucune purge automatique**, conservation jusqu'à purge manuelle par
+2. **Conservation des rapports** (`CONSERVATION_RAPPORTS`) — mode
+   `pseudonyme` requis en production par le choix c de la question 2 (circuit
+   de visas enregistré). Durée — tranché le 18/09/2026 (question 5, choix d) :
+   **aucune purge automatique**, conservation jusqu'à purge manuelle par
    l'administrateur (rapport par rapport, ou purge datée des rapports clos ou
    annulés, depuis `/admin/rapports`) ; `RAPPORTS_CONSERVATION_MOIS` reste
-   facultatif pour annoncer une durée cible. Le mode nominatif traite des
-   données personnelles d'agents : `[à préciser]` le traitement est-il inscrit
-   au registre des traitements, les agents informés (droits d'accès et de
-   rectification), ou faut-il rédiger la fiche de registre et le texte
-   d'information affiché sur le site ?
+   facultatif pour annoncer une durée cible. RGPD — tranché le 18/09/2026
+   (question 6, choix a) : **aucun nom en base**, identifiant d'agent généré
+   par le site, correspondance tenue par le pharmacien hors du site, nom porté
+   à l'édition seulement. Le traitement reste pseudonymisé, donc soumis au
+   RGPD : fiche de registre et texte d'information rédigés (`docs/RGPD.md`,
+   page `/donnees-personnelles`), `[à vérifier]` par le DPO (base légale,
+   rattachement à la fiche « gestion du personnel », hébergeur et
+   sous-traitance, analyse d'impact) ; `[à compléter]` responsable de
+   traitement, contact du DPO, support de la correspondance ; `[à préciser]`
+   durée de référence de conservation.
 3. **Statut du dispositif** : outil pédagogique ou preuve opposable en audit
    BPP 2023 / ISO 9001 ? Change les exigences d'horodatage, de conservation et
    d'accès. Marqueur visible en pied de chaque écran et sur chaque rapport.
@@ -120,6 +125,16 @@ telle. Ordre : ce qui change le déploiement en premier.
     d'ordre, dates lisibles en heure de Paris ; JSON complet ; zip sans
     compression. `[à préciser]` si un autre outil que le tableur doit lire ces
     fichiers (registre qualité, GED).
+36. **Identifiants d'agents** (question 6, choix a) : format `AG-NNN` généré
+    par le site sur une séquence globale, jamais saisi ni réattribué ; clôture
+    sans suppression ; créés et clos par un tuteur ou l'administrateur (choix
+    posé). `[à préciser]` réserver la création et la clôture à
+    l'administrateur ? `[à préciser]` faut-il porter la fonction de l'agent
+    (préparateur, interne…) sur le rapport autrement qu'à l'édition — une liste
+    fermée en base resterait pseudonyme mais rétrécit l'anonymat dans une
+    petite équipe. Le nom porté à l'édition n'est pas couvert par le sceau : le
+    lien identifiant ↔ personne repose sur la correspondance tenue hors du
+    site, `[à préciser]` sur quel support et avec quel accès.
 
 ## E. Présentation
 

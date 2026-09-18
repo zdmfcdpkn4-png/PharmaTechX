@@ -31,7 +31,7 @@ export default async function Admin({
   const aVerifier = Object.values(comptes).reduce((s, c) => s + c.aVerifier, 0);
   const validees = Object.values(comptes).reduce((s, c) => s + c.valides, 0);
   const conservation = modeConservation();
-  const rapports = conservation === "nominative" ? await comptesRapports() : null;
+  const rapports = conservation === "pseudonyme" ? await comptesRapports() : null;
 
   return (
     <>
@@ -89,7 +89,7 @@ export default async function Admin({
 
       <p className="legende">
         Stockage des documents : {modeStockage() === "blob" ? "Vercel Blob" : modeStockage() === "base" ? "base de données" : "aucun"} ·
-        conservation des rapports : {conservation === "nominative" ? "nominative (rapports enregistrés, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
+        conservation des rapports : {conservation === "pseudonyme" ? "pseudonyme (rapports enregistrés sous identifiant d'agent, sans nom, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
       </p>
 
       {/* ─────────────────────────────────────────────── codes d'accès */}

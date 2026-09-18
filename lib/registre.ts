@@ -56,8 +56,7 @@ export const COLONNES_REGISTRE = [
   "numero",
   "statut",
   "emis_le",
-  "apprenant_nom",
-  "apprenant_qualite",
+  "agent",
   "critere",
   "module_id",
   "module_titre",
@@ -73,12 +72,12 @@ export const COLONNES_REGISTRE = [
   "verdict_final",
   "arbitrage_verdict",
   "arbitrage_motif",
-  "arbitrage_par",
+  "arbitrage_profil",
   "arbitrage_le",
   "visa_apprenant_le",
-  "visa_tuteur_nom",
+  "visa_tuteur_profil",
   "visa_tuteur_le",
-  "visa_pharmacien_nom",
+  "visa_pharmacien_profil",
   "visa_pharmacien_le",
   "annule_le",
   "annule_motif",
@@ -92,7 +91,13 @@ const STATUTS_LISIBLES: Record<string, string> = {
   annule: "annulé",
 };
 
-/** Une ligne de registre par rapport. */
+/** Profil de session d'un visa ou d'un arbitrage : libellé du code, sinon le rôle. */
+function profil(v: { role_session: string; libelle_session: string } | null | undefined): string {
+  if (!v) return "";
+  return v.libelle_session || v.role_session;
+}
+
+/** Une ligne de registre par rapport — l'agent y figure par son identifiant, jamais par un nom. */
 export function ligneRegistre(r: RapportComplet): Record<string, unknown> {
   const { decision, verdictFinal: vf } = decisionEnregistree(r);
   const visa = (q: LigneVisa["qualite"]) => r.visas.find((v) => v.qualite === q);
@@ -100,8 +105,7 @@ export function ligneRegistre(r: RapportComplet): Record<string, unknown> {
     numero: r.numero,
     statut: STATUTS_LISIBLES[r.statut] ?? r.statut,
     emis_le: dateLisible(r.emis_le),
-    apprenant_nom: r.apprenant_nom,
-    apprenant_qualite: r.apprenant_qualite,
+    agent: r.agent_identifiant,
     critere: r.critere_id ?? "",
     module_id: r.module_id,
     module_titre: r.module_titre,
@@ -117,12 +121,12 @@ export function ligneRegistre(r: RapportComplet): Record<string, unknown> {
     verdict_final: LIBELLES_COURTS_VERDICT[vf],
     arbitrage_verdict: r.arbitrage ? LIBELLES_COURTS_VERDICT[r.arbitrage.verdict] : "",
     arbitrage_motif: r.arbitrage?.motif ?? "",
-    arbitrage_par: r.arbitrage?.nom ?? "",
+    arbitrage_profil: profil(r.arbitrage),
     arbitrage_le: dateLisible(r.arbitrage?.le),
     visa_apprenant_le: dateLisible(visa("apprenant")?.signe_le),
-    visa_tuteur_nom: visa("tuteur")?.nom ?? "",
+    visa_tuteur_profil: profil(visa("tuteur")),
     visa_tuteur_le: dateLisible(visa("tuteur")?.signe_le),
-    visa_pharmacien_nom: visa("pharmacien")?.nom ?? "",
+    visa_pharmacien_profil: profil(visa("pharmacien")),
     visa_pharmacien_le: dateLisible(visa("pharmacien")?.signe_le),
     annule_le: dateLisible(r.annule_le),
     annule_motif: r.annule_motif ?? "",
@@ -134,16 +138,29 @@ export function csvRegistre(rapports: RapportComplet[]): string {
   return csv(COLONNES_REGISTRE, rapports.map(ligneRegistre));
 }
 
-/** Le rapport entier, de quoi refaire la décision hors de l'outil. */
-export function jsonArchive(r: RapportComplet): string {
+/** Nom et fonction portés à l'édition d'un rapport : jamais enregistrés, hors sceau. */
+export interface EditionRapport {
+  nom: string;
+  qualite: string;
+  le: Date;
+}
+
+/**
+ * Le rapport entier, de quoi refaire la décision hors de l'outil. Le nom, s'il
+ * est porté à l'édition, y figure à part, hors du contenu scellé.
+ */
+export function jsonArchive(r: RapportComplet, edition?: EditionRapport | null): string {
   const { decision, verdictFinal: vf } = decisionEnregistree(r);
   return JSON.stringify(
     {
-      format: "formation-pharmacotechnie/rapport/1",
+      format: "formation-pharmacotechnie/rapport/2",
       numero: r.numero,
       statut: r.statut,
       emis_le: dateIso(r.emis_le),
-      apprenant: { nom: r.apprenant_nom, qualite: r.apprenant_qualite },
+      agent: { identifiant: r.agent_identifiant },
+      edition: edition?.nom
+        ? { nom: edition.nom, qualite: edition.qualite, le: edition.le.toISOString(), hors_sceau: true }
+        : null,
       module: { id: r.module_id, titre: r.module_titre, critere: r.critere_id },
       tirage: r.tirage,
       empreinte: r.empreinte,
@@ -152,7 +169,6 @@ export function jsonArchive(r: RapportComplet): string {
       exclusions: r.exclusions ?? [],
       visas: r.visas.map((v) => ({
         qualite: v.qualite,
-        nom: v.nom,
         role_session: v.role_session,
         libelle_session: v.libelle_session,
         commentaire: v.commentaire,
@@ -169,8 +185,8 @@ export function jsonArchive(r: RapportComplet): string {
 }
 
 export const COLONNES_REPERTOIRE = [
-  "apprenant_nom",
-  "apprenant_qualite",
+  "agent",
+  "agent_etat",
   "critere",
   "module_titre",
   "dernier_rapport",
@@ -185,8 +201,8 @@ export const COLONNES_REPERTOIRE = [
 export function ligneRepertoire(l: LigneRepertoire): Record<string, unknown> {
   const { decision, verdictFinal: vf } = decisionEnregistree(l);
   return {
-    apprenant_nom: l.apprenant_nom,
-    apprenant_qualite: l.apprenant_qualite,
+    agent: l.agent_identifiant,
+    agent_etat: l.agent_actif ? "actif" : "clos",
     critere: l.critere,
     module_titre: l.module_titre,
     dernier_rapport: l.numero,

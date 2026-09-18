@@ -51,8 +51,8 @@ const rapport: RapportComplet = {
   module_id: "critere-b1-02",
   module_titre: "Module « test »",
   critere_id: "B1-02",
-  apprenant_nom: "Dupont; Marie",
-  apprenant_qualite: "Préparatrice",
+  agent_id: 7,
+  agent_identifiant: "AG-007",
   tirage: "Complet · 10 questions",
   resultat: resultat([1, 1, 1, 1, 1, 1, 1, 1, 0, 0]),
   empreinte: "ff00",
@@ -63,7 +63,6 @@ const rapport: RapportComplet = {
   arbitrage: {
     verdict: "acquis",
     motif: "Bonne maîtrise en situation",
-    nom: "T. Tuteur",
     role_session: "tuteur",
     libelle_session: "Tuteur test",
     le: "2026-09-18T13:00:00.000Z",
@@ -72,9 +71,9 @@ const rapport: RapportComplet = {
   },
   exclusions: [],
   visas: [
-    { id: 1, rapport_id: "abc", qualite: "apprenant", nom: "Dupont; Marie", role_session: "poste", libelle_session: "", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T12:02:00.000Z", signature_id: null },
-    { id: 2, rapport_id: "abc", qualite: "tuteur", nom: "T. Tuteur", role_session: "tuteur", libelle_session: "Tuteur test", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T13:05:00.000Z", signature_id: null },
-    { id: 3, rapport_id: "abc", qualite: "pharmacien", nom: "P. Pharmacien", role_session: "admin", libelle_session: "Administrateur initial", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T14:00:00.000Z", signature_id: "sig1" },
+    { id: 1, rapport_id: "abc", qualite: "apprenant", role_session: "poste", libelle_session: "", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T12:02:00.000Z", signature_id: null },
+    { id: 2, rapport_id: "abc", qualite: "tuteur", role_session: "tuteur", libelle_session: "Tuteur test", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T13:05:00.000Z", signature_id: null },
+    { id: 3, rapport_id: "abc", qualite: "pharmacien", role_session: "admin", libelle_session: "Administrateur initial", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T14:00:00.000Z", signature_id: "sig1" },
   ],
 };
 
@@ -91,28 +90,37 @@ test("csv : marque d'ordre, entête, CRLF", () => {
   assert.equal(texte, "﻿a;b\r\n1;x\r\n");
 });
 
-test("ligne de registre : verdict brut conservé à côté du verdict arbitré, visas datés", () => {
+test("ligne de registre : agent par identifiant, verdict brut à côté du verdict arbitré, profils des visas", () => {
   const l = ligneRegistre(rapport);
   assert.equal(l.numero, "RAP-2026-0007");
+  assert.equal(l.agent, "AG-007");
   assert.equal(l.verdict_brut, "indéterminé");
   assert.equal(l.verdict_final, "acquis");
-  assert.equal(l.arbitrage_par, "T. Tuteur");
-  assert.equal(l.visa_pharmacien_nom, "P. Pharmacien");
+  assert.equal(l.arbitrage_profil, "Tuteur test");
+  assert.equal(l.visa_pharmacien_profil, "Administrateur initial");
   assert.equal(l.score, 80);
   assert.equal(l.bande_basse, 70);
   const texte = csvRegistre([rapport]);
   const lignes = texte.split("\r\n");
   assert.equal(lignes[0], "﻿" + COLONNES_REGISTRE.join(";"));
-  assert.ok(lignes[1].startsWith('RAP-2026-0007;clos;'));
-  assert.ok(lignes[1].includes('"Dupont; Marie"'));
+  assert.ok(lignes[1].startsWith("RAP-2026-0007;clos;"));
+  assert.ok(lignes[1].includes(";AG-007;B1-02;"));
+  assert.ok(!COLONNES_REGISTRE.some((c) => c.includes("nom")));
 });
 
-test("json d'archive : décision, arbitrage, visas et résultat complet", () => {
+test("json d'archive : décision, arbitrage, visas, résultat complet ; nom hors sceau seulement à l'édition", () => {
   const j = JSON.parse(jsonArchive(rapport));
+  assert.equal(j.format, "formation-pharmacotechnie/rapport/2");
   assert.equal(j.numero, "RAP-2026-0007");
+  assert.equal(j.agent.identifiant, "AG-007");
+  assert.equal(j.edition, null);
   assert.equal(j.decision.verdictBrut, "indetermine");
   assert.equal(j.decision.verdictFinal, "acquis");
   assert.equal(j.visas.length, 3);
   assert.equal(j.visas[2].signature_incrustee, true);
+  assert.equal("nom" in j.visas[2], false);
   assert.equal(j.resultat.detail.length, 10);
+  const e = JSON.parse(jsonArchive(rapport, { nom: "Dupont; Marie", qualite: "Préparatrice", le: new Date("2026-09-19T08:00:00Z") }));
+  assert.deepEqual(e.edition, { nom: "Dupont; Marie", qualite: "Préparatrice", le: "2026-09-19T08:00:00.000Z", hors_sceau: true });
+  assert.equal(e.empreinte, "ff00");
 });

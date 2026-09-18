@@ -8,12 +8,17 @@ import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 
 /**
  * Rapports d'évaluation enregistrés — actifs seulement quand
- * `CONSERVATION_RAPPORTS=nominative` (voir `lib/config.ts`).
+ * `CONSERVATION_RAPPORTS=pseudonyme` (voir `lib/config.ts`).
  *
  * Un rapport est émis par l'apprenant à partir d'un résultat scellé par le
  * serveur ; il reçoit un numéro, une empreinte, et entre dans le circuit de
  * visas. Son contenu ne change plus : une correction passe par l'annulation
  * (motivée) et une nouvelle émission.
+ *
+ * Aucun nom n'entre ici (décision du 18/09/2026, question 6, choix a) : le
+ * rapport se rattache à un identifiant d'agent généré (`lib/agents.ts`), et
+ * chaque visa ou arbitrage porte le rôle et le libellé du code de session,
+ * jamais un nom saisi. Le nom n'est porté qu'à l'édition du rapport.
  *
  * Décision (modèle de la console métrologique, `lib/decision.ts`) :
  *   - le verdict brut se recalcule à la lecture, à partir du résultat scellé
@@ -32,7 +37,6 @@ export type QualiteVisaBase = "apprenant" | "tuteur" | "pharmacien";
 export interface ArbitrageRapport {
   verdict: "acquis" | "non_acquis";
   motif: string;
-  nom: string;
   role_session: string;
   libelle_session: string;
   /** ISO 8601. */
@@ -55,8 +59,9 @@ export interface LigneRapport {
   module_id: string;
   module_titre: string;
   critere_id: string | null;
-  apprenant_nom: string;
-  apprenant_qualite: string;
+  agent_id: number;
+  /** Identifiant d'agent à l'émission (`AG-001`), tel qu'il est scellé. */
+  agent_identifiant: string;
   tirage: string;
   resultat: ResultatEvaluation;
   empreinte: string;
@@ -73,7 +78,6 @@ export interface LigneVisa {
   id: number;
   rapport_id: string;
   qualite: QualiteVisaBase;
-  nom: string;
   role_session: string;
   libelle_session: string;
   commentaire: string;
@@ -113,10 +117,10 @@ export const LIBELLES_STATUT_RAPPORT: Record<StatutRapport, string> = {
   annule: "Annulé",
 };
 
-const COLONNES_RAPPORT = `id, numero, module_id, module_titre, critere_id, apprenant_nom, apprenant_qualite,
+const COLONNES_RAPPORT = `id, numero, module_id, module_titre, critere_id, agent_id, agent_identifiant,
   tirage, resultat, empreinte, statut, emis_le::text, annule_motif, annule_le::text, arbitrage, exclusions`;
 
-const COLONNES_VISA = `id, rapport_id, qualite, nom, role_session, libelle_session, commentaire, empreinte,
+const COLONNES_VISA = `id, rapport_id, qualite, role_session, libelle_session, commentaire, empreinte,
   signe_le::text, signature_id`;
 
 /** Requête en texte clair (`$1`…), hors transaction ou sur un client de transaction. */
@@ -139,8 +143,8 @@ function sur(client: PoolClient): Requeteur {
 export async function emettreRapport(e: {
   resultat: ResultatEvaluation;
   empreinte: string;
-  apprenantNom: string;
-  apprenantQualite: string;
+  agentId: number;
+  agentIdentifiant: string;
   roleSession: Role | "aucun";
   libelleSession: string;
 }): Promise<{ id: string; numero: string; emisLe: Date }> {
@@ -151,14 +155,14 @@ export async function emettreRapport(e: {
     const id = randomBytes(9).toString("base64url");
     const r = e.resultat;
     const emis = await s<{ emis_le: Date }>`
-      INSERT INTO rapports (id, numero, module_id, module_titre, critere_id, apprenant_nom,
-        apprenant_qualite, tirage, resultat, empreinte)
-      VALUES (${id}, ${numero}, ${r.moduleId}, ${r.moduleTitre}, ${r.critereId}, ${e.apprenantNom},
-        ${e.apprenantQualite}, ${r.tirage}, ${JSON.stringify(r)}::jsonb, ${e.empreinte})
+      INSERT INTO rapports (id, numero, module_id, module_titre, critere_id, agent_id,
+        agent_identifiant, tirage, resultat, empreinte)
+      VALUES (${id}, ${numero}, ${r.moduleId}, ${r.moduleTitre}, ${r.critereId}, ${e.agentId},
+        ${e.agentIdentifiant}, ${r.tirage}, ${JSON.stringify(r)}::jsonb, ${e.empreinte})
       RETURNING emis_le`;
     await s`
-      INSERT INTO visas (rapport_id, qualite, nom, role_session, libelle_session, commentaire, empreinte)
-      VALUES (${id}, 'apprenant', ${e.apprenantNom}, ${e.roleSession}, ${e.libelleSession},
+      INSERT INTO visas (rapport_id, qualite, role_session, libelle_session, commentaire, empreinte)
+      VALUES (${id}, 'apprenant', ${e.roleSession}, ${e.libelleSession},
         'Atteste avoir lu le module et passé l''évaluation dans les conditions décrites.', ${e.empreinte})`;
     return { id, numero, emisLe: emis.rows[0].emis_le };
   });
@@ -303,7 +307,7 @@ async function verrouiller(q: Requeteur, id: string): Promise<LigneRapport> {
  */
 export async function arbitrer(
   id: string,
-  a: { verdict: "acquis" | "non_acquis"; motif: string; nom: string; roleSession: Role; libelleSession: string },
+  a: { verdict: "acquis" | "non_acquis"; motif: string; roleSession: Role; libelleSession: string },
 ): Promise<void> {
   await transaction(async (client) => {
     const q = sur(client);
@@ -318,7 +322,6 @@ export async function arbitrer(
     const arbitrage: ArbitrageRapport = {
       verdict: a.verdict,
       motif: a.motif,
-      nom: a.nom,
       role_session: a.roleSession,
       libelle_session: a.libelleSession,
       le: new Date().toISOString(),
@@ -339,7 +342,6 @@ export async function viser(
   id: string,
   v: {
     qualite: "tuteur" | "pharmacien";
-    nom: string;
     commentaire: string;
     roleSession: Role;
     libelleSession: string;
@@ -360,12 +362,11 @@ export async function viser(
       if (decision.verdictBrut === "non_concluant") throw new Error("non-concluant");
     }
     await q(
-      `INSERT INTO visas (rapport_id, qualite, nom, role_session, libelle_session, commentaire, empreinte, signature_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO visas (rapport_id, qualite, role_session, libelle_session, commentaire, empreinte, signature_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         id,
         v.qualite,
-        v.nom,
         v.roleSession,
         v.libelleSession,
         v.commentaire,
@@ -415,8 +416,8 @@ export async function compterPurgeables(date: Date): Promise<number> {
 // ─────────────────────────────────────────────────────── répertoire personnel
 
 export interface LigneRepertoire {
-  apprenant_nom: string;
-  apprenant_qualite: string;
+  agent_identifiant: string;
+  agent_actif: boolean;
   critere: string;
   module_titre: string;
   id: string;
@@ -433,22 +434,24 @@ export interface LigneRepertoire {
 /**
  * Une ligne par agent et par critère : le dernier rapport non annulé, avec le
  * nombre de rapports émis et clos. Équivalent de « Parc & historique » de la
- * console métrologique, le parc étant ici le personnel.
+ * console métrologique, le parc étant ici le personnel — désigné par ses
+ * identifiants, jamais par un nom.
  */
 export async function repertoirePersonnel(): Promise<LigneRepertoire[]> {
   const r = await direct<LigneRepertoire>(`
     WITH actifs AS (
-      SELECT apprenant_nom, apprenant_qualite, COALESCE(critere_id, module_id) AS critere,
-             module_titre, id, numero, emis_le, statut, resultat, arbitrage, exclusions,
-             COUNT(*) OVER (PARTITION BY apprenant_nom, COALESCE(critere_id, module_id))::int AS nb_rapports,
-             SUM(CASE WHEN statut = 'clos' THEN 1 ELSE 0 END)
-               OVER (PARTITION BY apprenant_nom, COALESCE(critere_id, module_id))::int AS nb_clos,
-             ROW_NUMBER() OVER (PARTITION BY apprenant_nom, COALESCE(critere_id, module_id) ORDER BY emis_le DESC) AS rang
-      FROM rapports WHERE statut <> 'annule'
+      SELECT r.agent_id, r.agent_identifiant, COALESCE(r.critere_id, r.module_id) AS critere,
+             r.module_titre, r.id, r.numero, r.emis_le, r.statut, r.resultat, r.arbitrage, r.exclusions,
+             COUNT(*) OVER (PARTITION BY r.agent_id, COALESCE(r.critere_id, r.module_id))::int AS nb_rapports,
+             SUM(CASE WHEN r.statut = 'clos' THEN 1 ELSE 0 END)
+               OVER (PARTITION BY r.agent_id, COALESCE(r.critere_id, r.module_id))::int AS nb_clos,
+             ROW_NUMBER() OVER (PARTITION BY r.agent_id, COALESCE(r.critere_id, r.module_id) ORDER BY r.emis_le DESC) AS rang
+      FROM rapports r WHERE r.statut <> 'annule'
     )
-    SELECT apprenant_nom, apprenant_qualite, critere, module_titre, id, numero, emis_le::text, statut,
-           resultat, arbitrage, exclusions, nb_rapports, nb_clos
-    FROM actifs WHERE rang = 1
-    ORDER BY apprenant_nom, critere`);
+    SELECT a.agent_identifiant, COALESCE(ag.actif, FALSE) AS agent_actif, a.critere, a.module_titre, a.id, a.numero,
+           a.emis_le::text, a.statut, a.resultat, a.arbitrage, a.exclusions, a.nb_rapports, a.nb_clos
+    FROM actifs a LEFT JOIN agents ag ON ag.id = a.agent_id
+    WHERE a.rang = 1
+    ORDER BY a.agent_identifiant, a.critere`);
   return r.rows;
 }

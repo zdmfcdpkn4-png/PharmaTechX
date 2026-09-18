@@ -1,10 +1,13 @@
 /* Parcours de bout en bout, contre le serveur local avec base PostgreSQL. */
 /*
  * Prérequis : un serveur construit (`npm run build && npm start`) lancé avec
- * une base VIDE, `AUTH_SECRET` et `CONSERVATION_RAPPORTS=nominative`, et
+ * une base VIDE, `AUTH_SECRET` et `CONSERVATION_RAPPORTS=pseudonyme`, et
  * Chromium pour Playwright (`npx playwright install chromium`). Lancer :
  *
  *   BASE=http://localhost:3000 npm run e2e
+ *
+ * Avec `CAPTURES=<dossier>`, des captures d'écran des écrans de décision
+ * (identifiants, émission, rapport, A4, information RGPD) y sont déposées.
  *
  * Le scénario crée l'administrateur initial : il ne se rejoue que sur une
  * base réinitialisée. Il termine par le blocage volontaire de l'adresse après
@@ -14,7 +17,9 @@
  * questions dont le scénario connaît le corrigé : score de 80 % dans la bande
  * de garde, signalement qui verrouille les visas, arbitrage du tuteur, visa
  * du pharmacien avec signature incrustée, paquet d'archivage, registre et
- * répertoire du personnel.
+ * répertoire du personnel. Aucun nom n'entre en base : l'apprenant émet sous
+ * un identifiant d'agent créé par l'administrateur, et le nom n'est porté
+ * qu'à l'édition (POST) du rapport, hors sceau.
  */
 const path = require("node:path");
 const fs = require("node:fs");
@@ -24,6 +29,7 @@ const assert = require("node:assert/strict");
 const { chromium } = require("playwright");
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
+const CAPTURES = process.env.CAPTURES;
 
 /** Un PNG de 480 × 320 avec trois rectangles de couleur, écrit dans un dossier temporaire. */
 function pngDeTest() {
@@ -98,12 +104,27 @@ Justification : cf. procédure interne.`,
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("ERREUR PAGE:", e.message));
   page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE:", m.text()); });
+  /** Capture d'un écran (ou d'un élément), seulement si CAPTURES est défini. */
+  const capture = async (nom, cible) => {
+    if (!CAPTURES) return;
+    const chemin = path.join(CAPTURES, nom + ".png");
+    if (cible) await cible.screenshot({ path: chemin });
+    else await page.screenshot({ path: chemin, fullPage: true });
+  };
+  /** Capture d'un document HTML rendu à part (rapport A4). */
+  const captureHtml = async (nom, html) => {
+    if (!CAPTURES) return;
+    const p2 = await ctx.newPage();
+    await p2.setContent(html.replace("<head>", `<head><base href="${BASE}/">`), { waitUntil: "load" });
+    await p2.screenshot({ path: path.join(CAPTURES, nom + ".png"), fullPage: true });
+    await p2.close();
+  };
 
   // 0. santé
   const sante = await (await page.request.get(BASE + "/api/sante")).json();
   assert.equal(sante.base, "joignable");
-  assert.equal(sante.conservation, "nominative");
-  ok("santé : base joignable, conservation nominative");
+  assert.equal(sante.conservation, "pseudonyme");
+  ok("santé : base joignable, conservation pseudonyme");
 
   // 1. amorçage
   await page.goto(BASE + "/connexion");
@@ -135,6 +156,16 @@ Justification : cf. procédure interne.`,
   await page.reload();
   await page.waitForSelector("img[alt='Signature déposée']");
   ok("signature du pharmacien déposée et rattachée au code admin");
+
+  // 2c. identifiant d'agent généré par le site — aucun nom saisi nulle part
+  await page.goto(BASE + "/admin/personnel");
+  await page.click("button:has-text('Créer un identifiant')");
+  await page.waitForURL(/ok=cree&identifiant=/);
+  const identifiant = new URL(page.url()).searchParams.get("identifiant");
+  assert.equal(identifiant, "AG-001");
+  await page.waitForSelector("code:has-text('AG-001')");
+  await capture("01-personnel-identifiants");
+  ok("identifiant d'agent créé : " + identifiant);
 
   // 3. nouvelle question QCM validée
   await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
@@ -250,11 +281,15 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=Signalement transmis");
   ok("signalement transmis");
 
-  // 9. rapport de session : émission nominative (navigation client, état conservé)
+  // 9. rapport de session : émission sous identifiant (navigation client, état conservé)
   await page.click("a:has-text('Rapport de session')");
   await page.waitForSelector("#rapport");
-  await page.fill("input[placeholder='Nom Prénom']", "Apprenant Test");
-  await page.fill("input[placeholder='Préparateur, interne, niveau visé…']", "Préparateur");
+  assert.equal(await page.locator("input[placeholder='Nom Prénom']").count(), 0);
+  await page.fill("input[name=identifiant]", "AG-999");
+  await page.click("button:has-text('Émettre et enregistrer')");
+  await page.waitForSelector("[role=alert]:has-text('AG-999 inconnu')");
+  await capture("02-emission-identifiant", page.locator("section.carte:has(input[name=identifiant])"));
+  await page.fill("input[name=identifiant]", "ag 1");
   await page.click("button:has-text('Émettre et enregistrer')");
   await page.waitForSelector("text=émis sous le n° RAP-");
   const ligne = await page.locator(".ligne-rapport").first().innerText();
@@ -266,7 +301,7 @@ Justification : cf. procédure interne.`,
     page.waitForEvent("download"),
     page.locator(".ligne-rapport button:has-text('Télécharger')").first().click(),
   ]);
-  assert.match(dl.suggestedFilename(), /^rapport-evaluation-rap-\d{4}-\d{4}-apprenant-test-/);
+  assert.match(dl.suggestedFilename(), /^rapport-evaluation-rap-\d{4}-\d{4}-ag-001-/);
   ok("rapport téléchargé : " + dl.suggestedFilename());
 
   // 10. verrou : signalement ouvert sur le tirage, aucun visa possible
@@ -294,49 +329,63 @@ Justification : cf. procédure interne.`,
 
   // 10c. arbitrage motivé, puis visas tuteur et pharmacien (signature incrustée)
   await page.check("input[name=verdict][value=acquis]");
-  await page.fill("form:has(input[name=verdict]) input[name=nom]", "Tuteur Test");
+  assert.equal(await page.locator("input[name=nom]").count(), 1); // seul le formulaire d'édition porte un nom
   await page.fill("textarea[name=motif]", "Les deux erreurs portent sur des points revus en compagnonnage.");
   await page.click("button:has-text(\"Enregistrer l'arbitrage\")");
   await page.waitForSelector("text=Arbitrage enregistré");
   await page.waitForSelector("text=Arbitrage du tuteur : acquis");
   await titreVisaTuteur.waitFor();
-  await page.fill("form:has(input[value=tuteur]) input[name=nom]", "Tuteur Test");
+  await page.waitForSelector("text=l'identifiant AG-001 est bien celui de l'agent évalué");
   await page.click("button:has-text('Apposer le visa tuteur')");
   await page.waitForSelector("text=Visa enregistré");
   await page.waitForSelector("h3:has-text('Visa du pharmacien')");
   await page.waitForSelector("text=Votre signature déposée sera incrustée");
-  await page.fill("form:has(input[value=pharmacien]) input[name=nom]", "Pharmacien Test");
   await page.click("button:has-text('Apposer le visa pharmacien')");
   await page.waitForSelector("text=Clos — visé par le pharmacien responsable");
-  await page.waitForSelector("img[alt='Signature de Pharmacien Test']");
-  ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée");
+  await page.waitForSelector("img[alt='Signature — Administrateur initial']");
+  await capture("03-rapport-clos");
+  ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée, aucun nom saisi");
 
-  // 10d. rapport A4, paquet d'archivage, registre, répertoire
+  // 10d. rapport A4 pseudonyme (GET) puis avec le nom porté à l'édition (POST), hors sceau
   const impr = await page.request.get(urlRapport + "/imprimer");
   const html = await impr.text();
-  assert.ok(html.includes("visa électronique") && html.includes(numero) && html.includes("Pharmacien Test"));
+  assert.ok(html.includes("visa électronique") && html.includes(numero) && html.includes("AG-001"));
+  assert.ok(html.includes("Administrateur initial")); // visas portés par la session d'administration
+  assert.ok(html.includes("à compléter à la main, d'après la correspondance"));
   assert.ok(html.includes("Arbitrage du tuteur : <strong>acquis</strong>"));
   assert.ok(html.includes("Verdict brut : indéterminé"));
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,'));
-  ok("rapport A4 : verdict arbitré, verdict brut conservé, signature incrustée");
+  const imprNom = await page.request.post(urlRapport + "/imprimer", { form: { nom: "Apprenant Test", qualite: "Préparateur" } });
+  const htmlNom = await imprNom.text();
+  assert.ok(htmlNom.includes("Apprenant Test") && htmlNom.includes("Préparateur"));
+  assert.ok(htmlNom.includes("porté à l'édition, hors sceau, non enregistré"));
+  await captureHtml("04-a4-pseudonyme", html);
+  await captureHtml("05-a4-nom-porte", htmlNom);
+  ok("rapport A4 : pseudonyme en GET, nom porté à l'édition en POST, verdict arbitré, signature incrustée");
   const paquet = await page.request.get(urlRapport + "/paquet");
   assert.equal(paquet.status(), 200);
   assert.equal(paquet.headers()["content-type"], "application/zip");
   const octets = await paquet.body();
   assert.equal(octets.readUInt32LE(0), 0x04034b50);
   for (const ext of ["html", "csv", "json"]) assert.ok(octets.includes(Buffer.from(`${numero}.${ext}`)), ext);
-  ok("paquet d'archivage : zip avec HTML, CSV et JSON");
+  assert.ok(!octets.includes(Buffer.from("Apprenant Test")));
+  const paquetNom = await page.request.post(urlRapport + "/paquet", { form: { nom: "Apprenant Test" } });
+  const octetsNom = await paquetNom.body();
+  assert.equal(octetsNom.readUInt32LE(0), 0x04034b50);
+  assert.ok(octetsNom.includes(Buffer.from("Apprenant Test")) && octetsNom.includes(Buffer.from('"hors_sceau": true')));
+  ok("paquet d'archivage : zip HTML, CSV, JSON ; pseudonyme en GET, nom hors sceau en POST");
   const registre = await page.request.get(BASE + "/admin/rapports/registre.csv");
   const csv = await registre.text();
-  assert.ok(csv.startsWith("﻿numero;statut;"));
-  assert.ok(csv.includes(`${numero};clos;`) && csv.includes(";indéterminé;acquis;acquis;"));
-  ok("registre cumulatif CSV : ligne du rapport, verdict brut et verdict final");
+  assert.ok(csv.startsWith("﻿numero;statut;emis_le;agent;"));
+  assert.ok(csv.includes(`${numero};clos;`) && csv.includes(";AG-001;B1-02;") && csv.includes(";indéterminé;acquis;acquis;"));
+  assert.ok(!csv.includes("Apprenant Test"));
+  ok("registre cumulatif CSV : ligne du rapport par identifiant, verdict brut et verdict final");
   await page.goto(BASE + "/admin/personnel");
-  await page.waitForSelector("td:has-text('Apprenant Test')");
+  await page.waitForSelector("td:has-text('AG-001')");
   await page.waitForSelector("td:has-text('80 % · acquis')");
   const repertoire = await page.request.get(BASE + "/admin/personnel/repertoire.csv");
-  assert.ok((await repertoire.text()).includes("Apprenant Test;Préparateur;B1-02;"));
-  ok("personnel & historique : ligne par agent et critère, export CSV");
+  assert.ok((await repertoire.text()).includes("AG-001;actif;B1-02;"));
+  ok("personnel & historique : ligne par identifiant et critère, export CSV");
 
   // 11. journal
   await page.goto(BASE + "/admin/journal");
@@ -344,7 +393,11 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("code:has-text('arbitrage-rapport')");
   await page.waitForSelector("code:has-text('visa:pharmacien')");
   await page.waitForSelector("code:has-text('signature:depot')");
-  ok("journal renseigné : émission, arbitrage, visas, signature");
+  await page.waitForSelector("code:has-text('agent:creation')");
+  await page.waitForSelector("code:has-text('export:impression')");
+  const journal = await page.content();
+  assert.ok(!journal.includes("Apprenant Test"));
+  ok("journal renseigné : émission, arbitrage, visas, signature, identifiant ; aucun nom");
 
   // 11b. purge manuelle : purge datée (rien avant aujourd'hui), puis suppression du rapport
   const aujourdhui = new Date().toISOString().slice(0, 10);
@@ -363,6 +416,17 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/admin/journal");
   await page.waitForSelector("code:has-text('purge-rapport')");
   ok("purge manuelle : purge datée à vide, confirmation exigée, rapport supprimé et journalisé");
+
+  // 11c. l'identifiant survit à la purge et se clôt
+  await page.goto(BASE + "/admin/personnel");
+  await page.waitForSelector("code:has-text('AG-001')");
+  await page.click("button:has-text('Clore')");
+  await page.waitForURL(/ok=clos&identifiant=AG-001/);
+  await page.waitForSelector("text=Identifiant AG-001 clos");
+  ok("identifiant d'agent conservé après purge, puis clos");
+  await page.goto(BASE + "/donnees-personnelles");
+  await page.waitForSelector("h1:has-text('Vos données et vos droits')");
+  await capture("06-donnees-personnelles");
 
   // 12. documents : dépôt en base
   await page.goto(BASE + "/admin/documents");

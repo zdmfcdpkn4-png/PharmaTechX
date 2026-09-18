@@ -18,16 +18,19 @@ import {
  *   - sur le serveur, pour rendre un rapport enregistré (`/admin/rapports/[id]`)
  *     avec son numéro, son empreinte et ses visas électroniques.
  *
- * Il ne contient que ce qui est fourni : sans conservation nominative, le nom
- * n'apparaît que si l'apprenant l'a saisi au moment du téléchargement, et
- * l'identification se complète à la main.
+ * Il ne contient que ce qui est fourni : sans conservation, le nom n'apparaît
+ * que si l'apprenant l'a saisi au moment du téléchargement, et
+ * l'identification se complète à la main. En conservation pseudonyme, le
+ * rapport porte l'identifiant d'agent ; le nom, s'il est saisi à l'édition,
+ * est imprimé avec la mention qu'il est hors sceau et non enregistré.
  */
 
 export type QualiteVisa = "apprenant" | "tuteur" | "pharmacien";
 
 export interface VisaRapport {
   qualite: QualiteVisa;
-  nom: string;
+  /** Qui signe : le libellé du profil de session (tuteur, pharmacien) ou l'identifiant d'agent. */
+  signataire: string;
   /** Date lisible (« 18 septembre 2026 à 14:02 »). */
   date: string;
   commentaire?: string;
@@ -39,12 +42,14 @@ export interface VisaRapport {
 export interface DecisionImprimable {
   decision: Decision;
   verdictFinal: Verdict;
-  arbitrage?: { verdict: "acquis" | "non_acquis"; motif: string; nom: string; date: string } | null;
+  arbitrage?: { verdict: "acquis" | "non_acquis"; motif: string; par: string; date: string } | null;
   exclusions?: { questionId: string; motif: string }[];
 }
 
 export interface EnTeteRapport {
-  /** Saisi par l'apprenant ou lu en base ; vide = à compléter à la main. */
+  /** Identifiant d'agent (conservation pseudonyme) ; absent sinon. */
+  identifiant?: string;
+  /** Saisi par l'apprenant (téléchargement) ou porté à l'édition ; vide = à compléter à la main. */
   nom: string;
   qualite: string;
   parcours: string;
@@ -58,7 +63,7 @@ export interface OptionsRapport {
   visas?: VisaRapport[];
   /** Préfixe des adresses de logos (origine du site) ; vide pour un rendu serveur. */
   baseUrl?: string;
-  conservation?: "aucune" | "nominative";
+  conservation?: "aucune" | "pseudonyme";
   dureeConservationMois?: number | null;
   /** Date d'édition, sinon maintenant. */
   dateEdition?: Date;
@@ -127,7 +132,7 @@ function tableauVisas(visas: VisaRapport[], empreinte?: string): string {
     const v = visas.find((x) => x.qualite === q.qualite);
     if (v) {
       const signature = v.signatureDataUri
-        ? `<img class="signature" src="${v.signatureDataUri}" alt="Signature de ${echapper(v.nom)}">`
+        ? `<img class="signature" src="${v.signatureDataUri}" alt="Signature — ${echapper(v.signataire)}">`
         : "";
       // Le visa de l'apprenant porte l'attestation en commentaire : ne pas la répéter.
       const commentaire = v.commentaire && v.commentaire !== q.objet ? v.commentaire : "";
@@ -135,7 +140,7 @@ function tableauVisas(visas: VisaRapport[], empreinte?: string): string {
         <td class="q">${q.libelle}</td>
         <td>${echapper(q.objet)}${commentaire ? `<br><em>${echapper(commentaire)}</em>` : ""}</td>
         <td>${echapper(v.date)}</td>
-        <td>${signature}<strong>${echapper(v.nom)}</strong><br><span class="petit">visa électronique${empreinte ? ` · ${empreinte.slice(0, 12)}` : ""}</span></td>
+        <td>${signature}<strong>${echapper(v.signataire)}</strong><br><span class="petit">visa électronique${empreinte ? ` · ${empreinte.slice(0, 12)}` : ""}</span></td>
       </tr>`;
     }
     return `<tr>
@@ -159,7 +164,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
   const exclues = new Map((dec.exclusions ?? []).map((e) => [e.questionId, e.motif]));
   const verdict = LIBELLES_VERDICT[vf];
   const motif = dec.arbitrage
-    ? `Arbitrage du tuteur : <strong>${LIBELLES_COURTS_VERDICT[dec.arbitrage.verdict]}</strong> — ${echapper(dec.arbitrage.motif)} <span class="petit">(${echapper(dec.arbitrage.nom)}, ${echapper(dec.arbitrage.date)})</span>`
+    ? `Arbitrage du tuteur : <strong>${LIBELLES_COURTS_VERDICT[dec.arbitrage.verdict]}</strong> — ${echapper(dec.arbitrage.motif)} <span class="petit">(${echapper(dec.arbitrage.par)}, ${echapper(dec.arbitrage.date)})</span>`
     : echapper(expliquerVerdict(d));
   const brut = dec.arbitrage
     ? `Verdict brut : ${LIBELLES_COURTS_VERDICT[d.verdictBrut]} (score ${d.score} %, bande de garde ${d.bandeBasse} à ${d.bandeHaute} %), conservé avec l'arbitrage.`
@@ -182,9 +187,18 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     })
     .join("");
 
+  // Conservation pseudonyme : le nom n'est jamais enregistré ; porté à
+  // l'édition, il est hors sceau et le rapport le dit.
+  const pseudonyme = o.conservation === "pseudonyme";
+  const nomCellule = entete.nom
+    ? `<strong>${echapper(entete.nom)}</strong>${pseudonyme ? ' <span class="petit">porté à l\'édition, hors sceau, non enregistré par l\'application</span>' : ""}`
+    : pseudonyme
+      ? '<span class="aide">à compléter à la main, d\'après la correspondance tenue par le pharmacien responsable</span>'
+      : '<span class="aide">à renseigner par l\'apprenant</span>';
   const identification = `<table class="ident">
     <tbody>
-      <tr><td class="q">Nom et prénom</td><td>${entete.nom ? `<strong>${echapper(entete.nom)}</strong>` : '<span class="aide">à renseigner par l\'apprenant</span>'}</td></tr>
+      ${entete.identifiant ? `<tr><td class="q">Identifiant d'agent</td><td><strong class="mono">${echapper(entete.identifiant)}</strong> <span class="petit">seul rattachement enregistré</span></td></tr>` : ""}
+      <tr><td class="q">Nom et prénom</td><td>${nomCellule}</td></tr>
       <tr><td class="q">Fonction et unité</td><td>${entete.qualite ? echapper(entete.qualite) : '<span class="aide">préparateur en pharmacie, interne, pharmacien — unité de production</span>'}</td></tr>
       <tr><td class="q">Date de passation</td><td>${echapper(r.horodatage)}${r.tentative ? ` <span class="petit">— tentative n°${r.tentative} dans la session</span>` : ""}</td></tr>
       ${entete.parcours ? `<tr><td class="q">Parcours</td><td>${echapper(entete.parcours)}</td></tr>` : ""}
@@ -284,11 +298,12 @@ export function construireRapport(
   const titre = resultats.length === 1
     ? `Rapport d'évaluation — ${resultats[0].critereId ?? resultats[0].moduleTitre}`
     : `Rapport de session — ${resultats.length} critères`;
-  // Décision du 18/09/2026 : pas de purge automatique, conservation jusqu'à
-  // purge manuelle par l'administrateur ; une durée cible peut être annoncée.
+  // Décisions du 18/09/2026 : pas de purge automatique, conservation jusqu'à
+  // purge manuelle par l'administrateur ; aucun nom enregistré, rattachement
+  // par identifiant d'agent, nom porté à l'édition seulement.
   const conservation =
-    options.conservation === "nominative"
-      ? `Rapport enregistré par l'application${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""} — ${
+    options.conservation === "pseudonyme"
+      ? `Rapport enregistré par l'application${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""} sous l'identifiant d'agent${entete.identifiant ? ` ${echapper(entete.identifiant)}` : ""}, sans nom — ${
           options.dureeConservationMois
             ? `conservation ${options.dureeConservationMois} mois, purge manuelle par l'administrateur`
             : "conservé jusqu'à purge manuelle par l'administrateur, sans purge automatique"
@@ -423,7 +438,7 @@ export function telechargerRapport(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = nomFichierRapport(entete.nom, options.numero);
+  a.download = nomFichierRapport(entete.nom || entete.identifiant || "", options.numero);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

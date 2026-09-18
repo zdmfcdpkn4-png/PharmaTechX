@@ -33,7 +33,7 @@ pour la signature et les rapports, et ce qui en est transposé ici :
 |---|---|
 | Une image de signature du pharmacien, déposée une fois (600 px), conservée sur le poste, incrustée dans chaque rapport HTML autoportant | Image déposée depuis `/admin/signature`, réduite à 600 px par le navigateur, **rattachée au code d'accès admin** et conservée en base ; incrustée au visa du pharmacien, qui clôt le rapport ; le visa référence l'image de l'instant (`visas.signature_id`) |
 | « Enregistrer le rapport » (HTML, sans inscription au répertoire) puis « Valider et archiver » (datation, trois fichiers : CSV d'une ligne par appareil, JSON de la campagne, HTML du rapport) | Émission par l'apprenant (numéro, empreinte, visa apprenant), visa du tuteur, clôture par le pharmacien ; sur un rapport clos, **« Paquet d'archivage »** produit à la demande un zip avec le HTML signé, la ligne CSV du registre et le JSON complet (`/admin/rapports/[id]/paquet`). Rien n'est téléchargé automatiquement : le serveur tient le registre |
-| Répertoire de traçabilité « Parc & historique », construit depuis les campagnes validées, export CSV | **« Personnel & historique »** (`/admin/personnel`) : une ligne par agent et par critère, dernier rapport non annulé, verdict, rapports clos ; export `repertoire_personnel_<date>.csv` ; registre cumulatif `registre_rapports_<date>.csv` (une ligne par rapport, tous statuts) |
+| Répertoire de traçabilité « Parc & historique », construit depuis les campagnes validées, export CSV | **« Personnel & historique »** (`/admin/personnel`) : une ligne par agent (identifiant `AG-NNN`) et par critère, dernier rapport non annulé, verdict, rapports clos ; gestion des identifiants ; export `repertoire_personnel_<date>.csv` ; registre cumulatif `registre_rapports_<date>.csv` (une ligne par rapport, tous statuts) |
 | Verdict par bande de garde (\|b\| + U ≤ EMT conforme ; \|b\| − U > EMT non conforme ; sinon indéterminé), arbitrage pharmacien explicite et motivé, verdict brut conservé (`r.vMetro`) à côté du verdict arbitré | `lib/decision.ts` : la mesure est le score, la limite le seuil, l'incertitude le **poids d'une question** (100 / n). Acquis si score − bande ≥ seuil, non acquis si score + bande < seuil, sinon **indéterminé** : arbitrage motivé du **tuteur** avant son visa, verdict brut conservé et imprimé. Échec éliminatoire = non acquis sans arbitrage |
 | « Non concluant » sous un taux d'appariement minimal : l'outil refuse de conclure | **Non concluant** sous 10 questions (taille du tirage d'habilitation) : aucun rapport ne peut être émis ; si la banque du critère n'atteint pas 10 questions validées, seul le tirage Découverte reste ouvert |
 | Étape Rapport verrouillée tant qu'une décision pharmacien est en attente | Visas et arbitrage **verrouillés** tant qu'un signalement est ouvert sur une question du tirage ; une question retirée de la banque est **exclue du calcul**, les exclusions étant fixées au premier acte de décision (arbitrage ou visa du tuteur) et jamais modifiées ensuite |
@@ -49,7 +49,7 @@ questions, séparateur CSV « ; ».
 
 Inchangé : un rapport **émis** reçoit un numéro (`RAP-AAAA-NNNN`) et une
 empreinte SHA-256 de son contenu scellé ; il ne se modifie plus. Les **visas**
-portent nom saisi, rôle et libellé de session, date et empreinte.
+portent rôle et libellé de session, date et empreinte.
 **Annulation motivée** au lieu de correction. **Journal** de chaque action
 (dont `arbitrage-rapport`, `signature:depot`, `export:paquet`,
 `export:registre`, `export:repertoire`). Le résultat est **scellé par le
@@ -59,10 +59,10 @@ Ni l'image incrustée ni le visa par clic ne valent signature électronique au
 sens eIDAS, pas plus que dans la console : la valeur de preuve vient du
 registre, de l'empreinte et du journal.
 
-Tout cela n'existe que si `CONSERVATION_RAPPORTS=nominative` — le choix c de la
-question 2 le suppose, puisque les visas portent des noms. Par défaut, le site
-reste dans l'état livré : rien de nominatif, rapport téléchargé et signé sur
-papier. Voir `docs/QUESTIONS-OUVERTES.md`.
+Tout cela n'existe que si `CONSERVATION_RAPPORTS=pseudonyme` — le choix c de
+la question 2 le suppose, puisque les visas s'enregistrent. Par défaut, le
+site reste dans l'état livré : rien d'enregistré, rapport téléchargé et signé
+sur papier. Voir `docs/QUESTIONS-OUVERTES.md`.
 
 **Conservation** (question 5, choix d, 18/09/2026) : aucune purge automatique.
 Les rapports sont conservés jusqu'à purge manuelle par l'administrateur —
@@ -70,6 +70,24 @@ rapport par rapport (recopie du numéro) ou purge datée des rapports clos ou
 annulés (recopie du mot PURGER), jamais un rapport en circuit ; les numéros
 supprimés restent au journal. `RAPPORTS_CONSERVATION_MOIS`, facultatif,
 annonce une durée cible sur les rapports sans rien déclencher.
+
+**Pseudonymisation** (question 6, choix a, 18/09/2026) : plus aucun nom en
+base. Un tuteur ou l'administrateur crée un identifiant d'agent généré par le
+site (`AG-001`…, écran Personnel) ; la correspondance avec la personne est
+tenue par le pharmacien hors du site. L'apprenant saisit cet identifiant pour
+émettre ; le serveur vérifie qu'il existe et qu'il est actif. Visas et
+arbitrage portent le rôle et le libellé du code de session, jamais un nom
+saisi. Le nom et la fonction ne sont portés qu'à l'édition du rapport
+(impression ou paquet d'archivage, formulaire POST, mention « hors sceau, non
+enregistré ») et ne sont ni conservés, ni journalisés, ni transmis dans une
+adresse. Conséquence assumée : le sceau ne couvre pas le nom ; le lien
+identifiant ↔ personne repose sur la correspondance hors du site. Un
+identifiant se clôt au départ de l'agent, ne se réattribue pas et survit à la
+purge de ses rapports. Le mode `nominative` est retiré du code (l'historique
+git le conserve) ; `CONSERVATION_RAPPORTS=pseudonyme` le remplace. Le
+traitement reste pseudonymisé, donc soumis au RGPD : fiche de registre et
+texte d'information dans `docs/RGPD.md` et sur la page `/donnees-personnelles`,
+à valider par le DPO avant activation.
 
 ## Inspiration PandaSuite (interactivité)
 

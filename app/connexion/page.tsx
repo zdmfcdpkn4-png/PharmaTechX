@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { baseConfiguree } from "@/lib/db";
 import { secretConfigure } from "@/lib/auth";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { actionAmorcage, actionConnexion } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export default async function Connexion({
 }) {
   const { erreur, minutes } = await searchParams;
   const pret = baseConfiguree();
-  const nominative = conservationNominative();
+  const conservation = conservationActive();
   const message =
     erreur === "bloque"
       ? `Trop de tentatives : nouvel essai possible dans ${minutes ?? "15"} minute${Number(minutes ?? 15) > 1 ? "s" : ""}.`
@@ -112,11 +112,11 @@ export default async function Connexion({
             </li>
             <li>
               <strong>Tutorat</strong> <span className="etiquette etiquette--neutre">N3</span>
-              <p>Banque de questions (création, dépôt, validation), mises en situation, documents rattachés, signalements, codes de poste{nominative ? ", visa tuteur des rapports" : ""}.</p>
+              <p>Banque de questions (création, dépôt, validation), mises en situation, documents rattachés, signalements, codes de poste{conservation ? ", identifiants d'agents, visa tuteur des rapports" : ""}.</p>
             </li>
             <li>
               <strong>Administration</strong> <span className="etiquette etiquette--neutre">pharmacien</span>
-              <p>Tout ce qui précède, plus les codes de tous rôles, la suppression, le journal{nominative ? ", le visa pharmacien et l'annulation des rapports" : ""}.</p>
+              <p>Tout ce qui précède, plus les codes de tous rôles, la suppression, le journal{conservation ? ", le visa pharmacien, l'annulation et la purge des rapports" : ""}.</p>
             </li>
           </ul>
         </section>
@@ -124,15 +124,15 @@ export default async function Connexion({
 
       <section className="encart" aria-labelledby="titre-donnees">
         <h2 id="titre-donnees" style={{ fontSize: "1.1rem" }}>
-          {nominative ? "Ce que le site enregistre" : "Ce que le site enregistre : rien de nominatif"}
+          {conservation ? "Ce que le site enregistre : aucun nom" : "Ce que le site enregistre : rien de nominatif"}
         </h2>
         <ul style={{ margin: ".5rem 0 0", paddingLeft: "1.25rem" }}>
           <li>Les codes d&apos;accès, hachés : la base ne permet pas de les relire.</li>
           <li>Les réponses transmises pour correction ne portent ni nom, ni matricule, ni adresse ; les échecs de connexion sont comptés par empreinte d&apos;adresse, jamais l&apos;adresse elle-même.</li>
           <li>Les résultats vivent en mémoire de l&apos;onglet le temps de la session ; le repère de lecture d&apos;un module reste sur le poste, effaçable depuis le sommaire.</li>
-          {nominative ? (
+          {conservation ? (
             <li>
-              <strong>Les rapports émis par l&apos;apprenant</strong> sont enregistrés avec le nom qu&apos;il saisit, numérotés, scellés et visés par le tuteur puis le pharmacien responsable. Durée de conservation et information des agents : <code className="a-preciser">[à préciser]</code>.
+              <strong>Les rapports émis par l&apos;apprenant</strong> sont enregistrés sous son identifiant d&apos;agent (AG-001…), sans nom, numérotés, scellés et visés par le tuteur puis le pharmacien responsable ; la correspondance identifiant ↔ agent est tenue hors du site et le nom n&apos;est porté qu&apos;à l&apos;édition du rapport. Conservation jusqu&apos;à purge manuelle. <a href="/donnees-personnelles">Vos données et vos droits</a>.
             </li>
           ) : (
             <li>Aucun résultat n&apos;est conservé : le rapport téléchargé par l&apos;apprenant est le seul support.</li>

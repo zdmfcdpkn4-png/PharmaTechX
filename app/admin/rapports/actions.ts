@@ -27,9 +27,10 @@ import {
  *   ([à préciser] : un rôle « pharmacien » distinct ?). Sa signature déposée
  *   est incrustée dans le rapport à cet instant.
  *
- * Un visa enregistre le nom saisi, le rôle et le libellé de la session, la
- * date et l'empreinte du rapport à cet instant. Il ne se retire pas : un
- * rapport erroné s'annule, avec motif, et le suivant s'émet à nouveau.
+ * Un visa enregistre le rôle et le libellé du code de session, la date et
+ * l'empreinte du rapport à cet instant — jamais un nom saisi (décision du
+ * 18/09/2026, question 6, choix a). Il ne se retire pas : un rapport erroné
+ * s'annule, avec motif, et le suivant s'émet à nouveau.
  * Les refus (« signalement-ouvert », « arbitrage-requis »…) viennent de
  * `lib/rapports.ts` et sont rendus à l'écran par leur code.
  */
@@ -56,9 +57,7 @@ export async function actionViserRapport(formData: FormData) {
   if (qualite !== "tuteur" && qualite !== "pharmacien") redirect("/admin/rapports");
   const s = await sessionRequise(qualite === "pharmacien" ? "admin" : "tuteur");
   const id = String(formData.get("id") ?? "").slice(0, 80);
-  const nom = String(formData.get("nom") ?? "").trim().slice(0, 120);
   const commentaire = String(formData.get("commentaire") ?? "").trim().slice(0, 500);
-  if (!nom) redirect(`/admin/rapports/${id}?erreur=nom-manquant`);
   const r = await lireRapport(id);
   if (!r || r.statut === "annule") redirect(`/admin/rapports/${id}?erreur=indisponible`);
 
@@ -66,7 +65,6 @@ export async function actionViserRapport(formData: FormData) {
   try {
     await viser(id, {
       qualite,
-      nom,
       commentaire,
       roleSession: s.role,
       libelleSession: s.libelle,
@@ -76,7 +74,7 @@ export async function actionViserRapport(formData: FormData) {
     redirect(`/admin/rapports/${id}?erreur=${codeErreur(e)}`);
   }
   await journaliser(s, `visa:${qualite}`, `rapport:${r.numero}`, {
-    nom,
+    agent: r.agent_identifiant,
     signature: signature ? "incrustée" : "absente",
   });
   revalidatePath("/admin/rapports");
@@ -88,19 +86,17 @@ export async function actionArbitrerRapport(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = String(formData.get("id") ?? "").slice(0, 80);
   const verdict = String(formData.get("verdict") ?? "");
-  const nom = String(formData.get("nom") ?? "").trim().slice(0, 120);
   const motif = String(formData.get("motif") ?? "").trim().slice(0, 1000);
   if (verdict !== "acquis" && verdict !== "non_acquis") redirect(`/admin/rapports/${id}?erreur=verdict-manquant`);
-  if (!nom) redirect(`/admin/rapports/${id}?erreur=nom-manquant`);
   if (motif.length < 10) redirect(`/admin/rapports/${id}?erreur=motif-court`);
   const r = await lireRapport(id);
   if (!r) redirect("/admin/rapports");
   try {
-    await arbitrer(id, { verdict, motif, nom, roleSession: s.role, libelleSession: s.libelle });
+    await arbitrer(id, { verdict, motif, roleSession: s.role, libelleSession: s.libelle });
   } catch (e) {
     redirect(`/admin/rapports/${id}?erreur=${codeErreur(e)}`);
   }
-  await journaliser(s, "arbitrage-rapport", `rapport:${r.numero}`, { verdict, nom, motif });
+  await journaliser(s, "arbitrage-rapport", `rapport:${r.numero}`, { verdict, motif, agent: r.agent_identifiant });
   revalidatePath("/admin/rapports");
   revalidatePath(`/admin/rapports/${id}`);
   redirect(`/admin/rapports/${id}?ok=arbitre`);
@@ -122,7 +118,7 @@ export async function actionPurgerRapport(formData: FormData) {
   const numero = await purgerRapport(id);
   if (!numero) redirect(`/admin/rapports/${id}?erreur=non-purgeable`);
   await purgerSignaturesInutilisees();
-  await journaliser(s, "purge-rapport", `rapport:${numero}`, { statut: r.statut, apprenant: r.apprenant_nom });
+  await journaliser(s, "purge-rapport", `rapport:${numero}`, { statut: r.statut, agent: r.agent_identifiant });
   revalidatePath("/admin/rapports");
   revalidatePath("/admin/personnel");
   redirect(`/admin/rapports?ok=purge&n=1`);

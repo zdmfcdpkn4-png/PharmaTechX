@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import {
   LIBELLES_STATUT_RAPPORT,
@@ -27,7 +27,7 @@ export default async function Rapports({
   searchParams: Promise<{ statut?: string; ok?: string; n?: string; erreur?: string; avant?: string }>;
 }) {
   const p = await searchParams;
-  if (!conservationNominative()) {
+  if (!conservationActive()) {
     return (
       <>
         <section className="panneau-titre">
@@ -36,9 +36,9 @@ export default async function Rapports({
         </section>
         <p className="encart">
           Dans ce mode, le rapport est construit sur le poste de l&apos;apprenant, imprimé et signé
-          sur papier ; rien de nominatif n&apos;est enregistré. Pour activer l&apos;enregistrement
-          et le circuit de visas, définir <code>CONSERVATION_RAPPORTS=nominative</code> — après
-          inscription du traitement au registre et décision sur la durée de conservation.
+          sur papier ; rien n&apos;est enregistré. Pour activer l&apos;enregistrement sous identifiant
+          d&apos;agent et le circuit de visas, définir <code>CONSERVATION_RAPPORTS=pseudonyme</code> —
+          après inscription du traitement au registre (voir <code>docs/RGPD.md</code>).
         </p>
       </>
     );
@@ -58,10 +58,10 @@ export default async function Rapports({
       <section className="panneau-titre">
         <h1>Rapports d&apos;évaluation</h1>
         <p>
-          Rapports émis par les apprenants, numérotés et scellés. Circuit : arbitrage du tuteur si le
-          verdict est indéterminé, visa du tuteur, puis visa du pharmacien responsable, qui clôt le
-          rapport avec sa signature. Un rapport ne se modifie pas : il s&apos;annule avec un motif, et
-          l&apos;apprenant en émet un nouveau.
+          Rapports émis par les apprenants sous leur identifiant d&apos;agent, numérotés et scellés —
+          aucun nom en base. Circuit : arbitrage du tuteur si le verdict est indéterminé, visa du
+          tuteur, puis visa du pharmacien responsable, qui clôt le rapport avec sa signature. Un
+          rapport ne se modifie pas : il s&apos;annule avec un motif, et l&apos;apprenant en émet un nouveau.
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <a href="/admin/rapports/registre.csv" className="bouton bouton--secondaire">Registre cumulatif (CSV)</a>
@@ -89,7 +89,7 @@ export default async function Rapports({
           <tr>
             <th>N°</th>
             <th>Émis le</th>
-            <th>Apprenant</th>
+            <th>Agent</th>
             <th>Critère</th>
             <th>Résultat</th>
             <th>Statut</th>
@@ -102,7 +102,7 @@ export default async function Rapports({
               <tr key={r.id}>
                 <td><Link href={`/admin/rapports/${r.id}`}>{r.numero}</Link></td>
                 <td>{new Date(r.emis_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</td>
-                <td>{r.apprenant_nom}{r.apprenant_qualite ? <span className="legende"> — {r.apprenant_qualite}</span> : null}</td>
+                <td><code>{r.agent_identifiant}</code></td>
                 <td>{r.critere_id ?? "—"} <span className="legende">{r.module_titre.slice(0, 50)}</span></td>
                 <td>
                   {decision.score} % · {LIBELLES_COURTS_VERDICT[verdictFinal]}

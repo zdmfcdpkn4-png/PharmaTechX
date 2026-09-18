@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { LIBELLES_COURTS_VERDICT, LIBELLES_VERDICT, expliquerVerdict } from "@/lib/decision";
 import { LIBELLES_STATUT_RAPPORT, contexteDecision, lireRapport } from "@/lib/rapports";
 import { QUALITES_VISA } from "@/lib/rapport";
@@ -15,7 +15,6 @@ const MESSAGES: Record<string, string> = {
   "vise-sans-signature": "Visa enregistré, sans image de signature : aucune signature n'est déposée pour votre code. Déposez-la depuis « Signature » pour les prochains rapports.",
   arbitre: "Arbitrage enregistré : le verdict brut est conservé à côté du verdict arbitré.",
   annule: "Rapport annulé.",
-  "nom-manquant": "Le nom du signataire est obligatoire.",
   "deja-vise": "Ce visa est déjà porté.",
   "tuteur-d-abord": "Le visa du tuteur précède celui du pharmacien.",
   indisponible: "Ce rapport ne peut plus être visé.",
@@ -44,6 +43,11 @@ function date(iso: string, style: "short" | "long" = "short"): string {
   return new Date(iso).toLocaleString("fr-FR", { dateStyle: style, timeStyle: "short" });
 }
 
+/** Qui a porté un visa ou un arbitrage : le libellé du code de session, jamais un nom. */
+function profil(v: { role_session: string; libelle_session: string }): string {
+  return v.libelle_session || v.role_session;
+}
+
 export default async function Rapport({
   params,
   searchParams,
@@ -53,7 +57,7 @@ export default async function Rapport({
 }) {
   const { id } = await params;
   const p = await searchParams;
-  if (!conservationNominative()) notFound();
+  if (!conservationActive()) notFound();
   const r = await lireRapport(id);
   if (!r) notFound();
   const session = (await getSession())!;
@@ -82,7 +86,7 @@ export default async function Rapport({
         <p className="sur-titre">{LIBELLES_STATUT_RAPPORT[r.statut]}</p>
         <h1>{r.numero} — {r.module_titre}</h1>
         <p>
-          {r.apprenant_nom}{r.apprenant_qualite ? ` (${r.apprenant_qualite})` : ""} · émis le {date(r.emis_le, "long")} ·{" "}
+          Agent <code>{r.agent_identifiant}</code> · émis le {date(r.emis_le, "long")} ·{" "}
           {r.tirage} · <strong>{d.score} %</strong> —{" "}
           <span className={`etiquette ${COULEURS[ctx.verdictFinal]}`}>{LIBELLES_COURTS_VERDICT[ctx.verdictFinal]}</span>
         </p>
@@ -91,11 +95,11 @@ export default async function Rapport({
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <a href={`/admin/rapports/${r.id}/imprimer`} target="_blank" rel="noreferrer" className="bouton">
-            Ouvrir le rapport A4 (imprimer, PDF)
+            Ouvrir le rapport A4 sans nom (imprimer, PDF)
           </a>
           {r.statut === "clos" && (
             <a href={`/admin/rapports/${r.id}/paquet`} className="bouton bouton--secondaire">
-              Paquet d&apos;archivage (HTML signé, CSV, JSON)
+              Paquet d&apos;archivage sans nom (HTML signé, CSV, JSON)
             </a>
           )}
         </div>
@@ -109,6 +113,31 @@ export default async function Rapport({
           Annulé le {r.annule_le ? date(r.annule_le, "long") : ""} — motif : {r.annule_motif}
         </p>
       )}
+
+      {/* ─────────────────────────────────────────── édition avec le nom */}
+      <section className="carte">
+        <h3 style={{ marginTop: 0 }}>Éditer avec le nom de l&apos;agent</h3>
+        <p className="legende">
+          Le site ne connaît l&apos;agent que par l&apos;identifiant <code>{r.agent_identifiant}</code>. Le nom
+          saisi ici est porté sur l&apos;édition demandée, avec la mention « hors sceau, non enregistré » :
+          il n&apos;est ni conservé en base, ni écrit au journal, ni transmis dans l&apos;adresse. Reportez-vous
+          à la correspondance tenue par le pharmacien responsable.
+        </p>
+        <form method="post" action={`/admin/rapports/${r.id}/imprimer`} target="_blank">
+          <div className="rangee">
+            <label className="champ"><span>Nom et prénom</span><input type="text" name="nom" maxLength={120} autoComplete="off" required /></label>
+            <label className="champ"><span>Fonction (facultatif)</span><input type="text" name="qualite" maxLength={120} autoComplete="off" placeholder="Préparateur, interne…" /></label>
+          </div>
+          <div className="actions">
+            <button type="submit" className="bouton">Imprimer avec le nom</button>
+            {r.statut === "clos" && (
+              <button type="submit" className="bouton bouton--secondaire" formAction={`/admin/rapports/${r.id}/paquet`} formTarget="_self">
+                Paquet d&apos;archivage avec le nom
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
 
       {/* ─────────────────────────────────────────────────────── décision */}
       <div className="section-titre">
@@ -129,7 +158,7 @@ export default async function Rapport({
             <strong>Arbitrage du tuteur : {LIBELLES_COURTS_VERDICT[ctx.arbitrage.verdict]}</strong> — {ctx.arbitrage.motif}
             <br />
             <span className="legende">
-              {ctx.arbitrage.nom} · {ctx.arbitrage.role_session}{ctx.arbitrage.libelle_session ? ` · ${ctx.arbitrage.libelle_session}` : ""} · {date(ctx.arbitrage.le)} · score {ctx.arbitrage.score} %, verdict brut {LIBELLES_COURTS_VERDICT[ctx.arbitrage.verdictBrut]}
+              {profil(ctx.arbitrage)} · {ctx.arbitrage.role_session} · {date(ctx.arbitrage.le)} · score {ctx.arbitrage.score} %, verdict brut {LIBELLES_COURTS_VERDICT[ctx.arbitrage.verdictBrut]}
             </span>
           </p>
         )}
@@ -163,7 +192,7 @@ export default async function Rapport({
         <section className="carte">
           <h3>Arbitrage du tuteur</h3>
           <p className="legende">
-            Le score est dans la bande de garde : l&apos;outil ne tranche pas seul. Choisissez et motivez ; le verdict brut « indéterminé » reste consigné et imprimé à côté de votre décision.
+            Le score est dans la bande de garde : l&apos;outil ne tranche pas seul. Choisissez et motivez ; le verdict brut « indéterminé » reste consigné et imprimé à côté de votre décision. L&apos;arbitrage porte votre profil de session (« {session.libelle} »), jamais un nom.
           </p>
           <form action={actionArbitrerRapport}>
             <input type="hidden" name="id" value={r.id} />
@@ -178,9 +207,6 @@ export default async function Rapport({
                 <span><strong>Non acquis</strong> — reprise du module puis nouveau tirage</span>
               </label>
             </fieldset>
-            <div className="rangee">
-              <label className="champ"><span>Nom du tuteur</span><input type="text" name="nom" required maxLength={120} /></label>
-            </div>
             <label className="champ">
               <span>Motif (obligatoire)</span>
               <textarea name="motif" rows={3} required minLength={10} maxLength={1000} placeholder="Ce qui a fait pencher la décision : questions manquées, mise en situation, observation au poste…" />
@@ -211,9 +237,10 @@ export default async function Rapport({
                     <>
                       {q.qualite === "pharmacien" && signatureIncrustee && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={dataUri(signatureIncrustee)} alt={`Signature de ${v.nom}`} style={{ display: "block", maxHeight: 44, maxWidth: 160 }} />
+                        <img src={dataUri(signatureIncrustee)} alt={`Signature — ${profil(v)}`} style={{ display: "block", maxHeight: 44, maxWidth: 160 }} />
                       )}
-                      {v.nom}<br /><span className="legende">{v.role_session}{v.libelle_session ? ` · ${v.libelle_session}` : ""}</span>
+                      {q.qualite === "apprenant" ? <code>{r.agent_identifiant}</code> : profil(v)}
+                      <br /><span className="legende">{v.role_session}{q.qualite === "apprenant" && v.libelle_session ? ` · ${v.libelle_session}` : ""}</span>
                     </>
                   ) : <span className="legende">en attente</span>}
                 </td>
@@ -228,14 +255,13 @@ export default async function Rapport({
       {peutViserTuteur && (
         <section className="carte">
           <h3>Visa du tuteur (N3)</h3>
-          <p className="legende">Prend connaissance du résultat avant l&apos;entrée en compagnonnage au poste. Le visa porte votre nom, votre profil de session et l&apos;empreinte du rapport ; il fixe les questions exclues du calcul.</p>
+          <p className="legende">
+            Prend connaissance du résultat avant l&apos;entrée en compagnonnage au poste. Le visa porte votre profil de session (« {session.libelle} »), la date et l&apos;empreinte du rapport ; il fixe les questions exclues du calcul. <strong>Vérifiez que l&apos;identifiant {r.agent_identifiant} est bien celui de l&apos;agent évalué</strong> : un rapport mal rattaché s&apos;annule.
+          </p>
           <form action={actionViserRapport}>
             <input type="hidden" name="id" value={r.id} />
             <input type="hidden" name="qualite" value="tuteur" />
-            <div className="rangee">
-              <label className="champ"><span>Nom du tuteur</span><input type="text" name="nom" required maxLength={120} /></label>
-              <label className="champ"><span>Commentaire (facultatif)</span><input type="text" name="commentaire" maxLength={500} /></label>
-            </div>
+            <label className="champ"><span>Commentaire (facultatif)</span><input type="text" name="commentaire" maxLength={500} /></label>
             <div className="actions"><button type="submit" className="bouton">Apposer le visa tuteur</button></div>
           </form>
         </section>
@@ -247,7 +273,7 @@ export default async function Rapport({
       {peutViserPharmacien && (
         <section className="carte">
           <h3>Visa du pharmacien responsable</h3>
-          <p className="legende">Accuse réception de la preuve de l&apos;étape 2 pour le dossier d&apos;habilitation. Il ne prononce pas l&apos;habilitation (chapitre IV de la fiche). Il clôt le rapport.</p>
+          <p className="legende">Accuse réception de la preuve de l&apos;étape 2 pour le dossier d&apos;habilitation. Il ne prononce pas l&apos;habilitation (chapitre IV de la fiche). Il clôt le rapport et porte votre profil de session (« {session.libelle} »).</p>
           {signatureDuPharmacien ? (
             <p className="legende">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -262,10 +288,7 @@ export default async function Rapport({
           <form action={actionViserRapport}>
             <input type="hidden" name="id" value={r.id} />
             <input type="hidden" name="qualite" value="pharmacien" />
-            <div className="rangee">
-              <label className="champ"><span>Nom du pharmacien</span><input type="text" name="nom" required maxLength={120} /></label>
-              <label className="champ"><span>Commentaire (facultatif)</span><input type="text" name="commentaire" maxLength={500} /></label>
-            </div>
+            <label className="champ"><span>Commentaire (facultatif)</span><input type="text" name="commentaire" maxLength={500} /></label>
             <div className="actions"><button type="submit" className="bouton">Apposer le visa pharmacien et clore</button></div>
           </form>
         </section>
@@ -303,7 +326,7 @@ export default async function Rapport({
       {session.role === "admin" && r.statut !== "annule" && (
         <section className="carte">
           <h3>Annuler ce rapport</h3>
-          <p className="legende">Un rapport annulé reste en base, avec son motif ; l&apos;apprenant en émet un nouveau.</p>
+          <p className="legende">Un rapport annulé reste en base, avec son motif ; l&apos;apprenant en émet un nouveau. C&apos;est aussi la voie pour un rapport émis sous un mauvais identifiant.</p>
           <form action={actionAnnulerRapport}>
             <input type="hidden" name="id" value={r.id} />
             <label className="champ"><span>Motif</span><input type="text" name="motif" required maxLength={500} /></label>

@@ -2,33 +2,36 @@
 
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { conservationNominative } from "@/lib/config";
+import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
 import { empreinte, sceauValide } from "@/lib/sceau";
+import { agentParIdentifiant } from "@/lib/agents";
+import { normaliserIdentifiant } from "@/lib/identifiant";
 import { emettreRapport } from "@/lib/rapports";
 import { getModule } from "@/content/store";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
+import type { ReponseEmission } from "./types-rapports";
 
 /**
- * Émission d'un rapport par l'apprenant — le seul moment où un nom entre dans
- * la base, et seulement si la conservation nominative est activée.
+ * Émission d'un rapport par l'apprenant. Aucun nom n'entre ici (décision du
+ * 18/09/2026, question 6, choix a) : l'apprenant saisit l'identifiant d'agent
+ * que son tuteur lui a remis, le serveur vérifie qu'il existe et qu'il est
+ * actif, et le rapport s'y rattache. Le nom n'est porté qu'à l'édition.
  *
  * Le résultat transmis doit porter le sceau posé par le serveur à la
  * correction : un résultat retouché dans le navigateur est refusé.
  */
-import type { ReponseEmission } from "./types-rapports";
-
 export async function actionEmettreRapport(entree: {
   resultat: ResultatEvaluation;
-  nom: string;
-  qualite: string;
+  identifiant: string;
 }): Promise<ReponseEmission> {
-  if (!baseConfiguree() || !conservationNominative()) {
+  if (!baseConfiguree() || !conservationActive()) {
     return { ok: false, erreur: "La conservation des rapports n'est pas activée sur ce site." };
   }
-  const nom = String(entree.nom ?? "").trim().slice(0, 120);
-  const qualite = String(entree.qualite ?? "").trim().slice(0, 120);
-  if (nom.length < 2) return { ok: false, erreur: "Le nom de l'apprenant est requis pour émettre le rapport." };
+  const identifiant = normaliserIdentifiant(String(entree.identifiant ?? "").slice(0, 20));
+  if (!identifiant) {
+    return { ok: false, erreur: "Saisissez votre identifiant d'agent (AG-001, AG-002…), remis par votre tuteur." };
+  }
 
   const r = entree.resultat;
   if (!r || typeof r !== "object" || typeof r.jeton !== "string") {
@@ -46,13 +49,21 @@ export async function actionEmettreRapport(entree: {
     };
   }
 
+  const agent = await agentParIdentifiant(identifiant);
+  if (!agent) {
+    return { ok: false, erreur: `Identifiant ${identifiant} inconnu : vérifiez-le auprès de votre tuteur.` };
+  }
+  if (!agent.actif) {
+    return { ok: false, erreur: `Identifiant ${identifiant} clos : aucun rapport ne peut plus lui être rattaché.` };
+  }
+
   const session = await getSession();
-  const hash = empreinte({ ...sansJeton, apprenant: nom, qualite });
+  const hash = empreinte({ ...sansJeton, agent: agent.identifiant });
   const emis = await emettreRapport({
     resultat: { ...sansJeton, jeton },
     empreinte: hash,
-    apprenantNom: nom,
-    apprenantQualite: qualite,
+    agentId: agent.id,
+    agentIdentifiant: agent.identifiant,
     roleSession: session?.role ?? "aucun",
     libelleSession: session?.libelle ?? "",
   });
@@ -60,7 +71,7 @@ export async function actionEmettreRapport(entree: {
     { role: session?.role ?? "poste", libelle: session?.libelle ?? "sans code" },
     "emission-rapport",
     `rapport:${emis.numero}`,
-    { moduleId: r.moduleId, score: r.score, verdict: r.verdict },
+    { moduleId: r.moduleId, score: r.score, verdict: r.verdict, agent: agent.identifiant },
   );
   return {
     ok: true,
@@ -68,5 +79,6 @@ export async function actionEmettreRapport(entree: {
     numero: emis.numero,
     empreinte: hash,
     emisLe: emis.emisLe.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" }),
+    identifiant: agent.identifiant,
   };
 }

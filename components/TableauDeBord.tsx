@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSessionFormation, type ResultatSession } from "./SessionFormation";
-import { telechargerRapport } from "@/lib/rapport";
+import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
+import { normaliserIdentifiant } from "@/lib/identifiant";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 
 export interface ModuleResume {
@@ -114,13 +115,18 @@ export function TableauDeBord({
   postes: PosteResume[];
   niveaux: NiveauResume[];
   parcoursTitre: string;
-  conservation: "aucune" | "nominative";
+  conservation: "aucune" | "pseudonyme";
 }) {
   const [posteId, setPosteId] = useState<string>("");
   const [niveauCode, setNiveauCode] = useState<string>("");
   const { resultats, emissions, marquerEmis, cleEmission } = useSessionFormation();
+  const pseudonyme = conservation === "pseudonyme";
+  // Mode « aucune » : nom et qualité restent sur le poste, pour l'en-tête du
+  // fichier téléchargé. Mode pseudonyme : seul l'identifiant d'agent est saisi
+  // et transmis ; aucun nom, ni ici ni en base (décision du 18/09/2026).
   const [nom, setNom] = useState("");
   const [qualite, setQualite] = useState("");
+  const [identifiant, setIdentifiant] = useState("");
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -144,6 +150,11 @@ export function TableauDeBord({
     posteId ? ` — ${postes.find((p) => p.id === posteId)?.libelle}` : " — tronc commun"
   }`;
 
+  const entete = (): EnTeteRapport =>
+    pseudonyme
+      ? { identifiant: normaliserIdentifiant(identifiant) ?? undefined, nom: "", qualite: "", parcours: parcoursLibelle }
+      : { nom, qualite, parcours: parcoursLibelle };
+
   const optionsDe = (r: ResultatSession) => {
     const e = emissions[cleEmission(r)];
     return e
@@ -151,26 +162,26 @@ export function TableauDeBord({
           numero: e.numero,
           empreinte: e.empreinte,
           conservation,
-          visas: [{ qualite: "apprenant" as const, nom, date: e.emisLe }],
+          visas: [{ qualite: "apprenant" as const, signataire: e.identifiant, date: e.emisLe }],
         }
       : { conservation };
   };
 
   const emettre = async (r: ResultatSession) => {
     setErreur(null);
-    if (nom.trim().length < 2) {
-      setErreur("Renseignez votre nom pour émettre un rapport enregistré.");
+    if (!normaliserIdentifiant(identifiant)) {
+      setErreur("Saisissez votre identifiant d'agent (AG-001, AG-002…), remis par votre tuteur, pour émettre un rapport enregistré.");
       return;
     }
     setEnCours(cleEmission(r));
     try {
       const { tentative: _t, ...resultat } = r;
-      const rep = await actionEmettreRapport({ resultat, nom, qualite });
+      const rep = await actionEmettreRapport({ resultat, identifiant });
       if (!rep.ok) {
         setErreur(rep.erreur);
         return;
       }
-      marquerEmis(r, { id: rep.id, numero: rep.numero, empreinte: rep.empreinte, emisLe: rep.emisLe });
+      marquerEmis(r, { id: rep.id, numero: rep.numero, empreinte: rep.empreinte, emisLe: rep.emisLe, identifiant: rep.identifiant });
     } catch {
       setErreur("L'émission a échoué. Réessayez, ou téléchargez le rapport sans l'enregistrer.");
     } finally {
@@ -279,11 +290,15 @@ export function TableauDeBord({
         <span className="compte">{resultats.length} évaluation(s)</span>
       </div>
       <section className="carte">
-        {conservation === "nominative" ? (
+        {pseudonyme ? (
           <p>
             Deux issues pour chaque évaluation : <strong>télécharger</strong> le rapport sur ce
-            poste, ou <strong>l&apos;émettre</strong> — il est alors enregistré avec votre nom,
-            numéroté, scellé et soumis au visa du tuteur puis du pharmacien responsable. Les
+            poste, ou <strong>l&apos;émettre</strong> — il est alors enregistré sous votre
+            identifiant d&apos;agent, numéroté, scellé et soumis au visa du tuteur puis du
+            pharmacien responsable. <strong>Aucun nom n&apos;est enregistré</strong> : la
+            correspondance entre l&apos;identifiant et vous est tenue par le pharmacien
+            responsable, hors du site, et votre nom n&apos;est porté qu&apos;à l&apos;impression du
+            rapport. <Link href="/donnees-personnelles">Vos données et vos droits</Link>. Les
             entraînements n&apos;apparaissent pas ici.
           </p>
         ) : (
@@ -295,28 +310,49 @@ export function TableauDeBord({
           </p>
         )}
 
-        <div className="rangee">
-          <label className="champ">
-            <span>Nom de l&apos;apprenant</span>
-            <input
-              type="text"
-              value={nom}
-              onChange={(e) => setNom(e.target.value)}
-              placeholder="Nom Prénom"
-              autoComplete="off"
-            />
-          </label>
-          <label className="champ">
-            <span>Qualité</span>
-            <input
-              type="text"
-              value={qualite}
-              onChange={(e) => setQualite(e.target.value)}
-              placeholder="Préparateur, interne, niveau visé…"
-              autoComplete="off"
-            />
-          </label>
-        </div>
+        {pseudonyme ? (
+          <div className="rangee">
+            <label className="champ">
+              <span>Identifiant d&apos;agent</span>
+              <input
+                type="text"
+                name="identifiant"
+                value={identifiant}
+                onChange={(e) => setIdentifiant(e.target.value)}
+                placeholder="AG-001"
+                autoComplete="off"
+                inputMode="text"
+              />
+            </label>
+            <p className="legende" style={{ alignSelf: "end", margin: 0 }}>
+              Remis par votre tuteur. Vérifiez-le avant d&apos;émettre : le tuteur contrôle la
+              correspondance à son visa, et un rapport mal rattaché s&apos;annule.
+            </p>
+          </div>
+        ) : (
+          <div className="rangee">
+            <label className="champ">
+              <span>Nom de l&apos;apprenant</span>
+              <input
+                type="text"
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
+                placeholder="Nom Prénom"
+                autoComplete="off"
+              />
+            </label>
+            <label className="champ">
+              <span>Qualité</span>
+              <input
+                type="text"
+                value={qualite}
+                onChange={(e) => setQualite(e.target.value)}
+                placeholder="Préparateur, interne, niveau visé…"
+                autoComplete="off"
+              />
+            </label>
+          </div>
+        )}
 
         {erreur && (
           <p className="encart encart--attention" role="alert">
@@ -338,7 +374,7 @@ export function TableauDeBord({
                       {r.tirage} · tentative {r.tentative} · {r.score} % ({nombre(r.pointsObtenus)} /{" "}
                       {r.pointsTotal}) · {LIBELLES_COURTS_VERDICT[r.verdict]} · {r.horodatage}
                       {e ? ` · émis sous le n° ${e.numero}` : ""}
-                      {conservation === "nominative" && r.verdict === "non_concluant"
+                      {pseudonyme && r.verdict === "non_concluant"
                         ? ` · tirage non concluant : pas d'émission (${r.minQuestions} questions requises)`
                         : ""}
                     </span>
@@ -347,13 +383,11 @@ export function TableauDeBord({
                     <button
                       type="button"
                       className="bouton bouton--compact bouton--secondaire"
-                      onClick={() =>
-                        telechargerRapport({ nom, qualite, parcours: parcoursLibelle }, [r], optionsDe(r))
-                      }
+                      onClick={() => telechargerRapport(entete(), [r], optionsDe(r))}
                     >
                       Télécharger
                     </button>
-                    {conservation === "nominative" && !e && r.verdict !== "non_concluant" && (
+                    {pseudonyme && !e && r.verdict !== "non_concluant" && (
                       <button
                         type="button"
                         className="bouton bouton--compact"
@@ -375,9 +409,7 @@ export function TableauDeBord({
             type="button"
             className="bouton"
             disabled={resultats.length === 0}
-            onClick={() =>
-              telechargerRapport({ nom, qualite, parcours: parcoursLibelle }, resultats, { conservation })
-            }
+            onClick={() => telechargerRapport(entete(), resultats, { conservation })}
           >
             Télécharger le rapport de session
           </button>

@@ -10,21 +10,28 @@
  * - `aucune` (défaut) : rien n'est enregistré côté serveur. Le rapport est
  *   construit sur le poste de l'apprenant, imprimé et signé sur papier.
  *   C'est l'état livré par la conception initiale (« rien de nominatif »).
- * - `nominative` : chaque rapport émis est enregistré avec le nom saisi par
- *   l'apprenant, numéroté, scellé par une empreinte et soumis au circuit de
- *   visas (apprenant → tuteur → pharmacien). Ce mode traite des données à
- *   caractère personnel d'agents : il suppose une inscription au registre des
- *   traitements, une durée de conservation et une information des agents.
- *   Décision du pharmacien responsable : [à préciser].
+ * - `pseudonyme` : chaque rapport émis est enregistré sous un **identifiant
+ *   d'agent** (AG-001…) créé par un tuteur ou l'administrateur, numéroté,
+ *   scellé par une empreinte et soumis au circuit de visas (apprenant → tuteur
+ *   → pharmacien). Aucun nom n'entre en base : la correspondance identifiant ↔
+ *   agent est tenue par le pharmacien hors du site, et le nom n'est porté
+ *   qu'à l'édition du rapport (impression, paquet d'archivage), sans être
+ *   conservé. Décision du 18/09/2026 (question 6, choix a).
+ *
+ *   Un identifiant reste une donnée à caractère personnel au sens du RGPD
+ *   (pseudonymisation, art. 4 § 5 et considérant 26) : le traitement figure au
+ *   registre des traitements et les agents en sont informés — voir
+ *   `docs/RGPD.md` et la page `/donnees-personnelles`.
  */
-export type ModeConservation = "aucune" | "nominative";
+export type ModeConservation = "aucune" | "pseudonyme";
 
 export function modeConservation(): ModeConservation {
-  return process.env.CONSERVATION_RAPPORTS === "nominative" ? "nominative" : "aucune";
+  return process.env.CONSERVATION_RAPPORTS === "pseudonyme" ? "pseudonyme" : "aucune";
 }
 
-export function conservationNominative(): boolean {
-  return modeConservation() === "nominative";
+/** Les rapports émis sont enregistrés (mode `pseudonyme`). */
+export function conservationActive(): boolean {
+  return modeConservation() === "pseudonyme";
 }
 
 /**
