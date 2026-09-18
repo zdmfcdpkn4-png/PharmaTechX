@@ -208,8 +208,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     pharmacien le même rapport ; le rapport imprime le profil et le libellé
     du code de chaque acte. `[à préciser]` la procédure interne exige deux
     personnes pour les deux visas, le site ne le garantissant pas.
-    `[à préciser]` le motif d'arbitrage doit-il être choisi dans une liste
-    fermée ?
+    Motif d'arbitrage tranché le 18/09/2026 (question 26, choix a) : **texte
+    libre** obligatoire, de 10 à 1 000 caractères, ni liste fermée ni
+    nomenclature. `[à préciser]` la procédure interne doit interdire d'y
+    écrire un nom : le champ est libre, le dispositif est pseudonymisé, et
+    aucun contrôle technique ne sait reconnaître un nom.
 34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
     par le navigateur (comme dans la console), conservée en base et non sur le
     poste ; donnée personnelle de plus à déclarer. Tranché le 18/09/2026

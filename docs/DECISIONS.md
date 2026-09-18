@@ -399,6 +399,21 @@ le choix b reste ajoutable plus tard sans rien défaire ; c (aucune image,
 pharmacien compris) est écarté, la signature du responsable étant attendue
 sur la pièce qui clôt l'habilitation.
 
+**Motif d'arbitrage** (question 26, choix a, 18/09/2026) : le motif reste un
+**texte libre** obligatoire, de 10 à 1 000 caractères, saisi par le tuteur
+quand le verdict est indéterminé, conservé dans `rapports.arbitrage` et au
+journal, imprimé sur le rapport. Un arbitrage est un jugement : une liste
+fermée seule (choix c) l'appauvrirait au point de le rendre difficile à
+défendre, et une liste plus un commentaire (choix b) n'apporterait la
+comparabilité qu'au prix d'une nomenclature à tenir. Réserve assumée, et
+c'est le prix du choix : un champ libre sur un dispositif pseudonymisé peut
+recevoir un nom, qui entrerait alors en base et s'imprimerait, alors que tout
+le reste a été construit pour n'en porter aucun. Aucun contrôle technique ne
+sait reconnaître un nom de façon fiable ; la garantie est donc procédurale :
+`[à préciser]` la procédure interne doit interdire d'écrire un nom dans le
+motif, et l'administrateur peut annuler un rapport dont le motif en porterait
+un.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
