@@ -230,10 +230,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     tranché le 18/09/2026 (question 27, choix a) : réserver ces actes au
     pharmacien n'aurait rien protégé, le tuteur devant déjà savoir qui est
     l'agent pour viser son rapport ; la correspondance n'est donc pas connue
-    du seul pharmacien. `[à préciser]` faut-il porter la fonction de l'agent
-    (préparateur, interne…) sur le rapport autrement qu'à l'édition — une liste
-    fermée en base resterait pseudonyme mais rétrécit l'anonymat dans une
-    petite équipe. Le nom porté à l'édition n'est pas couvert par le sceau : le
+    du seul pharmacien. Fonction de l'agent tranchée le 18/09/2026
+    (question 29, choix a) : portée à l'édition seulement, comme le nom, hors
+    sceau et jamais enregistrée (champ « Fonction (facultatif) » du
+    formulaire d'édition, ligne « Fonction et unité » du rapport). Une liste
+    fermée en base (choix b) reste ouverte si la procédure exige que la
+    qualité de l'évalué soit scellée : donnée personnelle de plus, anonymat
+    rétréci dans une petite équipe, à porter au registre. Le nom porté à l'édition n'est pas couvert par le sceau : le
     lien identifiant ↔ personne repose sur la correspondance tenue hors du
     site, tranchée le 18/09/2026 (question 28, choix a) : un fichier du
     pharmacien responsable sur le réseau de l'établissement, dossier à droits

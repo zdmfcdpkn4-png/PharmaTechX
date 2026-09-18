@@ -442,6 +442,22 @@ l'accès à une liste nominative. Cette table est conservée aussi longtemps que
 le dossier d'habilitation et détruite avec lui ; elle ne vit jamais sur le
 site, dont c'est tout le principe.
 
+**Fonction de l'agent sur le rapport** (question 29, choix a, 18/09/2026) :
+la fonction reste portée à l'édition, à côté du nom, hors sceau et jamais
+enregistrée — c'est déjà ce que fait le site, le formulaire d'édition d'un
+rapport enregistré portant un champ « Fonction (facultatif) » repris dans la
+ligne « Fonction et unité » du rapport et dans le JSON d'archive, marqué
+`hors_sceau`. Le rapport téléchargé par l'apprenant, en conservation
+pseudonyme, laisse les deux lignes à compléter à la main. La porter en base
+sous forme de liste fermée (choix b) n'aurait ajouté qu'une chose : la
+fonction sous le sceau, donc opposable — au prix d'une donnée personnelle de
+plus dans une base hébergée hors de l'établissement, et d'un anonymat
+rétréci, « interne » désignant une personne quand il n'y en a qu'une ou deux.
+Le choix c (rien, même à l'édition) privait le rapport d'une mention que le
+dossier d'habilitation attend. Si la procédure interne venait à exiger que la
+qualité de l'évalué soit scellée, b reste ouvert et devra être porté au
+registre.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
