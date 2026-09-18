@@ -30,9 +30,20 @@ telle. Ordre : ce qui change le déploiement en premier.
    sous-traitance, analyse d'impact) ; `[à compléter]` responsable de
    traitement, contact du DPO, support de la correspondance ; `[à préciser]`
    durée de référence de conservation.
-3. **Statut du dispositif** : outil pédagogique ou preuve opposable en audit
-   BPP 2023 / ISO 9001 ? Change les exigences d'horodatage, de conservation et
-   d'accès. Marqueur visible en pied de chaque écran et sur chaque rapport.
+3. **Statut du dispositif** — tranché le 18/09/2026 (question 7, choix b) :
+   **preuve opposable de l'étape 2** de l'habilitation en audit BPP 2023 /
+   ISO 9001, jamais preuve d'habilitation. Le code porte la mention « document
+   qualité » sur chaque écran et chaque rapport, la référence de la procédure
+   interne (`PROCEDURE_HABILITATION`), des dates à l'horloge du serveur
+   (ISO 8601 UTC dans les archives), l'empreinte, le registre et le journal.
+   Reste hors du code : `[à compléter]` la référence de la procédure interne
+   qui décrit le dispositif, le mode de signature par clic et le circuit de
+   visas ; `[à vérifier]` la source de temps de l'hébergeur (comparer
+   `horloge` de `/api/sante` à une référence de temps, avant la mise en
+   service puis périodiquement) ; `[à préciser]` la durée de référence de
+   conservation, alignée sur celle du dossier d'habilitation (point 2) ;
+   `[à préciser]` sauvegardes (point 9) ; `[à préciser]` la codification du
+   modèle de rapport dans le système documentaire (version du modèle).
 4. **Hébergeur** : `[à préciser]` Render (processus Node, base Postgres
    managée, plan gratuit avec mise en veille) ou Vercel (fonctions Node, base
    Neon, Blob facultatif). Les deux sont prêts (`render.yaml`, variables

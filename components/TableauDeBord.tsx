@@ -109,6 +109,7 @@ export function TableauDeBord({
   niveaux,
   parcoursTitre,
   conservation,
+  procedure,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -116,6 +117,8 @@ export function TableauDeBord({
   niveaux: NiveauResume[];
   parcoursTitre: string;
   conservation: "aucune" | "pseudonyme";
+  /** Référence de la procédure interne, portée sur les rapports téléchargés. */
+  procedure: string | null;
 }) {
   const [posteId, setPosteId] = useState<string>("");
   const [niveauCode, setNiveauCode] = useState<string>("");
@@ -162,9 +165,10 @@ export function TableauDeBord({
           numero: e.numero,
           empreinte: e.empreinte,
           conservation,
+          procedure,
           visas: [{ qualite: "apprenant" as const, signataire: e.identifiant, date: e.emisLe }],
         }
-      : { conservation };
+      : { conservation, procedure };
   };
 
   const emettre = async (r: ResultatSession) => {
@@ -290,6 +294,10 @@ export function TableauDeBord({
         <span className="compte">{resultats.length} évaluation(s)</span>
       </div>
       <section className="carte">
+        <p className="legende">
+          Le rapport est un <strong>document qualité</strong> : preuve de l&apos;étape 2 au dossier
+          d&apos;habilitation, opposable en audit (décision du 18/09/2026). Il ne vaut pas habilitation.
+        </p>
         {pseudonyme ? (
           <p>
             Deux issues pour chaque évaluation : <strong>télécharger</strong> le rapport sur ce
@@ -409,7 +417,7 @@ export function TableauDeBord({
             type="button"
             className="bouton"
             disabled={resultats.length === 0}
-            onClick={() => telechargerRapport(entete(), resultats, { conservation })}
+            onClick={() => telechargerRapport(entete(), resultats, { conservation, procedure })}
           >
             Télécharger le rapport de session
           </button>

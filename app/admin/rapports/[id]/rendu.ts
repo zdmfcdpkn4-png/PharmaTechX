@@ -1,5 +1,5 @@
 import "server-only";
-import { dureeConservationMois } from "@/lib/config";
+import { dureeConservationMois, procedureReference } from "@/lib/config";
 import { contexteDecision, type RapportComplet } from "@/lib/rapports";
 import { dataUri, lireSignature } from "@/lib/signatures";
 import type { EditionRapport } from "@/lib/registre";
@@ -42,6 +42,7 @@ export async function rendreRapportEnregistre(r: RapportComplet, edition?: Editi
       visas,
       conservation: "pseudonyme",
       dureeConservationMois: dureeConservationMois(),
+      procedure: procedureReference(),
       dateEdition: edition?.le ?? new Date(r.emis_le),
       decision: {
         decision: ctx.decision,

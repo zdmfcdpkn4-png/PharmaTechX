@@ -4,7 +4,8 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { conservationActive } from "@/lib/config";
+import { conservationActive, procedureReference } from "@/lib/config";
+import { STATUT_DISPOSITIF } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
 
@@ -23,6 +24,7 @@ export default async function RootLayout({
   const session = baseConfiguree() ? await getSession() : null;
   const gestionnaire = session && session.role !== "poste";
   const conservation = conservationActive();
+  const procedure = procedureReference();
 
   return (
     <html lang="fr">
@@ -131,9 +133,10 @@ export default async function RootLayout({
                 </p>
               )}
               <p>
-                Statut du dispositif (outil pédagogique ou preuve opposable en
-                audit BPP&nbsp;2023 / ISO&nbsp;9001)&nbsp;:{" "}
-                <code className="a-preciser">[à préciser]</code>
+                Statut du dispositif&nbsp;: {STATUT_DISPOSITIF.long}, décision du{" "}
+                {STATUT_DISPOSITIF.decideLe}. Un rapport ne vaut pas habilitation. Procédure de
+                référence&nbsp;:{" "}
+                {procedure ? <code>{procedure}</code> : <code className="a-preciser">[à compléter]</code>}
               </p>
             </div>
           </footer>

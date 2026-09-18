@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { conservationActive, dureeConservationMois } from "@/lib/config";
+import { conservationActive, dureeConservationMois, procedureReference } from "@/lib/config";
+import { STATUT_DISPOSITIF } from "@/lib/statut";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 export default function DonneesPersonnelles() {
   const active = conservationActive();
   const duree = dureeConservationMois();
+  const procedure = procedureReference();
   const aCompleter = <code className="a-preciser">[à compléter]</code>;
 
   return (
@@ -75,7 +77,7 @@ export default function DonneesPersonnelles() {
       </section>
 
       <p className="encart">
-        Statut du dispositif (outil pédagogique ou preuve opposable en audit) : <code className="a-preciser">[à préciser]</code>. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
+        Statut du dispositif : {STATUT_DISPOSITIF.long}, décision du {STATUT_DISPOSITIF.decideLe} ; le rapport ne vaut pas habilitation. Procédure de référence : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
       </p>
     </article>
   );

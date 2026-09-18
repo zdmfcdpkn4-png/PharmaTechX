@@ -21,6 +21,7 @@ tout usage du dispositif comme preuve.
 | `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max) |
 | `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `pseudonyme` (rapports enregistrés sous identifiant d'agent, sans nom) — voir `docs/RGPD.md` avant d'activer |
 | `RAPPORTS_CONSERVATION_MOIS` | non | durée annoncée sur les rapports enregistrés |
+| `PROCEDURE_HABILITATION` | non | référence de la procédure interne portée sur les écrans et les rapports (preuve opposable de l'étape 2) ; vide = marqueur `[à compléter]` |
 
 Changer `AUTH_SECRET` déconnecte toutes les sessions et invalide les sceaux
 des résultats non encore émis (ceux tenus en mémoire des onglets ouverts) ;

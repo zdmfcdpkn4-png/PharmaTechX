@@ -124,7 +124,9 @@ Justification : cf. procédure interne.`,
   const sante = await (await page.request.get(BASE + "/api/sante")).json();
   assert.equal(sante.base, "joignable");
   assert.equal(sante.conservation, "pseudonyme");
-  ok("santé : base joignable, conservation pseudonyme");
+  assert.match(sante.horloge, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+  assert.ok(Math.abs(Date.parse(sante.horloge) - Date.now()) < 60_000, "horloge du serveur à moins d'une minute du poste");
+  ok("santé : base joignable, conservation pseudonyme, horloge du serveur exposée");
 
   // 1. amorçage
   await page.goto(BASE + "/connexion");
@@ -352,6 +354,8 @@ Justification : cf. procédure interne.`,
   assert.ok(html.includes("visa électronique") && html.includes(numero) && html.includes("AG-001"));
   assert.ok(html.includes("Administrateur initial")); // visas portés par la session d'administration
   assert.ok(html.includes("à compléter à la main, d'après la correspondance"));
+  assert.ok(html.includes("Document qualité — preuve de l'étape 2") && html.includes("procédure [à compléter]"));
+  assert.ok(html.includes("horloge du serveur, 20"));
   assert.ok(html.includes("Arbitrage du tuteur : <strong>acquis</strong>"));
   assert.ok(html.includes("Verdict brut : indéterminé"));
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,'));

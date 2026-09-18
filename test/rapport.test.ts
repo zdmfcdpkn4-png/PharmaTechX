@@ -60,7 +60,11 @@ test("le rapport A4 porte verdict, visas, synthèse, détail et échappe le HTML
   assert.ok(html.includes("Ce rapport ne vaut pas habilitation"));
   assert.ok(html.includes("sas de transfert"));
   assert.ok(html.includes("1,5 / 2 points"));
-  assert.ok(html.includes("[à préciser]"));
+  // Statut du dispositif : document qualité, procédure à compléter, horodatage serveur explicite.
+  assert.ok(html.includes("Document qualité — preuve de l'étape 2"));
+  assert.ok(html.includes("procédure [à compléter]"));
+  assert.ok(html.includes("horloge du serveur, 2026-09-18T12:02:00.000Z"));
+  assert.ok(!html.includes("[à préciser]"));
   // Conservation pseudonyme : l'identifiant est le seul rattachement, le nom est hors sceau.
   assert.ok(html.includes("Identifiant d'agent"));
   assert.ok(html.includes("AG-007"));
@@ -80,7 +84,7 @@ test("édition pseudonyme sans nom : identification à compléter d'après la co
 test("sans conservation, l'identification se complète à la main et la décision se recalcule du résultat", () => {
   const html = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat]);
   assert.ok(html.includes("à renseigner par l'apprenant"));
-  assert.ok(html.includes("Aucun résultat n'est conservé"));
+  assert.ok(html.includes("Preuve sur signatures manuscrites") && html.includes("aucun résultat n'est conservé"));
   // Deux questions sur neuf requises : non concluant, recalculé sans exclusion.
   assert.ok(html.includes("Évaluation non concluante"));
   assert.ok(html.includes("Tirage non concluant : 9 questions requises."));
@@ -114,6 +118,15 @@ test("verdict arbitré, question exclue et signature incrustée", () => {
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,AAAA"'));
   assert.ok(html.includes("(Tuteur test, 18/09/2026)"));
   assert.ok(html.includes("Signature — Administrateur initial"));
+});
+
+test("la référence de la procédure interne remplace le marqueur quand elle est renseignée", () => {
+  const html = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat], {
+    procedure: "PHAR-PR-012 — Habilitation du personnel <v3>",
+  });
+  assert.ok(html.includes("procédure PHAR-PR-012 — Habilitation du personnel &lt;v3&gt;"));
+  assert.ok(!html.includes("[à compléter]"));
+  assert.ok(html.includes("Preuve sur signatures manuscrites"));
 });
 
 test("nom de fichier sûr", () => {

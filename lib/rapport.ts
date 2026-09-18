@@ -7,6 +7,7 @@ import {
   type Decision,
   type Verdict,
 } from "./decision";
+import { STATUT_DISPOSITIF, libelleProcedure } from "./statut";
 
 /**
  * Rapport d'évaluation — document A4 imprimable, repris de la maquette
@@ -69,6 +70,8 @@ export interface OptionsRapport {
   dateEdition?: Date;
   /** Décision enregistrée ; sinon elle est recalculée du résultat seul, sans exclusion ni arbitrage. */
   decision?: DecisionImprimable;
+  /** Référence de la procédure interne (`PROCEDURE_HABILITATION`) ; absente, le marqueur [à compléter] est imprimé. */
+  procedure?: string | null;
 }
 
 function decisionParDefaut(r: ResultatRapport): DecisionImprimable {
@@ -200,7 +203,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
       ${entete.identifiant ? `<tr><td class="q">Identifiant d'agent</td><td><strong class="mono">${echapper(entete.identifiant)}</strong> <span class="petit">seul rattachement enregistré</span></td></tr>` : ""}
       <tr><td class="q">Nom et prénom</td><td>${nomCellule}</td></tr>
       <tr><td class="q">Fonction et unité</td><td>${entete.qualite ? echapper(entete.qualite) : '<span class="aide">préparateur en pharmacie, interne, pharmacien — unité de production</span>'}</td></tr>
-      <tr><td class="q">Date de passation</td><td>${echapper(r.horodatage)}${r.tentative ? ` <span class="petit">— tentative n°${r.tentative} dans la session</span>` : ""}</td></tr>
+      <tr><td class="q">Date de passation</td><td>${echapper(r.horodatage)} <span class="petit">(horloge du serveur, ${echapper(r.horodatageIso)})</span>${r.tentative ? ` <span class="petit">— tentative n°${r.tentative} dans la session</span>` : ""}</td></tr>
       ${entete.parcours ? `<tr><td class="q">Parcours</td><td>${echapper(entete.parcours)}</td></tr>` : ""}
     </tbody>
   </table>`;
@@ -308,7 +311,11 @@ export function construireRapport(
             ? `conservation ${options.dureeConservationMois} mois, purge manuelle par l'administrateur`
             : "conservé jusqu'à purge manuelle par l'administrateur, sans purge automatique"
         }.`
-      : "Document sans donnée nominative enregistrée : l'identité est portée par l'apprenant. Aucun résultat n'est conservé par l'application.";
+      : "Preuve sur signatures manuscrites : l'identité est portée par l'apprenant, aucun résultat n'est conservé par l'application.";
+  // Décision du 18/09/2026 (question 7, choix b) : document qualité, preuve
+  // opposable de l'étape 2 ; la procédure de référence est portée, ou le
+  // marqueur [à compléter] tant qu'elle ne l'est pas.
+  const statut = `<strong>${STATUT_DISPOSITIF.court}</strong> · procédure ${echapper(libelleProcedure(options.procedure))}`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -400,8 +407,8 @@ export function construireRapport(
   </td></tr></thead>
   <tfoot><tr><td>
     <div class="pied-page">
-      <span>${conservation}</span>
-      <span class="mono">Statut du dispositif : [à préciser]${options.empreinte ? ` · empreinte ${options.empreinte.slice(0, 16)}` : ""}</span>
+      <span>${statut} · ${conservation} Dates à l'horloge du serveur, heure de Paris.</span>
+      <span class="mono">${options.empreinte ? `empreinte ${options.empreinte.slice(0, 16)}` : ""}</span>
     </div>
   </td></tr></tfoot>
   <tbody><tr><td>

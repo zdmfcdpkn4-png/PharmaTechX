@@ -44,5 +44,17 @@ export function dureeConservationMois(): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/**
+ * Référence de la procédure interne qui encadre le dispositif (code et titre
+ * dans le système documentaire), portée sur chaque écran et chaque rapport.
+ * Décision du 18/09/2026 (question 7, choix b) : le rapport est une preuve
+ * opposable de l'étape 2 ; sans référence, le marqueur [à compléter] reste
+ * affiché — voir `lib/statut.ts`.
+ */
+export function procedureReference(): string | null {
+  const r = (process.env.PROCEDURE_HABILITATION ?? "").trim();
+  return r || null;
+}
+
 /** Nom de l'établissement et de l'unité, tels qu'ils figurent sur les rapports. */
 export const ETABLISSEMENT = "CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie";

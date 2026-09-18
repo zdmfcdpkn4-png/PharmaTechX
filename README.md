@@ -144,6 +144,13 @@ de 10 questions : pas de rapport). Un verdict indéterminé est tranché par un
 à côté. Un signalement ouvert sur une question du tirage **verrouille** visas
 et arbitrage ; une question retirée de la banque est exclue du calcul.
 
+**Statut** (décision du 18/09/2026) : le rapport est un **document qualité,
+preuve opposable de l'étape 2** en audit BPP 2023 / ISO 9001, jamais une
+preuve d'habilitation. Chaque écran et chaque rapport portent la mention, la
+référence de la procédure interne (`PROCEDURE_HABILITATION`, sinon
+`[à compléter]`) et des dates à l'horloge du serveur ; `/api/sante` expose
+cette horloge pour contrôler la source de temps de l'hébergeur.
+
 **Signature** : le pharmacien dépose une image depuis `/admin/signature`
 (réduite à 600 px par le navigateur, rattachée à son code admin) ; elle est
 incrustée dans le rapport à son visa, qui clôt le rapport. **Archivage** : sur
@@ -201,9 +208,9 @@ connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
 La liste complète, ordonnée par impact, est dans
 `docs/QUESTIONS-OUVERTES.md` ; les choix d'intégration dans
 `docs/DECISIONS.md`. En tête : la validation RGPD du mode pseudonyme par le
-DPO (`docs/RGPD.md`), le statut du dispositif en audit, l'hébergeur, les
-paramètres de la décision (bande de garde, minimum de questions), les barèmes
-à confirmer, les 56 modules à rédiger.
+DPO (`docs/RGPD.md`), la procédure interne et la source de temps qu'exige le
+statut opposable, l'hébergeur, les paramètres de la décision (bande de garde,
+minimum de questions), les barèmes à confirmer, les 56 modules à rédiger.
 
 ## 12. Limites connues
 

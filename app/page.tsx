@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { composerProgramme, comptesQuestionsBase, getParcours } from "@/content/store";
-import { modeConservation } from "@/lib/config";
+import { modeConservation, procedureReference } from "@/lib/config";
 import {
   arbitrageEnAttente,
   blocsCompetence,
@@ -204,6 +204,7 @@ export default async function Accueil({
           }))}
           parcoursTitre={parcours.titre}
           conservation={conservation}
+          procedure={procedureReference()}
         />
       </section>
 

@@ -53,7 +53,8 @@ export default async function Signature({ searchParams }: { searchParams: Promis
       <p className="encart">
         Ni l&apos;image incrustée ni le visa par clic ne valent signature électronique au sens du
         règlement eIDAS : la valeur de preuve vient du registre, de l&apos;empreinte et du journal.
-        Statut du dispositif : [à préciser].
+        Le rapport clos est une preuve opposable de l&apos;étape 2 (décision du 18/09/2026) : la
+        procédure de référence doit décrire ce mode de signature.
       </p>
     </>
   );

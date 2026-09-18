@@ -17,6 +17,9 @@ export async function GET() {
       stockage: modeStockage(),
       conservation: modeConservation(),
       secret: secretConfigure() ? "defini" : "absent",
+      // Horloge du serveur (ISO 8601, UTC) : à comparer à une référence de temps
+      // pour vérifier la source de temps de l'hébergeur (preuve opposable).
+      horloge: new Date().toISOString(),
     },
     { status: base && !joignable ? 503 : 200, headers: { "Cache-Control": "no-store" } },
   );

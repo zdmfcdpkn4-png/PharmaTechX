@@ -89,6 +89,19 @@ traitement reste pseudonymisé, donc soumis au RGPD : fiche de registre et
 texte d'information dans `docs/RGPD.md` et sur la page `/donnees-personnelles`,
 à valider par le DPO avant activation.
 
+**Statut du dispositif** (question 7, choix b, 18/09/2026) : le rapport est une
+**preuve opposable de l'étape 2** de l'habilitation en audit BPP 2023 /
+ISO 9001 — jamais une preuve d'habilitation, qui se prononce hors du site. Le
+marqueur `[à préciser]` du pied de page et des rapports est remplacé par la
+mention « Document qualité — preuve de l'étape 2 », la référence de la
+procédure interne (`PROCEDURE_HABILITATION`, marqueur `[à compléter]` tant
+qu'elle n'est pas renseignée) et la mention des dates à l'horloge du serveur ;
+la date de passation porte son horodatage ISO 8601 UTC, et `/api/sante` expose
+l'horloge du serveur pour contrôler la source de temps. Sans conservation, la
+preuve repose sur les signatures manuscrites du rapport téléchargé. Ce que le
+code ne garantit pas reste consigné dans `docs/QUESTIONS-OUVERTES.md`, A.3 :
+source de temps de l'hébergeur, durée de référence, sauvegardes, procédure.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

@@ -33,6 +33,8 @@ services:
         generateValue: true
       - key: CONSERVATION_RAPPORTS
         value: aucune             # « pseudonyme » après validation RGPD — voir docs/RGPD.md
+      - key: PROCEDURE_HABILITATION
+        value: ""                 # référence de la procédure interne — [à compléter]
 
 databases:
   - name: formation-pharmacotechnie-db
