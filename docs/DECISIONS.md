@@ -239,10 +239,19 @@ vidéos, fiches de synthèse conservés en base — ne sont servis qu'aux
 sessions ouvertes par un code (poste, tutorat, administration) : la route
 `/api/fichiers` répond 401 sans session, les pages n'en listent que le
 nombre aux visiteurs, avec l'invitation à se connecter, et la synthèse
-déposée n'est montrée en fin de test qu'avec une session. Les modules
-restent lisibles sans code, comme avant. Un store Blob, dont les adresses
-sont publiques, est incompatible avec cette règle : le stockage en base est
-requis. Le choix c, tout le site derrière un code, reste à confirmer.
+déposée n'est montrée en fin de test qu'avec une session. Un store Blob,
+dont les adresses sont publiques, est incompatible avec cette règle : le
+stockage en base est requis. **Puis choix c, confirmé le même jour : tout le
+site derrière un code.** Dès qu'une base est configurée, un filtre
+(`middleware.ts`, vérification de la signature du cookie de session avec
+les API Web, sans Node) exige une session de rôle sur chaque page et chaque
+route d'API, sauf la connexion, la page Données personnelles et la page de
+santé ; une page demandée sans session renvoie à la connexion et y ramène
+après le code. Les pages continuent de vérifier le rôle de leur côté. Sans
+base, le site reste en mode ouvert, signalé sur la page de connexion. Motif :
+un outil interne d'une unité de production de cytotoxiques, dont les modules
+porteront des données locales, ne se lit pas sans contrôle sur l'internet ;
+la consigne « ne pas indexer » n'est pas une protection.
 
 ## Inspiration PandaSuite (interactivité)
 

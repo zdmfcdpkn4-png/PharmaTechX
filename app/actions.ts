@@ -56,6 +56,10 @@ export async function actionConnexion(formData: FormData) {
   }
   await ouvrirSession(r.session);
   await journaliser({ role: r.session.role, libelle: r.session.libelle }, "connexion");
+  // Page demandée avant la connexion (tout le site est derrière un code, question 13) :
+  // un chemin du site seulement, jamais une adresse externe.
+  const suite = String(formData.get("suite") ?? "").slice(0, 300);
+  if (/^\/(?![\/\\])/.test(suite) && !suite.startsWith("/connexion")) redirect(suite);
   redirect(r.session.role === "poste" ? "/" : "/admin");
 }
 

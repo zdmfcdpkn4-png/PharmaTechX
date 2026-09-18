@@ -16,10 +16,14 @@ repli, non retenue. L'accord de la DSI et l'avis du DPO restent à obtenir
 avant la mise en service : voir « Mise en service » ci-dessous et
 `docs/RGPD.md`.
 
-Sans base, le site fonctionne en **mode ouvert** : contenu consultable,
-contrôle d'accès inactif, écrans d'administration remplacés par la marche à
-suivre. Cet état est signalé sur la page de connexion et doit être levé avant
-tout usage du dispositif comme preuve.
+Avec une base, tout le site exige un code de rôle (`middleware.ts`,
+décision du 18/09/2026, question 13) : seules `/connexion`,
+`/donnees-personnelles` et `/api/sante` restent publiques, ce qui laisse le
+contrôle de santé de Render fonctionner. Sans base, le site fonctionne en
+**mode ouvert** : contenu consultable, contrôle d'accès inactif, écrans
+d'administration remplacés par la marche à suivre. Cet état est signalé sur
+la page de connexion et doit être levé avant tout usage du dispositif comme
+preuve.
 
 ## Variables d'environnement
 

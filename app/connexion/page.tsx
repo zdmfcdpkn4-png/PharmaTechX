@@ -15,9 +15,9 @@ const MESSAGES: Record<string, string> = {
 export default async function Connexion({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string; minutes?: string }>;
+  searchParams: Promise<{ erreur?: string; minutes?: string; suite?: string }>;
 }) {
-  const { erreur, minutes } = await searchParams;
+  const { erreur, minutes, suite } = await searchParams;
   const pret = baseConfiguree();
   const conservation = conservationActive();
   const message =
@@ -33,9 +33,10 @@ export default async function Connexion({
         <p className="sur-titre">Accès à l&apos;outil</p>
         <h1>Un code ouvre un profil, pas un compte</h1>
         <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>
-          L&apos;accès se fait par code de rôle : administration, tutorat, ou poste de travail. Un
-          code ne désigne aucune personne — il n&apos;y a ni identifiant nominatif, ni mot de passe
-          individuel, ni historique rattaché à un agent.
+          Le site est réservé au personnel de l&apos;unité : tout s&apos;ouvre par un code de rôle,
+          poste de travail, tutorat ou administration. Un code ne désigne aucune personne. Seul
+          l&apos;agent qui le décide rattache sa progression à son identifiant, avec un code
+          personnel.
         </p>
       </section>
 
@@ -69,6 +70,7 @@ export default async function Connexion({
         <section className="carte">
           <h2>Entrer un code de rôle</h2>
           <form action={actionConnexion}>
+            {suite && <input type="hidden" name="suite" value={suite} />}
             <label className="champ champ--code">
               <span>Code d&apos;accès</span>
               <input
@@ -91,14 +93,16 @@ export default async function Connexion({
               <button type="submit" className="bouton" disabled={!pret}>
                 Entrer
               </button>
-              <Link href="/" className="bouton bouton--secondaire">
-                Consulter sans code
-              </Link>
+              {!pret && (
+                <Link href="/" className="bouton bouton--secondaire">
+                  Consulter sans code
+                </Link>
+              )}
             </div>
             <p className="legende">
-              Sans code, vous accédez aux modules et aux évaluations. La banque de questions, les
-              dépôts de documents, les visas et l&apos;ordonnancement des modules demandent un code
-              de tutorat ou d&apos;administration.
+              {pret
+                ? "Le code de poste ouvre les modules, les évaluations et les documents. Les codes de tutorat et d'administration ouvrent en plus la banque de questions, les dépôts, les visas et l'ordonnancement des modules."
+                : "Sans base, vous accédez aux modules et aux évaluations. La banque de questions, les dépôts de documents, les visas et l'ordonnancement des modules demandent un code de tutorat ou d'administration."}
             </p>
           </form>
         </section>
@@ -108,7 +112,7 @@ export default async function Connexion({
           <ul className="profils">
             <li>
               <strong>Poste de travail</strong> <span className="etiquette etiquette--neutre">apprenant</span>
-              <p>Lecture des modules, passation des évaluations et des entraînements, export du rapport. Profil par défaut : aucun code requis.</p>
+              <p>Lecture des modules, passation des évaluations et des entraînements, documents, export ou émission du rapport. Code remis par le tutorat, requis pour tout le site (décision du 18/09/2026).</p>
             </li>
             <li>
               <strong>Tutorat</strong> <span className="etiquette etiquette--neutre">N3</span>

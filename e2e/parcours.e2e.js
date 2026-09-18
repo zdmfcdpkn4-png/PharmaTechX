@@ -750,16 +750,28 @@ Justification : justification deux.`;
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
 
-  // 14b. sans session, un document déposé est réservé (question 13, choix b) ; les modules restent lisibles
+  // 14b. tout le site derrière un code (question 13, choix c) : sans session, documents et API refusés,
+  //      pages renvoyées à la connexion avec la page demandée ; santé et données personnelles publiques
   assert.equal((await page.request.get(BASE + lien)).status(), 401, "document déposé refusé sans session");
+  assert.equal((await page.request.get(BASE + "/api/images/inconnu")).status(), 401, "API refusée sans session");
+  assert.equal((await page.request.get(BASE + "/api/sante")).status(), 200, "page de santé publique");
   await page.goto(BASE + "/module/comportement-zac");
-  await page.waitForSelector("h1:has-text('Comportement et habillage')");
-  await page.waitForSelector("text=réservé aux sessions ouvertes par un code");
-  assert.equal(await page.locator("a:has-text('Schéma déposé test')").count(), 0);
+  await page.waitForURL(/\/connexion\?suite=%2Fmodule%2Fcomportement-zac/);
   await page.goto(BASE + "/");
-  await page.waitForSelector("text=Les documents déposés sont réservés aux sessions");
-  ok("documents déposés réservés aux sessions par code : 401 sans session, modules lisibles, note affichée");
-  await page.goto(BASE + "/connexion");
+  await page.waitForURL(/\/connexion$/);
+  await page.goto(BASE + "/donnees-personnelles");
+  await page.waitForSelector("h1:has-text('Vos données et vos droits')");
+  // la connexion renvoie vers la page demandée
+  await page.goto(BASE + "/connexion?suite=%2Fmodule%2Fcomportement-zac");
+  await page.fill("input[name=code]", codeTuteur);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/module\/comportement-zac$/);
+  await page.waitForSelector("a:has-text('Schéma déposé test')");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("tout le site derrière un code : 401 sur documents et API sans session, pages renvoyées à la connexion, retour à la page demandée après le code");
   // L'URL ne change pas d'un échec à l'autre : attendre la réponse de l'action,
   // pas une navigation, sinon les soumissions se chevauchent.
   const soumettreCode = async (code) => {

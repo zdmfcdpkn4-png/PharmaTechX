@@ -23,10 +23,15 @@ npm run dev             # http://localhost:3000
 npm run verifier        # typecheck + lint + tests unitaires
 ```
 
-Sans base de données, l'application tourne en **mode ouvert** : tout le
-contenu est consultable, le contrôle d'accès est inactif et les écrans
-d'administration affichent la marche à suivre. Cet état est affiché sur la
-page de connexion et doit être levé avant tout usage comme preuve.
+Avec une base de données, **tout le site est derrière un code de rôle**
+(décision du 18/09/2026, question 13) : modules, évaluations, documents et
+administration exigent une session ouverte par un code de poste, de tuteur
+ou d'administration ; seules la connexion, la page Données personnelles et
+la page de santé restent publiques. Sans base, l'application tourne en
+**mode ouvert** : tout le contenu est consultable, le contrôle d'accès est
+inactif et les écrans d'administration affichent la marche à suivre. Cet état
+est affiché sur la page de connexion et doit être levé avant tout usage comme
+preuve.
 
 ## 2. Déployer
 
@@ -50,7 +55,7 @@ l'administrateur initial** : le code n'est affiché qu'une fois.
 |---|---|
 | **admin** | Tout : codes de tous rôles, banque de questions, modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
 | **tuteur** | Banque de questions (créer, déposer, valider les questions d'un autre code, retirer), **modules déposés** (créer, modifier en brouillon), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, code personnel d'un agent (réinitialisation), arbitrage et visa « tuteur » |
-| **poste** | Suivre son programme, passer les évaluations et les entraînements, exporter ou émettre son rapport. Profil par défaut : aucun code requis |
+| **poste** | Suivre son programme, passer les évaluations et les entraînements, lire les documents, exporter ou émettre son rapport, rattacher sa progression. Code requis pour tout le site dès qu'une base est configurée |
 
 Un code **ne désigne pas une personne** : il ouvre un profil. Les codes sont
 stockés hachés (scrypt, sel par code). Cinq échecs de connexion bloquent

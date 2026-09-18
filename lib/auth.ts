@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { baseConfiguree, codesActifs, marquerUsage, type Role } from "./db";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
+import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 
 /**
  * Contrôle d'accès par rôle.
@@ -46,7 +47,7 @@ function secret(): string {
   if (s && s.length >= 16) return s;
   // Sans secret configuré, les sessions ne survivent pas à un redéploiement.
   // C'est volontairement bruyant : le contrôle d'accès n'est pas encore sûr.
-  return "developpement-non-securise-definir-AUTH_SECRET";
+  return SECRET_DEVELOPPEMENT;
 }
 
 export function secretConfigure(): boolean {
