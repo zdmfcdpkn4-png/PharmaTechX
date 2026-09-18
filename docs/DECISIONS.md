@@ -369,6 +369,22 @@ suppose un second service payant pour garder un site d'essai en ligne et
 n'isole que des données fictives) — c reste possible plus tard, l'étiquette
 le rendant sûr.
 
+**Logo de l'unité** (question 24, choix b, 18/09/2026) : le logo
+« Pharmacotechnie — unité de production des chimiothérapies » fourni ce jour
+devient celui du dispositif. Son emblème circulaire, détouré carré et réduit
+à 180 × 180 (`public/pharmaco-icone.png`), sert d'icône d'onglet
+immédiatement : une icône ne vaut pas preuve. Sur les rapports, le changement
+est reporté à la mise en service, en même temps que l'étiquette `v1` qui le
+date : changer l'en-tête d'une pièce opposable en cours de route créerait
+deux générations de rapports pour un même dispositif, sans rien qui explique
+la différence. Le logo est déposé dès maintenant (`public/pharmaco-logo.jpg`)
+et la liste de mise en service porte l'étape, avec ses deux contraintes : une
+réduction, le logo étant incorporé en data URI dans chaque rapport, et une
+reprise de la mise en page, ce logo étant en portrait quand l'ancien était
+carré. Écartés : a (ne rien changer sur les rapports) et c (tout changer
+maintenant, en pleine phase d'essai — recevable, mais le repère de version
+manquerait).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

@@ -303,16 +303,26 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    `BASE_ATTENDUE=service` (étiquette d'instance : `/api/sante` doit ensuite
    donner `base_instance: "service"`), et branche déployée mise sur
    `production`.
-5. **Comptes** : administrateur initial créé puis remplacé par des codes
+5. **Présentation** : porter sur les rapports le logo « Pharmacotechnie —
+   unité de production des chimiothérapies » (`public/pharmaco-logo.jpg`,
+   déposé le 18/09/2026 en attente de cette étape ; question 24, choix b). Le
+   logo est incorporé en data URI dans chaque rapport : en produire une
+   réduction — une cinquantaine de kilo-octets au plus — avant de remplacer
+   `public/pharmaco-web.png`, et reprendre la hauteur de la classe
+   `.pharmaco` dans `lib/rapport.ts`, ce logo étant en portrait et non carré.
+   Ici et pas après : deux générations de rapports pour un même dispositif se
+   justifient mal. L'icône d'onglet, elle, porte déjà l'emblème de ce logo
+   (`public/pharmaco-icone.png`).
+6. **Comptes** : administrateur initial créé puis remplacé par des codes
    nominaux de fonction (jamais des noms), codes tuteur, signature du
    pharmacien déposée, identifiants d'agents créés et correspondance tenue hors
    du site.
-6. **Sauvegarde** : un `pg_dump` réalisé par le pooler de session et restauré
+7. **Sauvegarde** : un `pg_dump` réalisé par le pooler de session et restauré
    sur une base locale avant le premier rapport réel (voir ci-dessous).
-7. **Procédure interne** publiée, qui décrit le dispositif, le visa par clic,
+8. **Procédure interne** publiée, qui décrit le dispositif, le visa par clic,
    la signature incrustée, la correspondance des identifiants, la purge
    manuelle et la conservation.
-8. **Mise en service prononcée** : poser `MISE_EN_SERVICE` à sa date
+9. **Mise en service prononcée** : poser `MISE_EN_SERVICE` à sa date
    (AAAA-MM-JJ). La mention « Phase d'essai — ne vaut pas preuve » disparaît
    des écrans et des rapports, remplacée par « en service depuis le … » ;
    `/api/sante` renvoie la date. Les rapports émis avant cette date restent
