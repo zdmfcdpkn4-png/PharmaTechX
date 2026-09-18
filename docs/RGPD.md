@@ -50,7 +50,7 @@ marqués `[à compléter]` ; ceux qui demandent un arbitrage du DPO sont marqué
 | Catégories de données — tuteurs et pharmacien | Profil de session (libellé du code d'accès, choisi par l'administrateur) ; image de signature du pharmacien, rattachée à son code, incrustée dans les rapports clos ; aucune image de signature n'est collectée pour les tuteurs, dont le visa s'imprime en toutes lettres (décision du 18/09/2026, question 25, choix a). Les modules déposés, les documents et le barème réglé portent le profil de session de leur auteur (rôle et libellé du code), jamais une personne. |
 | Catégories de données — journal | Rôle, libellé de profil, action, cible (numéro de rapport, identifiant d'agent), date. |
 | Catégories de données — progression (question 11, choix c) | Sur rattachement de l'agent par son identifiant et son code personnel (4 à 8 chiffres, conservé haché par scrypt, jamais lisible) : évaluations complètes avec leur résultat scellé (critère, tirage, réponses, corrigé, score, verdict, barème, date), entraînements terminés (score, tirage, date), modules lus (date), évaluation en cours (questions posées et réponses saisies, jusqu'à correction ou abandon). Sans rattachement, rien de tout cela n'est conservé. Purge par l'administrateur, journalisée, sur demande de l'agent ou à son départ ; les rapports émis ne sont pas touchés. |
-| Hors du site | Correspondance identifiant ↔ nom, tenue par le pharmacien responsable : `[à compléter]` support, lieu, accès. Les tuteurs, qui créent les identifiants et visent les rapports, connaissent de fait la correspondance des agents qu'ils suivent (décision du 18/09/2026, question 27, choix a) : la réidentification n'est pas confinée au pharmacien. |
+| Hors du site | Correspondance identifiant ↔ nom, tenue par le pharmacien responsable (décision du 18/09/2026, question 28, choix a) : **un fichier sur le réseau de l'établissement**, dans un dossier à droits restreints, lisible par les tuteurs qui visent — `[à préciser]` chemin, droits et titulaire de leur attribution ; hors du site, jamais déposé dessus. Conservée aussi longtemps que le dossier d'habilitation et détruite avec lui (durée `[à vérifier]`). L'identifiant porté sur la pièce classée au dossier en est le complément, non le substitut. Les tuteurs, qui créent les identifiants et visent les rapports, connaissent de fait la correspondance des agents qu'ils suivent (décision du 18/09/2026, question 27, choix a) : la réidentification n'est pas confinée au pharmacien. |
 | Données jamais traitées par le site | Nom, prénom, matricule, adresse électronique ; adresse IP en clair (empreinte salée pour le limiteur de connexion) ; réponses hors émission ; entraînements. Le nom porté à l'édition d'un rapport n'est ni enregistré, ni journalisé, ni transmis dans une adresse. |
 | Données sensibles (art. 9) | Aucune |
 | Destinataires | Tuteurs (profil « tuteur ») ; pharmacien responsable et administrateur du site (profil « admin ») ; l'agent lui-même, pour sa progression rattachée ; aucun tiers |
@@ -86,8 +86,10 @@ dossier d'habilitation.
    sous-traitants ultérieurs et mécanismes de transfert hors UE.
 2. `[à compléter]` Établissement : responsable de traitement, contact du DPO,
    entités contractantes de Render et de Supabase, région du projet Supabase,
-   titulaire du compte Supabase, support de la correspondance
-   identifiant ↔ nom.
+   titulaire du compte Supabase. Support de la correspondance
+   identifiant ↔ nom tranché (question 28, choix a : fichier sur le réseau de
+   l'établissement, dossier à droits restreints, lisible par les tuteurs) :
+   restent `[à compléter]` le chemin, les droits et qui les attribue.
 3. `[à préciser]` Pharmacien responsable : durée de référence de conservation
    des rapports et du journal (la progression rattachée suit la question 15 :
    purge manuelle au départ de l'agent) ; mode

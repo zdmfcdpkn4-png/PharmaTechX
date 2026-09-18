@@ -427,6 +427,21 @@ au pharmacien responsable, les tuteurs connaissant de fait celle des agents
 qu'ils créent et qu'ils suivent. Le support de la correspondance reste
 `[à préciser]`.
 
+**Correspondance identifiant ↔ personne** (question 28, choix a,
+18/09/2026) : un fichier tenu par le pharmacien responsable sur le réseau de
+l'établissement, dans un dossier à droits restreints, lisible par les tuteurs
+qui visent ; chemin et droits `[à préciser]`. Le besoin qui décide est la
+lecture inverse : l'administration liste les rapports par `AG-NNN` et le
+registre exporté aussi, si bien que sans table, retrouver qui est `AG-017`
+supposerait d'ouvrir les dossiers un à un — le choix b (aucune liste
+centrale, identifiant porté sur le dossier d'habilitation) reste un bon
+complément, pas un substitut. Le choix c (enregistrement du système qualité)
+serait meilleur sur le papier, apportant ses règles d'accès et de
+conservation, mais rien ne permet de vérifier d'ici qu'il restreint assez
+l'accès à une liste nominative. Cette table est conservée aussi longtemps que
+le dossier d'habilitation et détruite avec lui ; elle ne vit jamais sur le
+site, dont c'est tout le principe.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

@@ -235,7 +235,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     fermée en base resterait pseudonyme mais rétrécit l'anonymat dans une
     petite équipe. Le nom porté à l'édition n'est pas couvert par le sceau : le
     lien identifiant ↔ personne repose sur la correspondance tenue hors du
-    site, `[à préciser]` sur quel support et avec quel accès.
+    site, tranchée le 18/09/2026 (question 28, choix a) : un fichier du
+    pharmacien responsable sur le réseau de l'établissement, dossier à droits
+    restreints, lisible par les tuteurs qui visent, conservé et détruit avec
+    le dossier d'habilitation. `[à préciser]` chemin, droits et qui les
+    attribue.
 
 ## F. Parcours de formation (transposition du Lecteur QIM · QCM)
 
