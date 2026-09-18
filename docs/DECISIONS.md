@@ -294,6 +294,25 @@ réglable, écarté) ; ne pas savoir nommer l'élément vaut le nommer faux
 (choix b écarté). Le barème réglable ne décide du sort des légendes vides
 que pour la note des questions non éliminatoires.
 
+**Questions réservées à l'évaluation** (question 18, choix c, 18/09/2026) :
+entraînement et évaluation puisaient dans la même banque, avec correction
+immédiate en entraînement, si bien qu'un agent pouvait apprendre la banque
+avant l'évaluation. Chaque question porte désormais un marquage « réservée à
+l'évaluation » (`reservee`, dans le code comme en base, case de l'éditeur,
+ligne « Réservée à l'évaluation : oui » à l'import) : jamais posée en
+entraînement ni dans le tirage Découverte, tirée en priorité dans les tirages
+Habilitation et Complet en mode évaluation, après les éliminatoires. Le
+tirage reste fait dans le navigateur (`content/tirage.ts`), mais le serveur
+vérifie sa conformité à la correction et refuse (400) un entraînement ou une
+Découverte qui contiendrait une réservée, ou une Habilitation qui en
+contiendrait moins que le tirage prioritaire n'en aurait pris. Le rejeu des
+questions ratées, en entraînement, écarte les réservées. Le résultat scellé
+porte le nombre de réservées posées et disponibles, repris sur le rapport
+(étiquette par question, ligne d'en-tête) et dans le registre
+(`nb_reservees`) ; la banque affiche le compte par module. Écartés : b
+(entraînement réservé aux modules déjà évalués, ordre pédagogique inversé) et
+a (même banque, acceptable seulement avec des banques larges).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

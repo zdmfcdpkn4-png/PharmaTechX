@@ -28,11 +28,11 @@ const resultat: ResultatRapport = {
   detail: [
     {
       questionId: "q1", enonce: "Énoncé <b>", type: "QCM", situation: null, note: 1, discordances: 0, nonJugees: 0,
-      correct: true, eliminatoire: true, choixApprenant: ["B"], reponsesAttendues: ["B"], justification: "Parce que.", sources: ["ANSM — BPP"],
+      correct: true, eliminatoire: true, reservee: false, choixApprenant: ["B"], reponsesAttendues: ["B"], justification: "Parce que.", sources: ["ANSM — BPP"],
     },
     {
       questionId: "q2", enonce: "Schéma", type: "SCH", situation: null, note: 0.5, discordances: 1, nonJugees: 0,
-      correct: false, eliminatoire: false, choixApprenant: ["1 → sas"], reponsesAttendues: ["1 → sas de transfert"], justification: "", sources: [],
+      correct: false, eliminatoire: false, reservee: false, choixApprenant: ["1 → sas"], reponsesAttendues: ["1 → sas de transfert"], justification: "", sources: [],
       legendes: [{ numero: 1, reponse: "sas", attendu: "sas de transfert", verdict: "fausse" }],
     },
   ],

@@ -185,7 +185,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
       const exclue = exclues.has(q.questionId);
       return `<tr${exclue ? ' class="exclue"' : ""}>
       <td class="mono">${i + 1}</td>
-      <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}</td>
+      <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}${q.reservee ? " · réservée" : ""}</td>
       <td>${echapper(objetDe(q))}</td>
       <td><strong>${etatDe(q)}</strong>${exclue ? '<br><span class="petit">exclue du calcul</span>' : ""}</td>
       <td class="mono droite">${exclue ? "—" : `${nombre(q.note)} / 1`}</td>
@@ -229,6 +229,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
           <span class="etat" style="color:${couleurDe(d)}">${etatDe(d)}</span>
           <span class="petit">${formatDe(d)}</span>
           ${d.eliminatoire ? '<span class="elim">Éliminatoire</span>' : ""}
+          ${d.reservee ? '<span class="res">Réservée à l’évaluation</span>' : ""}
           <span class="mono points">${nombre(d.note)} / 1 point</span>
         </div>
         ${exclusion ? `<p class="petit"><strong>Exclue du calcul</strong> — ${echapper(exclusion)}.</p>` : ""}
@@ -246,7 +247,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
   return `<section class="critere${premiere ? "" : " nouvelle-page"}">
     <p class="sur-titre">Étape 2 sur 6 — évaluation des connaissances</p>
     <h1>${echapper(r.moduleTitre)}</h1>
-    <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
+    <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && r.reservees.posees > 0 ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
     <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
 
     <table class="verdict">
@@ -285,7 +286,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     ${tableauVisas(o.visas ?? [], o.empreinte)}
 
     <h2 class="nouvelle-page">Détail des questions, justifications et sources</h2>
-    <p class="petit">Chaque justification renvoie au texte applicable. Les questions éliminatoires sont signalées : une erreur y invalide le critère quel que soit le score global.</p>
+    <p class="petit">Chaque justification renvoie au texte applicable. Les questions éliminatoires sont signalées : une erreur y invalide le critère quel que soit le score global. Les questions réservées à l’évaluation, signalées aussi, ne sont jamais posées en entraînement.</p>
     ${details}
     ${sources.length ? `<h2>Sources citées</h2><ol class="sources">${sources.map((s) => `<li>${echapper(s)}</li>`).join("")}</ol>` : ""}
   </section>`;
@@ -385,6 +386,7 @@ export function construireRapport(
   .detail-tete .etat { font-size: 9pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
   .detail-tete .points { margin-left: auto; font-size: 9.5pt; font-weight: 700; }
   .elim { font-size: 8.5pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #fff; background: #b41f4d; padding: 2px 7px; border-radius: 3px; }
+  .res { font-size: 8.5pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #1f3f7a; background: #e6eefb; padding: 2px 7px; border-radius: 3px; }
   .enonce { margin: 0 0 5px; font-size: 11.5pt; font-weight: 650; line-height: 1.4; }
   .rep { margin: 0 0 3px; font-size: 10.5pt; color: #566370; }
   .rep span, .rep strong { color: #16202a; }

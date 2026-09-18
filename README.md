@@ -122,6 +122,14 @@ blocs ↔ niveaux) et sont affichés comme tels.
 Une question **éliminatoire** invalide le critère quelle que soit la note, et
 elle est toujours incluse dans le tirage.
 
+Une question **réservée à l'évaluation** (décision du 18/09/2026, question 18,
+choix c) n'est jamais posée en entraînement ni dans le tirage Découverte ; les
+tirages Habilitation et Complet, en mode évaluation, la prennent en priorité.
+Le serveur refuse à la correction un tirage qui ne respecte pas cette règle.
+Le résultat scellé, le rapport et le registre portent le nombre de questions
+réservées posées. Dans le code, `reservee: true` sur la question ; en base, la
+case de l'éditeur ou la ligne « Réservée à l'évaluation : oui » à l'import.
+
 **Barème réglable** (décision du 18/09/2026, question 10) : depuis
 `/admin/bareme`, l'administrateur règle les points des QIM (1, 2 discordances
 et au-delà), le mode du schéma (partiel ou tout ou rien, légende vide comptée

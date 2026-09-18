@@ -47,6 +47,8 @@ export interface LigneQuestion {
   image_id: string | null;
   justification: string;
   eliminatoire: boolean;
+  /** Réservée à l'évaluation (question 18) : jamais posée en entraînement. */
+  reservee: boolean;
   refs: Reference[];
   statut: StatutQuestion;
   depot_id: string | null;
@@ -99,6 +101,7 @@ export interface QuestionAEnregistrer {
   imageId: string | null;
   justification: string;
   eliminatoire: boolean;
+  reservee: boolean;
   refs: Reference[];
   statut: StatutQuestion;
   depotId?: string | null;
@@ -110,7 +113,7 @@ export function nouvelId(prefixe = "q"): string {
 
 const COLONNES = `
   q.id, q.module_id, q.situation_id, q.format, q.enonce, q.options, q.legendes,
-  q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.refs, q.statut,
+  q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.reservee, q.refs, q.statut,
   q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text,
   q.edite_le::text, q.version, q.cree_par_acces, q.edite_par, q.edite_par_acces,
   i.largeur AS image_largeur, i.hauteur AS image_hauteur, i.alt AS image_alt,
@@ -131,6 +134,7 @@ export function versQuestion(l: LigneQuestion): Question {
     bonnesReponses: l.format === "SCH" ? [] : l.options.filter((o) => o.vrai).map((o) => o.id),
     justification: l.justification,
     eliminatoire: l.eliminatoire,
+    reservee: l.reservee,
     references: l.refs,
     origine: "base",
   };
@@ -189,17 +193,22 @@ export async function questionsValideesDuModule(
 }
 
 /** Nombre de questions validées et à vérifier par module. */
+/** Par module : questions validées, à vérifier, et validées réservées à l'évaluation. */
 export async function comptesParModule(): Promise<
-  Record<string, { valides: number; aVerifier: number }>
+  Record<string, { valides: number; aVerifier: number; reservees: number }>
 > {
-  const r = await sql<{ module_id: string; statut: StatutQuestion; n: number }>`
-    SELECT module_id, statut, COUNT(*)::int AS n FROM questions
-    WHERE statut IN ('valide','a_verifier') GROUP BY module_id, statut`;
-  const out: Record<string, { valides: number; aVerifier: number }> = {};
+  const r = await sql<{ module_id: string; statut: StatutQuestion; reservee: boolean; n: number }>`
+    SELECT module_id, statut, reservee, COUNT(*)::int AS n FROM questions
+    WHERE statut IN ('valide','a_verifier') GROUP BY module_id, statut, reservee`;
+  const out: Record<string, { valides: number; aVerifier: number; reservees: number }> = {};
   for (const l of r.rows) {
-    const e = (out[l.module_id] ??= { valides: 0, aVerifier: 0 });
-    if (l.statut === "valide") e.valides = l.n;
-    else e.aVerifier = l.n;
+    const e = (out[l.module_id] ??= { valides: 0, aVerifier: 0, reservees: 0 });
+    if (l.statut === "valide") {
+      e.valides += l.n;
+      if (l.reservee) e.reservees += l.n;
+    } else {
+      e.aVerifier += l.n;
+    }
   }
   return out;
 }
@@ -238,11 +247,11 @@ export async function enregistrerQuestion(
   const acces = acteur.acces ?? null;
   await sql`
     INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
-      mode_reponse, image_id, justification, eliminatoire, refs, statut, depot_id, cree_par,
+      mode_reponse, image_id, justification, eliminatoire, reservee, refs, statut, depot_id, cree_par,
       valide_par, valide_le, cree_par_acces, edite_par, edite_par_acces)
     VALUES (${ident}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
       ${options}::jsonb, ${legendes}::jsonb, ${q.modeReponse}, ${q.imageId},
-      ${q.justification}, ${q.eliminatoire}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
+      ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
       ${par}, ${q.statut === "valide" ? par : null}, ${q.statut === "valide" ? new Date() : null},
       ${acces}, ${par}, ${acces})
     ON CONFLICT (id) DO UPDATE SET
@@ -258,6 +267,7 @@ export async function enregistrerQuestion(
       image_id = COALESCE(EXCLUDED.image_id, questions.image_id),
       justification = EXCLUDED.justification,
       eliminatoire = EXCLUDED.eliminatoire,
+      reservee = EXCLUDED.reservee,
       refs = EXCLUDED.refs,
       statut = EXCLUDED.statut,
       valide_par = CASE WHEN EXCLUDED.statut = 'valide' THEN EXCLUDED.valide_par ELSE NULL END,
@@ -355,11 +365,11 @@ export async function insererLot(
       const id = nouvelId();
       await s`
         INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
-          mode_reponse, image_id, justification, eliminatoire, refs, statut, depot_id, rang, cree_par,
+          mode_reponse, image_id, justification, eliminatoire, reservee, refs, statut, depot_id, rang, cree_par,
           cree_par_acces, edite_par, edite_par_acces)
         VALUES (${id}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
           ${JSON.stringify(q.options)}::jsonb, ${JSON.stringify(q.legendes)}::jsonb,
-          ${q.modeReponse}, ${q.imageId}, ${q.justification}, ${q.eliminatoire},
+          ${q.modeReponse}, ${q.imageId}, ${q.justification}, ${q.eliminatoire}, ${q.reservee},
           ${JSON.stringify(q.refs)}::jsonb, ${q.statut}, ${q.depotId ?? null}, ${rang++}, ${par},
           ${acces}, ${par}, ${acces})`;
       ids.push(id);

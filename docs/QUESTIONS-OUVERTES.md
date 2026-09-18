@@ -112,9 +112,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     règle fixe, non réglable (choix c écarté).
 13. **Présentation des QIM** : Vrai/Faux par proposition (défaut) ou cases à
     cocher — à trancher avec les préparateurs (hérité).
-14. **Mode entraînement** (correction immédiate, jamais enregistré) :
-    `[à préciser]` le conserver tel quel, ou le réserver aux modules déjà
-    évalués une fois en mode évaluation.
+14. **Mode entraînement** — tranché le 18/09/2026 (question 18, choix c) :
+    conservé avant l'évaluation, mais les questions marquées **réservées à
+    l'évaluation** n'y sont jamais posées, ni dans le tirage Découverte ; les
+    tirages Habilitation et Complet les prennent en priorité, et le serveur
+    refuse un tirage non conforme. `[à préciser]` par critère, le nombre de
+    questions à réserver pour que le tirage en contienne une part utile
+    (travail de rédaction).
 15. **Tirages** : Découverte 5, Habilitation 10 (toutes éliminatoires
     incluses), Complet — tailles par défaut, **réglables** depuis
     `/admin/bareme`, le tirage d'habilitation ne descendant pas sous le

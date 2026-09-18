@@ -161,6 +161,7 @@ export async function actionEnregistrerQuestion(
     imageId,
     justification: chaine(formData, "justification", 3000),
     eliminatoire: formData.get("eliminatoire") === "on",
+    reservee: formData.get("reservee") === "on",
     refs: lireReferences(chaine(formData, "references", 3000)),
     statut,
   };
@@ -347,6 +348,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     imageId: q.format === "SCH" ? (q.imageId ?? null) : null,
     justification: q.justification.slice(0, 3000),
     eliminatoire: q.eliminatoire,
+    reservee: q.reservee,
     refs: q.refs,
     statut: "a_verifier",
     depotId,

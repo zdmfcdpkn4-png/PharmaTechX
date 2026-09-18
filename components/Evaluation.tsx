@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
+import { reserveesAdmises, tirer, type Difficulte } from "@/content/tirage";
 import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
 import { libelleBande, type Bareme } from "@/content/bareme";
@@ -35,7 +36,6 @@ import { SchemaQuestion } from "./SchemaQuestion";
  * ses repères numérotés et un champ par légende.
  */
 
-type Difficulte = "decouverte" | "habilitation" | "complet";
 type Mode = "evaluation" | "entrainement";
 
 /** Les trois tirages ; leurs tailles viennent du barème réglé (`/admin/bareme`). */
@@ -64,45 +64,7 @@ function estUneSeule(q: QuestionPublique): boolean {
   return q.type === "QCM" && !q.enonce.includes("plusieurs");
 }
 
-function melanger<T>(xs: T[]): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/**
- * Tirage. Les questions éliminatoires sont toujours retenues — laisser au
- * hasard le soin de poser ou non la question de sécurité n'aurait pas de sens.
- * Les mises en situation sont tirées par vignette entière.
- */
-function tirer(banque: QuestionPublique[], nb: number | null): QuestionPublique[] {
-  if (nb === null || nb >= banque.length) return banque;
-
-  const eliminatoires = banque.filter((q) => q.eliminatoire);
-  const reste = melanger(banque.filter((q) => !q.eliminatoire));
-  const choisies = [...eliminatoires];
-  for (const q of reste) {
-    if (choisies.length >= nb) break;
-    choisies.push(q);
-  }
-
-  const situations = new Map<string, QuestionPublique[]>();
-  const isolees: QuestionPublique[] = [];
-  for (const q of banque) {
-    if (!choisies.includes(q)) continue;
-    if (q.situation) {
-      const liste = situations.get(q.situation.id) ?? [];
-      liste.push(q);
-      situations.set(q.situation.id, liste);
-    } else {
-      isolees.push(q);
-    }
-  }
-  return [...isolees, ...[...situations.values()].flat()];
-}
+// Tirage et règle des questions réservées : `content/tirage.ts` (testé à part).
 
 type EtatQim = Record<string, Record<string, boolean>>;
 type EtatLegendes = Record<string, Record<string, string>>;
@@ -264,11 +226,18 @@ export function Evaluation({
   const [enCours, setEnCours] = useState<EtatEnCours | null>(enCoursInitial);
   const { enregistrer } = useSessionFormation();
 
+  // Tirage dans le navigateur (content/tirage.ts) : les questions réservées à
+  // l'évaluation n'entrent que dans un tirage qui peut conclure, en mode
+  // évaluation ; le serveur vérifie la conformité à la correction.
   const posees = useMemo(
-    () => (sousEnsemble ? banque.filter((q) => sousEnsemble.ids.includes(q.id)) : tirer(banque, DIFFICULTES[difficulte].nb)),
+    () =>
+      sousEnsemble
+        ? banque.filter((q) => sousEnsemble.ids.includes(q.id))
+        : tirer(banque, DIFFICULTES[difficulte].nb, reserveesAdmises(mode, difficulte)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [banque, difficulte, graine, sousEnsemble],
+    [banque, difficulte, mode, graine, sousEnsemble],
   );
+  const nbReservees = banque.filter((q) => q.reservee).length;
 
   const libelleTirage = sousEnsemble
     ? sousEnsemble.libelle
@@ -379,6 +348,7 @@ export function Evaluation({
       legendes: legs,
       tirage: libelleTirage,
       mode,
+      difficulte,
     };
   };
 
@@ -441,8 +411,12 @@ export function Evaluation({
     effacerEnCours();
   };
 
+  /** Jamais de question réservée en entraînement, même ratée à l'évaluation. */
+  const rateesRejouables = (ids: string[]) => ids.filter((id) => !banque.find((q) => q.id === id)?.reservee);
+
   /** Repasse les questions ratées, une à la fois, en entraînement : rien n'est enregistré. */
-  const rejouerRatees = (ids: string[]) => {
+  const rejouerRatees = (idsRatees: string[]) => {
+    const ids = rateesRejouables(idsRatees);
     if (ids.length === 0) return;
     setResultat(null);
     setReponses({});
@@ -467,12 +441,14 @@ export function Evaluation({
     void tracer({ nature: "entrainement", justes, total: posees.length, points, tirage: libelleTirage });
   };
 
-  const boutonRatees = (ids: string[]) =>
-    ids.length > 0 ? (
+  const boutonRatees = (idsRatees: string[]) => {
+    const ids = rateesRejouables(idsRatees);
+    return ids.length > 0 ? (
       <button type="button" className="bouton bouton--secondaire" onClick={() => rejouerRatees(ids)}>
         Retravailler {ids.length === 1 ? "la question ratée" : `les ${ids.length} questions ratées`} (entraînement)
       </button>
     ) : null;
+  };
 
   const lienSuivant = suivant ? (
     <Link href={`/module/${suivant.id}`} className="bouton bouton--secondaire">
@@ -526,7 +502,8 @@ export function Evaluation({
           <legend className="champ-titre">Tirage</legend>
           {(Object.keys(DIFFICULTES) as Difficulte[]).map((d) => {
             const vise = DIFFICULTES[d].nb;
-            const reel = vise === null ? banque.length : Math.min(vise, banque.length);
+            const admissibles = reserveesAdmises(mode, d) ? banque.length : banque.length - nbReservees;
+            const reel = vise === null ? admissibles : Math.min(vise, admissibles);
             const concluant = reel >= MIN_QUESTIONS_HABILITATION;
             const ferme = d !== "decouverte" && !banqueSuffisante;
             return (
@@ -558,7 +535,12 @@ export function Evaluation({
             <span>
               <strong>Évaluation</strong> — correction à la fin
               <br />
-              <span className="legende">Le résultat entre dans la session et peut être porté au rapport (étape 2 sur 6).</span>
+              <span className="legende">
+                Le résultat entre dans la session et peut être porté au rapport (étape 2 sur 6).
+                {nbReservees > 0
+                  ? ` En Habilitation et Complet, ${nbReservees} question${nbReservees > 1 ? "s" : ""} réservée${nbReservees > 1 ? "s" : ""} à l'évaluation, jamais vue${nbReservees > 1 ? "s" : ""} en entraînement, ${nbReservees > 1 ? "sont tirées" : "est tirée"} en priorité.`
+                  : ""}
+              </span>
             </span>
           </label>
           <label className={`option${mode === "entrainement" ? " est-choisie" : ""}`}>
@@ -566,7 +548,10 @@ export function Evaluation({
             <span>
               <strong>Entraînement</strong> — correction immédiate, question par question
               <br />
-              <span className="legende">Rien n&apos;est enregistré ni comptabilisé : la justification et la source s&apos;affichent après chaque réponse.</span>
+              <span className="legende">
+                Rien n&apos;est enregistré ni comptabilisé : la justification et la source s&apos;affichent après chaque réponse.
+                {nbReservees > 0 ? " Les questions réservées à l'évaluation n'y sont jamais posées." : ""}
+              </span>
             </span>
           </label>
         </fieldset>
@@ -589,6 +574,7 @@ export function Evaluation({
         <strong>Question {i + 1}</strong>
         <span className="etiquette etiquette--neutre">{etatLisible(d)}</span>
         {d.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
+        {d.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
         <span style={{ marginLeft: "auto", fontWeight: 650 }}>{nombre(d.note)} pt</span>
       </div>
       <p>
@@ -638,6 +624,7 @@ export function Evaluation({
         <div className="etape-tete">
           <span className="etiquette etiquette--site">{libelleFormat(q)}</span>
           {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
+          {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
         </div>
 
         <p className="question-enonce">{q.enonce}</p>
@@ -722,6 +709,9 @@ export function Evaluation({
             <p style={{ margin: ".25rem 0 0" }}>
               {nombre(resultat.pointsObtenus)} / {resultat.pointsTotal} points — seuil de réussite {seuil}&nbsp;%
               — bande de garde {decision.bandeBasse} à {decision.bandeHaute}&nbsp;% — {resultat.tirage}
+              {resultat.reservees && resultat.reservees.posees > 0
+                ? ` — dont ${resultat.reservees.posees} réservée${resultat.reservees.posees > 1 ? "s" : ""} à l'évaluation`
+                : ""}
             </p>
           </div>
         </div>

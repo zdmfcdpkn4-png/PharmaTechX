@@ -49,6 +49,7 @@ export function versInitiale(l: LigneQuestion): QuestionInitiale {
     imageAlt: l.image_alt ?? "",
     justification: l.justification,
     eliminatoire: l.eliminatoire,
+    reservee: l.reservee,
     references: l.refs
       .map((r) => [r.source, r.libelle, r.date, r.url, r.localisation].filter(Boolean).join(" — "))
       .join("\n"),

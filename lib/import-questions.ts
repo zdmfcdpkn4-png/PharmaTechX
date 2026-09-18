@@ -13,6 +13,7 @@ import type { Reference, TypeQuestion } from "@/content/types";
  *   Justification : texte affiché après correction
  *   Source : ANSM — BPP 2023 — 21/07/2023 — https://…
  *   Éliminatoire : oui
+ *   Réservée à l'évaluation : oui
  *
  * Le mot-clé QCM ou QIM fixe le format ; sans lui, le format par défaut du
  * dépôt s'applique. Une question sans corrigé est importée quand même, toutes
@@ -56,6 +57,8 @@ export interface QuestionImportee {
   numeroSchema?: number;
   justification: string;
   eliminatoire: boolean;
+  /** Réservée à l'évaluation (question 18) : ligne « Réservée : oui ». */
+  reservee: boolean;
   refs: Reference[];
   /** Un corrigé complet a-t-il été lu ? */
   corrigeDetecte: boolean;
@@ -84,6 +87,7 @@ const RE_CORRIGE = /^(?:R[ée]ponses?|Corrig[ée]s?|Solutions?|Bonnes? r[ée]pon
 const RE_JUSTIF = /^(?:Justifications?|Explications?)\s*[:–—-]\s*(.*)$/i;
 const RE_SOURCE = /^(?:Sources?|R[ée]f[ée]rences?)\s*[:–—-]\s*(.+)$/i;
 const RE_ELIM = /^[EÉé]liminatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
+const RE_RESERVEE = /^R[ée]serv[ée]e?(?:\s+[àa]\s+l['’][ée]valuation)?\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
 const RE_LETTRES = /\b[A-Ea-e]\b/g;
@@ -138,6 +142,7 @@ interface Brouillon {
   justification: string[];
   refs: Reference[];
   eliminatoire: boolean;
+  reservee: boolean;
   corrige: boolean;
   dernier: "enonce" | "prop" | "justif" | "legende" | "rien";
 }
@@ -153,6 +158,7 @@ function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number
     justification: [],
     refs: [],
     eliminatoire: false,
+    reservee: false,
     corrige: false,
     dernier: "enonce",
   };
@@ -184,6 +190,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       numeroSchema: b.numero,
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
+      reservee: b.reservee,
       refs: b.refs,
       corrigeDetecte: true,
       avertissements,
@@ -215,6 +222,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     legendes: [],
     justification: b.justification.join(" ").trim(),
     eliminatoire: b.eliminatoire,
+    reservee: b.reservee,
     refs: b.refs,
     corrigeDetecte: corrige,
     avertissements,
@@ -344,6 +352,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       courant.dernier = "rien";
       continue;
     }
+    const rv = RE_RESERVEE.exec(ligne);
+    if (rv) {
+      courant.reservee = !rv[1] || /^(oui|vrai|yes)$/i.test(rv[1]);
+      courant.dernier = "rien";
+      continue;
+    }
     if (courant.dernier === "enonce") courant.enonce.push(ligne);
     else if (courant.dernier === "prop") {
       const derniere = courant.props[courant.props.length - 1];
@@ -370,6 +384,7 @@ interface QuestionJson {
   propositions?: unknown;
   justification?: unknown;
   eliminatoire?: unknown;
+  reservee?: unknown;
   references?: unknown;
   refs?: unknown;
   legendes?: unknown;
@@ -443,7 +458,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
         avertissements.push(`Schéma « ${enonce.slice(0, 50)} » ignoré : aucune légende.`);
         continue;
       }
-      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: ["Image à choisir dans l'éditeur."] });
+      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: ["Image à choisir dans l'éditeur."] });
       continue;
     }
     const opts = optionsDe(q);
@@ -452,7 +467,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
       continue;
     }
     if (!opts.some((o) => o.vrai) && format === "QCM") avert.push("QCM sans proposition vraie : vérifier le corrigé.");
-    questions.push({ format, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: avert });
+    questions.push({ format, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: avert });
   }
   if (questions.length === 0) avertissements.push("Aucune question reconnue dans le JSON.");
   return { questions, avertissements };

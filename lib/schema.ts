@@ -289,6 +289,9 @@ export const SCHEMA: string[] = [
   // décision du 18/09/2026 (question 16, choix b) : date de la dernière
   // révocation du code, qui ferme les sessions ouvertes avant elle
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS ferme_le TIMESTAMPTZ`,
+  // décision du 18/09/2026 (question 18, choix c) : question réservée à
+  // l'évaluation, jamais posée en entraînement ni en Découverte
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS reservee BOOLEAN NOT NULL DEFAULT FALSE`,
   // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
   // exclues du calcul (retirées de la banque après signalement), fixées au
   // premier acte de décision — NULL tant qu'elles ne le sont pas.

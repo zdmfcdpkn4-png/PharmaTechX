@@ -161,6 +161,12 @@ export interface Question {
    * Sur une QIM, toute discordance vaut erreur.
    */
   eliminatoire?: boolean;
+  /**
+   * Réservée à l'évaluation (décision du 18/09/2026, question 18, choix c) :
+   * jamais posée en entraînement ni dans le tirage Découverte ; tirée en
+   * priorité dans les tirages qui peuvent conclure (Habilitation, Complet).
+   */
+  reservee?: boolean;
   references?: Reference[];
   /** Schéma à compléter : les légendes à écrire, avec leur place sur l'image. */
   legendes?: Legende[];

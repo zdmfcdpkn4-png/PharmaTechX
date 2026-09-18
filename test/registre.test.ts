@@ -16,6 +16,7 @@ function resultat(notes: number[]): ResultatEvaluation {
     nonJugees: 0,
     correct: note === 1,
     eliminatoire: false,
+    reservee: false,
     choixApprenant: ["A"],
     reponsesAttendues: ["B"],
     justification: "",

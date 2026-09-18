@@ -28,6 +28,7 @@ Réponses : A C
 Justification : texte affiché après correction.
 Source : ANSM — Bonnes pratiques de préparation 2023 — 21/07/2023 — https://ansm.sante.fr/…
 Éliminatoire : oui
+Réservée à l'évaluation : oui
 
 QIM 2. Concernant …, indiquer la ou les propositions exactes.
 A. … (V)

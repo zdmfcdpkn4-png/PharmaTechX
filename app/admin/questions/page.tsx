@@ -82,7 +82,9 @@ export default async function Questions({
                 return (
                   <option key={m.id} value={m.id}>
                     {etiquetteModule(m)} — {m.titre.slice(0, 60)}
-                    {c ? ` (${c.valides} validée${c.valides > 1 ? "s" : ""}, ${c.aVerifier} à vérifier)` : ""}
+                    {c
+                      ? ` (${c.valides} validée${c.valides > 1 ? "s" : ""}, ${c.aVerifier} à vérifier${c.reservees ? `, ${c.reservees} réservée${c.reservees > 1 ? "s" : ""} à l'évaluation` : ""})`
+                      : ""}
                   </option>
                 );
               })}
@@ -127,6 +129,7 @@ export default async function Questions({
                     {LIBELLES_STATUT[q.statut]}
                   </span>
                   {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
+                  {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
                   {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
                   <span className="legende" style={{ marginLeft: "auto" }}>
                     v{q.version} · créée par {q.cree_par}

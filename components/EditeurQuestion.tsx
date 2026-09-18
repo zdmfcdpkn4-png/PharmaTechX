@@ -50,6 +50,7 @@ export interface QuestionInitiale {
   imageAlt: string;
   justification: string;
   eliminatoire: boolean;
+  reservee: boolean;
   /** Une référence par ligne : « Source — Libellé — Date — URL ». */
   references: string;
   statut: "a_verifier" | "valide" | "retire";
@@ -262,6 +263,13 @@ export function EditeurQuestion({
       <label className="option option--compact" style={{ display: "inline-flex" }}>
         <input type="checkbox" name="eliminatoire" defaultChecked={initiale?.eliminatoire ?? false} />
         <span>Question éliminatoire — une erreur rend le critère non acquis</span>
+      </label>
+      <label className="option option--compact" style={{ display: "inline-flex" }}>
+        <input type="checkbox" name="reservee" defaultChecked={initiale?.reservee ?? false} />
+        <span>
+          Réservée à l&apos;évaluation — jamais posée en entraînement ni en Découverte, tirée en priorité en
+          Habilitation et Complet
+        </span>
       </label>
 
       <div className="actions">

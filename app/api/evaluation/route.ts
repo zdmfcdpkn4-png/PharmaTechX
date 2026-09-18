@@ -6,6 +6,7 @@ import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
+import { tirageConforme, type Difficulte } from "@/content/tirage";
 import { refusApiSansSession } from "@/lib/auth";
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
@@ -43,6 +44,8 @@ interface CorpsRequete {
   tirage?: unknown;
   /** `evaluation` (tirage complet, conservé si l'apprenant est rattaché) ou `entrainement`. */
   mode?: unknown;
+  /** Tirage choisi (`decouverte`, `habilitation`, `complet`) : la règle des questions réservées en dépend. */
+  difficulte?: unknown;
 }
 
 export interface DetailLegende {
@@ -63,6 +66,8 @@ export interface DetailQuestion {
   nonJugees: number;
   correct: boolean;
   eliminatoire: boolean;
+  /** Réservée à l'évaluation (question 18) : jamais vue en entraînement. */
+  reservee: boolean;
   choixApprenant: string[];
   reponsesAttendues: string[];
   justification: string;
@@ -99,6 +104,8 @@ export interface ResultatEvaluation {
   horodatage: string;
   horodatageIso: string;
   tirage: string;
+  /** Questions réservées à l'évaluation : posées dans ce tirage, disponibles dans la banque à cet instant (absent des résultats antérieurs). */
+  reservees?: { posees: number; disponibles: number };
   /** Sceau du serveur sur ce résultat (vérifié à l'émission du rapport). */
   jeton: string;
 }
@@ -171,6 +178,14 @@ export async function POST(request: Request) {
   if (posees.length === 0) {
     return NextResponse.json({ erreur: "Aucune question valide dans la soumission." }, { status: 400 });
   }
+  // Questions réservées à l'évaluation (question 18, choix c) : le tirage,
+  // fait dans le navigateur, doit respecter leur règle — aucune en
+  // entraînement ni en Découverte, priorité en Habilitation et Complet.
+  const modeTirage = corps.mode === "entrainement" ? "entrainement" : "evaluation";
+  const difficulte: Difficulte =
+    corps.difficulte === "decouverte" || corps.difficulte === "complet" ? corps.difficulte : "habilitation";
+  const conformite = tirageConforme(posees, banque, modeTirage, difficulte);
+  if (!conformite.ok) return NextResponse.json({ erreur: conformite.raison }, { status: 400 });
 
   const reponses = listeDeChaines(corps.reponses);
   const juges = listeDeChaines(corps.juges);
@@ -204,6 +219,7 @@ export async function POST(request: Request) {
       nonJugees,
       correct: discordances === 0,
       eliminatoire: q.eliminatoire === true,
+      reservee: q.reservee === true,
       choixApprenant: libelle(rep.choix),
       reponsesAttendues: libelle(q.bonnesReponses),
       justification: q.justification,
@@ -260,6 +276,10 @@ export async function POST(request: Request) {
     }),
     horodatageIso: maintenant.toISOString(),
     tirage: typeof corps.tirage === "string" ? corps.tirage.slice(0, 80) : "",
+    reservees: {
+      posees: posees.filter((q) => q.reservee).length,
+      disponibles: banque.filter((q) => q.reservee).length,
+    },
   };
 
   const resultat: ResultatEvaluation = { ...sansJeton, jeton: sceller(sansJeton) };

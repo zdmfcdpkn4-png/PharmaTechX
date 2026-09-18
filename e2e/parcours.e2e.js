@@ -193,6 +193,24 @@ Justification : cf. procédure interne.`,
   await ligneCreee.locator("text=à valider par un autre code").waitFor();
   ok("question QCM créée à vérifier ; validation refusée à son auteur (quatre yeux)");
 
+  // 3c. question réservée à l'évaluation (question 18, choix c) : créée par l'administrateur, validée à l'étape 5 par le tuteur
+  const ENONCE_RESERVEE = "Question réservée à l'évaluation ?";
+  await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
+  await page.fill("textarea[name=enonce]", ENONCE_RESERVEE);
+  const champsR = page.locator(".proposition--editeur input[type=text]");
+  await champsR.nth(0).fill("Réservée juste");
+  await champsR.nth(1).fill("Réservée fausse 1");
+  await champsR.nth(2).fill("Réservée fausse 2");
+  await champsR.nth(3).fill("Réservée fausse 3");
+  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+  await page.fill("textarea[name=justification]", "Jamais vue en entraînement.");
+  await page.fill("textarea[name=references]", "ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x");
+  await page.check("input[name=reservee]");
+  await page.click("button:has-text('Créer la question')");
+  await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
+  await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator(".etiquette:has-text('Réservée')").waitFor();
+  ok("question réservée à l'évaluation créée, étiquetée dans la banque");
+
   // 3b. erreur de formulaire (QCM sans réponse exacte) reste sur la page
   await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
   await page.fill("textarea[name=enonce]", "Sans bonne réponse");
@@ -257,6 +275,13 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
   assert.equal(await page.locator(".question-ligne").count(), 1);
   await page.locator(".question-ligne", { hasText: "à valider par un autre code" }).waitFor();
+  // la question réservée écrite par l'administrateur est validée par le tuteur (quatre yeux) : la banque de
+  // comportement-zac atteint dix questions, les tirages Habilitation et Complet s'ouvrent
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator("form button:has-text('Valider')").click();
+  await page.waitForLoadState("networkidle");
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).waitFor();
   await rebrancher(codeAdmin);
   await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
   await page.locator("form button:has-text('Valider')").first().click();
@@ -743,6 +768,35 @@ Justification : justification deux.`;
   await page.waitForSelector(".correction");
   await page.waitForSelector("button:has-text('Question suivante')");
   ok("entraînement : correction immédiate après la première question");
+
+  // 14a. questions réservées à l'évaluation (question 18, choix c) : jamais en entraînement ni en Découverte,
+  //      tirées en priorité en Habilitation et Complet ; le serveur refuse un tirage non conforme
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  const libelleComplet = async () => (await page.locator("fieldset.choix-difficulte label").nth(2).innerText()).replace(/\s+/g, " ");
+  await page.check("input[name=mode] >> nth=0");
+  assert.match(await libelleComplet(), /Complet — 10 questions/, "évaluation : la réservée compte");
+  await page.check("input[name=mode] >> nth=1");
+  assert.match(await libelleComplet(), /Complet — 9 questions/, "entraînement : la réservée est écartée");
+  await page.check("input[name=mode] >> nth=0");
+  await page.check("input[name=difficulte] >> nth=2");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  assert.equal(await page.locator("fieldset.question").count(), 10);
+  const fReservee = page.locator("fieldset.question", { hasText: ENONCE_RESERVEE });
+  assert.equal(await fReservee.count(), 1, "réservée posée dans l'évaluation complète");
+  await fReservee.locator(".etiquette:has-text('Réservée')").waitFor();
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  const hrefReservee = await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator("a:has-text('Modifier')").getAttribute("href");
+  const idReservee = hrefReservee.split("/").pop();
+  const corrigerVia = (corps) => page.request.post(BASE + "/api/evaluation", { data: { moduleId: "comportement-zac", reponses: {}, ...corps } });
+  assert.equal((await corrigerVia({ questionIds: [idReservee], mode: "entrainement", difficulte: "complet" })).status(), 400, "réservée refusée en entraînement");
+  assert.equal((await corrigerVia({ questionIds: [idReservee], mode: "evaluation", difficulte: "decouverte" })).status(), 400, "réservée refusée en Découverte");
+  const reponseComplete = await corrigerVia({ mode: "evaluation", difficulte: "complet", tirage: "Complet · 10 questions" });
+  assert.equal(reponseComplete.status(), 200);
+  const resultatComplet = await reponseComplete.json();
+  assert.deepEqual(resultatComplet.reservees, { posees: 1, disponibles: 1 });
+  assert.ok(resultatComplet.detail.some((d) => d.questionId === idReservee && d.reservee === true));
+  ok("questions réservées : écartées de l'entraînement, posées et étiquetées en évaluation complète, tirage non conforme refusé (400), comptées dans le résultat scellé");
 
   // 15. limiteur : 5 échecs bloquent
   await page.evaluate(() => window.scrollTo(0, 0));
