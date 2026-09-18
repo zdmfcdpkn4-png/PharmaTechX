@@ -1,3 +1,4 @@
+import { BAREME_DEFAUT } from "../content/bareme";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { construireRapport, nomFichierRapport, type ResultatRapport } from "../lib/rapport";
@@ -18,6 +19,7 @@ const resultat: ResultatRapport = {
   bandeHaute: 91,
   concluant: true,
   minQuestions: 9,
+  bareme: BAREME_DEFAUT,
   horodatage: "18 septembre 2026 à 14:02",
   horodatageIso: "2026-09-18T12:02:00.000Z",
   tirage: "Habilitation · 9 questions",

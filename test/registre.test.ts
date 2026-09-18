@@ -1,3 +1,4 @@
+import { BAREME_DEFAUT } from "../content/bareme";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { COLONNES_REGISTRE, champCsv, csv, csvRegistre, jsonArchive, ligneRegistre } from "../lib/registre";
@@ -37,6 +38,7 @@ function resultat(notes: number[]): ResultatEvaluation {
     bandeHaute: 89,
     concluant: true,
     minQuestions: 10,
+    bareme: BAREME_DEFAUT,
     detail,
     horodatage: "18 septembre 2026 à 14:02",
     horodatageIso: "2026-09-18T12:02:00.000Z",

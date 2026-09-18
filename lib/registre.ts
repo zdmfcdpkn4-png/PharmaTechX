@@ -48,6 +48,7 @@ export function decisionEnregistree(r: {
   const decision = decider(r.resultat.detail, r.resultat.seuilReussite, {
     exclues: (r.exclusions ?? []).map((e) => e.questionId),
     minQuestions: r.resultat.minQuestions,
+    bande: r.resultat.bareme?.bande,
   });
   return { decision, verdictFinal: verdictFinal(decision, r.arbitrage) };
 }

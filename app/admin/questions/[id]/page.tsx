@@ -21,7 +21,7 @@ export default async function ModifierQuestion({ params }: { params: Promise<{ i
         </p>
       </section>
       <EditeurQuestion
-        modules={choixModules()}
+        modules={await choixModules()}
         situations={situations}
         initiale={versInitiale(q)}
         action={actionEnregistrerQuestion}

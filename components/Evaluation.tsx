@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
 import { libelleBareme, libelleFormat } from "@/content/types";
+import { libelleBande, type Bareme } from "@/content/bareme";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
-import { LIBELLES_VERDICT, MIN_QUESTIONS_HABILITATION, decider, expliquerVerdict } from "@/lib/decision";
+import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
 import { useSessionFormation } from "./SessionFormation";
 import { SchemaQuestion } from "./SchemaQuestion";
 
@@ -36,23 +37,26 @@ import { SchemaQuestion } from "./SchemaQuestion";
 type Difficulte = "decouverte" | "habilitation" | "complet";
 type Mode = "evaluation" | "entrainement";
 
-const DIFFICULTES: Record<Difficulte, { libelle: string; description: string; nb: number | null }> = {
-  decouverte: {
-    libelle: "Découverte",
-    description: "Tirage court, pour se situer avant de reprendre le module.",
-    nb: 5,
-  },
-  habilitation: {
-    libelle: "Habilitation",
-    description: "Tirage de référence, toutes les questions éliminatoires incluses.",
-    nb: 10,
-  },
-  complet: {
-    libelle: "Complet",
-    description: "La totalité de la banque du critère.",
-    nb: null,
-  },
-};
+/** Les trois tirages ; leurs tailles viennent du barème réglé (`/admin/bareme`). */
+function difficultes(b: Bareme): Record<Difficulte, { libelle: string; description: string; nb: number | null }> {
+  return {
+    decouverte: {
+      libelle: "Découverte",
+      description: "Tirage court, pour se situer avant de reprendre le module.",
+      nb: b.tirages.decouverte,
+    },
+    habilitation: {
+      libelle: "Habilitation",
+      description: "Tirage de référence, toutes les questions éliminatoires incluses.",
+      nb: b.tirages.habilitation,
+    },
+    complet: {
+      libelle: "Complet",
+      description: "La totalité de la banque du critère.",
+      nb: null,
+    },
+  };
+}
 
 /** QCM à réponse unique : l'énoncé ne mentionne pas « plusieurs ». */
 function estUneSeule(q: QuestionPublique): boolean {
@@ -182,6 +186,7 @@ export function Evaluation({
   moduleTitre,
   banque,
   seuil,
+  bareme,
   qimEnVraiFaux = true,
   signalementPossible = false,
 }: {
@@ -189,9 +194,13 @@ export function Evaluation({
   moduleTitre: string;
   banque: QuestionPublique[];
   seuil: number;
+  /** Barème en vigueur : tailles des tirages, minimum concluant, règles annoncées. */
+  bareme: Bareme;
   qimEnVraiFaux?: boolean;
   signalementPossible?: boolean;
 }) {
+  const DIFFICULTES = difficultes(bareme);
+  const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
   // Tirage d'habilitation par défaut ; Découverte seule si la banque du
   // critère ne peut pas réunir un tirage concluant.
   const banqueSuffisante = banque.length >= MIN_QUESTIONS_HABILITATION;
@@ -339,8 +348,8 @@ export function Evaluation({
         </p>
         <p className="encart">
           Seuil de réussite <strong>{seuil}&nbsp;%</strong>. Une erreur sur une question éliminatoire
-          rend le critère non acquis, quel que soit le score. Autour du seuil, à plus ou moins le poids
-          d&apos;une question, le verdict est <strong>indéterminé</strong> et le tuteur l&apos;arbitre au
+          rend le critère non acquis, quel que soit le score. Bande de garde : {libelleBande(bareme)} ;
+          dans cette bande, le verdict est <strong>indéterminé</strong> et le tuteur l&apos;arbitre au
           visa du rapport. Un tirage de moins de {MIN_QUESTIONS_HABILITATION} questions est{" "}
           <strong>non concluant</strong> : il ne peut pas être porté au rapport d&apos;habilitation.
         </p>
@@ -469,7 +478,7 @@ export function Evaluation({
         </div>
 
         <p className="question-enonce">{q.enonce}</p>
-        <p className="question-bareme">{libelleBareme(q)}</p>
+        <p className="question-bareme">{libelleBareme(q, bareme)}</p>
 
         {q.type === "SCH" ? (
           <SchemaQuestion
@@ -532,7 +541,7 @@ export function Evaluation({
 
   // ────────────────────────────────────────────────────────────── correction
   if (resultat) {
-    const decision = decider(resultat.detail, resultat.seuilReussite, { minQuestions: resultat.minQuestions });
+    const decision = decider(resultat.detail, resultat.seuilReussite, { minQuestions: resultat.minQuestions, bande: resultat.bareme?.bande });
     const classeVerdict =
       decision.verdictBrut === "acquis"
         ? "resultat-entete--acquis"

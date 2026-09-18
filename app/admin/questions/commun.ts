@@ -1,15 +1,29 @@
-import { getTousModules } from "@/content/store";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { A_PRECISER, type Module } from "@/content/types";
 import type { ModuleChoix } from "@/components/EditeurQuestion";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { QuestionInitiale } from "@/components/EditeurQuestion";
 
-export function choixModules(): ModuleChoix[] {
-  return getTousModules().map((m) => ({
+/** Modules du code puis modules déposés (tous statuts), pour les listes de rattachement. */
+export async function choixModules(): Promise<ModuleChoix[]> {
+  return (await getTousModulesAvecDeposes()).map((m) => ({
     id: m.id,
     titre: m.titre,
-    critereId: typeof m.critereId === "string" ? m.critereId : "—",
+    critereId: etiquetteModule(m),
     redige: m.redige,
+    origine: m.origine ?? "code",
   }));
+}
+
+/** Ce qui précède le titre d'un module dans une liste : son critère, ou « Dépôt » pour un module déposé. */
+export function etiquetteModule(m: Pick<Module, "critereId" | "origine">): string {
+  if (m.origine === "base") return typeof m.critereId === "string" && m.critereId !== A_PRECISER ? `Dépôt · ${m.critereId}` : "Dépôt";
+  return typeof m.critereId === "string" ? m.critereId : "—";
+}
+
+export function titreModule(modules: Pick<Module, "id" | "titre" | "critereId" | "origine">[], id: string): string {
+  const m = modules.find((x) => x.id === id);
+  return m ? `${etiquetteModule(m)} — ${m.titre}` : id;
 }
 
 export const LIBELLES_STATUT: Record<string, string> = {

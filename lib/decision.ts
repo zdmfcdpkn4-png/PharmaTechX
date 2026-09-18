@@ -7,7 +7,8 @@
  *   un taux d'appariement minimal, l'outil refuse de conclure (non concluant).
  *
  * Ici la mesure est le score, la limite est le seuil de réussite, et
- * l'« incertitude » est le poids d'une question du tirage (100 / n points) :
+ * l'« incertitude » est la bande de garde : par défaut le poids d'une question
+ * du tirage (100 / n points), réglable (demi-question, ou largeur fixe) :
  *
  *   score − bande ≥ seuil → acquis
  *   score + bande < seuil → non acquis
@@ -20,6 +21,8 @@
  * Ce module ne dépend de rien : il sert au serveur (correction, rapports,
  * registre) comme au navigateur (affichage du résultat, rapport téléchargé).
  */
+
+import { largeurBande, type BandeGarde } from "../content/bareme";
 
 export type Verdict = "acquis" | "non_acquis" | "indetermine" | "non_concluant";
 
@@ -42,7 +45,7 @@ export interface Decision {
   /** Score en pourcentage, arrondi à l'entier. */
   score: number;
   seuil: number;
-  /** Largeur de la bande de garde en points de pourcentage : le poids d'une question. */
+  /** Largeur de la bande de garde en points de pourcentage : par défaut le poids d'une question. */
   bande: number;
   /** Bornes affichables de la bande (scores entiers donnant un verdict indéterminé). */
   bandeBasse: number;
@@ -57,6 +60,8 @@ export interface OptionsDecision {
   /** Identifiants des questions exclues du calcul (retirées de la banque après signalement). */
   exclues?: string[];
   minQuestions?: number;
+  /** Largeur de la bande de garde (barème en vigueur à l'évaluation) ; défaut : le poids d'une question. */
+  bande?: BandeGarde;
 }
 
 export function decider(detail: QuestionNotee[], seuil: number, options: OptionsDecision = {}): Decision {
@@ -67,7 +72,7 @@ export function decider(detail: QuestionNotee[], seuil: number, options: Options
   const pointsTotal = nbQuestions;
   const pointsObtenus = Math.round(retenues.reduce((s, d) => s + d.note, 0) * 100) / 100;
   const score = pointsTotal === 0 ? 0 : Math.round((pointsObtenus / pointsTotal) * 100);
-  const bande = nbQuestions === 0 ? 0 : 100 / nbQuestions;
+  const bande = largeurBande(nbQuestions, options.bande);
   const echecEliminatoire = retenues.some((d) => d.eliminatoire && !d.correct);
   const concluant = nbQuestions >= minQuestions;
 
@@ -134,7 +139,7 @@ export function expliquerVerdict(d: Decision): string {
         ? "Échec sur une question éliminatoire : le critère est non acquis quel que soit le score global. Reprise du module puis nouveau tirage."
         : `Le score est sous la bande de garde (${d.bandeBasse} à ${d.bandeHaute} %) : le seuil n'est pas atteint. Reprise du module puis nouveau tirage.`;
     case "indetermine":
-      return `Score dans la bande de garde (${d.bandeBasse} à ${d.bandeHaute} %, soit le seuil de ${d.seuil} % à plus ou moins le poids d'une question) : le tuteur tranche par un arbitrage motivé au visa du rapport.`;
+      return `Score dans la bande de garde (${d.bandeBasse} à ${d.bandeHaute} %, soit le seuil de ${d.seuil} % à plus ou moins ${String(d.bande).replace(".", ",")} points) : le tuteur tranche par un arbitrage motivé au visa du rapport.`;
     case "acquis":
       return "Le seuil est atteint au-delà de la bande de garde et aucune question éliminatoire n'est en échec. La suite du parcours reste à réaliser au poste.";
   }

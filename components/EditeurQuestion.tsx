@@ -19,6 +19,8 @@ export interface ModuleChoix {
   titre: string;
   critereId: string;
   redige: boolean;
+  /** `base` pour un module déposé depuis l'administration. */
+  origine?: "code" | "base";
 }
 
 export interface SituationChoix {

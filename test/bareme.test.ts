@@ -93,3 +93,56 @@ test("sanitizeQuestion retire réponses, justification et mots des légendes", (
   assert.equal(q.situation?.id, "s");
   assert.equal((q as unknown as { bonnesReponses?: unknown }).bonnesReponses, undefined);
 });
+
+// ── barème réglable (décision du 18/09/2026, question 10) ───────────────────
+import { BAREME_DEFAUT, estBaremeDefaut, largeurBande, libelleQim, normaliserBareme, pointsQim, resumeBareme } from "../content/bareme";
+import { libelleBareme } from "../content/types";
+
+test("normaliserBareme : défauts, bornes, cohérence tirage / minimum", () => {
+  assert.deepEqual(normaliserBareme(undefined), BAREME_DEFAUT);
+  assert.deepEqual(normaliserBareme({ qim: { unDiscordance: "0,25" } }).qim, { unDiscordance: 0.25, deuxDiscordances: 0, auDela: 0 });
+  const b = normaliserBareme({ seuilDefaut: 120, minQuestions: 12, tirages: { habilitation: 8, decouverte: 0 }, bande: { mode: "fixe", points: 99 }, schema: { mode: "tout_ou_rien", videRetire: "on" } });
+  assert.equal(b.seuilDefaut, 100);
+  assert.equal(b.minQuestions, 12);
+  assert.equal(b.tirages.habilitation, 12, "le tirage d'habilitation ne descend pas sous le minimum");
+  assert.equal(b.tirages.decouverte, 1);
+  assert.deepEqual(b.bande, { mode: "fixe", points: 50 });
+  assert.deepEqual(b.schema, { mode: "tout_ou_rien", videRetire: true });
+  assert.equal(estBaremeDefaut(BAREME_DEFAUT), true);
+  assert.equal(estBaremeDefaut(b), false);
+  assert.equal(normaliserBareme({ bande: { mode: "autre" } }).bande.mode, "question");
+});
+
+test("pointsQim et largeurBande suivent le barème", () => {
+  const b = normaliserBareme({ qim: { unDiscordance: 0.75, deuxDiscordances: 0.25, auDela: 0.1 } });
+  assert.equal(pointsQim(0, b), 1);
+  assert.equal(pointsQim(1, b), 0.75);
+  assert.equal(pointsQim(2, b), 0.25);
+  assert.equal(pointsQim(5, b), 0.1);
+  assert.equal(largeurBande(10), 10);
+  assert.equal(largeurBande(10, { mode: "demi_question", points: 0 }), 5);
+  assert.equal(largeurBande(10, { mode: "fixe", points: 3 }), 3);
+  assert.equal(largeurBande(0), 0);
+});
+
+test("noterQuestion applique le barème réglé : QIM à 0,25, schéma tout ou rien, vide qui retire", () => {
+  const b = normaliserBareme({ qim: { unDiscordance: 0.25 }, schema: { mode: "tout_ou_rien" } });
+  // une discordance : d attendue, non cochée
+  assert.equal(noterQuestion(qim, { choix: ["a", "b"], juges: ["a", "b", "c", "d", "e"] }, b).note, 0.25);
+  assert.equal(noterQuestion(qim, { choix: ["a", "b"], juges: ["a", "b", "c", "d", "e"] }).note, 0.5, "défaut inchangé");
+  const quatre = { l1: "sas de transfert", l2: "filtre HEPA", l3: "gant", l4: "plan de travail" };
+  assert.equal(noterQuestion(sch, { choix: [], legendes: quatre }, b).note, 1);
+  assert.equal(noterQuestion(sch, { choix: [], legendes: { ...quatre, l4: "" } }, b).note, 0, "tout ou rien");
+  const partiel = normaliserBareme({ schema: { videRetire: true } });
+  assert.equal(noterQuestion(sch, { choix: [], legendes: { ...quatre, l4: "" } }, partiel).note, 0.5, "la légende vide retire sa part");
+  assert.equal(noterQuestion(sch, { choix: [], legendes: { ...quatre, l4: "" } }).note, 0.75, "par défaut, elle ne compte pas");
+});
+
+test("libellés du barème : dynamiques", () => {
+  const b = normaliserBareme({ qim: { unDiscordance: 0.25 } });
+  assert.match(libelleQim(b), /1 discordance → 0,25/);
+  assert.match(libelleBareme(qim, b), /0,25/);
+  assert.match(libelleBareme(qim), /0,5/);
+  assert.equal(resumeBareme().length, 6);
+  assert.match(resumeBareme(normaliserBareme({ bande: { mode: "fixe", points: 5 } }))[4], /5 points de pourcentage/);
+});

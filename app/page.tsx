@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { composerProgramme, comptesQuestionsBase, getParcours } from "@/content/store";
 import { miseEnService, modeConservation, procedureReference } from "@/lib/config";
+import { lireBareme } from "@/lib/bareme-db";
+import { baseConfiguree, depotsGeneraux } from "@/lib/db";
+import { libelleQim, libelleSchema, resumeBareme, type Bareme } from "@/content/bareme";
 import {
   arbitrageEnAttente,
   blocsCompetence,
@@ -11,7 +14,7 @@ import {
   niveaux,
 } from "@/content/habilitation";
 import type { Module, TypeParcours } from "@/content/types";
-import { TableauDeBord, type ModuleResume } from "@/components/TableauDeBord";
+import { TableauDeBord, type DocumentResume, type ModuleResume } from "@/components/TableauDeBord";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -35,6 +38,7 @@ function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
       typeof m.periodiciteMois === "number"
         ? `${m.periodiciteMois}`
         : m.periodiciteMois,
+    origine: m.origine ?? "code",
   };
 }
 
@@ -47,8 +51,8 @@ const LIEUX: Record<string, { texte: string; classe: string }> = {
   },
 };
 
-/** Les six formats d'évaluation et leur barème, annoncés avant toute question. */
-const FORMATS = [
+/** Les formats d'évaluation et leur barème en vigueur, annoncés avant toute question. */
+const formats = (b: Bareme) => [
   {
     titre: "QCM — une seule réponse",
     regle: "1 point si la réponse est exacte, 0 sinon.",
@@ -60,8 +64,11 @@ const FORMATS = [
   },
   {
     titre: "QIM — barème à la discordance",
-    regle:
-      "0 discordance → 1 point ; 1 discordance → 0,5 ; 2 ou plus → 0. Une proposition laissée sans réponse compte comme une discordance.",
+    regle: libelleQim(b),
+  },
+  {
+    titre: "Schéma à compléter",
+    regle: libelleSchema(b),
   },
   {
     titre: "Mise en situation",
@@ -126,17 +133,30 @@ export default async function Accueil({
   const parcoursId: TypeParcours =
     params.parcours === "maintien" ? "maintien" : "integration";
   const parcours = getParcours(parcoursId)!;
-  const enBase = await comptesQuestionsBase();
+  const [enBase, bareme, programme] = await Promise.all([
+    comptesQuestionsBase(),
+    lireBareme(),
+    composerProgramme(parcoursId),
+  ]);
   const conservation = modeConservation();
 
-  const troncCommun = composerProgramme(parcoursId, null).troncCommun.map((m) =>
-    resumer(m, enBase),
-  );
+  const troncCommun = programme.troncCommun.map((m) => resumer(m, enBase));
   const parPoste: Record<string, ModuleResume[]> = {};
   for (const f of filieres) {
     if (f.id === "socle") continue;
-    parPoste[f.id] = composerProgramme(parcoursId, f.id).poste.map((m) => resumer(m, enBase));
+    parPoste[f.id] = (programme.parFiliere[f.id] ?? []).map((m) => resumer(m, enBase));
   }
+  // Documents généraux, proposés par profil (filières, niveaux) — question 10.
+  const documents: DocumentResume[] = baseConfiguree()
+    ? (await depotsGeneraux().catch(() => [])).map((d) => ({
+        id: d.id,
+        titre: d.titre,
+        nature: d.nature,
+        url: d.url,
+        filieres: d.filieres,
+        niveaux: d.niveaux,
+      }))
+    : [];
 
   const rediges = [...troncCommun, ...Object.values(parPoste).flat()].filter(
     (m) => m.redige || m.nbQuestions > 0,
@@ -206,6 +226,7 @@ export default async function Accueil({
           conservation={conservation}
           procedure={procedureReference()}
           miseEnService={miseEnService()}
+          documents={documents}
         />
       </section>
 
@@ -243,12 +264,12 @@ export default async function Accueil({
       <section id="evaluation" className="section">
         <h2>L&apos;évaluation</h2>
         <p className="section-intro">
-          Six formats, chacun avec son barème. Ils sont annoncés ici pour
-          qu&apos;aucune règle de notation ne soit découverte en cours
-          d&apos;épreuve.
+          Chaque format a son barème, réglé par l&apos;administrateur. Ils sont
+          annoncés ici pour qu&apos;aucune règle de notation ne soit découverte
+          en cours d&apos;épreuve.
         </p>
         <div className="grille">
-          {FORMATS.map((f) => (
+          {formats(bareme).map((f) => (
             <article key={f.titre} className="carte">
               <h3 style={{ fontSize: "1rem" }}>{f.titre}</h3>
               <p className="legende" style={{ marginBottom: 0 }}>
@@ -257,6 +278,9 @@ export default async function Accueil({
             </article>
           ))}
         </div>
+        <p className="legende" style={{ marginTop: ".75rem" }}>
+          {resumeBareme(bareme).slice(3).join(" ")}
+        </p>
       </section>
 
       {/* ──────────────────────────────── programme complet, par bloc */}

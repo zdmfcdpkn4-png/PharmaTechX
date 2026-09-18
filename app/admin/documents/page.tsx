@@ -1,7 +1,9 @@
 import { listerDepots } from "@/lib/db";
 import { modeStockage, stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
-import { getTousModules } from "@/content/store";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { filieres, niveaux } from "@/content/habilitation";
 import { actionDeposer, actionSupprimerDepot } from "@/app/actions";
+import { etiquetteModule, titreModule } from "../questions/commun";
 
 export const dynamic = "force-dynamic";
 
@@ -10,25 +12,28 @@ const MESSAGES: Record<string, string> = {
   "fichier-trop-lourd": `Fichier trop lourd : ${Math.round(TAILLE_MAX_FICHIER / 1024 / 1024)} Mo au plus.`,
   "type-refuse": "Type de fichier refusé : PDF, PNG, JPEG, MP4, WebM, texte, Word, PowerPoint ou Excel.",
   "stockage-absent": "Aucun stockage de fichiers n'est disponible.",
+  "module-inconnu": "Module de rattachement inconnu.",
 };
 
 export default async function Documents({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string; ok?: string }>;
+  searchParams: Promise<{ erreur?: string; ok?: string; module?: string }>;
 }) {
   const p = await searchParams;
-  const depots = await listerDepots();
-  const modules = getTousModules();
+  const [depots, modules] = await Promise.all([listerDepots(), getTousModulesAvecDeposes()]);
   const mode = modeStockage();
+  const moduleInitial = modules.some((m) => m.id === p.module) ? p.module : "";
 
   return (
     <>
       <section className="panneau-titre">
         <h1>Documents rattachés</h1>
         <p>
-          Procédures internes, fiches réflexes, référentiels et vidéos, rattachés à un module ou
-          généraux. Stockage : {mode === "blob" ? "Vercel Blob" : mode === "base" ? "base de données (portable, sans service supplémentaire)" : "aucun"}.
+          Procédures internes, fiches réflexes, référentiels et vidéos, rattachés à un module (du
+          code ou déposé) ou généraux. Un document général se propose à tous les profils, ou aux
+          filières et niveaux cochés : il apparaît alors sur le programme de ces profils. Stockage :{" "}
+          {mode === "blob" ? "Vercel Blob" : mode === "base" ? "base de données (portable, sans service supplémentaire)" : "aucun"}.
         </p>
       </section>
 
@@ -65,16 +70,38 @@ export default async function Documents({
             </label>
             <label className="champ">
               <span>Rattacher au module</span>
-              <select name="moduleId" defaultValue="">
-                <option value="">Document général</option>
+              <select name="moduleId" defaultValue={moduleInitial}>
+                <option value="">Document général (proposé par profil)</option>
                 {modules.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {typeof m.critereId === "string" ? m.critereId : "—"} — {m.titre.slice(0, 60)}
+                    {etiquetteModule(m)} — {m.titre.slice(0, 60)}
                   </option>
                 ))}
               </select>
             </label>
           </div>
+          <fieldset className="groupe">
+            <legend className="champ-titre">Profils d&apos;un document général — filières (aucune cochée : toutes)</legend>
+            <div className="cases">
+              {filieres
+                .filter((f) => f.id !== "socle")
+                .map((f) => (
+                  <label key={f.id}>
+                    <input type="checkbox" name="filieres" value={f.id} />
+                    {f.libelle}
+                  </label>
+                ))}
+            </div>
+            <legend className="champ-titre" style={{ marginTop: ".25rem" }}>Niveaux (aucun coché : tous)</legend>
+            <div className="cases">
+              {niveaux.map((n) => (
+                <label key={n.code}>
+                  <input type="checkbox" name="niveaux" value={n.code} />
+                  {n.code}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div className="actions">
             <button type="submit" className="bouton" disabled={!stockageConfigure()}>
               Déposer
@@ -96,8 +123,13 @@ export default async function Documents({
             </a>
             <br />
             <span className="legende">
-              {d.module_id ?? "document général"} · déposé le{" "}
-              {new Date(d.depose_le).toLocaleDateString("fr-FR")} par {d.depose_par}
+              {d.module_id ? titreModule(modules, d.module_id) : "document général"}
+              {d.filieres.length > 0 || d.niveaux.length > 0
+                ? ` · profils : ${[...d.filieres, ...d.niveaux].join(", ")}`
+                : d.module_id
+                  ? ""
+                  : " · tous profils"}
+              {" · "}déposé le {new Date(d.depose_le).toLocaleDateString("fr-FR")} par {d.depose_par}
             </span>
             <div className="actions" style={{ marginTop: ".5rem" }}>
               <form action={actionSupprimerDepot}>

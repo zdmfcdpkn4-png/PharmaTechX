@@ -48,8 +48,8 @@ l'administrateur initial** : le code n'est affiché qu'une fois.
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions, documents, ordonnancement, signalements, journal, visa « pharmacien responsable », annulation et purge des rapports, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
-| **tuteur** | Banque de questions (créer, déposer, valider, retirer), mises en situation, documents, ordonnancement, signalements, codes de poste, identifiants d'agents, arbitrage et visa « tuteur » |
+| **admin** | Tout : codes de tous rôles, banque de questions, modules déposés, documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
+| **tuteur** | Banque de questions (créer, déposer, valider, retirer), **modules déposés** (créer, publier, retirer), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, exporter ou émettre son rapport. Profil par défaut : aucun code requis |
 
 Un code **ne désigne pas une personne** : il ouvre un profil. Les codes sont
@@ -61,10 +61,12 @@ jamais seulement par l'affichage.
 ## 4. Ce qui est stocké, et ce qui ne l'est pas
 
 **Stocké** (configuration du site) : `acces` (codes hachés), `ordonnancement`,
-`depots` (index des documents ; fichiers en Blob ou dans `fichiers`),
-`questions` / `situations` / `images` / `depots_questions` (banque déposée),
-`signalements` (sans identité), `journal` (rôle et libellé de profil),
-`tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
+`depots` (index des documents, avec leurs profils ; fichiers en Blob ou dans
+`fichiers`), `questions` / `situations` / `images` / `depots_questions`
+(banque déposée), `modules_deposes` (modules ajoutés depuis
+l'administration), `reglages_modules` (seuil réglé d'un module du code),
+`parametres` (barème réglé), `signalements` (sans identité), `journal` (rôle
+et libellé de profil), `tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
 au niveau des lignes sans politique et les rôles de l'API de données de
 Supabase n'y ont aucun droit : la base n'est lisible que par le service.
 
@@ -96,28 +98,55 @@ blocs ↔ niveaux) et sont affichés comme tels.
 
 ## 6. Formats et barèmes
 
-| Format | Notation |
+| Format | Notation par défaut |
 |---|---|
 | **QCM** | Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu |
-| **QIM** | 0 discordance → 1 pt ; 1 → 0,5 ; ≥ 2 → 0. Posée en Vrai/Faux par proposition ; une proposition sans réponse compte comme une discordance |
+| **QIM** | 0 discordance → 1 pt ; 1 → 0,5 ; 2 → 0 ; au-delà → 0. Posée en Vrai/Faux par proposition ; une proposition sans réponse compte comme une discordance |
 | **Schéma à compléter** | 1 pt au plus ; chaque légende vaut 1/n, fausse elle le retire, vide elle ne compte pas ; plancher 0. Légende à écrire (accents, casse, articles ignorés ; variantes admises) ou à choisir dans une liste mélangée |
 | **Mise en situation** | Vignette + questions rattachées, tirées ensemble |
 
 Une question **éliminatoire** invalide le critère quelle que soit la note, et
-elle est toujours incluse dans le tirage. Barèmes QIM et schéma : **à
-confirmer** (`BAREME_QIM`, `BAREME_SCH` dans `content/types.ts`).
+elle est toujours incluse dans le tirage.
+
+**Barème réglable** (décision du 18/09/2026, question 10) : depuis
+`/admin/bareme`, l'administrateur règle les points des QIM (1, 2 discordances
+et au-delà), le mode du schéma (partiel ou tout ou rien, légende vide comptée
+ou non), le seuil de réussite par défaut, le minimum de questions pour
+conclure, la taille des tirages Découverte et Habilitation et la bande de
+garde (poids d'une question, d'une demi-question ou largeur fixe). Le seuil
+d'un module du code se règle module par module depuis `/admin/modules` ; un
+module déposé porte le sien. Le barème en vigueur est annoncé sur l'accueil
+et sous chaque question, **copié dans chaque résultat scellé** et porté sur
+chaque rapport : une évaluation déjà passée se relit avec le barème de son
+époque. Valeurs par défaut et règles dans `content/bareme.ts`.
 
 Deux modes de passation : **évaluation** (correction à la fin, résultat porté
 au rapport) et **entraînement** (une question à la fois, correction
 immédiate avec justification et source, jamais enregistré ni comptabilisé).
 
-## 7. Banque de questions déposée (profils tuteur et admin)
+## 7. Banque de questions, modules et documents déposés (profils tuteur et admin)
 
 `/admin/questions` — création dans un formulaire (QCM, QIM, schéma avec
 éditeur d'image : cliquer pour poser une légende, glisser pour déplacer,
 caches réglables), **dépôt** d'un texte ou d'un fichier (`.txt`, `.md`,
-`.docx`, `.json`) analysé sans IA avec aperçu avant ajout, mises en situation,
+`.docx`, `.json`) analysé sans IA avec aperçu avant ajout, chaque question
+portant sa **justification** et ses sources, mises en situation,
 signalements des apprenants.
+
+`/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
+à la manière des dépôts du Lecteur QIM · QCM) : le texte des 58 critères
+reste dans le code, mais un tuteur ou l'administrateur ajoute un module avec
+titre, objectif, présentation courte, rattachement facultatif à un critère de
+la fiche, **profils** (filières, niveaux, parcours) et seuil propre ; ses
+questions se déposent depuis la banque, ses documents depuis Documents.
+Cycle brouillon (visible des tuteurs et administrateurs) → publié (au
+programme des profils choisis) → retiré. Suppression réservée à
+l'administrateur, refusée tant que des questions ou des documents s'y
+rattachent.
+
+`/admin/documents` — documents rattachés à un module (du code ou déposé) ou
+généraux ; un document général se lie à un ou plusieurs profils (filières,
+niveaux) et apparaît sur le programme de ces profils.
 
 Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`. Une
 question déposée se rattache à n'importe quel critère, rédigé ou non : un
@@ -179,8 +208,10 @@ répertoire par identifiant et par critère (export CSV).
 |---|---|
 | Blocs, critères, niveaux, filières, étapes, maintien | `content/habilitation.ts` |
 | Un module rédigé (texte + banque versionnée) | `content/modules/*.ts` |
-| Formats, barèmes, notation | `content/types.ts`, `content/schema.ts` |
+| Formats, notation | `content/types.ts`, `content/schema.ts` |
+| Barème (valeurs par défaut, règles, libellés) | `content/bareme.ts` ; réglage `/admin/bareme`, lecture `lib/bareme-db.ts` |
 | Banque déposée (requêtes) | `content/banque-db.ts` |
+| Modules déposés | `content/modules-db.ts`, `app/admin/modules` ; fusion `content/store.ts` |
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
 | Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |
@@ -199,9 +230,11 @@ répertoire par identifiant et par critère (export CSV).
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
 d'import (texte et JSON), décision (bande de garde, non concluant,
-exclusions, arbitrage), identifiants d'agents, famille d'adresses et socket
-IPv4 vers la base, schéma (RLS sur chaque table), constructeur de rapport
-(identifiant, nom hors sceau), registre CSV et JSON, archive zip.
+exclusions, arbitrage, bande de garde réglable), barème réglable
+(normalisation, QIM et schéma paramétrés, libellés), identifiants d'agents,
+famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
+table), constructeur de rapport (identifiant, nom hors sceau, barème porté),
+registre CSV et JSON, archive zip.
 `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
@@ -214,8 +247,10 @@ d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas
 tuteur et pharmacien avec signature incrustée sans nom saisi, rapport A4
 pseudonyme puis avec le nom porté à l'édition, paquet d'archivage, registre et
 répertoire CSV sans nom, journal sans nom, purge, clôture de l'identifiant,
-dépôt de document, connexion tuteur, mode entraînement, limiteur de
-connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
+dépôt de document, module déposé (brouillon invisible, publié au programme
+d'une filière et d'un niveau, questions importées, seuil propre), barème
+réglé puis rétabli, document général par profil, connexion tuteur, mode
+entraînement, limiteur de connexion. Voir l'en-tête de `e2e/parcours.e2e.js`.
 
 ## 11. Reste à faire et questions ouvertes
 
@@ -225,8 +260,9 @@ La liste complète, ordonnée par impact, est dans
 DPO (`docs/RGPD.md`), la procédure interne et la source de temps qu'exige le
 statut opposable, l'accord DSI/DPO sur l'hébergement (Render pour le service,
 Supabase pour la base), l'API de données de Supabase à couper et la
-vérification des plans, les paramètres de la décision (bande de garde,
-minimum de questions), les barèmes à confirmer, les 56 modules à rédiger.
+vérification des plans, les valeurs du barème à arrêter (réglables depuis
+`/admin/bareme`, valeurs par défaut posées), les 56 modules à rédiger dans le
+code (décision du 18/09/2026, question 10).
 
 ## 12. Limites connues
 

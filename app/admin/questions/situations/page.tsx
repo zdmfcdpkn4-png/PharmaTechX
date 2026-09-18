@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { listerSituations } from "@/content/banque-db";
-import { getTousModules } from "@/content/store";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { titreModule as titreDe } from "../commun";
 import { actionEnregistrerSituation, actionSupprimerSituation } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +14,10 @@ export default async function Situations({
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
-  const modules = getTousModules();
+  const modules = await getTousModulesAvecDeposes();
   const moduleId = modules.some((m) => m.id === p.module) ? p.module : undefined;
   const situations = await listerSituations(moduleId);
-  const titreModule = (id: string) => {
-    const m = modules.find((x) => x.id === id);
-    return m ? `${typeof m.critereId === "string" ? m.critereId : "—"} — ${m.titre}` : id;
-  };
+  const titreModule = (id: string) => titreDe(modules, id);
 
   return (
     <>

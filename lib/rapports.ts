@@ -264,6 +264,7 @@ export function decisionDe(
   const decision = decider(r.resultat.detail, r.resultat.seuilReussite, {
     exclues: exclusions.map((e) => e.questionId),
     minQuestions: r.resultat.minQuestions,
+    bande: r.resultat.bareme?.bande,
   });
   return { decision, verdictFinal: verdictFinal(decision, r.arbitrage) };
 }

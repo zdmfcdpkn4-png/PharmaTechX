@@ -1,3 +1,4 @@
+import { libelleBande, libelleBaremeCourt } from "../content/bareme";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import {
   LIBELLES_COURTS_VERDICT,
@@ -77,7 +78,7 @@ export interface OptionsRapport {
 }
 
 function decisionParDefaut(r: ResultatRapport): DecisionImprimable {
-  const decision = decider(r.detail, r.seuilReussite, { minQuestions: r.minQuestions });
+  const decision = decider(r.detail, r.seuilReussite, { minQuestions: r.minQuestions, bande: r.bareme?.bande });
   return { decision, verdictFinal: decision.verdictBrut, arbitrage: null, exclusions: [] };
 }
 
@@ -173,7 +174,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     : echapper(expliquerVerdict(d));
   const brut = dec.arbitrage
     ? `Verdict brut : ${LIBELLES_COURTS_VERDICT[d.verdictBrut]} (score ${d.score} %, bande de garde ${d.bandeBasse} à ${d.bandeHaute} %), conservé avec l'arbitrage.`
-    : `Bande de garde : ${d.bandeBasse} à ${d.bandeHaute} % — seuil de ${d.seuil} % à plus ou moins le poids d'une question.`;
+    : `Bande de garde : ${d.bandeBasse} à ${d.bandeHaute} % — seuil de ${d.seuil} % à plus ou moins ${libelleBande(r.bareme)}.`;
   const exclusionsTexte =
     d.nbExclues > 0
       ? `${d.nbExclues} question${d.nbExclues > 1 ? "s" : ""} exclue${d.nbExclues > 1 ? "s" : ""} du calcul (retirée${d.nbExclues > 1 ? "s" : ""} de la banque après signalement) ; score initial ${r.score} % sur ${r.pointsTotal} questions.`
@@ -246,6 +247,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     <p class="sur-titre">Étape 2 sur 6 — évaluation des connaissances</p>
     <h1>${echapper(r.moduleTitre)}</h1>
     <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
+    <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
 
     <table class="verdict">
       <tbody><tr>

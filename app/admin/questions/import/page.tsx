@@ -51,7 +51,7 @@ Justification : …`}</pre>
         </div>
       </details>
       <ImportQuestions
-        modules={choixModules()}
+        modules={await choixModules()}
         moduleInitial={p.module}
         analyser={actionAnalyserImport}
         confirmer={actionConfirmerImport}

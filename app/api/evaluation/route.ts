@@ -4,7 +4,9 @@ import { ordreLecture, motAttendu, verdictLegende } from "@/content/schema";
 import { banqueDuModule, noterQuestion } from "@/content/types";
 import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
-import { MIN_QUESTIONS_HABILITATION, decider, type Verdict } from "@/lib/decision";
+import { decider, type Verdict } from "@/lib/decision";
+import { lireBareme } from "@/lib/bareme-db";
+import type { Bareme } from "@/content/bareme";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +88,8 @@ export interface ResultatEvaluation {
   bandeHaute: number;
   concluant: boolean;
   minQuestions: number;
+  /** Barème en vigueur à l'évaluation (copié, scellé) : le rapport se relit avec lui. */
+  bareme: Bareme;
   detail: DetailQuestion[];
   horodatage: string;
   horodatageIso: string;
@@ -164,6 +168,7 @@ export async function POST(request: Request) {
   const reponses = listeDeChaines(corps.reponses);
   const juges = listeDeChaines(corps.juges);
   const legendes = dictionnaireDeChaines(corps.legendes);
+  const bareme = await lireBareme();
 
   const titresSituations = new Map<string, string>();
   for (const s of mod.misesEnSituation) {
@@ -176,7 +181,7 @@ export async function POST(request: Request) {
       juges: q.id in juges ? juges[q.id] : undefined,
       legendes: legendes[q.id] ?? {},
     };
-    const { note, discordances, nonJugees } = noterQuestion(q, rep);
+    const { note, discordances, nonJugees } = noterQuestion(q, rep, bareme);
     const libelle = (ids: string[]) =>
       ids
         .map((id) => q.options.find((o) => o.id === id)?.texte)
@@ -220,7 +225,7 @@ export async function POST(request: Request) {
     return base;
   });
 
-  const decision = decider(detail, mod.seuilReussite, { minQuestions: MIN_QUESTIONS_HABILITATION });
+  const decision = decider(detail, mod.seuilReussite, { minQuestions: bareme.minQuestions, bande: bareme.bande });
   const maintenant = new Date();
 
   const sansJeton: Omit<ResultatEvaluation, "jeton"> = {
@@ -239,6 +244,7 @@ export async function POST(request: Request) {
     bandeHaute: decision.bandeHaute,
     concluant: decision.concluant,
     minQuestions: decision.minQuestions,
+    bareme,
     detail,
     horodatage: maintenant.toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",

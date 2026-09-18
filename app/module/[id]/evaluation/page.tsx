@@ -3,14 +3,19 @@ import { notFound } from "next/navigation";
 import { getModuleComplet } from "@/content/store";
 import { banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { lireBareme } from "@/lib/bareme-db";
 import { Evaluation } from "@/components/Evaluation";
 
 export const dynamic = "force-dynamic";
 
 export default async function PageEvaluation({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const mod = await getModuleComplet(id);
+  // Un module déposé non publié ne s'évalue qu'en tutorat ou en administration.
+  const session = await getSession();
+  const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
+  const bareme = await lireBareme();
 
   // Les bonnes réponses et les justifications sont retirées ici : elles ne
   // quittent le serveur qu'après soumission, via la route de correction.
@@ -38,6 +43,7 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
         moduleTitre={mod.titre}
         banque={banque}
         seuil={mod.seuilReussite}
+        bareme={bareme}
         signalementPossible={baseConfiguree()}
       />
     </article>

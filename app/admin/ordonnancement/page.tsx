@@ -1,5 +1,6 @@
 import { lireOrdonnancement } from "@/lib/db";
-import { getTousModules } from "@/content/store";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { etiquetteModule } from "../questions/commun";
 import { actionOrdonner } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export default async function Ordonnancement({
   searchParams: Promise<{ ok?: string }>;
 }) {
   const p = await searchParams;
-  const modules = getTousModules();
+  const modules = await getTousModulesAvecDeposes({ publiesSeulement: true });
   const [integration, maintien] = await Promise.all([
     lireOrdonnancement("integration"),
     lireOrdonnancement("maintien"),
@@ -63,7 +64,7 @@ export default async function Ordonnancement({
         <div className="contenu-bloc">
           {modules.map((m) => (
             <div key={m.id} className="ligne-critere">
-              <span className="code">{typeof m.critereId === "string" ? m.critereId : "—"}</span>
+              <span className="code">{etiquetteModule(m)}</span>
               <span className="libelle">
                 <code>{m.id}</code> — {m.titre}
               </span>

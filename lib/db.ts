@@ -235,6 +235,15 @@ export interface LigneDepot {
   critere_id: string | null;
   depose_le: string;
   depose_par: Role;
+  /** Profils auxquels le document est proposé : filières et niveaux (vides = tous). */
+  filieres: string[];
+  niveaux: string[];
+}
+
+/** Profils d'un document : identifiants de filières et codes de niveaux. */
+export interface ProfilsDepot {
+  filieres: string[];
+  niveaux: string[];
 }
 
 /** Conservé pour compatibilité : le schéma est désormais appliqué automatiquement. */
@@ -307,18 +316,32 @@ export async function ecrireRang(moduleId: string, parcours: string, rang: numbe
 
 // ───────────────────────────────────────────────────── documents déposés
 
+const COLONNES_DEPOT = `id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par, filieres, niveaux`;
+
 export async function listerDepots(): Promise<LigneDepot[]> {
-  const r = await sql<LigneDepot>`
-    SELECT id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par
-    FROM depots ORDER BY depose_le DESC`;
+  const r = await requete<LigneDepot>(`SELECT ${COLONNES_DEPOT} FROM depots ORDER BY depose_le DESC`);
   return r.rows;
 }
 
 export async function depotsDuModule(moduleId: string): Promise<LigneDepot[]> {
-  const r = await sql<LigneDepot>`
-    SELECT id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par
-    FROM depots WHERE module_id = ${moduleId} ORDER BY depose_le DESC`;
+  const r = await requete<LigneDepot>(
+    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id = $1 ORDER BY depose_le DESC`,
+    [moduleId],
+  );
   return r.rows;
+}
+
+/** Documents sans module, proposés par profil sur le programme (filières et niveaux). */
+export async function depotsGeneraux(): Promise<LigneDepot[]> {
+  const r = await requete<LigneDepot>(
+    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id IS NULL ORDER BY depose_le DESC`,
+  );
+  return r.rows;
+}
+
+export async function compterDepotsDuModule(moduleId: string): Promise<number> {
+  const r = await sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM depots WHERE module_id = ${moduleId}`;
+  return r.rows[0]?.n ?? 0;
 }
 
 export async function enregistrerDepot(
@@ -328,10 +351,12 @@ export async function enregistrerDepot(
   moduleId: string | null,
   critereId: string | null,
   role: Role,
+  profils: ProfilsDepot = { filieres: [], niveaux: [] },
 ): Promise<void> {
   await sql`
-    INSERT INTO depots (titre, nature, url, module_id, critere_id, depose_par)
-    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${role})`;
+    INSERT INTO depots (titre, nature, url, module_id, critere_id, depose_par, filieres, niveaux)
+    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${role},
+      ${JSON.stringify(profils.filieres)}::jsonb, ${JSON.stringify(profils.niveaux)}::jsonb)`;
 }
 
 export async function supprimerDepot(id: number): Promise<string | null> {

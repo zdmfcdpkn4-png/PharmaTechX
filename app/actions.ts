@@ -24,6 +24,8 @@ import {
   sessionRequise,
 } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
+import { moduleExiste } from "@/content/store";
+import { filtrerProfils } from "@/content/modules-db";
 import {
   TAILLE_MAX_FICHIER,
   deposerFichier,
@@ -131,11 +133,14 @@ export async function actionDeposer(formData: FormData) {
   const nature = String(formData.get("nature") ?? "procedure-interne");
   const moduleId = String(formData.get("moduleId") ?? "") || null;
   const critereId = String(formData.get("critereId") ?? "") || null;
+  if (moduleId && !(await moduleExiste(moduleId))) redirect("/admin/documents?erreur=module-inconnu");
+  // profils (filières, niveaux) auxquels un document général est proposé — question 10
+  const profils = filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
 
   const octets = Buffer.from(await fichier.arrayBuffer());
   const { url } = await deposerFichier(fichier.name, fichier.type, octets);
-  await enregistrerDepot(titre, nature, url, moduleId, critereId, s.role);
-  await journaliser(s, "depot-document", url, { titre, nature, moduleId });
+  await enregistrerDepot(titre, nature, url, moduleId, critereId, s.role, profils);
+  await journaliser(s, "depot-document", url, { titre, nature, moduleId, ...profils });
   revalidatePath("/admin/documents");
   revalidatePath("/");
   redirect("/admin/documents?ok=depose");

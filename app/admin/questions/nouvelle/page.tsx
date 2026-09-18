@@ -22,7 +22,7 @@ export default async function NouvelleQuestion({
         </p>
       </section>
       <EditeurQuestion
-        modules={choixModules()}
+        modules={await choixModules()}
         situations={situations}
         moduleInitial={p.module}
         action={actionEnregistrerQuestion}

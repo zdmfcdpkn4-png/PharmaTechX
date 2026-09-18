@@ -22,7 +22,26 @@ export interface ModuleResume {
   nbQuestions: number;
   nbSituations: number;
   periodiciteMois: string;
+  /** `base` pour un module déposé depuis l'administration. */
+  origine?: "code" | "base";
 }
+
+/** Document général, proposé par profil (filières et niveaux ; vides = tous). */
+export interface DocumentResume {
+  id: number;
+  titre: string;
+  nature: string;
+  url: string;
+  filieres: string[];
+  niveaux: string[];
+}
+
+const NATURES: Record<string, string> = {
+  "procedure-interne": "Procédure interne",
+  reglementaire: "Référentiel",
+  "fiche-reflexe": "Fiche réflexe",
+  video: "Vidéo",
+};
 
 export interface PosteResume {
   id: string;
@@ -53,12 +72,17 @@ function CarteModule({ m }: { m: ModuleResume }) {
   const corps = (
     <article className={`carte carte--module${m.redige ? "" : " est-vide"}`}>
       <ul className="meta-module">
-        <li className="etiquette etiquette--neutre">
-          Bloc <Marqueur valeur={m.bloc} />
-        </li>
-        <li className="etiquette etiquette--neutre">
-          Critère <Marqueur valeur={m.critereId} />
-        </li>
+        {m.origine === "base" && <li className="etiquette etiquette--site">Module déposé</li>}
+        {m.origine === "base" && m.critereId === A_PRECISER ? null : (
+          <>
+            <li className="etiquette etiquette--neutre">
+              Bloc <Marqueur valeur={m.bloc} />
+            </li>
+            <li className="etiquette etiquette--neutre">
+              Critère <Marqueur valeur={m.critereId} />
+            </li>
+          </>
+        )}
         {evaluable ? (
           <li className="etiquette">
             {m.nbQuestions} question{m.nbQuestions > 1 ? "s" : ""}
@@ -111,6 +135,7 @@ export function TableauDeBord({
   conservation,
   procedure,
   miseEnService,
+  documents = [],
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -122,6 +147,8 @@ export function TableauDeBord({
   procedure: string | null;
   /** Date de mise en service ; absente, les rapports portent « phase d'essai ». */
   miseEnService: string | null;
+  /** Documents généraux déposés, proposés selon la filière et le niveau choisis. */
+  documents?: DocumentResume[];
 }) {
   const [posteId, setPosteId] = useState<string>("");
   const [niveauCode, setNiveauCode] = useState<string>("");
@@ -143,6 +170,12 @@ export function TableauDeBord({
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
   const programme = useMemo(() => [...socle, ...modulesPoste], [socle, modulesPoste]);
+  // Un document sans profil est proposé à tous ; sinon il suit la filière et le niveau choisis.
+  const documentsVisibles = documents.filter(
+    (d) =>
+      (d.filieres.length === 0 || (posteId !== "" && d.filieres.includes(posteId))) &&
+      (d.niveaux.length === 0 || niveauCode === "" || d.niveaux.includes(niveauCode)),
+  );
 
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
   const evalues = new Set(resultats.map((r) => r.moduleId));
@@ -291,6 +324,34 @@ export function TableauDeBord({
           Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
           afficher les critères qui s&apos;y rattachent.
         </p>
+      )}
+
+      {documents.length > 0 && (
+        <>
+          <div className="section-titre">
+            <h2>Documents du profil</h2>
+            <span className="compte">
+              {documentsVisibles.length} document{documentsVisibles.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          {documentsVisibles.length > 0 ? (
+            <ul className="liste-nue documents-profil">
+              {documentsVisibles.map((d) => (
+                <li key={d.id} className="carte">
+                  <span className="etiquette etiquette--neutre">{NATURES[d.nature] ?? d.nature}</span>{" "}
+                  <a href={d.url} target="_blank" rel="noreferrer">
+                    {d.titre}
+                  </a>
+                  {d.filieres.length > 0 || d.niveaux.length > 0 ? (
+                    <span className="legende"> — {[...d.filieres, ...d.niveaux].join(", ")}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="encart">Aucun document général pour cette filière et ce niveau.</p>
+          )}
+        </>
       )}
 
       <div className="section-titre" id="rapport">

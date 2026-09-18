@@ -139,6 +139,23 @@ un administrateur technique n'en détient pas, sans quoi son visa vaudrait
 visa du pharmacien. Le journal et les visas portent le libellé du code, pas
 la personne.
 
+**Rédaction des modules et dépôt** (question 10, choix a complété,
+18/09/2026) : le texte des 58 critères reste versionné avec le code, rédigé
+par le pharmacien responsable ; aucun éditeur de texte en base. En
+complément, à la manière des dépôts du Lecteur QIM · QCM : **modules
+déposés** depuis l'administration (titre, objectif, présentation courte,
+critère facultatif, profils par filières, niveaux et parcours, seuil propre,
+cycle brouillon → publié → retiré), **documents** liés à un module ou à un ou
+plusieurs profils et proposés sur le programme, **questions** QCM, QIM ou
+schéma déposées avec leurs justifications sur tout module, du code ou
+déposé. **Barème réglable** depuis `/admin/bareme` (QIM, schéma, seuil par
+défaut, minimum de questions, tirages, bande de garde) et seuil par module ;
+le barème en vigueur est copié dans chaque résultat scellé et porté sur
+chaque rapport, les valeurs par défaut restant celles reprises du Lecteur
+QIM · QCM. Les valeurs à retenir restent à arrêter (`docs/QUESTIONS-OUVERTES.md`,
+B). L'ordonnancement enregistré est désormais appliqué au programme : il
+était enregistré sans être lu.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
@@ -170,6 +187,15 @@ SCORM). Transposé dans les limites du brief :
   famille d'adresses (`DATABASE_IP`, IPv4 par défaut) et complète les erreurs
   de résolution ; écouteur d'erreur sur le pool pour survivre à la coupure
   d'une connexion inactive (pause ou maintenance d'une base managée).
+- Barème réglable (`content/bareme.ts`, pur) : valeurs par défaut, bornes,
+  normalisation ; la notation (`noterQuestion`) et la décision (`decider`)
+  reçoivent le barème en paramètre, et le résultat scellé le conserve
+  (`ResultatEvaluation.bareme`) pour que rapports et registre se relisent
+  avec le barème de l'époque.
+- Modules déposés (`content/modules-db.ts`) lus comme des modules du modèle
+  (`origine: "base"`) et fusionnés dans `content/store.ts` ; le seuil
+  effectif d'un module du code est résolu à la lecture (réglage, sinon
+  barème).
 - Les modules restent versionnés avec le code ; la banque déposée s'y fusionne
   à la lecture (`getModuleComplet`). Un module « à rédiger » devient évaluable
   dès qu'il a des questions validées.
@@ -178,7 +204,8 @@ SCORM). Transposé dans les limites du brief :
 
 ## Non fait
 
-- Rédaction en base du texte des modules (décision à prendre).
+- Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
+  module déposé porte une présentation courte seulement.
 - Purge automatique des rapports à l'échéance de conservation.
 - Glisser-déposer pour l'ordonnancement des modules.
 - Mode sombre (décision antérieure : plus tard).

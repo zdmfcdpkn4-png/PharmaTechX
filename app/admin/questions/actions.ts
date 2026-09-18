@@ -8,7 +8,7 @@ import { IMAGE_MAX_OCTETS, enregistrerImage } from "@/lib/images";
 import { texteDocx } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
-import { getModule } from "@/content/store";
+import { moduleExiste } from "@/content/store";
 import type { Reference } from "@/content/types";
 import {
   changerStatutQuestion,
@@ -113,7 +113,7 @@ export async function actionEnregistrerQuestion(
   const enonce = chaine(formData, "enonce", 2000);
   const statut = (chaine(formData, "statut", 12) || "a_verifier") as StatutQuestion;
 
-  if (!getModule(moduleId)) return { erreur: "Module inconnu." };
+  if (!(await moduleExiste(moduleId))) return { erreur: "Module inconnu." };
   if (format !== "QCM" && format !== "QIM" && format !== "SCH") return { erreur: "Format inconnu." };
   if (!enonce) return { erreur: "L'énoncé est obligatoire." };
   if (!["a_verifier", "valide", "retire"].includes(statut)) return { erreur: "Statut inconnu." };
@@ -200,7 +200,7 @@ export async function actionEnregistrerSituation(formData: FormData) {
   const moduleId = chaine(formData, "moduleId", 80);
   const titre = chaine(formData, "titre", 200);
   const contexte = chaine(formData, "contexte", 4000);
-  if (!getModule(moduleId) || !titre || !contexte) {
+  if (!(await moduleExiste(moduleId)) || !titre || !contexte) {
     redirect(`/admin/questions/situations?module=${encodeURIComponent(moduleId)}&erreur=incomplet`);
   }
   const ident = await enregistrerSituation({ moduleId, titre, contexte }, id);
@@ -255,7 +255,7 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
   const moduleId = chaine(formData, "moduleId", 80);
   const formatDefaut = chaine(formData, "formatDefaut", 3) === "QIM" ? "QIM" : "QCM";
   const base: EtatImport = { ...prec, etape: "saisie", moduleId, formatDefaut, questions: [], images: [], avertissements: [], erreur: undefined };
-  if (!getModule(moduleId)) return { ...base, erreur: "Choisir le module de rattachement." };
+  if (!(await moduleExiste(moduleId))) return { ...base, erreur: "Choisir le module de rattachement." };
 
   let texte = chaine(formData, "texte", 400_000);
   let nom = "texte collé";
@@ -318,7 +318,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
   } catch {
     return { ...prec, erreur: "Aperçu illisible : relancer l'analyse." };
   }
-  if (!getModule(moduleId)) return { ...prec, erreur: "Module inconnu." };
+  if (!(await moduleExiste(moduleId))) return { ...prec, erreur: "Module inconnu." };
   const retenues = questions.filter((_, i) => formData.get(`exclure-${i}`) !== "on");
   if (retenues.length === 0) return { ...prec, erreur: "Aucune question retenue." };
 

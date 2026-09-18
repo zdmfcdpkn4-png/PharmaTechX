@@ -50,6 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </p>
       <nav className="nav-admin" aria-label="Administration">
         <Link href="/admin">Accès</Link>
+        <Link href="/admin/modules">Modules</Link>
         <Link href="/admin/questions">Questions</Link>
         <Link href="/admin/questions/import">Dépôt</Link>
         <Link href="/admin/questions/situations">Mises en situation</Link>
@@ -60,6 +61,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Signalements{ouverts > 0 ? ` (${ouverts})` : ""}
         </Link>
         <Link href="/admin/ordonnancement">Ordre</Link>
+        {session.role === "admin" && <Link href="/admin/bareme">Barème</Link>}
         {session.role === "admin" && <Link href="/admin/signature">Signature</Link>}
         {session.role === "admin" && <Link href="/admin/journal">Journal</Link>}
       </nav>

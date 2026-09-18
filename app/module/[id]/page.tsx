@@ -4,6 +4,8 @@ import { getModuleComplet } from "@/content/store";
 import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER } from "@/content/types";
 import { baseConfiguree, depotsDuModule } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { STATUTS_MODULE } from "@/content/modules-db";
 import { Corps } from "@/components/Corps";
 import { LectureModule } from "@/components/LectureModule";
 
@@ -18,8 +20,11 @@ const NATURES: Record<string, string> = {
 
 export default async function PageModule({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const mod = await getModuleComplet(id);
+  // Un module déposé non publié n'est lisible qu'en tutorat ou en administration.
+  const session = await getSession();
+  const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
+  const depose = mod.origine === "base";
 
   const critere = typeof mod.critereId === "string" ? getCritere(mod.critereId) : undefined;
   const bloc = typeof mod.bloc === "number" ? blocsCompetence.find((b) => b.numero === mod.bloc) : undefined;
@@ -159,19 +164,28 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
   return (
     <article>
       <p className="fil">
-        <Link href="/">Programme</Link> › {typeof mod.critereId === "string" ? mod.critereId : mod.titre}
+        <Link href="/">Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
       </p>
 
       <section className="panneau-titre">
         <ul className="meta-module" style={{ margin: 0 }}>
-          <li className="etiquette etiquette--code">
-            {mod.critereId === A_PRECISER ? <code className="a-preciser">{A_PRECISER}</code> : mod.critereId}
-          </li>
+          {depose ? (
+            <li className="etiquette etiquette--site">Module déposé</li>
+          ) : null}
+          {depose && mod.critereId === A_PRECISER ? null : (
+            <li className="etiquette etiquette--code">
+              {mod.critereId === A_PRECISER ? <code className="a-preciser">{A_PRECISER}</code> : mod.critereId}
+            </li>
+          )}
           {critere?.obligatoire && <li className="etiquette etiquette--obligatoire">Obligatoire</li>}
           <li className="legende">
             {bloc ? `Bloc ${bloc.numero} — ` : ""}
-            {mod.affectation === "tronc-commun" ? "tronc commun, tous postes" : "critère de poste"}
-            {" · "}niveau{mod.niveaux.length > 1 ? "x" : ""} {mod.niveaux.join(", ")}
+            {mod.affectation === "tronc-commun"
+              ? "tronc commun, tous postes"
+              : depose
+                ? `filière${mod.postes.length > 1 ? "s" : ""} ${mod.postes.join(", ")}`
+                : "critère de poste"}
+            {mod.niveaux.length > 0 ? ` · niveau${mod.niveaux.length > 1 ? "x" : ""} ${mod.niveaux.join(", ")}` : depose ? " · tous niveaux" : ""}
             {" · "}revalidation {typeof mod.periodiciteMois === "number" ? `${mod.periodiciteMois} mois` : A_PRECISER}
           </li>
         </ul>
@@ -200,6 +214,12 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
         <p className="encart encart--attention">
           Ce critère est un emplacement ouvert : son contenu de formation reste à rédiger.
           {nbQuestions > 0 ? " Son évaluation, elle, est disponible à partir des questions déposées." : ""}
+        </p>
+      )}
+      {depose && mod.statut !== "publie" && (
+        <p className="encart encart--attention">
+          Module déposé au statut « {STATUTS_MODULE[mod.statut ?? "brouillon"]} » : visible des tuteurs et
+          administrateurs seulement, absent du programme des apprenants.
         </p>
       )}
 

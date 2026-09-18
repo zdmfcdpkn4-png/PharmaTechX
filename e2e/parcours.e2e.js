@@ -453,6 +453,107 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("a:has-text('Schéma déposé test')");
   ok("document déposé en base, servi, rattaché au module");
 
+  // 12b. module déposé (question 10) : création, brouillon invisible, publication au programme
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module déposé test");
+  await page.fill("input[name=objectif]", "Objectif du module déposé.");
+  await page.fill("textarea[name=presentation]", "Présentation courte du **module déposé**.\n\n- point un\n- point deux");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1c]");
+  await page.fill("input[name=seuil]", "70");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idModule = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.goto(BASE + "/");
+  await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
+  assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "brouillon absent du programme");
+  await page.goto(BASE + "/module/" + idModule);
+  await page.waitForSelector("text=visible des tuteurs et administrateurs seulement");
+  await page.goto(BASE + "/admin/modules/" + idModule);
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+  await page.goto(BASE + "/");
+  await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
+  await page.waitForSelector("h3:has-text('Module déposé test')");
+  await page.selectOption("label:has-text('Niveau visé') select", "P1");
+  assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "absent au niveau P1");
+  ok("module déposé : brouillon invisible, publié au programme Chimiothérapie · N1c");
+
+  // 12c. questions déposées dans le module déposé, présentation et seuil propre
+  const TEXTE_DEPOT = `QCM 1. Question déposée une (une seule réponse)
+A. Bonne (V)
+B. Mauvaise (F)
+Justification : justification une.
+
+QIM 2. Question déposée deux, indiquer les propositions exactes.
+A. Vraie (V)
+B. Fausse (F)
+C. Vraie (V)
+Justification : justification deux.`;
+  await page.goto(BASE + "/admin/questions/import?module=" + idModule);
+  await page.selectOption("select[name=moduleId]", idModule);
+  await page.fill("textarea[name=texte]", TEXTE_DEPOT);
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 2 questions')");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=2 questions ajoutées");
+  for (let i = 0; i < 3; i++) {
+    await page.goto(BASE + "/admin/questions?module=" + idModule + "&statut=a_verifier");
+    const bouton = page.locator("form button:has-text('Valider')").first();
+    if (!(await bouton.count())) break;
+    await bouton.click();
+    await page.waitForLoadState("networkidle");
+  }
+  await page.goto(BASE + "/module/" + idModule);
+  await page.waitForSelector("h2:has-text('comporte 2 questions')");
+  await page.waitForSelector("h2:has-text('Présentation')");
+  await page.waitForSelector("strong:has-text('module déposé')");
+  await page.waitForSelector("li:has-text('point un')");
+  const seuilDe = async (id) =>
+    (await page.textContent("section.panneau-titre p")).replace(/ /g, " ");
+  await page.goto(BASE + "/module/" + idModule + "/evaluation");
+  assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/);
+  ok("module déposé : deux questions importées et validées, présentation affichée, seuil propre 70 %");
+
+  // 12d. barème réglable : QIM à 0,25 et seuil par défaut 85 %, annoncés, puis valeurs rétablies
+  await page.goto(BASE + "/admin/bareme");
+  await page.fill("input[name=qim1]", "0.25");
+  await page.fill("input[name=seuilDefaut]", "85");
+  await page.click("button:has-text('Enregistrer le barème')");
+  await page.waitForURL(/ok=enregistre/);
+  await page.waitForSelector("text=1 discordance → 0,25");
+  await page.goto(BASE + "/");
+  await page.waitForSelector("text=1 discordance → 0,25");
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  assert.match(await seuilDe("comportement-zac"), /Seuil de réussite 85 %/, "seuil par défaut sur un module du code");
+  await page.goto(BASE + "/module/" + idModule + "/evaluation");
+  assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/, "seuil propre du module déposé conservé");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("p.question-bareme:has-text('1 discordance → 0,25')");
+  await page.goto(BASE + "/admin/bareme");
+  await page.click("button:has-text('Rétablir les valeurs par défaut')");
+  await page.waitForURL(/ok=defaut/);
+  await page.goto(BASE + "/");
+  await page.waitForSelector("text=1 discordance → 0,5");
+  ok("barème réglé : QIM à 0,25 et seuil par défaut 85 % annoncés à l'accueil et sous la question, puis valeurs par défaut rétablies");
+
+  // 12e. document général proposé aux profils Chimiothérapie · N1c
+  await page.goto(BASE + "/admin/documents");
+  await page.setInputFiles("input[name=fichier]", PNG);
+  await page.fill("input[name=titre]", "Document profil chimio");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1c]");
+  await page.click("button:has-text('Déposer')");
+  await page.waitForSelector("text=Document déposé");
+  await page.waitForSelector("text=profils : chimiotherapie, N1c");
+  await page.goto(BASE + "/");
+  assert.equal(await page.locator("a:has-text('Document profil chimio')").count(), 0, "invisible sans filière");
+  await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
+  await page.waitForSelector("a:has-text('Document profil chimio')");
+  await page.selectOption("label:has-text('Niveau visé') select", "N2");
+  assert.equal(await page.locator("a:has-text('Document profil chimio')").count(), 0, "invisible au niveau N2");
+  ok("document général proposé aux profils Chimiothérapie · N1c seulement");
+
   // 13. déconnexion, connexion tuteur, journal interdit
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);

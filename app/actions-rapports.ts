@@ -8,7 +8,7 @@ import { empreinte, sceauValide } from "@/lib/sceau";
 import { agentParIdentifiant } from "@/lib/agents";
 import { normaliserIdentifiant } from "@/lib/identifiant";
 import { emettreRapport } from "@/lib/rapports";
-import { getModule } from "@/content/store";
+import { moduleExiste } from "@/content/store";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import type { ReponseEmission } from "./types-rapports";
 
@@ -41,7 +41,7 @@ export async function actionEmettreRapport(entree: {
   if (!sceauValide(sansJeton, jeton)) {
     return { ok: false, erreur: "Ce résultat n'a pas été produit par le serveur : émission refusée." };
   }
-  if (!getModule(r.moduleId)) return { ok: false, erreur: "Module inconnu." };
+  if (!(await moduleExiste(r.moduleId))) return { ok: false, erreur: "Module inconnu." };
   if (r.verdict === "non_concluant" || r.concluant === false) {
     return {
       ok: false,

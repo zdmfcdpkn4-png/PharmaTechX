@@ -1206,3 +1206,8 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 @media print {
   .nav-admin, .signaler, .sommaire { display: none !important; }
 }
+
+/* ── listes de cases (profils d'un module ou d'un document) ───────────────── */
+.cases { display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; margin: 0.25rem 0 0.5rem; }
+.cases label { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.9375rem; min-height: var(--cible); }
+.cases input { width: 18px; height: 18px; accent-color: var(--marque); }

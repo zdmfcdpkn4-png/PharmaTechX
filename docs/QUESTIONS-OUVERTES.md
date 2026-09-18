@@ -93,10 +93,13 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 ## B. Barèmes et règles d'évaluation
 
-10. **Barème QIM** 1 / 0,5 / 0 selon les discordances — à confirmer (hérité).
+10. **Barème QIM** 1 / 0,5 / 0 / 0 selon 0, 1, 2 discordances et au-delà —
+    valeurs par défaut, **réglables** depuis `/admin/bareme` (décision du
+    18/09/2026, question 10) ; `[à préciser]` les valeurs à retenir.
 11. **Barème du schéma à compléter** repris du Lecteur QIM · QCM : 1 point au
     plus, chaque légende vaut 1/n, fausse elle le retire, vide elle ne compte
-    pas, plancher 0. `[à préciser]` confirmer, ou tout ou rien comme un QCM.
+    pas, plancher 0 — valeurs par défaut, **réglables** (mode partiel ou tout
+    ou rien, légende vide comptée ou non) ; `[à préciser]` le réglage à retenir.
 12. **Éliminatoire sur un schéma** : `[à préciser]` toute légende fausse *ou
     vide* rend le critère non acquis (choix posé) ou seules les fausses.
 13. **Présentation des QIM** : Vrai/Faux par proposition (défaut) ou cases à
@@ -105,7 +108,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     `[à préciser]` le conserver tel quel, ou le réserver aux modules déjà
     évalués une fois en mode évaluation.
 15. **Tirages** : Découverte 5, Habilitation 10 (toutes éliminatoires
-    incluses), Complet — `[à préciser]` tailles à confirmer.
+    incluses), Complet — tailles par défaut, **réglables** depuis
+    `/admin/bareme`, le tirage d'habilitation ne descendant pas sous le
+    minimum de questions ; `[à préciser]` tailles à retenir.
 16. **Schéma, mode de réponse par défaut** : `[à préciser]` écrire (défaut) ou
     choisir dans la liste mélangée.
 
@@ -114,9 +119,15 @@ telle. Ordre : ce qui change le déploiement en premier.
 17. **Statut à l'import** : toute question importée entre « à vérifier », même
     avec corrigé complet (choix posé). `[à préciser]` conserver, ou valider
     d'office les questions dont le corrigé est complet.
-18. **Rédaction des modules** (les 56 textes restants) : `[à préciser]` en
-    base par les tuteurs (à construire) ou dans le code par le pharmacien
-    (état livré).
+18. **Rédaction des modules** (les 56 textes restants) — tranché le
+    18/09/2026 (question 10, choix a) : dans le code, par le pharmacien
+    responsable ; aucun éditeur de texte en base. En complément, modules
+    déposés depuis `/admin/modules` (présentation courte, profils, seuil,
+    questions et documents rattachés). `[à préciser]` réserver la publication
+    d'un module déposé à l'administrateur (choix posé : tuteur et
+    administrateur publient) ; `[à préciser]` un module déposé rattaché à un
+    critère de la fiche s'ajoute à l'emplacement du critère sans le
+    remplacer (choix posé).
 19. **Marquage « O » des critères obligatoires** et **correspondance blocs ↔
     niveaux** — deux arbitrages hérités, toujours en attente.
 20. **Axe « poste de travail »** : la fiche raisonne en filières et niveaux ;
@@ -143,11 +154,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     images dans le fichier.
 27. **Sessions** de 12 h non révocables individuellement (hérité) :
     `[à préciser]` conserver.
-31. **Paramètres de la décision** (`lib/decision.ts`) : `[à préciser]` largeur
-    de la bande de garde égale au poids d'une question du tirage (70 à 89 %
-    pour un seuil de 80 % sur dix questions ; choix posé), ou une demi-question,
-    ou une largeur fixe en points ; `[à préciser]` minimum de 10 questions
-    validées pour conclure (taille du tirage d'habilitation ; choix posé).
+31. **Paramètres de la décision** (`lib/decision.ts`) — **réglables** depuis
+    `/admin/bareme` (question 10) : largeur de la bande de garde égale au
+    poids d'une question du tirage (défaut ; 70 à 89 % pour un seuil de 80 %
+    sur dix questions), ou une demi-question, ou une largeur fixe en points ;
+    minimum de questions pour conclure (défaut 10) ; seuil de réussite par
+    défaut (80 %) et seuil par module. `[à préciser]` les valeurs à retenir ;
+    chaque résultat scellé garde le barème de son époque.
 32. **Exclusions** : une question retirée de la banque après signalement est
     exclue du calcul, les exclusions étant fixées au premier acte de décision
     (arbitrage ou visa du tuteur) et jamais modifiées ensuite, même si une

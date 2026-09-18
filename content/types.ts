@@ -13,7 +13,9 @@
 export const A_PRECISER = "[à préciser]" as const;
 
 import { motAttendu, verdictLegende, type Legende, type Repere } from "./schema";
+import { BAREME_DEFAUT, libelleQim, libelleSchema, pointsQim, type Bareme } from "./bareme";
 export type { Legende, Repere };
+export type { Bareme } from "./bareme";
 
 /**
  * Niveaux d'habilitation de l'unité.
@@ -98,27 +100,13 @@ export interface ImageQuestion {
   alt: string;
 }
 
-/**
- * Barème des QIM, exprimé en fraction du point.
- *
- * Valeurs retenues par défaut dans l'application, à confirmer par le
- * pharmacien responsable : le barème réel est [à préciser].
+/*
+ * Barèmes des QIM et des schémas à compléter : réglables par l'administrateur
+ * (`content/bareme.ts`, décision du 18/09/2026, question 10). Les valeurs par
+ * défaut sont celles reprises du Lecteur QIM · QCM : QIM 1 · 0,5 · 0 selon les
+ * discordances ; schéma 1 point au plus, chaque légende valant 1/n, fausse
+ * elle le retire, vide elle ne compte pas, plancher zéro.
  */
-export const BAREME_QIM: Record<number, number> = {
-  0: 1, // aucune discordance
-  1: 0.5, // une discordance
-};
-/** Au-delà d'une discordance, la question ne rapporte rien. */
-export const BAREME_QIM_AU_DELA = 0;
-
-/**
- * Barème d'un schéma à compléter, repris du Lecteur QIM · QCM : 1 point au
- * plus quel que soit le nombre de légendes, chacune valant 1/n — juste elle
- * l'ajoute, fausse elle le retire, laissée vide elle ne compte pas — et
- * plancher zéro. Valeur à confirmer par le pharmacien responsable :
- * [à préciser].
- */
-export const BAREME_SCH = { max: 1, plancher: 0 } as const;
 
 /**
  * Question d'évaluation.
@@ -152,6 +140,9 @@ export interface Question {
   /** `code` pour une question versionnée avec le site, `base` pour une question déposée. */
   origine?: "code" | "base";
 }
+
+/** Origine d'un module : versionné avec le code, ou déposé depuis l'administration. */
+export type OrigineModule = "code" | "base";
 
 /**
  * Mise en situation : une vignette décrivant un cas concret de l'unité, suivie
@@ -208,11 +199,21 @@ export interface Module {
   questions: Question[];
   /** Vignettes de mise en situation et leurs questions. */
   misesEnSituation: MiseEnSituation[];
-  /** Seuil de réussite en pourcentage de points. */
+  /**
+   * Seuil de réussite en pourcentage de points. Pour un module du code, la
+   * valeur effective est résolue à la lecture (`content/store.ts`) : seuil
+   * réglé pour ce module, sinon seuil par défaut du barème.
+   */
   seuilReussite: number;
   /** Périodicité de revalidation, en mois. */
   periodiciteMois: number | typeof A_PRECISER;
   bibliographie: Reference[];
+  /** `code` (défaut) ou `base` pour un module déposé depuis l'administration. */
+  origine?: OrigineModule;
+  /** Module déposé : filières auxquelles il est proposé (vide = tronc commun). */
+  filieres?: string[];
+  /** Module déposé : `brouillon`, `publie` ou `retire`. */
+  statut?: "brouillon" | "publie" | "retire";
 }
 
 export interface Bloc {
@@ -323,16 +324,16 @@ function arrondi(n: number): number {
 }
 
 /**
- * Note d'une question, sur 1 point.
+ * Note d'une question, sur 1 point, selon le barème en vigueur.
  *
  * QCM : tout ou rien. QIM : barème à discordance. SCH : chaque légende vaut
- * 1/n, juste elle l'ajoute, fausse elle le retire, vide elle ne compte pas ;
- * plancher zéro. Dans les trois formats, `discordances === 0` signifie que la
- * réponse est entièrement exacte — c'est ce que lit la règle des questions
- * éliminatoires.
+ * 1/n, juste elle l'ajoute, fausse elle le retire, vide elle ne compte pas
+ * (réglable) ; plancher zéro ; ou tout ou rien. Dans les trois formats,
+ * `discordances === 0` signifie que la réponse est entièrement exacte — c'est
+ * ce que lit la règle des questions éliminatoires.
  */
-export function noterQuestion(q: Question, rep: ReponseApprenant): NoteQuestion {
-  if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {});
+export function noterQuestion(q: Question, rep: ReponseApprenant, bareme: Bareme = BAREME_DEFAUT): NoteQuestion {
+  if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {}, bareme);
 
   const attendues = new Set(q.bonnesReponses);
   const cochees = new Set(rep.choix);
@@ -358,15 +359,15 @@ export function noterQuestion(q: Question, rep: ReponseApprenant): NoteQuestion 
     return { note: discordances === 0 ? 1 : 0, discordances, nonJugees: 0 };
   }
 
-  const note = BAREME_QIM[discordances] ?? BAREME_QIM_AU_DELA;
+  const note = arrondi(pointsQim(discordances, bareme));
   return { note, discordances, nonJugees };
 }
 
-function noterSchema(q: Question, reponses: Record<string, string>): NoteQuestion {
+function noterSchema(q: Question, reponses: Record<string, string>, bareme: Bareme): NoteQuestion {
   const legendes = q.legendes ?? [];
   const n = legendes.length;
   if (n === 0) return { note: 0, discordances: 0, nonJugees: 0 };
-  const unite = BAREME_SCH.max / n;
+  const unite = 1 / n;
   let brut = 0;
   let discordances = 0;
   let nonJugees = 0;
@@ -377,11 +378,15 @@ function noterSchema(q: Question, reponses: Record<string, string>): NoteQuestio
       brut -= unite;
       discordances += 1;
     } else {
+      if (bareme.schema.videRetire) brut -= unite;
       nonJugees += 1;
       discordances += 1;
     }
   }
-  const note = arrondi(Math.min(BAREME_SCH.max, Math.max(BAREME_SCH.plancher, brut)));
+  if (bareme.schema.mode === "tout_ou_rien") {
+    return { note: discordances === 0 ? 1 : 0, discordances, nonJugees };
+  }
+  const note = arrondi(Math.min(1, Math.max(0, brut)));
   return { note, discordances, nonJugees };
 }
 
@@ -398,14 +403,10 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
     : "QCM — une seule réponse";
 }
 
-/** Barème lisible d'un format, annoncé sous chaque énoncé. */
-export function libelleBareme(q: Pick<Question, "type" | "enonce">): string {
-  if (q.type === "QIM") {
-    return "0 discordance → 1 point ; 1 discordance → 0,5 ; 2 ou plus → 0.";
-  }
-  if (q.type === "SCH") {
-    return "1 point au plus : chaque légende vaut sa part, une légende fausse la retire, une légende vide ne compte pas ; jamais moins de 0.";
-  }
+/** Barème lisible d'un format, annoncé sous chaque énoncé, selon le barème en vigueur. */
+export function libelleBareme(q: Pick<Question, "type" | "enonce">, bareme: Bareme = BAREME_DEFAUT): string {
+  if (q.type === "QIM") return libelleQim(bareme);
+  if (q.type === "SCH") return libelleSchema(bareme);
   return q.enonce.includes("plusieurs")
     ? "Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu."
     : "1 point si la réponse est exacte, 0 sinon.";

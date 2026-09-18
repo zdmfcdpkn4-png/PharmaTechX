@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { comptesParModule, listerQuestions, type StatutQuestion } from "@/content/banque-db";
-import { getTousModules } from "@/content/store";
+import { getTousModulesAvecDeposes } from "@/content/store";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
-import { LIBELLES_STATUT } from "./commun";
+import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export default async function Questions({
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
-  const modules = getTousModules();
+  const modules = await getTousModulesAvecDeposes();
   const statut = (["a_verifier", "valide", "retire"] as const).includes(p.statut as StatutQuestion)
     ? (p.statut as StatutQuestion)
     : undefined;
@@ -38,10 +38,7 @@ export default async function Questions({
     ...(moduleId ? { module: moduleId } : {}),
     ...(statut ? { statut } : {}),
   }).toString()}`;
-  const titreModule = (id: string) => {
-    const m = modules.find((x) => x.id === id);
-    return m ? `${typeof m.critereId === "string" ? m.critereId : "—"} — ${m.titre}` : id;
-  };
+  const titreModule = (id: string) => titreDe(modules, id);
 
   return (
     <>
@@ -77,7 +74,7 @@ export default async function Questions({
                 const c = comptes[m.id];
                 return (
                   <option key={m.id} value={m.id}>
-                    {typeof m.critereId === "string" ? m.critereId : "—"} — {m.titre.slice(0, 60)}
+                    {etiquetteModule(m)} — {m.titre.slice(0, 60)}
                     {c ? ` (${c.valides} validée${c.valides > 1 ? "s" : ""}, ${c.aVerifier} à vérifier)` : ""}
                   </option>
                 );

@@ -38,6 +38,9 @@ export const TABLES = [
   "journal",
   "tentatives_connexion",
   "signatures",
+  "modules_deposes",
+  "reglages_modules",
+  "parametres",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -217,6 +220,44 @@ export const SCHEMA: string[] = [
      cree_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
    )`,
 
+  // ── modules déposés depuis l'administration (décision du 18/09/2026,
+  // question 10) : titre, objectif, présentation courte, rattachement à un
+  // critère de la fiche, profils (filières, niveaux, parcours), seuil propre,
+  // cycle brouillon → publié → retiré. Les questions et documents s'y
+  // rattachent par `module_id`. Aucune donnée nominative.
+  `CREATE TABLE IF NOT EXISTS modules_deposes (
+     id            TEXT PRIMARY KEY,
+     titre         TEXT NOT NULL,
+     objectif      TEXT NOT NULL DEFAULT '',
+     presentation  TEXT NOT NULL DEFAULT '',
+     critere_id    TEXT,
+     filieres      JSONB NOT NULL DEFAULT '[]'::jsonb,
+     niveaux       JSONB NOT NULL DEFAULT '[]'::jsonb,
+     parcours      JSONB NOT NULL DEFAULT '["integration","maintien"]'::jsonb,
+     seuil         INTEGER NOT NULL DEFAULT 80 CHECK (seuil BETWEEN 50 AND 100),
+     duree_minutes INTEGER NOT NULL DEFAULT 0,
+     statut        TEXT NOT NULL DEFAULT 'brouillon' CHECK (statut IN ('brouillon','publie','retire')),
+     cree_par      TEXT NOT NULL,
+     cree_le       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     edite_le      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     publie_le     TIMESTAMPTZ,
+     version       INTEGER NOT NULL DEFAULT 1
+   )`,
+  // seuil de réussite réglé pour un module du code (sinon : seuil par défaut du barème)
+  `CREATE TABLE IF NOT EXISTS reglages_modules (
+     module_id   TEXT PRIMARY KEY,
+     seuil       INTEGER NOT NULL CHECK (seuil BETWEEN 50 AND 100),
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  // paramètres réglables du site (clé « bareme » : content/bareme.ts)
+  `CREATE TABLE IF NOT EXISTS parametres (
+     cle         TEXT PRIMARY KEY,
+     valeur      JSONB NOT NULL,
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+
   // ── colonnes ajoutées après la première version (idempotent) ──────────────
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS signature_id TEXT`,
   // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
@@ -235,6 +276,9 @@ export const SCHEMA: string[] = [
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id)`,
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_identifiant TEXT`,
   `ALTER TABLE visas DROP COLUMN IF EXISTS nom`,
+  // documents liés à un ou plusieurs profils (filières, niveaux) — question 10
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
