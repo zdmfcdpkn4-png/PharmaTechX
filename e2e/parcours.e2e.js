@@ -144,7 +144,7 @@ Justification : cf. procédure interne.`,
   // icône d'onglet : le logo Pharmacotechnie, servi avant toute session
   // (le filtre d'entrée laisse passer les fichiers `.png`)
   const hrefIcone = await page.getAttribute('link[rel="icon"]', "href");
-  assert.equal(hrefIcone, "/pharmaco-web.png", "icône d'onglet = logo Pharmacotechnie");
+  assert.equal(hrefIcone, "/pharmaco-icone.png", "icône d'onglet = emblème Pharmacotechnie");
   const icone = await page.request.get(BASE + hrefIcone);
   assert.equal(icone.status(), 200, "icône servie sans session");
   assert.match(icone.headers()["content-type"], /image\/png/);

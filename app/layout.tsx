@@ -16,13 +16,13 @@ export const metadata: Metadata = {
   title: "Formation et habilitation — Pharmacotechnie",
   description:
     "Parcours de formation initiale et de maintien d'habilitation de l'équipe de production de pharmacotechnie, CHD Vendée.",
-  // Icône d'onglet et de favori : le logo Pharmacotechnie, déjà servi depuis
-  // `public/` pour les rapports (`lib/logos.ts`). Carré, 96 × 96, fond
-  // transparent. Servi sans session : le filtre d'entrée laisse passer les
-  // fichiers `.png` (`middleware.ts`), l'icône s'affiche donc aussi sur
-  // `/connexion`. Pas de copie dans `app/` : un seul fichier à remplacer si
-  // le logo change.
-  icons: { icon: "/pharmaco-web.png" },
+  // Icône d'onglet et de favori : l'emblème du logo « Pharmacotechnie — unité
+  // de production des chimiothérapies » fourni le 18/09/2026, détouré carré
+  // (180 × 180). Le texte du logo n'y figure pas : illisible à la taille d'un
+  // onglet. Le logo porté par les rapports (`lib/logos.ts`) reste distinct.
+  // Servi sans session : le filtre d'entrée laisse passer les fichiers `.png`
+  // (`middleware.ts`), l'icône s'affiche donc aussi sur `/connexion`.
+  icons: { icon: "/pharmaco-icone.png" },
   robots: { index: false, follow: false },
 };
 
