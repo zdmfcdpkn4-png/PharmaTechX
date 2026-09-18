@@ -46,6 +46,8 @@ services:
         value: aucune             # « pseudonyme » après validation RGPD — voir docs/RGPD.md
       - key: PROCEDURE_HABILITATION
         value: ""                 # référence de la procédure interne — [à compléter]
+      - key: MISE_EN_SERVICE
+        value: ""                 # AAAA-MM-JJ à la mise en service ; vide = phase d'essai
 
 databases:
   - name: pharmatechx-db

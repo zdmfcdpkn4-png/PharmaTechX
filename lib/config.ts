@@ -56,5 +56,18 @@ export function procedureReference(): string | null {
   return r || null;
 }
 
+/**
+ * Date de mise en service du dispositif comme preuve (`MISE_EN_SERVICE`,
+ * AAAA-MM-JJ). Absente : le site est en phase d'essai, et chaque écran et
+ * chaque rapport porte « Phase d'essai — ne vaut pas preuve ». Posée par
+ * l'administrateur à l'issue de la liste de mise en service
+ * (`docs/DEPLOIEMENT.md`). Constat du 18/09/2026 : service et base sur plans
+ * gratuits, donc phase d'essai.
+ */
+export function miseEnService(): string | null {
+  const v = (process.env.MISE_EN_SERVICE ?? "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+
 /** Nom de l'établissement et de l'unité, tels qu'ils figurent sur les rapports. */
 export const ETABLISSEMENT = "CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie";

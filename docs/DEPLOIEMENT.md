@@ -29,6 +29,7 @@ tout usage du dispositif comme preuve.
 | `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `pseudonyme` (rapports enregistrés sous identifiant d'agent, sans nom) — voir `docs/RGPD.md` avant d'activer |
 | `RAPPORTS_CONSERVATION_MOIS` | non | durée annoncée sur les rapports enregistrés |
 | `PROCEDURE_HABILITATION` | non | référence de la procédure interne portée sur les écrans et les rapports (preuve opposable de l'étape 2) ; vide = marqueur `[à compléter]` |
+| `MISE_EN_SERVICE` | non | date (AAAA-MM-JJ) de mise en service comme preuve ; absente = phase d'essai, mention « Phase d'essai — ne vaut pas preuve » sur les écrans et les rapports |
 
 Changer `AUTH_SECRET` déconnecte toutes les sessions et invalide les sceaux
 des résultats non encore émis (ceux tenus en mémoire des onglets ouverts) ;
@@ -75,6 +76,14 @@ Render à « Apply ». Les plans gratuits sont exclus pour un dispositif qui
 sert de preuve : mise en veille après inactivité, base gratuite à durée
 limitée, aucune sauvegarde garantie.
 
+**État au 18/09/2026.** Service et base sur les plans gratuits : le site est
+en phase d'essai (`MISE_EN_SERVICE` absente), et chaque écran et chaque
+rapport le dit. La base gratuite est à durée limitée `[à vérifier]` et sans
+sauvegarde : tout ce qui y est saisi pendant l'essai (codes, banque de
+questions, signature, identifiants) peut disparaître avec elle. Exporter un
+`pg_dump` dès que du contenu compte, et passer service et base sur plan
+payant avant la mise en service.
+
 **Réseau et TLS.** La base est jointe par le réseau interne de Render :
 `DATABASE_SSL=disable` convient. Le service est servi en HTTPS par Render ;
 un nom de domaine de l'établissement se déclare dans le tableau de bord
@@ -111,6 +120,11 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
 7. **Procédure interne** publiée, qui décrit le dispositif, le visa par clic,
    la signature incrustée, la correspondance des identifiants, la purge
    manuelle et la conservation.
+8. **Mise en service prononcée** : poser `MISE_EN_SERVICE` à sa date
+   (AAAA-MM-JJ). La mention « Phase d'essai — ne vaut pas preuve » disparaît
+   des écrans et des rapports, remplacée par « en service depuis le … » ;
+   `/api/sante` renvoie la date. Les rapports émis avant cette date restent
+   marqués « phase d'essai » à l'impression : ils ne valent pas preuve.
 
 ## Vercel (repli, non retenu)
 

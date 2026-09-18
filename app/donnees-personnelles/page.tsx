@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { conservationActive, dureeConservationMois, procedureReference } from "@/lib/config";
-import { STATUT_DISPOSITIF } from "@/lib/statut";
+import { conservationActive, dureeConservationMois, miseEnService, procedureReference } from "@/lib/config";
+import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ export default function DonneesPersonnelles() {
   const active = conservationActive();
   const duree = dureeConservationMois();
   const procedure = procedureReference();
+  const enService = miseEnService();
   const aCompleter = <code className="a-preciser">[à compléter]</code>;
 
   return (
@@ -77,7 +78,7 @@ export default function DonneesPersonnelles() {
       </section>
 
       <p className="encart">
-        Statut du dispositif : {STATUT_DISPOSITIF.long}, décision du {STATUT_DISPOSITIF.decideLe} ; le rapport ne vaut pas habilitation. Procédure de référence : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
+        {enService ? `En service depuis le ${dateMiseEnServiceLisible(enService)}. ` : "Phase d'essai : aucun rapport ne vaut preuve tant que la mise en service n'est pas prononcée. "}Statut du dispositif : {STATUT_DISPOSITIF.long}, décision du {STATUT_DISPOSITIF.decideLe} ; le rapport ne vaut pas habilitation. Procédure de référence : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
       </p>
     </article>
   );

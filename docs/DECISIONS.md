@@ -101,6 +101,9 @@ l'horloge du serveur pour contrôler la source de temps. Sans conservation, la
 preuve repose sur les signatures manuscrites du rapport téléchargé. Ce que le
 code ne garantit pas reste consigné dans `docs/QUESTIONS-OUVERTES.md`, A.3 :
 source de temps de l'hébergeur, durée de référence, sauvegardes, procédure.
+Tant que `MISE_EN_SERVICE` (date) n'est pas posée, écrans et rapports portent
+« Phase d'essai — ne vaut pas preuve » ; constat du 18/09/2026 : plans
+gratuits, phase d'essai.
 
 **Hébergeur** (question 8, choix a, 18/09/2026) : **Render**, service en ligne
 `pharmatechx.onrender.com` créé à la main le 18/09/2026, région Francfort,

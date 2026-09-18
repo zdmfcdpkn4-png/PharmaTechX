@@ -21,6 +21,18 @@ export const STATUT_DISPOSITIF = {
   decideLe: "18/09/2026",
 } as const;
 
+/** Tant que la mise en service n'est pas prononcée (`MISE_EN_SERVICE` absente). */
+export const STATUT_ESSAI = {
+  court: "Phase d'essai — ne vaut pas preuve",
+  long: "site en phase d'essai : aucun rapport ne vaut preuve tant que la mise en service n'est pas prononcée",
+} as const;
+
+/** « 01/10/2026 » pour « 2026-10-01 » ; la valeur telle quelle si elle n'a pas ce format. */
+export function dateMiseEnServiceLisible(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
 export const PROCEDURE_A_COMPLETER = "[à compléter]";
 
 /** Référence affichée de la procédure interne ; le marqueur reste visible tant qu'elle n'est pas renseignée. */

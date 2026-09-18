@@ -36,8 +36,9 @@ vérifier dans le tableau de bord. `docs/DEPLOIEMENT.md` détaille les
 vérifications du service existant, le blueprint `render.yaml` pour le
 recréer, les sauvegardes et la **liste de mise en service** (DPO, DSI,
 variables, comptes, essai de restauration, procédure) ; Vercel y reste
-documenté en repli. Le schéma de la base est appliqué automatiquement au
-premier accès. Puis `/connexion` → **Créer l'administrateur initial** : le
+documenté en repli. Au 18/09/2026, service et base sont sur les plans
+gratuits : phase d'essai, `MISE_EN_SERVICE` absente. Le schéma de la base est
+appliqué automatiquement au premier accès. Puis `/connexion` → **Créer l'administrateur initial** : le
 code n'est affiché qu'une fois.
 
 ## 3. Les trois rôles
@@ -153,7 +154,9 @@ preuve opposable de l'étape 2** en audit BPP 2023 / ISO 9001, jamais une
 preuve d'habilitation. Chaque écran et chaque rapport portent la mention, la
 référence de la procédure interne (`PROCEDURE_HABILITATION`, sinon
 `[à compléter]`) et des dates à l'horloge du serveur ; `/api/sante` expose
-cette horloge pour contrôler la source de temps de l'hébergeur.
+cette horloge pour contrôler la source de temps de l'hébergeur. Tant que
+`MISE_EN_SERVICE` (date) n'est pas posée, le site est en phase d'essai :
+écrans et rapports portent « Phase d'essai — ne vaut pas preuve ».
 
 **Signature** : le pharmacien dépose une image depuis `/admin/signature`
 (réduite à 600 px par le navigateur, rattachée à son code admin) ; elle est
@@ -196,7 +199,8 @@ exclusions, arbitrage), identifiants d'agents, constructeur de rapport
 `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
-serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme` :
+serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme`
+et `MISE_EN_SERVICE` posée :
 amorçage, codes, dépôt de la signature, création d'un identifiant d'agent,
 création et import de dix questions avec image, éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission

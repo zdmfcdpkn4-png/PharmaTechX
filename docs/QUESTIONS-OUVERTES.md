@@ -58,7 +58,11 @@ telle. Ordre : ce qui change le déploiement en premier.
    (hébergement externe, nom de domaine, accès réseau, responsable des
    sauvegardes). Le dépôt n'a qu'une branche, déployée à chaque poussée :
    `[à préciser]` créer une branche de production distincte. Vercel reste
-   documenté en repli, non retenu ; l'hébergement interne est écarté.
+   documenté en repli, non retenu ; l'hébergement interne est écarté. Constat
+   du 18/09/2026 : service et base sur plans gratuits, donc phase d'essai
+   (`MISE_EN_SERVICE` absente) ; base gratuite à durée limitée `[à vérifier]`
+   et sans sauvegarde : `pg_dump` pendant l'essai, plans payants avant la mise
+   en service.
 5. **Rôle « pharmacien »** : `[à préciser]` le visa du pharmacien responsable
    est porté par un code d'administration (choix posé), ou un rôle distinct
    est créé.

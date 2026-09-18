@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { baseConfiguree, baseJoignable } from "@/lib/db";
 import { modeStockage } from "@/lib/stockage";
-import { modeConservation } from "@/lib/config";
+import { miseEnService, modeConservation } from "@/lib/config";
 import { secretConfigure } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +28,8 @@ export async function GET() {
       horloge: new Date().toISOString(),
       commit: process.env.RENDER_GIT_COMMIT || null,
       branche: process.env.RENDER_GIT_BRANCH || null,
+      // Date de mise en service comme preuve ; null = phase d'essai.
+      mise_en_service: miseEnService(),
     },
     { status: base && !joignable ? 503 : 200, headers: { "Cache-Control": "no-store" } },
   );

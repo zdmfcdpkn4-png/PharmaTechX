@@ -1,4 +1,5 @@
 import { sessionRequise } from "@/lib/auth";
+import { miseEnService } from "@/lib/config";
 import { dataUri, signatureCourante } from "@/lib/signatures";
 import { DepotSignature } from "@/components/DepotSignature";
 import { actionRetirerSignature } from "./actions";
@@ -17,6 +18,7 @@ export default async function Signature({ searchParams }: { searchParams: Promis
   const p = await searchParams;
   const session = await sessionRequise("admin");
   const courante = await signatureCourante(session.acces);
+  const enService = miseEnService();
 
   return (
     <>
@@ -55,6 +57,7 @@ export default async function Signature({ searchParams }: { searchParams: Promis
         règlement eIDAS : la valeur de preuve vient du registre, de l&apos;empreinte et du journal.
         Le rapport clos est une preuve opposable de l&apos;étape 2 (décision du 18/09/2026) : la
         procédure de référence doit décrire ce mode de signature.
+        {enService ? "" : " Le site est en phase d'essai : les rapports ne valent pas preuve tant que la mise en service n'est pas prononcée."}
       </p>
     </>
   );

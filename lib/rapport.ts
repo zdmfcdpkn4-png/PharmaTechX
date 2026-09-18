@@ -7,7 +7,7 @@ import {
   type Decision,
   type Verdict,
 } from "./decision";
-import { STATUT_DISPOSITIF, libelleProcedure } from "./statut";
+import { STATUT_DISPOSITIF, STATUT_ESSAI, dateMiseEnServiceLisible, libelleProcedure } from "./statut";
 
 /**
  * Rapport d'évaluation — document A4 imprimable, repris de la maquette
@@ -72,6 +72,8 @@ export interface OptionsRapport {
   decision?: DecisionImprimable;
   /** Référence de la procédure interne (`PROCEDURE_HABILITATION`) ; absente, le marqueur [à compléter] est imprimé. */
   procedure?: string | null;
+  /** Date de mise en service (AAAA-MM-JJ) ; absente, le rapport porte « Phase d'essai — ne vaut pas preuve ». */
+  miseEnService?: string | null;
 }
 
 function decisionParDefaut(r: ResultatRapport): DecisionImprimable {
@@ -315,7 +317,14 @@ export function construireRapport(
   // Décision du 18/09/2026 (question 7, choix b) : document qualité, preuve
   // opposable de l'étape 2 ; la procédure de référence est portée, ou le
   // marqueur [à compléter] tant qu'elle ne l'est pas.
-  const statut = `<strong>${STATUT_DISPOSITIF.court}</strong> · procédure ${echapper(libelleProcedure(options.procedure))}`;
+  const enService = options.miseEnService ? dateMiseEnServiceLisible(options.miseEnService) : null;
+  const procedure = echapper(libelleProcedure(options.procedure));
+  const statut = enService
+    ? `<strong>${STATUT_DISPOSITIF.court}</strong> · en service depuis le ${echapper(enService)} · procédure ${procedure}`
+    : `<strong>${STATUT_ESSAI.court}</strong> · procédure ${procedure}`;
+  const bandeauEssai = enService
+    ? ""
+    : `<div class="essai">Phase d'essai : ce rapport ne vaut pas preuve. La mise en service du dispositif n'est pas prononcée.</div>`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -367,6 +376,7 @@ export function construireRapport(
   .droite { text-align: right; }
   .petit { font-size: 9pt; color: #566370; }
   .encadre { border: 1px solid #8a5a00; background: #fdf3e0; padding: 10px 14px; margin: 14px 0; font-size: 10.5pt; line-height: 1.5; }
+  .essai { border: 2pt solid #99271f; color: #99271f; font-weight: 700; text-align: center; padding: 8px 12px; margin: 0 0 12px; font-size: 11pt; }
   .detail { margin: 0 0 12px; padding: 0 0 10px 12px; border-left: 3px solid #7b8792; border-bottom: 1px solid #d8dde2; }
   .detail-tete { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 4px; }
   .detail-tete .num { font-size: 9.5pt; font-weight: 700; color: #003f65; }
@@ -395,6 +405,7 @@ export function construireRapport(
 <body>
 <div class="actions"><button type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button></div>
 <div class="feuille">
+${bandeauEssai}
 <table class="page">
   <thead><tr><td>
     <div class="entete-page">

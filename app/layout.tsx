@@ -4,8 +4,8 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { getSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { conservationActive, procedureReference } from "@/lib/config";
-import { STATUT_DISPOSITIF } from "@/lib/statut";
+import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
+import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
 
@@ -25,6 +25,7 @@ export default async function RootLayout({
   const gestionnaire = session && session.role !== "poste";
   const conservation = conservationActive();
   const procedure = procedureReference();
+  const enService = miseEnService();
 
   return (
     <html lang="fr">
@@ -133,9 +134,19 @@ export default async function RootLayout({
                 </p>
               )}
               <p>
-                Statut du dispositif&nbsp;: {STATUT_DISPOSITIF.long}, décision du{" "}
-                {STATUT_DISPOSITIF.decideLe}. Un rapport ne vaut pas habilitation. Procédure de
-                référence&nbsp;:{" "}
+                {enService ? (
+                  <>
+                    Statut du dispositif&nbsp;: {STATUT_DISPOSITIF.long}, décision du{" "}
+                    {STATUT_DISPOSITIF.decideLe}, en service depuis le {dateMiseEnServiceLisible(enService)}.
+                    Un rapport ne vaut pas habilitation.
+                  </>
+                ) : (
+                  <>
+                    <strong>Phase d&apos;essai&nbsp;:</strong> aucun rapport ne vaut preuve tant que la
+                    mise en service n&apos;est pas prononcée. Statut cible&nbsp;: {STATUT_DISPOSITIF.long}.
+                  </>
+                )}{" "}
+                Procédure de référence&nbsp;:{" "}
                 {procedure ? <code>{procedure}</code> : <code className="a-preciser">[à compléter]</code>}
               </p>
             </div>

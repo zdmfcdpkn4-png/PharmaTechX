@@ -1,7 +1,8 @@
 /* Parcours de bout en bout, contre le serveur local avec base PostgreSQL. */
 /*
  * Prérequis : un serveur construit (`npm run build && npm start`) lancé avec
- * une base VIDE, `AUTH_SECRET` et `CONSERVATION_RAPPORTS=pseudonyme`, et
+ * une base VIDE, `AUTH_SECRET`, `CONSERVATION_RAPPORTS=pseudonyme`,
+ * `MISE_EN_SERVICE=<AAAA-MM-JJ>` (sinon les rapports portent « phase d'essai ») et
  * Chromium pour Playwright (`npx playwright install chromium`). Lancer :
  *
  *   BASE=http://localhost:3000 npm run e2e
@@ -126,6 +127,7 @@ Justification : cf. procédure interne.`,
   assert.equal(sante.conservation, "pseudonyme");
   assert.match(sante.horloge, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   assert.ok(Math.abs(Date.parse(sante.horloge) - Date.now()) < 60_000, "horloge du serveur à moins d'une minute du poste");
+  assert.match(String(sante.mise_en_service), /^\d{4}-\d{2}-\d{2}$/);
   ok("santé : base joignable, conservation pseudonyme, horloge du serveur exposée");
 
   // 1. amorçage
@@ -355,6 +357,7 @@ Justification : cf. procédure interne.`,
   assert.ok(html.includes("Administrateur initial")); // visas portés par la session d'administration
   assert.ok(html.includes("à compléter à la main, d'après la correspondance"));
   assert.ok(html.includes("Document qualité — preuve de l'étape 2") && html.includes("procédure [à compléter]"));
+  assert.ok(html.includes("en service depuis le") && !html.includes("Phase d'essai"));
   assert.ok(html.includes("horloge du serveur, 20"));
   assert.ok(html.includes("Arbitrage du tuteur : <strong>acquis</strong>"));
   assert.ok(html.includes("Verdict brut : indéterminé"));

@@ -42,6 +42,7 @@ test("le rapport A4 porte verdict, visas, synthèse, détail et échappe le HTML
     empreinte: "abcdef0123456789",
     visas: [{ qualite: "apprenant", signataire: "AG-007", date: "18/09/2026" }],
     conservation: "pseudonyme",
+    miseEnService: "2026-10-01",
     decision: {
       decision: {
         nbQuestions: 2, nbExclues: 0, pointsObtenus: 1.5, pointsTotal: 2, score: 75, seuil: 80, bande: 50,
@@ -62,6 +63,8 @@ test("le rapport A4 porte verdict, visas, synthèse, détail et échappe le HTML
   assert.ok(html.includes("1,5 / 2 points"));
   // Statut du dispositif : document qualité, procédure à compléter, horodatage serveur explicite.
   assert.ok(html.includes("Document qualité — preuve de l'étape 2"));
+  assert.ok(html.includes("en service depuis le 01/10/2026"));
+  assert.ok(!html.includes("Phase d'essai"));
   assert.ok(html.includes("procédure [à compléter]"));
   assert.ok(html.includes("horloge du serveur, 2026-09-18T12:02:00.000Z"));
   assert.ok(!html.includes("[à préciser]"));
@@ -127,6 +130,10 @@ test("la référence de la procédure interne remplace le marqueur quand elle es
   assert.ok(html.includes("procédure PHAR-PR-012 — Habilitation du personnel &lt;v3&gt;"));
   assert.ok(!html.includes("[à compléter]"));
   assert.ok(html.includes("Preuve sur signatures manuscrites"));
+  // Sans date de mise en service : phase d'essai, bandeau en tête et pied de page.
+  assert.ok(html.includes('<div class="essai">Phase d\'essai : ce rapport ne vaut pas preuve.'));
+  assert.ok(html.includes("Phase d'essai — ne vaut pas preuve"));
+  assert.ok(!html.includes("Document qualité"));
 });
 
 test("nom de fichier sûr", () => {
