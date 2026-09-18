@@ -225,7 +225,11 @@ le seuil à plus ou moins le poids d'une question) / **non concluant** (moins
 de 10 questions : pas de rapport). Un verdict indéterminé est tranché par un
 **arbitrage motivé du tuteur** avant son visa ; le verdict brut reste imprimé
 à côté. Un signalement ouvert sur une question du tirage **verrouille** visas
-et arbitrage ; une question retirée de la banque est exclue du calcul.
+et arbitrage ; une question retirée de la banque est exclue du calcul. Un
+retrait postérieur à la fixation des exclusions ne change rien au score : il
+est signalé au pharmacien avant son visa et imprimé sur le rapport, avec le
+score qu'aurait donné l'exclusion, à titre indicatif (décision du 18/09/2026,
+question 19, choix b).
 
 **Statut** (décision du 18/09/2026) : le rapport est un **document qualité,
 preuve opposable de l'étape 2** en audit BPP 2023 / ISO 9001, jamais une

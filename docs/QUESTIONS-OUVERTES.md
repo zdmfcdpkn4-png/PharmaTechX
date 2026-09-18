@@ -180,12 +180,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     minimum de questions pour conclure (défaut 10) ; seuil de réussite par
     défaut (80 %) et seuil par module. `[à préciser]` les valeurs à retenir ;
     chaque résultat scellé garde le barème de son époque.
-32. **Exclusions** : une question retirée de la banque après signalement est
-    exclue du calcul, les exclusions étant fixées au premier acte de décision
-    (arbitrage ou visa du tuteur) et jamais modifiées ensuite, même si une
-    question est retirée plus tard. `[à préciser]` conserver, ou bloquer le visa
-    du pharmacien quand une question du tirage est retirée après le visa du
-    tuteur.
+32. **Exclusions** — tranché le 18/09/2026 (question 19, choix b) : une
+    question retirée de la banque après signalement est exclue du calcul, les
+    exclusions étant fixées au premier acte de décision (arbitrage ou visa du
+    tuteur) et jamais modifiées ensuite. Un retrait postérieur est signalé au
+    pharmacien avant son visa et sur le rapport, avec la date et le score
+    qu'aurait donné l'exclusion, à titre indicatif ; il ne bloque pas le visa
+    (choix c écarté), le pharmacien vise ou annule en connaissance de cause.
 33. **Arbitrage et visas** — tranché le 18/09/2026 (question 14, choix a) :
     la règle des quatre yeux du point 6 n'est pas étendue à l'arbitrage ni
     aux visas. Le site laisse un code d'administration, qui satisfait aussi

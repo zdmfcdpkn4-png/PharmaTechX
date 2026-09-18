@@ -53,6 +53,13 @@ export interface ExclusionQuestion {
   le: string;
 }
 
+/** Question du tirage retirée de la banque après la fixation des exclusions (question 19, choix b). */
+export interface RetraitPosterieur {
+  questionId: string;
+  /** Date du retrait, ISO 8601. */
+  le: string;
+}
+
 export interface LigneRapport {
   id: string;
   numero: string;
@@ -108,6 +115,15 @@ export interface DecisionRapport {
   signalementsOuverts: SignalementOuvert[];
   /** Un arbitrage est attendu avant le visa du tuteur. */
   arbitrageRequis: boolean;
+  /**
+   * Questions du tirage retirées de la banque après la fixation des
+   * exclusions (décision du 18/09/2026, question 19, choix b) : signalées au
+   * pharmacien et sur le rapport, jamais appliquées ; vides tant que les
+   * exclusions ne sont pas fixées, puisqu'elles sont alors calculées à l'instant.
+   */
+  retraitsPosterieurs: RetraitPosterieur[];
+  /** Décision qu'auraient donnée ces retraits en exclusions, à titre indicatif ; null sans retrait postérieur. */
+  decisionSiExclues: Decision | null;
 }
 
 export const LIBELLES_STATUT_RAPPORT: Record<StatutRapport, string> = {
@@ -219,13 +235,15 @@ function idsDuTirage(r: LigneRapport): string[] {
   return r.resultat.detail.map((d) => d.questionId);
 }
 
-async function questionsRetireesParmi(q: Requeteur, ids: string[]): Promise<string[]> {
+/** Questions retirées de la banque parmi celles du tirage, avec la date du retrait (ISO 8601 UTC). */
+async function questionsRetireesParmi(q: Requeteur, ids: string[]): Promise<{ id: string; le: string }[]> {
   if (ids.length === 0) return [];
-  const r = await q<{ id: string }>(
-    `SELECT id FROM questions WHERE statut = 'retire' AND id = ANY($1::text[])`,
+  const r = await q<{ id: string; le: string }>(
+    `SELECT id, to_char(edite_le AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS le
+       FROM questions WHERE statut = 'retire' AND id = ANY($1::text[])`,
     [ids],
   );
-  return r.rows.map((l) => l.id);
+  return r.rows;
 }
 
 async function signalementsOuvertsParmi(q: Requeteur, ids: string[]): Promise<SignalementOuvert[]> {
@@ -247,7 +265,7 @@ async function exclusionsDe(
   const retirees = await questionsRetireesParmi(q, idsDuTirage(r));
   const le = new Date().toISOString();
   return {
-    liste: retirees.map((questionId) => ({
+    liste: retirees.map(({ id: questionId }) => ({
       questionId,
       motif: "question retirée de la banque après signalement",
       le,
@@ -275,6 +293,20 @@ export async function contexteDecision(r: RapportComplet): Promise<DecisionRappo
   const { decision, verdictFinal: vf } = decisionDe(r, liste);
   const enCours = r.statut === "emis" || r.statut === "vise_tuteur";
   const signalementsOuverts = enCours ? await signalementsOuvertsParmi(direct, idsDuTirage(r)) : [];
+  // Retraits postérieurs à la fixation des exclusions : signalés, jamais appliqués.
+  const dejaExclues = new Set(liste.map((e) => e.questionId));
+  const retraitsPosterieurs: RetraitPosterieur[] = fixees
+    ? (await questionsRetireesParmi(direct, idsDuTirage(r)))
+        .filter((x) => !dejaExclues.has(x.id))
+        .map((x) => ({ questionId: x.id, le: x.le }))
+    : [];
+  const decisionSiExclues =
+    retraitsPosterieurs.length > 0
+      ? decisionDe(r, [
+          ...liste,
+          ...retraitsPosterieurs.map((x) => ({ questionId: x.questionId, motif: "retrait postérieur à la décision", le: x.le })),
+        ]).decision
+      : null;
   return {
     decision,
     verdictFinal: vf,
@@ -283,6 +315,8 @@ export async function contexteDecision(r: RapportComplet): Promise<DecisionRappo
     exclusionsFixees: fixees,
     signalementsOuverts,
     arbitrageRequis: r.statut === "emis" && decision.verdictBrut === "indetermine" && !r.arbitrage,
+    retraitsPosterieurs,
+    decisionSiExclues,
   };
 }
 

@@ -46,6 +46,10 @@ export interface DecisionImprimable {
   verdictFinal: Verdict;
   arbitrage?: { verdict: "acquis" | "non_acquis"; motif: string; par: string; date: string } | null;
   exclusions?: { questionId: string; motif: string }[];
+  /** Retraits de la banque postérieurs à la fixation des exclusions (question 19, choix b) : signalés, non appliqués. */
+  retraitsPosterieurs?: { questionId: string; date: string }[];
+  /** Score et verdict brut qu'auraient donnés ces retraits en exclusions, à titre indicatif. */
+  decisionSiExclues?: { score: number; verdictBrut: Verdict } | null;
 }
 
 export interface EnTeteRapport {
@@ -179,6 +183,20 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     d.nbExclues > 0
       ? `${d.nbExclues} question${d.nbExclues > 1 ? "s" : ""} exclue${d.nbExclues > 1 ? "s" : ""} du calcul (retirée${d.nbExclues > 1 ? "s" : ""} de la banque après signalement) ; score initial ${r.score} % sur ${r.pointsTotal} questions.`
       : "";
+  // Question 19 (choix b) : un retrait postérieur à la décision est signalé, jamais appliqué.
+  const retraits = dec.retraitsPosterieurs ?? [];
+  const retireesApres = new Set(retraits.map((x) => x.questionId));
+  const numeroDe = (questionId: string) => r.detail.findIndex((q) => q.questionId === questionId) + 1;
+  const retraitTexte =
+    retraits.length > 0
+      ? `Retrait postérieur à la décision : question${retraits.length > 1 ? "s" : ""} ${retraits
+          .map((x) => `n° ${numeroDe(x.questionId)} (retirée de la banque le ${echapper(x.date)})`)
+          .join(", ")}, après la fixation des exclusions ; score et verdict inchangés.${
+          dec.decisionSiExclues
+            ? ` À titre indicatif, ${retraits.length > 1 ? "exclues aussi" : "exclue aussi"}, le score serait de ${dec.decisionSiExclues.score} % (verdict brut ${LIBELLES_COURTS_VERDICT[dec.decisionSiExclues.verdictBrut]}).`
+            : ""
+        }`
+      : "";
 
   const synthese = r.detail
     .map((q, i) => {
@@ -187,7 +205,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
       <td class="mono">${i + 1}</td>
       <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}${q.reservee ? " · réservée" : ""}</td>
       <td>${echapper(objetDe(q))}</td>
-      <td><strong>${etatDe(q)}</strong>${exclue ? '<br><span class="petit">exclue du calcul</span>' : ""}</td>
+      <td><strong>${etatDe(q)}</strong>${exclue ? '<br><span class="petit">exclue du calcul</span>' : ""}${retireesApres.has(q.questionId) ? '<br><span class="petit">retirée de la banque après la décision</span>' : ""}</td>
       <td class="mono droite">${exclue ? "—" : `${nombre(q.note)} / 1`}</td>
     </tr>`;
     })
@@ -258,6 +276,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
           <div>${motif}</div>
           <div class="petit">${brut}</div>
           ${exclusionsTexte ? `<div class="petit">${exclusionsTexte}</div>` : ""}
+          ${retraitTexte ? `<div class="petit">${retraitTexte}</div>` : ""}
         </td>
         <td class="s">
           <div class="lib">Score</div>

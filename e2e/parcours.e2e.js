@@ -397,13 +397,21 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=l'identifiant AG-001 est bien celui de l'agent évalué");
   await page.click("button:has-text('Apposer le visa tuteur')");
   await page.waitForSelector("text=Visa enregistré");
+  // question 19 (choix b) : une question du tirage retirée après le visa du tuteur est signalée au pharmacien,
+  // avec le score indicatif, sans bloquer son visa
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  await page.locator(".question-ligne form button:has-text('Retirer')").first().click();
+  await page.waitForLoadState("networkidle");
+  await page.goto(urlRapport);
+  await page.waitForSelector("text=Retrait postérieur à la décision");
+  await page.waitForSelector("text=À titre indicatif");
   await page.waitForSelector("h3:has-text('Visa du pharmacien')");
   await page.waitForSelector("text=Votre signature déposée sera incrustée");
   await page.click("button:has-text('Apposer le visa pharmacien')");
   await page.waitForSelector("text=Clos — visé par le pharmacien responsable");
   await page.waitForSelector("img[alt='Signature — Administrateur initial']");
   await capture("03-rapport-clos");
-  ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée, aucun nom saisi");
+  ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée, aucun nom saisi ; retrait postérieur signalé sans bloquer");
 
   // 10d. rapport A4 pseudonyme (GET) puis avec le nom porté à l'édition (POST), hors sceau
   const impr = await page.request.get(urlRapport + "/imprimer");
@@ -416,6 +424,7 @@ Justification : cf. procédure interne.`,
   assert.ok(html.includes("horloge du serveur, 20"));
   assert.ok(html.includes("Arbitrage du tuteur : <strong>acquis</strong>"));
   assert.ok(html.includes("Verdict brut : indéterminé"));
+  assert.ok(html.includes("Retrait postérieur à la décision") && html.includes("retirée de la banque après la décision"), "retrait postérieur signalé sur le rapport");
   assert.ok(html.includes('<img class="signature" src="data:image/png;base64,'));
   const imprNom = await page.request.post(urlRapport + "/imprimer", { form: { nom: "Apprenant Test", qualite: "Préparateur" } });
   const htmlNom = await imprNom.text();

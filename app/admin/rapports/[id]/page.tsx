@@ -174,6 +174,24 @@ export default async function Rapport({
             </span>
           </p>
         )}
+        {ctx.retraitsPosterieurs.length > 0 && (
+          <p className="encart encart--attention" role="status">
+            <strong>Retrait postérieur à la décision :</strong>{" "}
+            {ctx.retraitsPosterieurs
+              .map((x) => `question n° ${numeroDe(x.questionId)} retirée de la banque le ${date(x.le)}`)
+              .join(", ")}
+            , après la fixation des exclusions. Score et verdict inchangés : {d.score} %, {LIBELLES_COURTS_VERDICT[ctx.verdictFinal]}.
+            {ctx.decisionSiExclues && (
+              <>
+                {" "}À titre indicatif, {ctx.retraitsPosterieurs.length > 1 ? "exclues aussi" : "exclue aussi"}, le score serait de{" "}
+                {ctx.decisionSiExclues.score} % (verdict brut {LIBELLES_COURTS_VERDICT[ctx.decisionSiExclues.verdictBrut]}).
+              </>
+            )}{" "}
+            <span className="legende">
+              Le pharmacien responsable vise ou annule en connaissance de cause (décision du 18/09/2026, question 19).
+            </span>
+          </p>
+        )}
         {verrouSignalement && (
           <p className="encart encart--attention">
             <strong>Visas verrouillés :</strong> {ctx.signalementsOuverts.length} signalement{ctx.signalementsOuverts.length > 1 ? "s" : ""} ouvert{ctx.signalementsOuverts.length > 1 ? "s" : ""} sur ce tirage —{" "}

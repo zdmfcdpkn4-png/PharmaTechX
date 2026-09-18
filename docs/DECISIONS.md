@@ -313,6 +313,17 @@ porte le nombre de réservées posées et disponibles, repris sur le rapport
 (entraînement réservé aux modules déjà évalués, ordre pédagogique inversé) et
 a (même banque, acceptable seulement avec des banques larges).
 
+**Retrait d'une question après la décision** (question 19, choix b,
+18/09/2026) : les exclusions d'un rapport restent fixées au premier acte de
+décision, pour que la décision reste reproductible sur les éléments connus à
+cet instant. Une question du tirage retirée de la banque après cette
+fixation ne change ni le score ni le verdict, mais elle est signalée : encart
+sur la page du rapport, avant le visa du pharmacien, et note sur le rapport
+imprimé, avec la date du retrait et le score qu'aurait donné l'exclusion, à
+titre indicatif (`retraitsPosterieurs`, `decisionSiExclues`, calculés à la
+lecture, sans changement de schéma). Le visa n'est pas bloqué (choix c
+écarté) : le pharmacien vise ou annule en connaissance de cause.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

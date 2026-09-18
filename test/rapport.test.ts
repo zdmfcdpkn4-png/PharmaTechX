@@ -141,3 +141,26 @@ test("la référence de la procédure interne remplace le marqueur quand elle es
 test("nom de fichier sûr", () => {
   assert.match(nomFichierRapport("Éloïse D'Été", "RAP-2026-0002"), /^rapport-evaluation-rap-2026-0002-eloise-d-ete-\d{4}-\d{2}-\d{2}\.html$/);
 });
+
+test("un retrait postérieur à la décision est signalé sur le rapport, sans changer le score (question 19)", () => {
+  const html = construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "" }, [resultat], {
+    numero: "RAP-2026-0003",
+    conservation: "pseudonyme",
+    decision: {
+      decision: {
+        nbQuestions: 2, nbExclues: 0, pointsObtenus: 1.5, pointsTotal: 2, score: 75, seuil: 80, bande: 50,
+        bandeBasse: 30, bandeHaute: 100, echecEliminatoire: false, concluant: true, minQuestions: 1, verdictBrut: "indetermine",
+      },
+      verdictFinal: "indetermine",
+      arbitrage: null,
+      exclusions: [],
+      retraitsPosterieurs: [{ questionId: "q2", date: "19/09/2026" }],
+      decisionSiExclues: { score: 100, verdictBrut: "acquis" },
+    },
+  });
+  assert.ok(html.includes("Retrait postérieur à la décision : question n° 2 (retirée de la banque le 19/09/2026)"));
+  assert.ok(html.includes("score et verdict inchangés"));
+  assert.ok(html.includes("le score serait de 100 % (verdict brut acquis)"));
+  assert.ok(html.includes("retirée de la banque après la décision"));
+  assert.ok(!html.includes('class="exclue"'), "la question retirée après la décision n'est pas exclue du calcul");
+});

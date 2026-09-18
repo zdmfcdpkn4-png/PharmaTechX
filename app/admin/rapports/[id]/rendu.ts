@@ -57,6 +57,10 @@ export async function rendreRapportEnregistre(r: RapportComplet, edition?: Editi
             }
           : null,
         exclusions: ctx.exclusions,
+        retraitsPosterieurs: ctx.retraitsPosterieurs.map((x) => ({ questionId: x.questionId, date: dateLisible(x.le) })),
+        decisionSiExclues: ctx.decisionSiExclues
+          ? { score: ctx.decisionSiExclues.score, verdictBrut: ctx.decisionSiExclues.verdictBrut }
+          : null,
       },
     },
   );
