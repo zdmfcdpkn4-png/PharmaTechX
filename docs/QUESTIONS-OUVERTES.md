@@ -14,14 +14,17 @@ telle. Ordre : ce qui change le déploiement en premier.
    CSV, écran Personnel (choix b) ; verrou et arbitrage = bande de garde,
    arbitrage motivé, non concluant, verrou signalement (choix c). Voir
    `docs/DECISIONS.md`. Restent les paramètres du point D.31.
-2. **Conservation nominative des rapports** (`CONSERVATION_RAPPORTS`).
-   `[à préciser]` : `aucune` (rapport téléchargé, signé sur papier, rien
-   d'enregistré — état livré) ou `nominative` (rapports enregistrés avec le
-   nom saisi, visas électroniques). Le mode nominatif traite des données
-   personnelles d'agents : inscription au registre des traitements, information
-   des agents, droits d'accès et de rectification, et
-   `[à préciser]` durée de conservation (`RAPPORTS_CONSERVATION_MOIS`) : 24 mois
-   (cycle de revalidation), 5 ans, 10 ans (document qualité) ?
+2. **Conservation nominative des rapports** (`CONSERVATION_RAPPORTS`) — mode
+   `nominative` requis en production par le choix c de la question 2 (les
+   visas portent des noms). Durée — tranché le 18/09/2026 (question 5, choix
+   d) : **aucune purge automatique**, conservation jusqu'à purge manuelle par
+   l'administrateur (rapport par rapport, ou purge datée des rapports clos ou
+   annulés, depuis `/admin/rapports`) ; `RAPPORTS_CONSERVATION_MOIS` reste
+   facultatif pour annoncer une durée cible. Le mode nominatif traite des
+   données personnelles d'agents : `[à préciser]` le traitement est-il inscrit
+   au registre des traitements, les agents informés (droits d'accès et de
+   rectification), ou faut-il rédiger la fiche de registre et le texte
+   d'information affiché sur le site ?
 3. **Statut du dispositif** : outil pédagogique ou preuve opposable en audit
    BPP 2023 / ISO 9001 ? Change les exigences d'horodatage, de conservation et
    d'accès. Marqueur visible en pied de chaque écran et sur chaque rapport.
@@ -86,8 +89,10 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 24. **Numérotation** `RAP-AAAA-NNNN` avec une séquence globale (non remise à
     zéro chaque année) : `[à préciser]` acceptable ?
-25. **Purge à l'échéance** : non implémentée ; `[à préciser]` manuelle par
-    l'administrateur, ou automatique.
+25. **Purge** — tranché le 18/09/2026 (question 5, choix d) : manuelle par
+    l'administrateur, jamais automatique ; seuls les rapports clos ou annulés
+    sont purgeables, confirmation par recopie du numéro ou du mot PURGER,
+    numéros consignés au journal.
 26. **Logos** dans le rapport téléchargé : adresses absolues vers le site
     (l'impression suppose le site joignable). `[à préciser]` incorporer les
     images dans le fichier.

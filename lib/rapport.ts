@@ -284,10 +284,14 @@ export function construireRapport(
   const titre = resultats.length === 1
     ? `Rapport d'évaluation — ${resultats[0].critereId ?? resultats[0].moduleTitre}`
     : `Rapport de session — ${resultats.length} critères`;
+  // Décision du 18/09/2026 : pas de purge automatique, conservation jusqu'à
+  // purge manuelle par l'administrateur ; une durée cible peut être annoncée.
   const conservation =
     options.conservation === "nominative"
-      ? `Rapport enregistré par l'application${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""}${
-          options.dureeConservationMois ? ` — conservation ${options.dureeConservationMois} mois` : " — durée de conservation : [à préciser]"
+      ? `Rapport enregistré par l'application${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""} — ${
+          options.dureeConservationMois
+            ? `conservation ${options.dureeConservationMois} mois, purge manuelle par l'administrateur`
+            : "conservé jusqu'à purge manuelle par l'administrateur, sans purge automatique"
         }.`
       : "Document sans donnée nominative enregistrée : l'identité est portée par l'apprenant. Aucun résultat n'est conservé par l'application.";
 

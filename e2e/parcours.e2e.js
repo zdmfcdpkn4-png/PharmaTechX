@@ -346,6 +346,24 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("code:has-text('signature:depot')");
   ok("journal renseigné : émission, arbitrage, visas, signature");
 
+  // 11b. purge manuelle : purge datée (rien avant aujourd'hui), puis suppression du rapport
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  await page.goto(BASE + `/admin/rapports?avant=${aujourdhui}`);
+  await page.waitForSelector("text=serait supprimé");
+  assert.ok(await page.locator("button:has-text('Supprimer définitivement')").isDisabled());
+  await page.goto(urlRapport);
+  await page.fill("form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]", "RAP-0000-0000");
+  await page.click("button:has-text('Supprimer définitivement')");
+  await page.waitForSelector("text=Recopiez exactement le numéro");
+  await page.fill("form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]", numero);
+  await page.click("button:has-text('Supprimer définitivement')");
+  await page.waitForURL(/ok=purge&n=1/);
+  await page.waitForSelector("text=1 rapport supprimé définitivement");
+  await page.waitForSelector("text=Aucun rapport.");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:has-text('purge-rapport')");
+  ok("purge manuelle : purge datée à vide, confirmation exigée, rapport supprimé et journalisé");
+
   // 12. documents : dépôt en base
   await page.goto(BASE + "/admin/documents");
   await page.setInputFiles("input[name=fichier]", PNG);

@@ -4,8 +4,16 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
-import { signatureCourante } from "@/lib/signatures";
-import { annulerRapport, arbitrer, lireRapport, viser, type QualiteVisaBase } from "@/lib/rapports";
+import { purgerSignaturesInutilisees, signatureCourante } from "@/lib/signatures";
+import {
+  annulerRapport,
+  arbitrer,
+  lireRapport,
+  purgerRapport,
+  purgerRapportsAvant,
+  viser,
+  type QualiteVisaBase,
+} from "@/lib/rapports";
 
 /**
  * Circuit de décision et de visas d'un rapport enregistré.
@@ -96,6 +104,43 @@ export async function actionArbitrerRapport(formData: FormData) {
   revalidatePath("/admin/rapports");
   revalidatePath(`/admin/rapports/${id}`);
   redirect(`/admin/rapports/${id}?ok=arbitre`);
+}
+
+/**
+ * Purge manuelle (décision du 18/09/2026 : aucune purge automatique). Réservée
+ * à l'administration, limitée aux rapports clos ou annulés, confirmée en
+ * recopiant le numéro (un rapport) ou le mot PURGER (purge datée), journalisée
+ * avec les numéros supprimés : c'est la seule trace qui subsiste.
+ */
+export async function actionPurgerRapport(formData: FormData) {
+  const s = await sessionRequise("admin");
+  const id = String(formData.get("id") ?? "").slice(0, 80);
+  const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
+  const r = await lireRapport(id);
+  if (!r) redirect("/admin/rapports");
+  if (confirmation !== r.numero) redirect(`/admin/rapports/${id}?erreur=confirmation`);
+  const numero = await purgerRapport(id);
+  if (!numero) redirect(`/admin/rapports/${id}?erreur=non-purgeable`);
+  await purgerSignaturesInutilisees();
+  await journaliser(s, "purge-rapport", `rapport:${numero}`, { statut: r.statut, apprenant: r.apprenant_nom });
+  revalidatePath("/admin/rapports");
+  revalidatePath("/admin/personnel");
+  redirect(`/admin/rapports?ok=purge&n=1`);
+}
+
+export async function actionPurgerAvant(formData: FormData) {
+  const s = await sessionRequise("admin");
+  const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
+  const brut = String(formData.get("avant") ?? "").slice(0, 10);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(brut) ? new Date(`${brut}T00:00:00+02:00`) : null;
+  if (!date || Number.isNaN(date.getTime())) redirect("/admin/rapports?erreur=date");
+  if (confirmation !== "PURGER") redirect("/admin/rapports?erreur=confirmation");
+  const numeros = await purgerRapportsAvant(date);
+  await purgerSignaturesInutilisees();
+  await journaliser(s, "purge-rapports", `avant:${brut}`, { nombre: numeros.length, numeros });
+  revalidatePath("/admin/rapports");
+  revalidatePath("/admin/personnel");
+  redirect(`/admin/rapports?ok=purge&n=${numeros.length}`);
 }
 
 export async function actionAnnulerRapport(formData: FormData) {

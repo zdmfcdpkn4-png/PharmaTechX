@@ -27,7 +27,11 @@ export function conservationNominative(): boolean {
   return modeConservation() === "nominative";
 }
 
-/** Durée de conservation annoncée sur les rapports, en mois. Non tranchée : [à préciser]. */
+/**
+ * Durée de conservation annoncée sur les rapports, en mois — facultative.
+ * Décision du 18/09/2026 : aucune purge automatique ; l'administrateur purge
+ * manuellement depuis `/admin/rapports`. Cette valeur n'est qu'une annonce.
+ */
 export function dureeConservationMois(): number | null {
   const n = Number(process.env.RAPPORTS_CONSERVATION_MOIS);
   return Number.isFinite(n) && n > 0 ? n : null;

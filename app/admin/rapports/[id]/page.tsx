@@ -6,7 +6,7 @@ import { LIBELLES_COURTS_VERDICT, LIBELLES_VERDICT, expliquerVerdict } from "@/l
 import { LIBELLES_STATUT_RAPPORT, contexteDecision, lireRapport } from "@/lib/rapports";
 import { QUALITES_VISA } from "@/lib/rapport";
 import { dataUri, lireSignature, signatureCourante } from "@/lib/signatures";
-import { actionAnnulerRapport, actionArbitrerRapport, actionViserRapport } from "../actions";
+import { actionAnnulerRapport, actionArbitrerRapport, actionPurgerRapport, actionViserRapport } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,8 @@ const MESSAGES: Record<string, string> = {
   "rapport-deja-vise": "Le rapport est déjà visé : l'arbitrage n'est plus possible.",
   "deja-arbitre": "Ce rapport est déjà arbitré.",
   "arbitrage-inutile": "Le verdict brut n'est pas indéterminé : rien à arbitrer.",
+  confirmation: "Recopiez exactement le numéro du rapport pour confirmer la suppression.",
+  "non-purgeable": "Seul un rapport clos ou annulé peut être supprimé.",
 };
 
 const COULEURS: Record<string, string> = {
@@ -306,6 +308,25 @@ export default async function Rapport({
             <input type="hidden" name="id" value={r.id} />
             <label className="champ"><span>Motif</span><input type="text" name="motif" required maxLength={500} /></label>
             <div className="actions"><button type="submit" className="bouton bouton--secondaire">Annuler le rapport</button></div>
+          </form>
+        </section>
+      )}
+
+      {session.role === "admin" && (r.statut === "clos" || r.statut === "annule") && (
+        <section className="carte">
+          <h3>Supprimer définitivement ce rapport</h3>
+          <p className="legende">
+            Purge manuelle, sans purge automatique (décision du 18/09/2026). Le rapport, ses visas et son
+            arbitrage disparaissent de la base ; seul le journal garde le numéro. Téléchargez le paquet
+            d&apos;archivage avant, si le dossier qualité doit le conserver.
+          </p>
+          <form action={actionPurgerRapport}>
+            <input type="hidden" name="id" value={r.id} />
+            <label className="champ">
+              <span>Recopiez le numéro {r.numero} pour confirmer</span>
+              <input type="text" name="confirmation" required maxLength={20} autoComplete="off" />
+            </label>
+            <div className="actions"><button type="submit" className="bouton bouton--secondaire">Supprimer définitivement</button></div>
           </form>
         </section>
       )}

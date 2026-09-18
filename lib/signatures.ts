@@ -69,7 +69,7 @@ export async function retirerSignature(accesId: number): Promise<void> {
 }
 
 /** Supprime les images qui ne sont ni courantes pour un code, ni incrustées dans un visa. */
-async function purgerSignaturesInutilisees(): Promise<void> {
+export async function purgerSignaturesInutilisees(): Promise<void> {
   await sql`
     DELETE FROM signatures s
     WHERE NOT EXISTS (SELECT 1 FROM acces a WHERE a.signature_id = s.id)

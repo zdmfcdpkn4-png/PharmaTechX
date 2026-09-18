@@ -1,17 +1,30 @@
 import Link from "next/link";
+import { getSession } from "@/lib/auth";
 import { conservationNominative } from "@/lib/config";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
-import { LIBELLES_STATUT_RAPPORT, comptesRapports, listerRapports, type StatutRapport } from "@/lib/rapports";
+import {
+  LIBELLES_STATUT_RAPPORT,
+  compterPurgeables,
+  comptesRapports,
+  listerRapports,
+  type StatutRapport,
+} from "@/lib/rapports";
 import { decisionEnregistree } from "@/lib/registre";
+import { actionPurgerAvant } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const STATUTS: StatutRapport[] = ["emis", "vise_tuteur", "clos", "annule"];
 
+const MESSAGES: Record<string, string> = {
+  date: "Indiquez une date valide (AAAA-MM-JJ).",
+  confirmation: "Recopiez le mot PURGER pour confirmer.",
+};
+
 export default async function Rapports({
   searchParams,
 }: {
-  searchParams: Promise<{ statut?: string }>;
+  searchParams: Promise<{ statut?: string; ok?: string; n?: string; erreur?: string; avant?: string }>;
 }) {
   const p = await searchParams;
   if (!conservationNominative()) {
@@ -31,7 +44,14 @@ export default async function Rapports({
     );
   }
   const statut = STATUTS.includes(p.statut as StatutRapport) ? (p.statut as StatutRapport) : undefined;
-  const [rapports, comptes] = await Promise.all([listerRapports({ statut }), comptesRapports()]);
+  const [rapports, comptes, session] = await Promise.all([listerRapports({ statut }), comptesRapports(), getSession()]);
+  const avant = p.avant && /^\d{4}-\d{2}-\d{2}$/.test(p.avant) ? p.avant : "";
+  const purgeables = avant ? await compterPurgeables(new Date(`${avant}T00:00:00+02:00`)) : null;
+  const message = p.ok === "purge"
+    ? `${p.n ?? "0"} rapport${Number(p.n) > 1 ? "s" : ""} supprimé${Number(p.n) > 1 ? "s" : ""} définitivement ; les numéros sont au journal.`
+    : p.erreur
+      ? MESSAGES[p.erreur]
+      : null;
 
   return (
     <>
@@ -48,6 +68,10 @@ export default async function Rapports({
           <Link href="/admin/personnel" className="bouton bouton--secondaire">Personnel &amp; historique</Link>
         </div>
       </section>
+
+      {message && (
+        <p className={`encart ${p.ok ? "encart--ok" : "encart--attention"}`} role="status">{message}</p>
+      )}
 
       <nav className="nav-sections" aria-label="Filtre par statut" style={{ marginLeft: 0 }}>
         <Link href="/admin/rapports" className={`bouton bouton--compact ${statut ? "bouton--discret" : ""}`}>
@@ -94,6 +118,47 @@ export default async function Rapports({
           )}
         </tbody>
       </table>
+
+      {session?.role === "admin" && (
+        <section className="carte" style={{ marginTop: "1.5rem" }}>
+          <h3>Purge manuelle</h3>
+          <p className="legende">
+            Aucune purge automatique (décision du 18/09/2026) : les rapports sont conservés jusqu&apos;à ce
+            que l&apos;administrateur les supprime. Seuls les rapports clos ou annulés sont concernés ;
+            un rapport en circuit n&apos;est jamais purgé. Comptez d&apos;abord, puis confirmez.
+          </p>
+          <form method="get" action="/admin/rapports">
+            <div className="rangee">
+              <label className="champ">
+                <span>Rapports émis avant le</span>
+                <input type="date" name="avant" defaultValue={avant} required />
+              </label>
+            </div>
+            <div className="actions">
+              <button type="submit" className="bouton bouton--compact bouton--secondaire">Compter</button>
+            </div>
+          </form>
+          {avant && purgeables !== null && (
+            <form action={actionPurgerAvant} style={{ marginTop: "1rem" }}>
+              <input type="hidden" name="avant" value={avant} />
+              <p className="encart encart--attention" role="status">
+                <strong>{purgeables}</strong> rapport{purgeables > 1 ? "s" : ""} clos ou annulé{purgeables > 1 ? "s" : ""} émis avant le{" "}
+                {new Date(`${avant}T12:00:00`).toLocaleDateString("fr-FR")} {purgeables > 1 ? "seraient supprimés" : "serait supprimé"}.
+                Téléchargez les paquets d&apos;archivage nécessaires avant.
+              </p>
+              <label className="champ">
+                <span>Recopiez PURGER pour confirmer</span>
+                <input type="text" name="confirmation" required maxLength={10} autoComplete="off" />
+              </label>
+              <div className="actions">
+                <button type="submit" className="bouton bouton--secondaire" disabled={purgeables === 0}>
+                  Supprimer définitivement
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
+      )}
     </>
   );
 }

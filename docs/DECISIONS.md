@@ -64,6 +64,13 @@ question 2 le suppose, puisque les visas portent des noms. Par défaut, le site
 reste dans l'état livré : rien de nominatif, rapport téléchargé et signé sur
 papier. Voir `docs/QUESTIONS-OUVERTES.md`.
 
+**Conservation** (question 5, choix d, 18/09/2026) : aucune purge automatique.
+Les rapports sont conservés jusqu'à purge manuelle par l'administrateur —
+rapport par rapport (recopie du numéro) ou purge datée des rapports clos ou
+annulés (recopie du mot PURGER), jamais un rapport en circuit ; les numéros
+supprimés restent au journal. `RAPPORTS_CONSERVATION_MOIS`, facultatif,
+annonce une durée cible sur les rapports sans rien déclencher.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

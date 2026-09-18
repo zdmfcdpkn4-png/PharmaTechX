@@ -382,6 +382,36 @@ export async function annulerRapport(id: string, motif: string): Promise<void> {
   await sql`UPDATE rapports SET statut = 'annule', annule_motif = ${motif}, annule_le = NOW() WHERE id = ${id}`;
 }
 
+// ────────────────────────────────────────────────────────── purge manuelle
+//
+// Décision du 18/09/2026 : aucune purge automatique ; un rapport n'est
+// supprimé que par décision de l'administrateur, et seulement s'il est clos ou
+// annulé — jamais un rapport en circuit. Les visas suivent (clé étrangère en
+// cascade) ; l'image de signature reste si un autre visa l'incruste encore.
+
+/** Supprime définitivement un rapport clos ou annulé ; rend son numéro, ou null s'il n'était pas purgeable. */
+export async function purgerRapport(id: string): Promise<string | null> {
+  const r = await sql<{ numero: string }>`
+    DELETE FROM rapports WHERE id = ${id} AND statut IN ('clos','annule') RETURNING numero`;
+  return r.rows[0]?.numero ?? null;
+}
+
+/** Supprime les rapports clos ou annulés émis avant une date ; rend leurs numéros. */
+export async function purgerRapportsAvant(date: Date): Promise<string[]> {
+  const r = await sql<{ numero: string }>`
+    DELETE FROM rapports WHERE statut IN ('clos','annule') AND emis_le < ${date.toISOString()}::timestamptz
+    RETURNING numero`;
+  return r.rows.map((l) => l.numero).sort();
+}
+
+/** Rapports clos ou annulés émis avant une date : ce qu'une purge supprimerait. */
+export async function compterPurgeables(date: Date): Promise<number> {
+  const r = await sql<{ n: number }>`
+    SELECT COUNT(*)::int AS n FROM rapports
+    WHERE statut IN ('clos','annule') AND emis_le < ${date.toISOString()}::timestamptz`;
+  return r.rows[0]?.n ?? 0;
+}
+
 // ─────────────────────────────────────────────────────── répertoire personnel
 
 export interface LigneRepertoire {

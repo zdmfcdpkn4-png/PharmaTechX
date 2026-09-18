@@ -193,7 +193,9 @@ modules à rédiger.
 ## 12. Limites connues
 
 - L'ordonnancement se saisit comme une liste d'identifiants.
-- Pas de purge automatique des rapports à l'échéance de conservation.
+- Pas de purge automatique des rapports (décision) : purge manuelle par
+  l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
+  annulés seulement.
 - Les sessions durent 12 h et ne sont pas révocables individuellement.
 - Le rapport téléchargé référence les logos par l'adresse du site.
 - Une question de la banque versionnée signalée se corrige dans le code.
