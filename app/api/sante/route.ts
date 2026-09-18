@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { baseConfiguree, baseJoignable } from "@/lib/db";
+import { baseConfiguree, etatBase } from "@/lib/db";
+import { familleIp, libelleFamille } from "@/lib/reseau";
 import { modeStockage } from "@/lib/stockage";
 import { miseEnService, modeConservation } from "@/lib/config";
 import { secretConfigure } from "@/lib/auth";
@@ -11,15 +12,25 @@ export const dynamic = "force-dynamic";
  * l'exploitant. `commit` et `branche` viennent des variables que Render pose
  * sur chaque déploiement (`RENDER_GIT_COMMIT`, `RENDER_GIT_BRANCH`) : elles
  * disent quelle version est en ligne, à consigner au dossier qualité ; `null`
- * ailleurs.
+ * ailleurs. `base_ip` est la famille d'adresses imposée pour joindre la base
+ * (`DATABASE_IP`, « 4 » par défaut) et `base_erreur` le code de la dernière
+ * erreur de connexion, pour diagnostiquer une migration sans lire les journaux.
  */
 export async function GET() {
   const base = baseConfiguree();
-  const joignable = base ? await baseJoignable() : false;
+  const etat = base ? await etatBase() : { joignable: false, erreur: null };
+  let baseIp: string;
+  try {
+    baseIp = libelleFamille(familleIp());
+  } catch {
+    baseIp = "invalide";
+  }
   return NextResponse.json(
     {
       ok: true,
-      base: base ? (joignable ? "joignable" : "injoignable") : "non-configuree",
+      base: base ? (etat.joignable ? "joignable" : "injoignable") : "non-configuree",
+      base_ip: baseIp,
+      base_erreur: etat.erreur,
       stockage: modeStockage(),
       conservation: modeConservation(),
       secret: secretConfigure() ? "defini" : "absent",
@@ -31,6 +42,6 @@ export async function GET() {
       // Date de mise en service comme preuve ; null = phase d'essai.
       mise_en_service: miseEnService(),
     },
-    { status: base && !joignable ? 503 : 200, headers: { "Cache-Control": "no-store" } },
+    { status: base && !etat.joignable ? 503 : 200, headers: { "Cache-Control": "no-store" } },
   );
 }

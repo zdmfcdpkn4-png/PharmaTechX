@@ -1,24 +1,28 @@
-# Blueprint Render (https://render.com/docs/blueprint-spec) : un service web
-# Node et une base PostgreSQL managée, région Francfort.
+# Blueprint Render (https://render.com/docs/blueprint-spec) : le service web
+# Node seulement. La base PostgreSQL est chez Supabase depuis le 18/09/2026
+# (demande du pharmacien responsable) : elle n'est pas décrite ici, sa chaîne
+# de connexion se pose à la main dans le tableau de bord (DATABASE_URL,
+# sync: false), et le service la joint en IPv4 par le pooler de session de
+# Supabase — docs/DEPLOIEMENT.md, « Supabase (base) ».
 #
-# Hébergeur retenu le 18/09/2026 (question 8, choix a). Le statut opposable du
-# dispositif (question 7, choix b) écarte les plans gratuits : mise en veille du
-# service, base gratuite à durée limitée, aucune sauvegarde garantie. Les plans
-# ci-dessous sont les plus petits plans payants connus au 18/09/2026 ; la
-# documentation de Render n'était pas joignable depuis l'environnement de
-# travail : [à vérifier] les identifiants de plan et leur contenu (sauvegardes,
-# rétention, connexions) sur render.com/docs/blueprint-spec et render.com/pricing
-# au moment du déploiement. Un identifiant inconnu est refusé par Render à
-# « Apply », jamais remplacé en silence.
+# Hébergeur du service retenu le 18/09/2026 (question 8, choix a). Le statut
+# opposable du dispositif (question 7, choix b) écarte le plan gratuit : mise
+# en veille du service après inactivité. Le plan ci-dessous est le plus petit
+# plan payant connu au 18/09/2026 ; la documentation de Render n'était pas
+# joignable depuis l'environnement de travail : [à vérifier] l'identifiant de
+# plan sur render.com/docs/blueprint-spec et render.com/pricing au moment du
+# déploiement. Un identifiant inconnu est refusé par Render à « Apply »,
+# jamais remplacé en silence.
 #
 # Le service en ligne (https://pharmatechx.onrender.com) a été créé à la main
 # le 18/09/2026, hors blueprint : ce fichier décrit la configuration cible
-# (plans, région, variables, contrôle de santé) à vérifier dans le tableau de
+# (plan, région, variables, contrôle de santé) à vérifier dans le tableau de
 # bord, et permet de recréer le service. [à vérifier] avant « Apply » sur un
 # compte qui porte déjà le service : Render créerait un doublon ou refuserait
-# le nom. AUTH_SECRET est généré par Render ; DATABASE_URL est branchée sur la
-# base créée ici ; le schéma est appliqué au premier accès. Avant tout usage
-# comme preuve : docs/DEPLOIEMENT.md, « Mise en service ».
+# le nom. AUTH_SECRET est généré par Render ; DATABASE_URL est demandée à
+# l'application du blueprint ; le schéma est appliqué au premier accès à la
+# base. Avant tout usage comme preuve : docs/DEPLOIEMENT.md, « Mise en
+# service ».
 services:
   - type: web
     name: pharmatechx
@@ -33,13 +37,13 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromDatabase:
-          name: pharmatechx-db
-          property: connectionString
+        sync: false               # chaîne « Session pooler » de Supabase (port 5432, IPv4), saisie dans le tableau de bord
       - key: DATABASE_SSL
-        value: disable            # réseau interne Render ; « require » pour une base externe
+        value: require            # base externe : TLS ; « verify » avec DATABASE_SSL_CA (certificat de Supabase [à vérifier])
+      - key: DATABASE_IP
+        value: "4"                # famille d'adresses imposée (défaut du code) : Render ne sort pas en IPv6 [à vérifier]
       - key: DATABASE_POOL_MAX
-        value: "3"                # petit plan de base : peu de connexions simultanées
+        value: "3"                # pooler de session : une connexion serveur par connexion du pool
       - key: AUTH_SECRET
         generateValue: true
       - key: CONSERVATION_RAPPORTS
@@ -48,10 +52,3 @@ services:
         value: ""                 # référence de la procédure interne — [à compléter]
       - key: MISE_EN_SERVICE
         value: ""                 # AAAA-MM-JJ à la mise en service ; vide = phase d'essai
-
-databases:
-  - name: pharmatechx-db
-    plan: basic-256mb           # [à vérifier] plus petit plan payant, avec sauvegardes
-    region: frankfurt
-    databaseName: formation
-    user: formation

@@ -44,28 +44,38 @@ telle. Ordre : ce qui change le déploiement en premier.
    conservation, alignée sur celle du dossier d'habilitation (point 2) ;
    `[à préciser]` sauvegardes (point 9) ; `[à préciser]` la codification du
    modèle de rapport dans le système documentaire (version du modèle).
-4. **Hébergeur** — tranché le 18/09/2026 (question 8, choix a) : **Render**,
-   service Node et base PostgreSQL managée en région Francfort, plans payants
-   exigés par le statut opposable (point 3). Service créé à la main le
-   18/09/2026 (<https://pharmatechx.onrender.com>), hors blueprint :
-   `[à vérifier]` dans le tableau de bord que ses plans, sa base, sa région et
-   ses variables suivent `render.yaml`. Restent aussi : `[à vérifier]` les
-   identifiants de plan du blueprint et le contenu des plans (mise en veille,
-   sauvegardes, rétention, connexions), la documentation de Render n'étant pas
-   joignable depuis l'environnement de travail ; `[à vérifier]` par le DPO :
-   contrat de sous-traitance, sous-traitants ultérieurs, transfert hors UE
-   (société américaine, données à Francfort) ; `[à préciser]` accord de la DSI
-   (hébergement externe, nom de domaine, accès réseau, responsable des
-   sauvegardes). Le dépôt n'a qu'une branche, déployée à chaque poussée :
-   `[à préciser]` créer une branche de production distincte. Vercel reste
-   documenté en repli, non retenu ; l'hébergement interne est écarté. Constat
-   du 18/09/2026 : service et base sur plans gratuits, donc phase d'essai
-   (`MISE_EN_SERVICE` absente) ; base gratuite à durée limitée `[à vérifier]`
-   et sans sauvegarde : `pg_dump` pendant l'essai, plans payants avant la mise
-   en service.
-5. **Rôle « pharmacien »** : `[à préciser]` le visa du pharmacien responsable
-   est porté par un code d'administration (choix posé), ou un rôle distinct
-   est créé.
+4. **Hébergeur** — tranché le 18/09/2026 (question 8, choix a) : **Render**
+   pour le service Node, région Francfort, plan payant exigé par le statut
+   opposable (point 3) ; service créé à la main le 18/09/2026
+   (<https://pharmatechx.onrender.com>), hors blueprint. **Base chez
+   Supabase** depuis le 18/09/2026 (demande du pharmacien responsable),
+   jointe en IPv4 par le pooler de session (`docs/DEPLOIEMENT.md`,
+   « Supabase (base) »). Restent : `[à préciser]` la région du projet
+   Supabase (Union européenne, Francfort recommandé) ; `[à vérifier]` dans
+   les tableaux de bord que plans, variables (`DATABASE_URL` du pooler de
+   session, `DATABASE_SSL=require`, `DATABASE_IP=4`) et contrôle de santé
+   suivent `render.yaml` et `docs/DEPLOIEMENT.md` ; `[à vérifier]` API de
+   données de Supabase coupée dans le tableau de bord (le schéma active RLS
+   et retire les droits des rôles de l'API en plus) ; `[à vérifier]`
+   identifiant du plan Render, pause du projet Supabase gratuit après
+   inactivité, sauvegardes, certificat du pooler, restriction des adresses
+   sortantes, les documentations n'étant pas joignables depuis
+   l'environnement de travail ; `[à vérifier]` par le DPO : contrats de
+   sous-traitance de Render et de Supabase, sous-traitants ultérieurs,
+   transferts hors UE ; `[à préciser]` accord de la DSI (hébergement externe
+   chez deux fournisseurs, nom de domaine, accès réseau, responsable des
+   sauvegardes, titulaire du compte Supabase). Le dépôt n'a qu'une branche,
+   déployée à chaque poussée : `[à préciser]` créer une branche de production
+   distincte. Vercel reste documenté en repli, non retenu ; l'hébergement
+   interne est écarté. Constat du 18/09/2026 : service et base sur plans
+   gratuits, donc phase d'essai (`MISE_EN_SERVICE` absente) ; `pg_dump`
+   pendant l'essai, plans payants avant la mise en service.
+5. **Rôle « pharmacien »** — tranché le 18/09/2026 (question 9, choix a) :
+   pas de rôle distinct ; le visa du pharmacien responsable, la signature,
+   l'annulation et la purge restent portés par tout code d'administration.
+   `[à préciser]` la procédure interne réserve les codes d'administration au
+   pharmacien responsable et à son suppléant ; un administrateur technique
+   n'en détient pas.
 6. **Règle des quatre yeux** : `[à préciser]` le tuteur qui dépose une question
    peut-il la valider lui-même (choix posé : oui, tracé dans le journal), ou
    la validation doit-elle venir d'un autre profil ?
@@ -74,8 +84,9 @@ telle. Ordre : ce qui change le déploiement en premier.
    aux sessions ouvertes par code.
 8. **Hachage des adresses pour le limiteur de connexion** (5 échecs → 15 min,
    doublement) : `[à préciser]` seuils acceptés ?
-9. **Sauvegarde** : sauvegardes de Render sur le plan payant `[à vérifier]`
-   (contenu, rétention) et `pg_dump` conservé dans l'établissement
+9. **Sauvegarde** : sauvegardes de Supabase sur le plan Pro `[à vérifier]`
+   (quotidiennes, rétention), aucune sur le plan gratuit `[à vérifier]` ;
+   `pg_dump` par le pooler de session conservé dans l'établissement
    (`docs/DEPLOIEMENT.md`) ; `[à préciser]` fréquence (hebdomadaire proposée),
    responsable, périodicité de l'essai de restauration ; un essai précède le
    premier rapport réel.

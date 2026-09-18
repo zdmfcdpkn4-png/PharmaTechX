@@ -30,22 +30,25 @@ page de connexion et doit être levé avant tout usage comme preuve.
 
 ## 2. Déployer
 
-Hébergeur retenu le 18/09/2026 : **Render**, service en ligne
-<https://pharmatechx.onrender.com>, plans payants et région Francfort à
-vérifier dans le tableau de bord. `docs/DEPLOIEMENT.md` détaille les
-vérifications du service existant, le blueprint `render.yaml` pour le
-recréer, les sauvegardes et la **liste de mise en service** (DPO, DSI,
+Hébergeur retenu le 18/09/2026 : **Render** pour le service, en ligne
+<https://pharmatechx.onrender.com>, région Francfort ; **Supabase** pour la
+base PostgreSQL depuis le 18/09/2026, jointe **en IPv4** par le pooler de
+session de Supabase (l'hôte direct n'a qu'une adresse IPv6 ; le code impose
+IPv4, `DATABASE_IP=4` par défaut). `docs/DEPLOIEMENT.md` détaille la création
+du projet Supabase, l'API de données à couper, le branchement du service, la
+reprise des données par `pg_dump`, le blueprint `render.yaml` pour recréer le
+service, les sauvegardes et la **liste de mise en service** (DPO, DSI, plans,
 variables, comptes, essai de restauration, procédure) ; Vercel y reste
 documenté en repli. Au 18/09/2026, service et base sont sur les plans
 gratuits : phase d'essai, `MISE_EN_SERVICE` absente. Le schéma de la base est
-appliqué automatiquement au premier accès. Puis `/connexion` → **Créer l'administrateur initial** : le
-code n'est affiché qu'une fois.
+appliqué automatiquement au premier accès. Puis `/connexion` → **Créer
+l'administrateur initial** : le code n'est affiché qu'une fois.
 
 ## 3. Les trois rôles
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions, documents, ordonnancement, signalements, journal, visa « pharmacien responsable », annulation et purge des rapports, signature |
+| **admin** | Tout : codes de tous rôles, banque de questions, documents, ordonnancement, signalements, journal, visa « pharmacien responsable », annulation et purge des rapports, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
 | **tuteur** | Banque de questions (créer, déposer, valider, retirer), mises en situation, documents, ordonnancement, signalements, codes de poste, identifiants d'agents, arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, exporter ou émettre son rapport. Profil par défaut : aucun code requis |
 
@@ -61,7 +64,9 @@ jamais seulement par l'affichage.
 `depots` (index des documents ; fichiers en Blob ou dans `fichiers`),
 `questions` / `situations` / `images` / `depots_questions` (banque déposée),
 `signalements` (sans identité), `journal` (rôle et libellé de profil),
-`tentatives_connexion` (empreintes d'adresse).
+`tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
+au niveau des lignes sans politique et les rôles de l'API de données de
+Supabase n'y ont aucun droit : la base n'est lisible que par le service.
 
 **Jamais stocké** : les réponses transmises pour correction (identifiants de
 module et d'options seulement), les résultats — ils vivent en mémoire de
@@ -194,14 +199,15 @@ répertoire par identifiant et par critère (export CSV).
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
 d'import (texte et JSON), décision (bande de garde, non concluant,
-exclusions, arbitrage), identifiants d'agents, constructeur de rapport
+exclusions, arbitrage), identifiants d'agents, famille d'adresses et socket
+IPv4 vers la base, schéma (RLS sur chaque table), constructeur de rapport
 (identifiant, nom hors sceau), registre CSV et JSON, archive zip.
 `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
 serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme`
 et `MISE_EN_SERVICE` posée :
-amorçage, codes, dépôt de la signature, création d'un identifiant d'agent,
+page de santé (base jointe en IPv4), amorçage, codes, dépôt de la signature, création d'un identifiant d'agent,
 création et import de dix questions avec image, éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
 d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas
@@ -217,8 +223,9 @@ La liste complète, ordonnée par impact, est dans
 `docs/QUESTIONS-OUVERTES.md` ; les choix d'intégration dans
 `docs/DECISIONS.md`. En tête : la validation RGPD du mode pseudonyme par le
 DPO (`docs/RGPD.md`), la procédure interne et la source de temps qu'exige le
-statut opposable, l'accord DSI/DPO sur l'hébergement Render et la vérification
-des plans du service en ligne, les paramètres de la décision (bande de garde,
+statut opposable, l'accord DSI/DPO sur l'hébergement (Render pour le service,
+Supabase pour la base), l'API de données de Supabase à couper et la
+vérification des plans, les paramètres de la décision (bande de garde,
 minimum de questions), les barèmes à confirmer, les 56 modules à rédiger.
 
 ## 12. Limites connues

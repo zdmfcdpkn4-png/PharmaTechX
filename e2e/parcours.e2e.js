@@ -128,6 +128,8 @@ Justification : cf. procédure interne.`,
   assert.match(sante.horloge, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   assert.ok(Math.abs(Date.parse(sante.horloge) - Date.now()) < 60_000, "horloge du serveur à moins d'une minute du poste");
   assert.match(String(sante.mise_en_service), /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(sante.base_ip, "4", "base jointe en IPv4 par défaut (DATABASE_IP)");
+  assert.equal(sante.base_erreur, null);
   ok("santé : base joignable, conservation pseudonyme, horloge du serveur exposée");
 
   // 1. amorçage

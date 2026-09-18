@@ -2,6 +2,7 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { SCHEMA } from "./schema";
+import { fabriqueSocket, familleIp } from "./reseau";
 
 /**
  * Accès à la base — PostgreSQL standard via `pg`.
@@ -15,6 +16,10 @@ import { SCHEMA } from "./schema";
  * (vérifie la chaîne avec `DATABASE_SSL_CA` en PEM ou `DATABASE_SSL_CA_FILE`).
  * Défaut : `disable` sur un hôte local, `require` ailleurs. Le paramètre
  * `sslmode` de l'URL est retiré pour que ce réglage soit le seul qui compte.
+ *
+ * Famille d'adresses (`DATABASE_IP`, `lib/reseau.ts`) : `4` par défaut. La
+ * base Supabase est jointe par son pooler de session (IPv4) ; l'hôte direct
+ * n'a qu'une adresse IPv6, injoignable depuis Render `[à vérifier]`.
  *
  * Le schéma (`lib/schema.ts`) est appliqué au premier accès, sous verrou
  * consultatif : plusieurs instances peuvent démarrer en même temps.
@@ -65,9 +70,16 @@ function pool(): Pool {
   g.__fpPool = new Pool({
     connectionString: u.toString(),
     ssl: optionsTls(u),
+    stream: fabriqueSocket(familleIp()),
     max: Number(process.env.DATABASE_POOL_MAX ?? 5),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
+  });
+  // Une connexion inactive coupée par le serveur (pause ou maintenance d'une
+  // base managée) émet `error` sur le pool ; sans écouteur, le processus
+  // s'arrêterait. Le client est retiré du pool, la requête suivante en ouvre un autre.
+  g.__fpPool.on("error", (e) => {
+    console.error(`[base] connexion inactive perdue : ${e.message}`);
   });
   return g.__fpPool;
 }
@@ -170,14 +182,33 @@ export function texteRequete(morceaux: TemplateStringsArray): string {
   return texte;
 }
 
+export interface EtatBase {
+  joignable: boolean;
+  /** Code de l'erreur de connexion (`ENOTFOUND`, `ECONNREFUSED`, `28P01`…), jamais la chaîne de connexion. */
+  erreur: string | null;
+}
+
 /** Ping pour la page de santé. */
-export async function baseJoignable(): Promise<boolean> {
+export async function etatBase(): Promise<EtatBase> {
   try {
     await sql`SELECT 1`;
-    return true;
-  } catch {
-    return false;
+    return { joignable: true, erreur: null };
+  } catch (e) {
+    const err = e as { code?: unknown; name?: unknown; message?: unknown };
+    const message = typeof err.message === "string" ? err.message : "";
+    // erreurs de `pg` sans code : négociation TLS refusée par le serveur, délai du pool
+    const code =
+      typeof err.code === "string" ? err.code
+      : message.includes("does not support SSL") ? "SSL_NON_SUPPORTE"
+      : message.includes("timeout exceeded") ? "DELAI_CONNEXION"
+      : typeof err.name === "string" ? err.name
+      : "inconnue";
+    return { joignable: false, erreur: code };
   }
+}
+
+export async function baseJoignable(): Promise<boolean> {
+  return (await etatBase()).joignable;
 }
 
 // ──────────────────────────────────────────────────────────── accès et codes

@@ -105,21 +105,39 @@ Tant que `MISE_EN_SERVICE` (date) n'est pas posée, écrans et rapports portent
 « Phase d'essai — ne vaut pas preuve » ; constat du 18/09/2026 : plans
 gratuits, phase d'essai.
 
-**Hébergeur** (question 8, choix a, 18/09/2026) : **Render**, service en ligne
-`pharmatechx.onrender.com` créé à la main le 18/09/2026, région Francfort,
-plans payants exigés par le statut opposable. Le blueprint `render.yaml` porte
-les noms du service et décrit la configuration cible ; la page de santé expose
-le commit et la branche déployés. La documentation de Render n'était pas
-joignable depuis l'environnement de travail : identifiants de plan et contenu
-des sauvegardes marqués `[à vérifier]` dans le blueprint et dans
-`docs/DEPLOIEMENT.md`, qui porte aussi les vérifications du service existant,
-la liste de mise en service (DPO, DSI, plans, variables, comptes, essai de
-restauration, procédure) et la sauvegarde `pg_dump` conservée dans
-l'établissement. Le cadrage RGPD (`docs/RGPD.md`) nomme Render comme
-sous-traitant, transfert hors UE à vérifier par le DPO. Le dépôt n'a qu'une
-branche, déployée à chaque poussée : une branche de production distincte est
-à décider. Vercel non retenu, documentation conservée en repli ; hébergement
-interne écarté.
+**Hébergeur** (question 8, choix a, 18/09/2026) : **Render** pour le service,
+en ligne sur `pharmatechx.onrender.com`, créé à la main le 18/09/2026, région
+Francfort, plan payant exigé par le statut opposable. **Base déplacée chez
+Supabase** le 18/09/2026 à la demande du pharmacien responsable, **jointe en
+IPv4** : l'hôte direct d'un projet Supabase n'a qu'une adresse IPv6, que
+Render ne joint pas `[à vérifier]` ; `DATABASE_URL` désigne le pooler de
+session de Supabase (port 5432, IPv4) et le code impose la famille IPv4
+(`DATABASE_IP=4` par défaut, résolution à chaque connexion, message explicite
+si l'hôte n'a pas d'adresse IPv4). Le schéma active la sécurité au niveau des
+lignes sur chaque table et retire les droits des rôles de l'API de données de
+Supabase, exposée par défaut avec une clé publique. Le blueprint `render.yaml`
+ne décrit plus que le service ; la page de santé expose le commit, la branche,
+la famille d'adresses et le code de la dernière erreur de connexion. Les
+documentations de Render et de Supabase n'étaient pas joignables depuis
+l'environnement de travail : plans, pause du projet gratuit, sauvegardes et
+certificat du pooler marqués `[à vérifier]` dans `docs/DEPLOIEMENT.md`, qui
+porte la création du projet, l'API de données à couper, la migration
+`pg_dump` / `pg_restore` par le pooler de session, la liste de mise en
+service (DPO, DSI, plans, variables, comptes, essai de restauration,
+procédure) et la sauvegarde conservée dans l'établissement. Le cadrage RGPD
+(`docs/RGPD.md`) nomme Render et Supabase comme sous-traitants, transferts
+hors UE à vérifier par le DPO. Le dépôt n'a qu'une branche, déployée à chaque
+poussée : une branche de production distincte est à décider. Vercel non
+retenu, documentation conservée en repli ; hébergement interne écarté.
+
+**Rôle du pharmacien responsable** (question 9, choix a, 18/09/2026) : pas
+de rôle distinct. Le visa « pharmacien responsable », la signature,
+l'annulation et la purge restent portés par tout code d'administration.
+Conséquence à porter dans la procédure interne : les codes d'administration
+sont réservés au pharmacien responsable et à son suppléant `[à préciser]` ;
+un administrateur technique n'en détient pas, sans quoi son visa vaudrait
+visa du pharmacien. Le journal et les visas portent le libellé du code, pas
+la personne.
 
 ## Inspiration PandaSuite (interactivité)
 
@@ -148,6 +166,10 @@ SCORM). Transposé dans les limites du brief :
   provisionner sur Render.
 - Schéma appliqué au premier accès sous verrou consultatif : pas d'étape de
   migration à oublier.
+- Base jointe par un socket `pg` personnalisé (`lib/reseau.ts`) qui impose la
+  famille d'adresses (`DATABASE_IP`, IPv4 par défaut) et complète les erreurs
+  de résolution ; écouteur d'erreur sur le pool pour survivre à la coupure
+  d'une connexion inactive (pause ou maintenance d'une base managée).
 - Les modules restent versionnés avec le code ; la banque déposée s'y fusionne
   à la lecture (`getModuleComplet`). Un module « à rédiger » devient évaluable
   dès qu'il a des questions validées.

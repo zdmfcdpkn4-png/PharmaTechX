@@ -3,8 +3,17 @@
  * `garantirSchema()` dans `lib/db.ts`). Chaque instruction est idempotente :
  * relancer l'ensemble sur une base déjà à jour ne change rien.
  *
- * Portable : PostgreSQL standard, sans extension. Fonctionne sur Render
- * (Postgres managé), Supabase, Neon (Vercel) ou une instance locale.
+ * Portable : PostgreSQL standard, sans extension. Fonctionne sur Supabase
+ * (base retenue le 18/09/2026), Render, Neon (Vercel) ou une instance locale.
+ *
+ * Sécurité au niveau des lignes (RLS) activée sur chaque table, sans aucune
+ * politique : sur Supabase, le schéma `public` est exposé par l'API de
+ * données (PostgREST) avec une clé « anon » conçue pour être publique, et une
+ * table sans RLS y serait lisible et modifiable. Les rôles de l'API
+ * n'obtiennent rien ; le rôle de `DATABASE_URL`, propriétaire des tables
+ * qu'il a créées, n'est pas soumis à RLS. Sans effet sur un PostgreSQL
+ * ordinaire. Les droits accordés par défaut aux rôles de l'API (`anon`,
+ * `authenticated`) sont retirés quand ces rôles existent.
  *
  * Aucune table ne porte de nom d'agent. Les rapports enregistrés
  * (`CONSERVATION_RAPPORTS=pseudonyme`) se rattachent à un identifiant d'agent
@@ -12,6 +21,25 @@
  * du site ; les visas portent le rôle et le libellé du code de session.
  * Décision du 18/09/2026 (question 6, choix a).
  */
+/** Toutes les tables du site, dans l'ordre de création. */
+export const TABLES = [
+  "acces",
+  "ordonnancement",
+  "depots",
+  "fichiers",
+  "images",
+  "situations",
+  "depots_questions",
+  "questions",
+  "signalements",
+  "agents",
+  "rapports",
+  "visas",
+  "journal",
+  "tentatives_connexion",
+  "signatures",
+] as const;
+
 export const SCHEMA: string[] = [
   // ── accès par code de rôle (inchangé) ─────────────────────────────────────
   `CREATE TABLE IF NOT EXISTS acces (
@@ -207,6 +235,16 @@ export const SCHEMA: string[] = [
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id)`,
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_identifiant TEXT`,
   `ALTER TABLE visas DROP COLUMN IF EXISTS nom`,
+
+  // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
+  ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
+  `DO $$
+   DECLARE r TEXT;
+   BEGIN
+     FOR r IN SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated') LOOP
+       EXECUTE format('REVOKE ALL ON TABLE ${TABLES.join(", ")} FROM %I', r);
+     END LOOP;
+   END $$`,
 ];
 
 /** Numéro d'un rapport : RAP-2026-0001. */
