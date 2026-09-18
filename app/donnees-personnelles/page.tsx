@@ -64,7 +64,7 @@ export default function DonneesPersonnelles() {
           <li><strong>Responsable du traitement</strong> : {aCompleter} (l&apos;établissement, représenté par sa direction).</li>
           <li><strong>Accès</strong> : les tuteurs et le pharmacien responsable de l&apos;unité (rapports, visas, répertoire), l&apos;administrateur du site (purge, journal). Aucun autre destinataire ; aucune transmission à un tiers.</li>
           <li><strong>Hébergement</strong> : {aCompleter} — hébergeur retenu et localisation des serveurs, arrêtés avec la direction des systèmes d&apos;information et le délégué à la protection des données. Les données transmises ne comportent aucun nom.</li>
-          <li><strong>Durée</strong> : les rapports sont conservés jusqu&apos;à leur suppression manuelle par l&apos;administrateur{duree ? `, la durée cible annoncée étant de ${duree} mois` : ""} ; aucune suppression automatique. La durée de conservation de référence est <code className="a-preciser">[à préciser]</code> avec le délégué à la protection des données.</li>
+          <li><strong>Durée</strong> : les rapports sont conservés jusqu&apos;à leur suppression manuelle par l&apos;administrateur{duree ? `, la durée cible annoncée étant de ${duree} mois` : ""} ; aucune suppression automatique. Votre progression rattachée est conservée jusqu&apos;à sa suppression par l&apos;administrateur, à votre demande ou à votre départ de l&apos;unité, sans suppression automatique. La durée de conservation de référence est <code className="a-preciser">[à préciser]</code> avec le délégué à la protection des données.</li>
         </ul>
       </section>
 

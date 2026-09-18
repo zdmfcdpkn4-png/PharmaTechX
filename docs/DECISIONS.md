@@ -262,6 +262,16 @@ qui les a posés, imprimés sur le rapport, ce qui rend le cumul visible à la
 lecture et en audit. Deux personnes distinctes pour les deux visas relèvent
 de la procédure interne (`docs/QUESTIONS-OUVERTES.md`, D.33), pas du code.
 
+**Conservation des traces de progression** (question 15, choix a,
+18/09/2026) : aucune purge automatique ; la progression rattachée d'un agent
+est conservée jusqu'à purge manuelle par l'administrateur depuis Personnel,
+à la demande de l'agent ou à son départ, et la clôture de l'identifiant ne
+l'entraîne pas. Même logique que les rapports (question 5, choix d) ; fiche
+RGPD et page d'information mises à jour, le DPO vérifiant que ce critère de
+durée suffit au registre. Le point C.17 (statut à l'import) est clos par
+conséquence de la question 12 : une question importée ne peut pas être
+validée d'office, aucun second code n'étant intervenu.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

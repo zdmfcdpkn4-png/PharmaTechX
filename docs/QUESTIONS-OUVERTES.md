@@ -123,9 +123,10 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 ## C. Banque de questions et modules
 
-17. **Statut à l'import** : toute question importée entre « à vérifier », même
-    avec corrigé complet (choix posé). `[à préciser]` conserver, ou valider
-    d'office les questions dont le corrigé est complet.
+17. **Statut à l'import** — clos par conséquence de la question 12
+    (18/09/2026) : toute question importée entre « à vérifier », même avec
+    corrigé complet, car la validation exige un second code d'accès et aucun
+    n'est intervenu à l'import.
 18. **Rédaction des modules** (les 56 textes restants) — tranché le
     18/09/2026 (question 10, choix a) : dans le code, par le pharmacien
     responsable ; aucun éditeur de texte en base. En complément, modules
@@ -211,8 +212,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     choix c) : conservée en base sous l'identifiant d'agent, sur rattachement
     de l'agent par son identifiant et un code personnel (4 à 8 chiffres,
     choisi par lui, haché ; réinitialisable par un tuteur : choix posé).
-    Restent : `[à préciser]` la durée de conservation des traces de
-    progression, distincte de celle des rapports ; `[à vérifier]` par le DPO
+    Durée — tranché le 18/09/2026 (question 15, choix a) : aucune purge
+    automatique ; purge manuelle par l'administrateur depuis Personnel, à la
+    demande de l'agent ou à son départ, la clôture de l'identifiant ne
+    l'entraînant pas ; `[à vérifier]` par le DPO que ce critère de durée
+    suffit au registre. Restent : `[à vérifier]` par le DPO
     la nouvelle catégorie de données (`docs/RGPD.md`) et l'information des
     agents ; `[à préciser]` si un tuteur peut rattacher un agent à sa place
     (non : l'agent seul connaît son code) ; `[à préciser]` courbes
