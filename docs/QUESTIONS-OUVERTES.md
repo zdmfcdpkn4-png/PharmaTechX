@@ -82,9 +82,11 @@ telle. Ordre : ce qui change le déploiement en premier.
    modification d'un module publié sont réservés à l'administration. Réserve :
    deux codes distincts ne font pas deux personnes si des codes sont partagés,
    `[à préciser]` dans la procédure interne (un code par tuteur).
-7. **Accès aux documents déposés** (procédures internes) : `[à préciser]`
-   ouvert à quiconque a l'adresse (état livré, comme les modules) ou réservé
-   aux sessions ouvertes par code.
+7. **Accès aux documents déposés** — tranché le 18/09/2026 (question 13,
+   choix b) : réservés aux sessions ouvertes par un code ; les modules restent
+   lisibles sans code. `[à préciser]` étendre au site entier (choix c) ;
+   `[à préciser]` un store Blob, aux adresses publiques, est exclu tant que
+   cette règle vaut.
 8. **Hachage des adresses pour le limiteur de connexion** (5 échecs → 15 min,
    doublement) : `[à préciser]` seuils acceptés ?
 9. **Sauvegarde** : sauvegardes de Supabase sur le plan Pro `[à vérifier]`

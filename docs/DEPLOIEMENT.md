@@ -30,7 +30,7 @@ tout usage du dispositif comme preuve.
 | `AUTH_SECRET` | oui | signature des sessions et des sceaux de résultats, ≥ 32 caractères (`openssl rand -base64 32`) |
 | `DATABASE_SSL` | non | `disable` (défaut sur hôte local), `require` (défaut ailleurs : chiffre sans vérifier l'autorité), `verify` (+ `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE`, certificat de l'autorité de Supabase) |
 | `DATABASE_POOL_MAX` | non | connexions simultanées, 5 par défaut ; 3 avec le pooler de session |
-| `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max) |
+| `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max). Les adresses Blob sont publiques : incompatible avec la réserve des documents aux sessions (question 13), à laisser vide |
 | `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `pseudonyme` (rapports enregistrés sous identifiant d'agent, sans nom) — voir `docs/RGPD.md` avant d'activer |
 | `RAPPORTS_CONSERVATION_MOIS` | non | durée annoncée sur les rapports enregistrés |
 | `PROCEDURE_HABILITATION` | non | référence de la procédure interne portée sur les écrans et les rapports (preuve opposable de l'étape 2) ; vide = marqueur `[à compléter]` |

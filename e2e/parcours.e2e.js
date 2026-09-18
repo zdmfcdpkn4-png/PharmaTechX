@@ -749,6 +749,17 @@ Justification : justification deux.`;
   await page.waitForTimeout(500);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
+
+  // 14b. sans session, un document déposé est réservé (question 13, choix b) ; les modules restent lisibles
+  assert.equal((await page.request.get(BASE + lien)).status(), 401, "document déposé refusé sans session");
+  await page.goto(BASE + "/module/comportement-zac");
+  await page.waitForSelector("h1:has-text('Comportement et habillage')");
+  await page.waitForSelector("text=réservé aux sessions ouvertes par un code");
+  assert.equal(await page.locator("a:has-text('Schéma déposé test')").count(), 0);
+  await page.goto(BASE + "/");
+  await page.waitForSelector("text=Les documents déposés sont réservés aux sessions");
+  ok("documents déposés réservés aux sessions par code : 401 sans session, modules lisibles, note affichée");
+  await page.goto(BASE + "/connexion");
   // L'URL ne change pas d'un échec à l'autre : attendre la réponse de l'action,
   // pas une navigation, sinon les soumissions se chevauchent.
   const soumettreCode = async (code) => {

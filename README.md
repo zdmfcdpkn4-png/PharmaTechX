@@ -166,7 +166,11 @@ des questions ou des documents s'y rattachent.
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
 niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
-synthèse**, rattachée à un module, s'affiche en fin de test.
+synthèse**, rattachée à un module, s'affiche en fin de test. Les documents
+déposés sont **réservés aux sessions ouvertes par un code** (décision du
+18/09/2026, question 13) : sans session, la route répond 401 et les pages
+n'en donnent que le nombre ; un store Blob, aux adresses publiques, est donc
+exclu.
 
 Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`.
 **Règle des quatre yeux** (décision du 18/09/2026, question 12) : une

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getModuleComplet, positionDansParcours } from "@/content/store";
 import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER, libelleNature } from "@/content/types";
-import { baseConfiguree, depotsDuModule } from "@/lib/db";
+import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { STATUTS_MODULE } from "@/content/modules-db";
 import { Corps } from "@/components/Corps";
@@ -25,7 +25,9 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
   const nbElim =
     mod.questions.filter((q) => q.eliminatoire).length +
     mod.misesEnSituation.reduce((s, x) => s + x.questions.filter((q) => q.eliminatoire).length, 0);
-  const depots = baseConfiguree() ? await depotsDuModule(mod.id).catch(() => []) : [];
+  // Documents déposés réservés aux sessions ouvertes par un code (question 13, choix b).
+  const depots = baseConfiguree() && session ? await depotsDuModule(mod.id).catch(() => []) : [];
+  const reserves = baseConfiguree() && !session ? await compterDepotsDuModule(mod.id).catch(() => 0) : 0;
   const position = await positionDansParcours("integration", mod.id);
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
@@ -64,15 +66,21 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      {(mod.ressources.length > 0 || depots.length > 0) && (
+      {(mod.ressources.length > 0 || depots.length > 0 || reserves > 0) && (
         <section className="carte" style={{ marginTop: "1.5rem" }}>
           <div className="section-titre" style={{ marginTop: 0 }}>
             <h2>Documents rattachés</h2>
             <span className="compte">
-              {mod.ressources.length + depots.length}
+              {mod.ressources.length + depots.length + reserves}
               {mod.ressources.some((r) => !r.url) ? ` · ${mod.ressources.filter((r) => !r.url).length} encore à rattacher` : ""}
             </span>
           </div>
+          {reserves > 0 && (
+            <p className="encart" style={{ marginTop: 0 }}>
+              {reserves} document{reserves > 1 ? "s" : ""} déposé{reserves > 1 ? "s" : ""} réservé{reserves > 1 ? "s" : ""} aux sessions
+              ouvertes par un code : <Link href="/connexion">connectez-vous</Link> avec votre code de poste pour les lire.
+            </p>
+          )}
           <ul className="liste-nue">
             {depots.map((d) => (
               <li key={`d-${d.id}`}>

@@ -24,6 +24,8 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
     rattachement(),
   ]);
   const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
+  // Un document de synthèse déposé est réservé aux sessions ouvertes par un code (question 13, choix b).
+  const synthesesVisibles = session ? syntheses : syntheses.filter((d) => !d.url.startsWith("/api/fichiers/"));
 
   // Les bonnes réponses et les justifications sont retirées ici : elles ne
   // quittent le serveur qu'après soumission, via la route de correction.
@@ -53,7 +55,7 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
         seuil={mod.seuilReussite}
         bareme={bareme}
         signalementPossible={baseConfiguree()}
-        syntheses={syntheses}
+        syntheses={synthesesVisibles}
         suivant={position?.suivant ? { id: position.suivant.id, titre: position.suivant.titre } : null}
         rattache={Boolean(ratt)}
         enCoursInitial={enCours}

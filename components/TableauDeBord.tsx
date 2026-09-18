@@ -134,6 +134,7 @@ export function TableauDeBord({
   filiereInitiale = "",
   niveauInitial = "",
   identifiantRattache = null,
+  documentsReserves = 0,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -152,6 +153,8 @@ export function TableauDeBord({
   niveauInitial?: string;
   /** Progression rattachée (question 11) : l'émission se fait sous cet identifiant, sans le ressaisir. */
   identifiantRattache?: string | null;
+  /** Documents généraux existants mais réservés aux sessions par code (question 13) : leur nombre, sans session. */
+  documentsReserves?: number;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -327,6 +330,19 @@ export function TableauDeBord({
           Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
           afficher les critères qui s&apos;y rattachent.
         </p>
+      )}
+
+      {documentsReserves > 0 && documents.length === 0 && (
+        <>
+          <div className="section-titre">
+            <h2>Documents du profil</h2>
+            <span className="compte">{documentsReserves} document{documentsReserves > 1 ? "s" : ""}</span>
+          </div>
+          <p className="encart">
+            Les documents déposés sont réservés aux sessions ouvertes par un code :{" "}
+            <Link href="/connexion">connectez-vous</Link> avec votre code de poste pour les lire.
+          </p>
+        </>
       )}
 
       {documents.length > 0 && (

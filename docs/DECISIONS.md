@@ -233,6 +233,17 @@ profil, pas une personne ; deux codes distincts sont garantis par le site,
 deux personnes par la procédure interne. L'arbitrage et les visas ne sont
 pas couverts par cette question (`docs/QUESTIONS-OUVERTES.md`, D.33).
 
+**Accès aux documents déposés** (question 13, choix b, 18/09/2026) : les
+documents déposés — procédures internes, fiches réflexes, référentiels,
+vidéos, fiches de synthèse conservés en base — ne sont servis qu'aux
+sessions ouvertes par un code (poste, tutorat, administration) : la route
+`/api/fichiers` répond 401 sans session, les pages n'en listent que le
+nombre aux visiteurs, avec l'invitation à se connecter, et la synthèse
+déposée n'est montrée en fin de test qu'avec une session. Les modules
+restent lisibles sans code, comme avant. Un store Blob, dont les adresses
+sont publiques, est incompatible avec cette règle : le stockage en base est
+requis. Le choix c, tout le site derrière un code, reste à confirmer.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

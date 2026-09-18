@@ -154,9 +154,11 @@ export default async function Accueil({
     if (f.id === "socle") continue;
     parPoste[f.id] = (programme.parFiliere[f.id] ?? []).map((m) => resumer(m, enBase));
   }
-  // Documents généraux, proposés par profil (filières, niveaux) — question 10.
-  const documents: DocumentResume[] = baseConfiguree()
-    ? (await depotsGeneraux().catch(() => [])).map((d) => ({
+  // Documents généraux, proposés par profil (filières, niveaux) — question 10 ;
+  // réservés aux sessions ouvertes par un code — question 13, choix b.
+  const generaux = baseConfiguree() ? await depotsGeneraux().catch(() => []) : [];
+  const documents: DocumentResume[] = session
+    ? generaux.map((d) => ({
         id: d.id,
         titre: d.titre,
         nature: d.nature,
@@ -165,6 +167,7 @@ export default async function Accueil({
         niveaux: d.niveaux,
       }))
     : [];
+  const documentsReserves = session ? 0 : generaux.length;
 
   const rediges = [...troncCommun, ...Object.values(parPoste).flat()].filter(
     (m) => m.redige || m.nbQuestions > 0,
@@ -238,6 +241,7 @@ export default async function Accueil({
           filiereInitiale={filiereInitiale}
           niveauInitial={niveauInitial}
           identifiantRattache={ratt?.identifiant ?? null}
+          documentsReserves={documentsReserves}
         />
       </section>
 
