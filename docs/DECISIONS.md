@@ -286,6 +286,14 @@ déploiement de cette version, les sessions ouvertes avant elle, sans date
 d'ouverture, sont fermées une fois. Durée de douze heures inchangée ; pas
 d'interrupteur global (choix c écarté), changer `AUTH_SECRET` en tient lieu.
 
+**Éliminatoire sur un schéma** (question 17, choix a, 18/09/2026) : sur une
+question éliminatoire de type schéma, toute légende fausse ou vide fait
+échouer la question, donc le critère, quel que soit le score. Règle fixe :
+une exigence de sécurité ne varie pas d'une campagne à l'autre (choix c,
+réglable, écarté) ; ne pas savoir nommer l'élément vaut le nommer faux
+(choix b écarté). Le barème réglable ne décide du sort des légendes vides
+que pour la note des questions non éliminatoires.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

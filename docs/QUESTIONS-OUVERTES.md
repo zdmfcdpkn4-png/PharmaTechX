@@ -107,8 +107,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     plus, chaque légende vaut 1/n, fausse elle le retire, vide elle ne compte
     pas, plancher 0 — valeurs par défaut, **réglables** (mode partiel ou tout
     ou rien, légende vide comptée ou non) ; `[à préciser]` le réglage à retenir.
-12. **Éliminatoire sur un schéma** : `[à préciser]` toute légende fausse *ou
-    vide* rend le critère non acquis (choix posé) ou seules les fausses.
+12. **Éliminatoire sur un schéma** — tranché le 18/09/2026 (question 17,
+    choix a) : toute légende fausse *ou vide* rend le critère non acquis ;
+    règle fixe, non réglable (choix c écarté).
 13. **Présentation des QIM** : Vrai/Faux par proposition (défaut) ou cases à
     cocher — à trancher avec les préparateurs (hérité).
 14. **Mode entraînement** (correction immédiate, jamais enregistré) :
