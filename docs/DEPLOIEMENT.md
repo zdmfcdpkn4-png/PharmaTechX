@@ -145,10 +145,11 @@ durée limitée `[à vérifier]`.
 ## Render (service)
 
 **Service en ligne : <https://pharmatechx.onrender.com>**, créé à la main le
-18/09/2026 (hors blueprint). Le dépôt GitHub n'a qu'une branche
-(`claude/relaxed-brahmagupta-hktyk5`) : c'est elle que Render déploie, et
-chaque poussée reconstruit le site en ligne tant qu'une branche de production
-distincte n'est pas créée `[à préciser]`.
+18/09/2026 (hors blueprint). Le dépôt porte deux branches depuis le
+18/09/2026 (question 21, choix c) : la branche de travail
+(`claude/relaxed-brahmagupta-hktyk5`), où tout se développe et se vérifie, et
+`production`, qui porte la version en service — voir « Branche de production
+et version en service » ci-dessous.
 
 À vérifier dans le tableau de bord Render, et à consigner :
 
@@ -175,6 +176,47 @@ dépôt ; Render lit `render.yaml` (service `pharmatechx` seul, Francfort,
 `AUTH_SECRET` généré, `DATABASE_URL` demandée à l'application du blueprint) ;
 `[à vérifier]` le comportement de Render si un service du même nom existe
 déjà (doublon ou refus).
+
+**Branche de production et version en service** (question 21, choix c, du
+18/09/2026). Render ne déploie qu'une branche. `production` porte la version
+en service, la branche de travail porte tout le reste. Une mise en service se
+fait en trois gestes, à consigner au dossier qualité :
+
+```bash
+git checkout production
+git merge --no-ff claude/relaxed-brahmagupta-hktyk5 -m "Mise en service vN"
+git tag -a vN -m "Mise en service du JJ/MM/AAAA"   # N = 1 à la première
+git push -u origin production && git push origin vN
+```
+
+Créée le 18/09/2026 au commit de la branche de travail, `production` ne porte
+encore aucune version en service : la première étiquette sera `v1`, à la
+première mise en service.
+
+L'étiquette fixe dans le dépôt ce qui était en service et depuis quand : un
+rapport contesté se relit avec le code exact qui l'a produit (`git checkout
+vN`), sans dépendre de l'historique des déploiements de l'hébergeur.
+`/api/sante` renvoie le commit et la branche déployés (`RENDER_GIT_COMMIT`,
+`RENDER_GIT_BRANCH`) ; `git tag --points-at <commit>` donne l'étiquette
+correspondante. À consigner à chaque mise en service : date, étiquette,
+commit.
+
+**Le réglage de l'hébergeur reste à faire, et seulement à la mise en
+service** : tableau de bord Render → service `pharmatechx` → Settings →
+branche déployée = `production` (`[à vérifier]` le libellé exact du réglage,
+la documentation de Render n'étant pas joignable depuis l'environnement de
+travail). Tant qu'il n'est pas changé, c'est la branche de travail qui est en
+ligne et le site suit chaque poussée : c'est ce qu'il faut pendant la phase
+d'essai. Une fois changé, le site en ligne ne bouge plus qu'aux mises en
+service, et la branche de travail ne se vérifie plus qu'en local — un second
+service Render pour l'essai coûterait un second plan payant.
+
+**L'étiquette ne dit rien de la base.** Le schéma s'applique de lui-même au
+premier accès (`lib/schema.ts`, `CREATE`/`ALTER` idempotents) : une version
+d'essai branchée sur la base en service la ferait évoluer, et le code ne sait
+pas revenir en arrière. Une seule version à la fois se branche sur la base en
+service. `[à préciser]` : base d'essai distincte du projet Supabase en
+service, ou base unique.
 
 **Plans.** Le blueprint demande le plus petit plan payant connu au
 18/09/2026 (`starter`). La documentation de Render n'était pas joignable

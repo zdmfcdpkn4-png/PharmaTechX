@@ -64,9 +64,12 @@ telle. Ordre : ce qui change le déploiement en premier.
    sous-traitance de Render et de Supabase, sous-traitants ultérieurs,
    transferts hors UE ; `[à préciser]` accord de la DSI (hébergement externe
    chez deux fournisseurs, nom de domaine, accès réseau, responsable des
-   sauvegardes, titulaire du compte Supabase). Le dépôt n'a qu'une branche,
-   déployée à chaque poussée : `[à préciser]` créer une branche de production
-   distincte. Vercel reste documenté en repli, non retenu ; l'hébergement
+   sauvegardes, titulaire du compte Supabase). Branche de production tranchée le
+   18/09/2026 (question 21, choix c) : `production` porte la version en
+   service, la branche de travail le reste, chaque mise en service étant une
+   fusion et une étiquette `vN` ; `[à vérifier]` dans le tableau de bord, à
+   la mise en service seulement, la branche déployée mise sur `production`
+   (pendant l'essai, le site suit la branche de travail). Vercel reste documenté en repli, non retenu ; l'hébergement
    interne est écarté. Constat du 18/09/2026 : service et base sur plans
    gratuits, donc phase d'essai (`MISE_EN_SERVICE` absente) ; `pg_dump`
    pendant l'essai, plans payants avant la mise en service.

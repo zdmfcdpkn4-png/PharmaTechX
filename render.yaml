@@ -33,6 +33,11 @@ services:
     startCommand: npm start
     healthCheckPath: /api/sante
     autoDeployTrigger: commit
+    # branch: production        # à décommenter et à poser dans le tableau de bord
+                                # à la mise en service seulement (question 21, choix c) :
+                                # jusque-là Render déploie la branche de travail et le
+                                # site d'essai suit chaque poussée. [à vérifier] le nom
+                                # exact de la clé sur render.com/docs/blueprint-spec.
     envVars:
       - key: NODE_ENV
         value: production

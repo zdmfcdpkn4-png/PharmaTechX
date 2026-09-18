@@ -333,6 +333,22 @@ au moment du téléchargement côté navigateur. Surcoût d'une trentaine de
 kilo-octets par fichier ; à défaut de lecture, l'adresse du fichier sert,
 comme avant. Écartés : a (logos par adresse) et b (deux chemins de rendu).
 
+**Branche de production et étiquettes de version** (question 21, choix c,
+18/09/2026) : un rapport opposable suppose de savoir quelle version du
+dispositif l'a produit. Le dépôt porte désormais `production`, branche
+déployée, distincte de la branche de travail ; chaque mise en service est une
+fusion dans `production` et une étiquette `vN`, qui fixe dans le dépôt ce qui
+était en service et depuis quand — indépendamment de l'historique des
+déploiements de l'hébergeur. `/api/sante` donne le commit déployé,
+`git tag --points-at` l'étiquette correspondante. Le réglage de la branche
+déployée dans le tableau de bord de Render n'est fait qu'à la mise en
+service : pendant la phase d'essai, le site en ligne doit continuer de suivre
+chaque poussée. L'étiquette ne dit rien de la base, dont le schéma s'applique
+de lui-même au premier accès : `[à préciser]` base d'essai distincte ou base
+unique. Écartés : a (une seule branche déployée à chaque poussée, acceptable
+en essai seulement) et b (déploiement manuel depuis le tableau de bord, qui
+laisse la trace de la version en service chez le seul hébergeur).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

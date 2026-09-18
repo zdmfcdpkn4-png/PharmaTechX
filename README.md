@@ -42,7 +42,10 @@ session de Supabase (l'hôte direct n'a qu'une adresse IPv6 ; le code impose
 IPv4, `DATABASE_IP=4` par défaut). `docs/DEPLOIEMENT.md` détaille la création
 du projet Supabase, l'API de données à couper, le branchement du service, la
 reprise des données par `pg_dump`, le blueprint `render.yaml` pour recréer le
-service, les sauvegardes et la **liste de mise en service** (DPO, DSI, plans,
+service, la **branche `production`** et les étiquettes de version (question
+21, choix c : la version en service est fusionnée dans `production` et
+étiquetée `vN`, la branche de travail restant celle de l'essai), les
+sauvegardes et la **liste de mise en service** (DPO, DSI, plans,
 variables, comptes, essai de restauration, procédure) ; Vercel y reste
 documenté en repli. Au 18/09/2026, service et base sont sur les plans
 gratuits : phase d'essai, `MISE_EN_SERVICE` absente. Le schéma de la base est
