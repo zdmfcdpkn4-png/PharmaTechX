@@ -134,6 +134,14 @@ Justification : cf. procédure interne.`,
 
   // 1. amorçage
   await page.goto(BASE + "/connexion");
+  // icône d'onglet : le logo Pharmacotechnie, servi avant toute session
+  // (le filtre d'entrée laisse passer les fichiers `.png`)
+  const hrefIcone = await page.getAttribute('link[rel="icon"]', "href");
+  assert.equal(hrefIcone, "/pharmaco-web.png", "icône d'onglet = logo Pharmacotechnie");
+  const icone = await page.request.get(BASE + hrefIcone);
+  assert.equal(icone.status(), 200, "icône servie sans session");
+  assert.match(icone.headers()["content-type"], /image\/png/);
+  ok("icône d'onglet : logo Pharmacotechnie servi sans session");
   await page.click("button:has-text(\"Créer l'administrateur initial\")");
   await page.waitForURL(/\/admin\?amorce=/);
   const codeAdmin = new URL(page.url()).searchParams.get("amorce");
