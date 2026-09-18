@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Rapport d'évaluation des connaissances — critère B1-01 | CHD Vendée</title>
+<meta name="description" content="Rapport d'évaluation des connaissances exporté par l'apprenant : verdict, synthèse par question, justifications sourcées et bloc de signatures. Étape 2 sur 6 de la chaîne d'habilitation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  doc-page:not(:defined) { visibility: hidden; }
+  body { margin: 0; }
+  a { color: #005586; }
+  a:hover { color: #003f65; }
+</style>
+<script src="./doc-page.js"></script>
+</helmet>
+
+<doc-page size="a4" margin="0.7in">
+
+  <div slot="header" style="display:flex;align-items:flex-end;gap:16px;padding-bottom:8px;border-bottom:2px solid #E82A63;font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="border:1px dashed #b6bec6;border-radius:3px;padding:3px 7px;font-family:ui-monospace,Menlo,monospace;font-size:8pt;letter-spacing:.06em;color:#566370">LOGO HDV</div>
+      <div style="width:1px;height:22px;background:#d8dde2"></div>
+      <div style="border:1px dashed #b6bec6;border-radius:3px;padding:3px 7px;font-family:ui-monospace,Menlo,monospace;font-size:8pt;letter-spacing:.06em;color:#566370">LOGO PHARMACO</div>
+    </div>
+    <div style="display:flex;flex-direction:column;min-width:0">
+      <strong style="font-size:10pt;line-height:1.3;color:#16202a">CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie</strong>
+      <span style="font-size:9pt;line-height:1.35;color:#566370">Rapport d'évaluation des connaissances — fiche d'habilitation, chapitre III, critère {{ code }}</span>
+    </div>
+    <span style="margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:8.5pt;color:#566370;white-space:nowrap">{{ reference }}</span>
+  </div>
+
+  <div slot="footer" style="display:flex;gap:14px;align-items:baseline;padding-top:8px;border-top:1px solid #d8dde2;font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;font-size:8.5pt;line-height:1.4;color:#566370">
+    <span style="flex:1 1 auto">Document sans donnée nominative : l'identité est portée à la main par l'apprenant. Aucun résultat n'est conservé par l'application.</span>
+    <span style="flex:none;font-family:ui-monospace,Menlo,monospace">Statut du dispositif : [à préciser]</span>
+  </div>
+
+  <div style="font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;color:#16202a;font-size:12pt;line-height:1.55">
+
+    <p style="margin:0 0 4px;font-family:ui-monospace,Menlo,monospace;font-size:9pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b41f4d">Étape 2 sur 6 — évaluation des connaissances</p>
+    <h1 style="margin:0 0 6px;font-size:22pt;line-height:1.15;letter-spacing:-.01em;color:#005586">{{ titreCritere }}</h1>
+    <p style="margin:0 0 16px;font-size:11pt;line-height:1.5;color:#566370">Critère {{ code }} · bloc 1, tronc commun tous postes · niveau visé {{ niveau }} · revalidation tous les 24 mois · critère obligatoire</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:11pt">
+      <tbody>
+        <tr>
+          <td style="width:62%;padding:14px 16px;border:1.5pt solid #005586;vertical-align:top">
+            <div style="font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#566370">Verdict de l'évaluation</div>
+            <div style="font-size:18pt;font-weight:700;line-height:1.2;color:{{ couleurVerdict }};margin-top:4px">{{ verdict }}</div>
+            <div style="font-size:11pt;line-height:1.5;margin-top:6px">{{ motif }}</div>
+          </td>
+          <td style="width:38%;padding:14px 16px;border:1.5pt solid #005586;border-left:0;vertical-align:top">
+            <div style="font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#566370">Score</div>
+            <div style="font-size:24pt;font-weight:700;line-height:1.1;letter-spacing:-.02em;margin-top:2px">{{ pourcentage }}</div>
+            <div style="font-size:10.5pt;line-height:1.45;color:#566370">{{ detailPoints }}</div>
+            <div style="font-size:10.5pt;line-height:1.45;margin-top:4px">Seuil de réussite : <strong>{{ seuil }}</strong></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin:0 0 6px;font-size:13pt;line-height:1.25;color:#005586">Identification, à compléter à la main</h2>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 18px;font-size:11pt">
+      <tbody>
+        <sc-for list="{{ champsIdentite }}" as="c" hint-placeholder-count="3">
+          <tr>
+            <td style="width:30%;padding:9px 10px;border:1px solid #d8dde2;background:#f0f2f4;font-weight:600">{{ c.libelle }}</td>
+            <td style="padding:9px 10px;border:1px solid #d8dde2;color:#566370">{{ c.aide }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+
+    <h2 style="margin:0 0 6px;font-size:13pt;line-height:1.25;color:#005586">Synthèse par question</h2>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 18px;font-size:10.5pt">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #005586;background:#005586;color:#ffffff;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">N°</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #005586;background:#005586;color:#ffffff;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">Format</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #005586;background:#005586;color:#ffffff;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">Objet de la question</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #005586;background:#005586;color:#ffffff;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">Résultat</th>
+          <th style="text-align:right;padding:8px 10px;border:1px solid #005586;background:#005586;color:#ffffff;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="9">
+          <tr style="break-inside:avoid">
+            <td style="padding:7px 10px;border:1px solid #d8dde2;font-family:ui-monospace,Menlo,monospace">{{ l.num }}</td>
+            <td style="padding:7px 10px;border:1px solid #d8dde2">{{ l.format }}</td>
+            <td style="padding:7px 10px;border:1px solid #d8dde2">{{ l.objet }}</td>
+            <td style="padding:7px 10px;border:1px solid #d8dde2;font-weight:600">{{ l.resultat }}</td>
+            <td style="padding:7px 10px;border:1px solid #d8dde2;text-align:right;font-family:ui-monospace,Menlo,monospace">{{ l.points }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+
+    <div style="break-inside:avoid;border:1px solid #8a5a00;background:#fdf3e0;padding:12px 16px;margin:0 0 18px;font-size:11pt;line-height:1.55">
+      <strong>Ce rapport ne vaut pas habilitation.</strong> Il documente la seule étape 2 de la chaîne en six étapes. Le compagnonnage au poste, l'évaluation pratique par le tuteur, la validation par le pharmacien responsable et le maintien de l'habilitation se déroulent hors de l'application et se consignent sur la fiche d'habilitation.
+    </div>
+
+    <h2 style="margin:0 0 8px;font-size:13pt;line-height:1.25;color:#005586">Visas</h2>
+    <table style="width:100%;border-collapse:collapse;margin:0 0 6px;font-size:10.5pt;break-inside:avoid">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #d8dde2;background:#f0f2f4;font-size:9pt;letter-spacing:.04em;text-transform:uppercase;width:26%">Qualité</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #d8dde2;background:#f0f2f4;font-size:9pt;letter-spacing:.04em;text-transform:uppercase">Objet du visa</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #d8dde2;background:#f0f2f4;font-size:9pt;letter-spacing:.04em;text-transform:uppercase;width:16%">Date</th>
+          <th style="text-align:left;padding:8px 10px;border:1px solid #d8dde2;background:#f0f2f4;font-size:9pt;letter-spacing:.04em;text-transform:uppercase;width:22%">Signature</th>
+        </tr>
+      </thead>
+      <tbody>
+        <sc-for list="{{ visas }}" as="v" hint-placeholder-count="3">
+          <tr style="break-inside:avoid">
+            <td style="padding:10px;border:1px solid #d8dde2;font-weight:600;vertical-align:top">{{ v.qualite }}</td>
+            <td style="padding:10px;border:1px solid #d8dde2;vertical-align:top">{{ v.objet }}</td>
+            <td style="padding:10px;border:1px solid #d8dde2;height:56px"></td>
+            <td style="padding:10px;border:1px solid #d8dde2"></td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+    <p style="margin:0;font-size:9.5pt;line-height:1.5;color:#566370">Le visa du pharmacien responsable porté ci-dessus ne prononce pas l'habilitation : il accuse réception de la preuve de l'étape 2. L'habilitation finale se prononce au chapitre IV de la fiche d'habilitation.</p>
+
+    <h2 style="break-before:page;margin:0 0 4px;font-size:15pt;line-height:1.2;color:#005586">Détail des questions, justifications et sources</h2>
+    <p style="margin:0 0 14px;font-size:10.5pt;line-height:1.5;color:#566370">Chaque justification renvoie au texte applicable. Les questions éliminatoires sont signalées : une erreur y invalide le critère quel que soit le score global.</p>
+
+    <sc-for list="{{ details }}" as="d" hint-placeholder-count="9">
+      <div style="break-inside:avoid;margin:0 0 14px;padding:0 0 12px 14px;border-left:3px solid {{ d.couleur }};border-bottom:1px solid #d8dde2">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:4px">
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:9.5pt;font-weight:700;color:#003f65">{{ d.num }}</span>
+          <span style="font-size:9pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:{{ d.couleur }}">{{ d.etat }}</span>
+          <span style="font-size:9pt;color:#566370">{{ d.format }}</span>
+          <sc-if value="{{ d.elim }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:9pt;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;padding:2px 7px;border-radius:3px">Éliminatoire</span>
+          </sc-if>
+          <span style="margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:9.5pt;font-weight:700">{{ d.points }}</span>
+        </div>
+        <p style="margin:0 0 5px;font-size:11.5pt;font-weight:650;line-height:1.4">{{ d.enonce }}</p>
+        <p style="margin:0 0 3px;font-size:10.5pt;line-height:1.5;color:#566370">Réponse donnée : <span style="color:#16202a">{{ d.votre }}</span></p>
+        <p style="margin:0 0 5px;font-size:10.5pt;line-height:1.5;color:#566370">Attendu : <span style="color:#16202a;font-weight:600">{{ d.attendu }}</span></p>
+        <p style="margin:0 0 5px;font-size:11pt;line-height:1.55">{{ d.justification }}</p>
+        <p style="margin:0;font-size:9.5pt;line-height:1.45;color:#566370">Source : {{ d.source }}</p>
+      </div>
+    </sc-for>
+
+    <h2 style="margin:18px 0 6px;font-size:13pt;line-height:1.25;color:#005586">Références du module</h2>
+    <ol style="margin:0;padding-left:20px;font-size:10pt;line-height:1.55;color:#566370">
+      <sc-for list="{{ biblio }}" as="b" hint-placeholder-count="3">
+        <li style="margin-bottom:6px">{{ b }}</li>
+      </sc-for>
+    </ol>
+  </div>
+</doc-page>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;seuilReussite&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:80,&quot;min&quot;:50,&quot;max&quot;:100,&quot;step&quot;:5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Barème&quot;},&quot;dateEvaluation&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;18/09/2026&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;En-tête&quot;}}">
+class Component extends DCLogic {
+  // Jeu de valeurs d'exemple : dans l'application, ces valeurs proviennent de
+  // la session de passation en cours (rien n'est lu ni écrit côté serveur).
+  resultats() {
+    return [
+      { num: "1", format: "QCM", objet: "Limite particulaire de la classe ISO 5", juste: true, points: 1,
+        enonce: "Selon la norme ISO 14644-1, quelle est la concentration maximale de particules ≥ 0,5 µm par m³ admise en classe ISO 5 ?",
+        votre: "3 520 particules/m³", attendu: "3 520 particules/m³",
+        justification: "La limite ISO 5 est de 3 520 particules ≥ 0,5 µm par m³. La valeur 352 000 correspond à la classe ISO 7 : entre les deux, un facteur cent.",
+        source: "ISO / AFNOR — NF EN ISO 14644-1, classification particulaire de l'air" },
+      { num: "2", format: "QCM", objet: "Classe mesurée au repos et en activité", juste: true, points: 1,
+        enonce: "Un local est classé ISO 7 au repos et mesuré ISO 8 pendant une séance de préparation. Comment interpréter ce résultat ?",
+        votre: "C'est attendu : les classes sont définies par état, au repos et en activité", attendu: "C'est attendu : les classes sont définies par état, au repos et en activité",
+        justification: "Les référentiels définissent un état au repos et un état en activité, avec des exigences distinctes. L'écart ne traduit pas une dérive : il traduit la présence de l'opérateur, source principale de particules.",
+        source: "ANSM — BPF, Annexe 1 ; NF EN ISO 14644-1" },
+      { num: "3", format: "QCM", objet: "Portée de la classification particulaire", juste: false, points: 0,
+        enonce: "Quelle affirmation sur la classification particulaire est exacte ?",
+        votre: "Une classe ISO 5 garantit l'absence de micro-organismes dans l'air", attendu: "La classification particulaire et la surveillance microbiologique sont deux contrôles distincts, tous deux exigés",
+        justification: "Une particule n'est pas un micro-organisme : le comptage particulaire mesure la maîtrise de l'environnement, pas sa charge biologique. Les deux surveillances ont des méthodes, des seuils et des finalités différentes, et aucune ne se substitue à l'autre.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { num: "4", format: "QCM", objet: "Moment d'enfilage des gants", elim: true, juste: true, points: 1,
+        enonce: "À quel moment de l'habillage les gants sont-ils enfilés ?",
+        votre: "En dernier, par-dessus les poignets", attendu: "En dernier, par-dessus les poignets",
+        justification: "Les gants sont ce qui approchera le produit : tout geste d'habillage effectué après les avoir enfilés les contamine. Ils recouvrent les poignets de la tenue, ce qui supprime la zone de peau exposée à la jonction manche-gant.",
+        source: "ANSM — BPP 2023, ligne directrice 1" },
+      { num: "5", format: "QCM multiple", objet: "Comportements compromettant la maîtrise en ZAC", juste: true, points: 1,
+        enonce: "Quels comportements compromettent la maîtrise de l'environnement en ZAC ?",
+        votre: "Ouvrir les deux portes d'un sas · Passer la main au-dessus d'un point critique · Gestes rapides et amples",
+        attendu: "Ouvrir les deux portes d'un sas · Passer la main au-dessus d'un point critique · Gestes rapides et amples",
+        justification: "Deux portes ouvertes ensemble annulent la cascade de pression ; une main en amont d'un point critique contamine ce qui est en aval ; les gestes rapides remettent les particules en suspension. Limiter les effectifs va au contraire dans le sens de la maîtrise.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { num: "6", format: "QCM", objet: "Sortie brève de zone", juste: true, points: 1,
+        enonce: "Un opérateur habillé doit sortir de zone une minute pour récupérer un document oublié. Que fait-il au retour ?",
+        votre: "Il refait l'habillage complet selon la procédure", attendu: "Il refait l'habillage complet selon la procédure",
+        justification: "La durée de la sortie ne change rien à son effet : la tenue a quitté l'environnement maîtrisé. C'est aussi pourquoi la préparation de la séance se fait avant l'habillage et non pendant.",
+        source: "ANSM — BPP 2023, ligne directrice 1" },
+      { num: "7", format: "QIM", objet: "Zones à atmosphère contrôlée — propositions", discordances: 1, points: 0.5,
+        enonce: "Concernant les zones à atmosphère contrôlée, indiquer la ou les propositions exactes.",
+        votre: "A vrai · B vrai · C vrai · D vrai · E faux", attendu: "A vrai · B vrai · C faux · D vrai · E faux",
+        justification: "Une discordance sur la proposition C : le comptage particulaire ne renseigne pas sur la charge microbiologique de l'air, qui relève d'un contrôle distinct.",
+        source: "NF EN ISO 14644-1 ; ANSM — BPF, Annexe 1" },
+      { num: "8", format: "QCM", objet: "Écart le plus grave — mise en situation du sas", elim: true, juste: true, points: 1,
+        enonce: "Quel élément de la situation du sas constitue l'écart le plus grave ?",
+        votre: "La porte du sas est maintenue ouverte, ce qui rompt la cascade de pression", attendu: "La porte du sas est maintenue ouverte, ce qui rompt la cascade de pression",
+        justification: "Le carton non décartonné est un écart réel mais circonscrit au sas. La porte maintenue ouverte rompt immédiatement la cascade de pression et met la zone en communication avec l'extérieur — ce que confirme le déclenchement de l'alarme.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { num: "9", format: "QIM", objet: "Conduite à tenir après l'événement", discordances: 2, points: 0,
+        enonce: "Concernant la conduite à tenir, indiquer la ou les propositions exactes.",
+        votre: "A vrai · B vrai · C vrai · D sans réponse · E vrai", attendu: "A vrai · B faux · C vrai · D vrai · E vrai",
+        justification: "Deux discordances annulent la question. L'urgence de la série ne crée aucune dérogation au circuit d'entrée du matériel, et le signalement de l'écart environnemental n'est pas optionnel : la reprise n'est légitime qu'après retour documenté des conditions.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" }
+    ];
+  }
+
+  fmt(n) { return String(Math.round(n * 10) / 10).replace(".", ","); }
+
+  renderVals() {
+    const seuil = this.props.seuilReussite ?? 80;
+    const r = this.resultats();
+    const total = r.reduce((a, q) => a + q.points, 0);
+    const pct = Math.round((total / r.length) * 100);
+    const echecElim = r.some((q) => q.elim && !q.juste);
+    const acquis = pct >= seuil && !echecElim;
+
+    const etatDe = (q) => {
+      if (q.format === "QIM") return q.discordances === 0 ? "Aucune discordance" : q.discordances + (q.discordances > 1 ? " discordances" : " discordance");
+      return q.juste ? "Réponse exacte" : "Réponse erronée";
+    };
+    const couleurDe = (q) => q.points === 1 ? "#1f6b45" : q.points > 0 ? "#8a5a00" : "#99271f";
+
+    return {
+      code: "B1-01",
+      niveau: "N1a",
+      reference: "Tirage habilitation · 9 questions · " + (this.props.dateEvaluation ?? "18/09/2026"),
+      titreCritere: "Comportement et habillage en zone à atmosphère contrôlée",
+      seuil: seuil + " %",
+      pourcentage: pct + " %",
+      detailPoints: this.fmt(total) + " / " + r.length + " points",
+      verdict: acquis ? "Critère acquis pour cette évaluation" : "Critère non acquis",
+      couleurVerdict: acquis ? "#1f6b45" : "#99271f",
+      motif: acquis
+        ? "Le seuil est atteint et aucune question éliminatoire n'est en échec. La suite du parcours reste à réaliser au poste."
+        : (echecElim
+          ? "Échec sur une question éliminatoire : le critère est non acquis quel que soit le score global. Reprise du module puis nouveau tirage."
+          : "Le seuil de réussite n'est pas atteint. Reprise du module puis nouveau tirage."),
+      champsIdentite: [
+        { libelle: "Nom et prénom", aide: "à renseigner par l'apprenant" },
+        { libelle: "Fonction et unité", aide: "préparateur en pharmacie, interne, pharmacien — unité de production" },
+        { libelle: "Date de passation", aide: "date du jour de l'évaluation" }
+      ],
+      lignes: r.map((q) => ({
+        num: q.num, format: q.format + (q.elim ? " · éliminatoire" : ""), objet: q.objet,
+        resultat: etatDe(q), points: this.fmt(q.points) + " / 1"
+      })),
+      visas: [
+        { qualite: "Apprenant", objet: "Atteste avoir lu le module et passé l'évaluation dans les conditions décrites." },
+        { qualite: "Tuteur (N3)", objet: "Prend connaissance du résultat avant l'entrée en compagnonnage au poste." },
+        { qualite: "Pharmacien responsable", objet: "Réception de la preuve de l'étape 2 pour le dossier d'habilitation." }
+      ],
+      details: r.map((q) => ({
+        num: "Question " + q.num, format: q.format, elim: !!q.elim,
+        etat: etatDe(q), couleur: couleurDe(q), points: this.fmt(q.points) + " / 1 point",
+        enonce: q.enonce, votre: q.votre, attendu: q.attendu,
+        justification: q.justification, source: q.source
+      })),
+      biblio: [
+        "Décision du 21/07/2023 relative aux bonnes pratiques de préparation (entrée en vigueur le 20/09/2023) — ANSM · ligne directrice 1, préparation de médicaments stériles.",
+        "Bonnes pratiques de fabrication — Annexe 1 relative à la fabrication des médicaments stériles (ajoutée par décision du 28/05/2024) — ANSM.",
+        "NF EN ISO 14644-1 — Salles propres et environnements maîtrisés apparentés. Partie 1 : classification particulaire de l'air — ISO / AFNOR, 2015."
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

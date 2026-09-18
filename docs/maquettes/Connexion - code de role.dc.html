@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Connexion par code de rôle — Formation &amp; habilitation | CHD Vendée</title>
+<meta name="description" content="Accès par code de rôle à l'outil de formation et d'évaluation de l'unité de pharmacotechnie du CHD Vendée. Un code ouvre un profil, il ne désigne aucune personne.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #f5f7f9; }
+  a { color: #005586; text-underline-offset: 2px; }
+  a:hover { color: #003f65; }
+  :where(a, button, summary, input, select, label):focus-visible { outline: 3px solid #005586; outline-offset: 2px; border-radius: 8px; }
+  .lien-evitement { position: absolute; left: -9999px; top: 0; z-index: 60; background: #005586; color: #fff; font-weight: 600; padding: 12px 18px; border-radius: 0 0 10px 0; text-decoration: none; }
+  .lien-evitement:focus { left: 0; }
+  @keyframes derive-a { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(5%,-4%,0) scale(1.09); } }
+  @keyframes derive-b { from { transform: translate3d(0,0,0) scale(1.04); } to { transform: translate3d(-4%,5%,0) scale(0.96); } }
+  @keyframes derive-c { from { transform: translate3d(0,0,0) scale(0.98); } to { transform: translate3d(3%,4%,0) scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</helmet>
+
+<div style="font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;color:#16202a;border-left:5px solid #E82A63;background:#f5f7f9;min-height:100vh;position:relative;isolation:isolate;display:flex;flex-direction:column">
+  {{ fondOrganique }}
+
+  <a class="lien-evitement" href="#acces">Aller au formulaire d'accès</a>
+
+  <header style="position:relative;z-index:2;background:rgba(255,255,255,.88);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:880px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO HDV</div>
+        <div style="width:1px;height:24px;background:#d8dde2"></div>
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO PHARMACO</div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <strong style="font-size:14px;line-height:1.3">Formation &amp; habilitation</strong>
+        <span style="font-size:12px;color:#566370">Unité de production — CHD Vendée</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="acces" style="position:relative;z-index:1;flex:1 1 auto;width:100%;max-width:880px;margin:0 auto;padding:44px 24px 70px;display:flex;flex-direction:column;gap:18px">
+
+    <section aria-labelledby="titre-connexion" style="padding:30px 32px;border-radius:20px;background:rgba(255,255,255,.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 22px 60px rgba(0,85,134,.12);display:flex;flex-direction:column;gap:10px">
+      <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b41f4d">Accès à l'outil</span>
+      <h1 id="titre-connexion" style="margin:0;max-width:26ch;font-size:36px;line-height:1.12;letter-spacing:-.025em;color:#005586">Un code ouvre un profil, pas un compte</h1>
+      <p style="margin:0;max-width:62ch;font-size:17px;line-height:1.65;color:#16202a">L'accès se fait par code de rôle : administration, tutorat, ou poste de travail. Un code ne désigne aucune personne — il n'y a ni identifiant nominatif, ni mot de passe individuel, ni historique rattaché à un agent.</p>
+    </section>
+
+    <sc-if value="{{ controleInactif }}" hint-placeholder-val="{{ true }}">
+      <div role="status" style="padding:18px 22px;border-radius:14px;background:rgba(253,243,224,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid #8a5a00;border-left:5px solid #8a5a00;display:flex;flex-direction:column;gap:6px">
+        <strong style="font-size:15px;line-height:1.35;color:#16202a">Contrôle d'accès inactif — le site est ouvert à quiconque a l'adresse</strong>
+        <p style="margin:0;max-width:66ch;font-size:14px;line-height:1.6;color:#16202a">La base de données n'est pas branchée : aucun code n'est vérifié et tous les écrans sont accessibles. Créez un store Postgres et un store Blob dans l'onglet <em>Storage</em> du projet, puis rechargez cette page.</p>
+        <span style="font-size:13px;color:#566370">Cet état doit être levé avant tout usage du dispositif comme preuve en audit.</span>
+      </div>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));gap:16px;align-items:start">
+
+      <form onSubmit="{{ surSoumission }}" style="padding:24px 26px;border-radius:16px;background:rgba(255,255,255,.84);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 14px 36px rgba(0,85,134,.10);display:flex;flex-direction:column;gap:14px">
+        <h2 style="margin:0;font-size:20px;line-height:1.25;color:#005586">Entrer un code de rôle</h2>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:14px;font-weight:600">Code d'accès</span>
+          <input value="{{ code }}" onChange="{{ surSaisie }}" placeholder="XXXXX-XXXXX" autoComplete="off" spellCheck="false" aria-describedby="aide-code" style="font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;letter-spacing:.08em;min-height:56px;padding:0 16px;border:1px solid #b6bec6;border-radius:12px;background:#ffffff;color:#16202a">
+          <span id="aide-code" style="font-size:13px;line-height:1.5;color:#566370">Dix caractères, séparés par un tiret. Le code est affiché dans l'unité, à côté du poste.</span>
+        </label>
+        <sc-if value="{{ erreur }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" style="margin:0;font-size:14px;line-height:1.55;font-weight:600;color:#99271f;background:#fbeae8;border:1px solid #99271f;border-radius:10px;padding:10px 12px">Code non reconnu. Vérifiez la saisie, ou entrez sans code : la consultation reste ouverte.</p>
+        </sc-if>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <button type="submit" disabled="{{ boutonDesactive }}" style="font:inherit;font-size:15px;font-weight:650;min-height:52px;padding:0 24px;border-radius:12px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65;border-color:#003f65">Entrer</button>
+          <button type="button" style="font:inherit;font-size:15px;font-weight:600;min-height:52px;padding:0 20px;border-radius:12px;border:1px solid #005586;background:rgba(255,255,255,.7);color:#005586;cursor:pointer" style-hover="background:#e6f0f5">Consulter sans code</button>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#566370">Sans code, vous accédez aux modules et aux évaluations. Les dépôts de documents et l'ordonnancement des modules demandent un code de tutorat ou d'administration.</p>
+      </form>
+
+      <section aria-labelledby="titre-profils" style="padding:24px 26px;border-radius:16px;background:rgba(255,255,255,.8);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:12px">
+        <h2 id="titre-profils" style="margin:0;font-size:20px;line-height:1.25;color:#005586">Ce qu'ouvre chaque profil</h2>
+        <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ profils }}" as="p" hint-placeholder-count="3">
+            <li style="display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66)">
+              <span style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                <strong style="font-size:15px;color:#16202a">{{ p.nom }}</strong>
+                <span style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#003f65;background:#e6f0f5;border-radius:5px;padding:3px 8px">{{ p.porte }}</span>
+              </span>
+              <span style="font-size:13px;line-height:1.55;color:#566370">{{ p.detail }}</span>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </div>
+
+    <section aria-labelledby="titre-donnees" style="padding:22px 26px;border-radius:16px;background:rgba(230,240,245,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(0,85,134,.35);border-left:5px solid #005586;display:flex;flex-direction:column;gap:8px">
+      <h2 id="titre-donnees" style="margin:0;font-size:18px;line-height:1.25;color:#005586">Ce que le site enregistre : rien de nominatif</h2>
+      <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;max-width:72ch">
+        <sc-for list="{{ garanties }}" as="g" hint-placeholder-count="3">
+          <li style="display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.6;color:#16202a">
+            <span aria-hidden="true" style="flex:none;width:7px;height:7px;margin-top:9px;border-radius:2px;background:#005586"></span>
+            <span style="flex:1 1 0;min-width:0">{{ g }}</span>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+  </main>
+
+  <footer style="position:relative;z-index:1;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-top:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:880px;margin:0 auto;padding:20px 24px;font-size:12px;line-height:1.55;color:#566370">
+      <p style="margin:0 0 8px"><strong>Aucune donnée nominative n'est enregistrée.</strong> Les résultats vivent en mémoire de l'onglet le temps de la session, puis sont exportés dans un fichier que l'apprenant remet lui-même pour son dossier d'habilitation.</p>
+      <p style="margin:0">Statut du dispositif (outil pédagogique ou preuve opposable en audit BPP 2023 / ISO 9001) : <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fdf3e0;color:#8a5a00;border:1px dashed currentColor;border-radius:8px;padding:1px 6px">[à préciser]</span></p>
+    </div>
+    <div style="background:#005586;color:#ffffff;font-size:11px"><div style="max-width:880px;margin:0 auto;padding:10px 24px"><strong>CHD Vendée</strong> — La Roche-sur-Yon 85925 • Luçon 85400 • Montaigu 85600 — Pharmacie à usage intérieur, unité de pharmacotechnie</div></div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;controleInactif&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;État du dispositif&quot;}}">
+class Component extends DCLogic {
+  state = { code: "", erreur: false };
+
+  surSaisie = (e) => this.setState({ code: e.target.value.toUpperCase(), erreur: false });
+
+  surSoumission = (e) => {
+    e.preventDefault();
+    // Sans base branchée, aucun code n'est vérifiable : on le dit plutôt que
+    // de simuler une authentification.
+    this.setState({ erreur: this.state.code.trim().length > 0 });
+  };
+
+  fond() {
+    const h = React.createElement;
+    const forme = (s) => h("div", { key: s.k, style: {
+      position: "absolute", pointerEvents: "none",
+      width: s.w, height: s.ht, top: s.t, left: s.l, right: s.r, bottom: s.b,
+      background: "radial-gradient(circle at 38% 34%, " + s.c1 + " 0%, " + s.c2 + " 55%, rgba(255,255,255,0) 76%)",
+      borderRadius: s.rd, filter: "blur(" + s.bl + "px)", opacity: s.o, animation: s.a, willChange: "transform"
+    } });
+    return h("div", { "aria-hidden": "true", style: { position: "fixed", inset: 0, zIndex: -1, overflow: "hidden", pointerEvents: "none" } }, [
+      forme({ k: "b1", w: "48vw", ht: "46vw", t: "-14vw", l: "-10vw", rd: "62% 38% 55% 45% / 48% 58% 42% 52%", c1: "rgba(0,85,134,.34)", c2: "rgba(0,85,134,.14)", bl: 80, o: .85, a: "derive-a 46s ease-in-out infinite alternate" }),
+      forme({ k: "b2", w: "42vw", ht: "40vw", t: "4vw", r: "-12vw", rd: "44% 56% 38% 62% / 56% 42% 58% 44%", c1: "rgba(232,42,99,.30)", c2: "rgba(232,42,99,.10)", bl: 86, o: .8, a: "derive-b 54s ease-in-out infinite alternate" }),
+      forme({ k: "b3", w: "34vw", ht: "32vw", b: "-10vw", l: "22vw", rd: "58% 42% 60% 40% / 40% 58% 42% 60%", c1: "rgba(70,180,179,.24)", c2: "rgba(70,180,179,.08)", bl: 88, o: .7, a: "derive-c 62s ease-in-out infinite alternate" }),
+      forme({ k: "b4", w: "20vw", ht: "20vw", b: "16vw", r: "8vw", rd: "52% 48% 40% 60% / 60% 40% 56% 44%", c1: "rgba(244,193,55,.22)", c2: "rgba(244,193,55,.06)", bl: 92, o: .6, a: "derive-a 68s ease-in-out infinite alternate" })
+    ]);
+  }
+
+  renderVals() {
+    return {
+      fondOrganique: this.fond(),
+      controleInactif: this.props.controleInactif ?? true,
+      code: this.state.code,
+      erreur: this.state.erreur,
+      boutonDesactive: this.state.code.trim().length === 0,
+      surSaisie: this.surSaisie,
+      surSoumission: this.surSoumission,
+      profils: [
+        { nom: "Poste de travail", porte: "Apprenant", detail: "Lecture des modules, passation des évaluations, export du rapport. C'est le profil par défaut, et il n'a besoin d'aucun code." },
+        { nom: "Tutorat", porte: "Préparateur N3", detail: "Dépôt des procédures internes rattachées aux critères, ordonnancement des modules du parcours." },
+        { nom: "Administration", porte: "Pharmacien", detail: "Gestion des codes, des dépôts et du programme. Consultation des critères et de leurs banques de questions." }
+      ],
+      garanties: [
+        "Les réponses transmises au serveur ne comportent ni nom, ni matricule, ni identifiant : elles ne peuvent pas être rattachées à un agent.",
+        "Les résultats ne sont conservés nulle part. Ils vivent en mémoire de l'onglet le temps de la session, et disparaissent à sa fermeture.",
+        "Seul l'apprenant sort son résultat de l'outil, sous forme d'un fichier qu'il télécharge et remet pour son dossier d'habilitation.",
+        "Un repère de lecture peut être stocké localement sur le poste, pour reprendre un module après une interruption. Il s'efface depuis le sommaire du module."
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

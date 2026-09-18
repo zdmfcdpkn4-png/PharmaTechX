@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Comportement et habillage en zone à atmosphère contrôlée — module B1-01 | CHD Vendée</title>
+<meta name="description" content="Module de formation théorique du critère B1-01 : classification particulaire, grades A à D, habillage et comportements en zone à atmosphère contrôlée. Unité de pharmacotechnie, CHD Vendée.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #f5f7f9; }
+  a { color: #005586; text-underline-offset: 2px; }
+  a:hover { color: #003f65; }
+  :where(a, button, summary, input, select, label):focus-visible { outline: 3px solid #005586; outline-offset: 2px; border-radius: 8px; }
+  .lien-evitement { position: absolute; left: -9999px; top: 0; z-index: 60; background: #005586; color: #fff; font-weight: 600; padding: 12px 18px; border-radius: 0 0 10px 0; text-decoration: none; }
+  .lien-evitement:focus { left: 0; }
+  details > summary::-webkit-details-marker { display: none; }
+  @keyframes derive-a { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(5%,-4%,0) scale(1.09); } }
+  @keyframes derive-b { from { transform: translate3d(0,0,0) scale(1.04); } to { transform: translate3d(-4%,5%,0) scale(0.96); } }
+  @keyframes derive-c { from { transform: translate3d(0,0,0) scale(0.98); } to { transform: translate3d(3%,4%,0) scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  }
+</style>
+</helmet>
+
+<div ref="{{ refRacine }}" style="font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;color:#16202a;border-left:5px solid #E82A63;background:#f5f7f9;min-height:100vh;position:relative;isolation:isolate">
+  {{ fondOrganique }}
+
+  <div role="progressbar" aria-label="Progression de lecture du module" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" ref="{{ refBarre }}" style="position:fixed;top:0;left:0;right:0;height:4px;background:#dfe4e8;z-index:50">
+    <div ref="{{ refJauge }}" style="height:100%;width:0%;background:#E82A63;transition:width .12s linear"></div>
+  </div>
+
+  <a class="lien-evitement" href="#texte">Aller au texte du module</a>
+
+  <header ref="{{ refEntete }}" tabindex="-1" style="position:fixed;top:4px;left:5px;right:0;z-index:40;background:rgba(255,255,255,.9);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid rgba(216,221,226,.9);transition:transform .26s ease,box-shadow .2s ease;will-change:transform">
+    <div style="max-width:1120px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO HDV</div>
+        <div style="width:1px;height:24px;background:#d8dde2"></div>
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO PHARMACO</div>
+      </div>
+      <strong style="font-size:14px">Formation &amp; habilitation</strong>
+      <nav aria-label="Fil d'Ariane" style="font-size:13px;color:#566370;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <a href="#texte" style="font-weight:600">Programme</a><span aria-hidden="true">›</span>
+        <span aria-current="page">B1-01</span>
+      </nav>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <sc-if value="{{ reprisePossible }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ reprendre }}" style="font:inherit;font-size:13px;font-weight:600;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #46b4b3;background:#dff0f0;color:#16202a;cursor:pointer" style-hover="border-color:#005586">{{ repriseLibelle }}</button>
+        </sc-if>
+        <button type="button" style="font:inherit;font-size:13px;font-weight:650;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65">Passer l'évaluation</button>
+      </div>
+    </div>
+  </header>
+
+  <div aria-hidden="true" ref="{{ refCale }}" style="height:120px"></div>
+
+  <div style="position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 24px 90px;display:grid;grid-template-columns:minmax(0,1fr);gap:24px">
+
+    <section aria-labelledby="titre-module" style="padding:30px 32px;border-radius:20px;background:rgba(255,255,255,.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 22px 60px rgba(0,85,134,.12);display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:5px;padding:3px 7px">B1-01</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Obligatoire</span>
+        <span style="font-size:12px;color:#566370">Bloc 1 — tronc commun, tous postes · niveau N1a · revalidation 24 mois</span>
+      </div>
+      <h1 id="titre-module" style="margin:0;max-width:30ch;font-size:36px;line-height:1.12;letter-spacing:-.025em;color:#005586">Comportement et habillage en zone à atmosphère contrôlée</h1>
+      <p style="margin:0;max-width:66ch;font-size:17px;line-height:1.65;color:#16202a">Expliquer ce que la classification particulaire garantit et ce qu'elle ne garantit pas, réaliser l'habillage dans l'ordre, adopter les comportements qui préservent la maîtrise de l'environnement.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:2px">
+        <span style="font-size:13px;color:#16202a;background:rgba(255,255,255,.8);border:1px solid #d8dde2;border-radius:999px;padding:7px 14px">5 sections · 40 min</span>
+        <span style="font-size:13px;color:#16202a;background:rgba(255,255,255,.8);border:1px solid #d8dde2;border-radius:999px;padding:7px 14px">9 questions · 1 mise en situation</span>
+        <span style="font-size:13px;color:#16202a;background:rgba(255,255,255,.8);border:1px solid #d8dde2;border-radius:999px;padding:7px 14px">Seuil 80 % · 2 éliminatoires</span>
+      </div>
+    </section>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:24px">
+      <div style="display:grid;grid-template-columns:238px minmax(0,1fr);gap:32px;align-items:start">
+
+        <nav aria-label="Sommaire du module" style="position:sticky;top:140px;display:flex;flex-direction:column;gap:8px;padding:18px 16px;border-radius:14px;background:rgba(255,255,255,.78);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08)">
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#566370">Sommaire</span>
+          <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:s">
+            <sc-for list="{{ sommaire }}" as="s" hint-placeholder-count="5">
+              <li>
+                <a href="{{ s.ancre }}" ref="{{ s.ref }}" style="display:flex;gap:10px;align-items:baseline;text-decoration:none;min-height:44px;padding:8px 10px;border-radius:9px;font-size:13px;line-height:1.35;color:#16202a;border-left:3px solid transparent" style-hover="background:#e6f0f5">
+                  <span style="flex:none;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#566370">{{ s.num }}</span>
+                  <span style="flex:1 1 0;min-width:0">{{ s.titre }}</span>
+                </a>
+              </li>
+            </sc-for>
+          </ol>
+          <div style="border-top:1px solid #d8dde2;padding-top:10px;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;line-height:1.5;color:#566370">Votre lecture est repérée localement sur ce poste, pour reprendre après une interruption.</span>
+            <button type="button" onClick="{{ oublierReprise }}" style="font:inherit;font-size:12px;font-weight:600;min-height:44px;border-radius:9px;border:1px solid #d8dde2;background:rgba(255,255,255,.7);color:#005586;cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">Oublier ce repère</button>
+          </div>
+        </nav>
+
+        <article id="texte" style="display:flex;flex-direction:column;gap:28px">
+          <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="5">
+            <section id="{{ sec.id }}" ref="{{ sec.ref }}" style="scroll-margin-top:var(--decalage,140px);padding:26px 30px;border-radius:16px;background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b41f4d">Section {{ sec.num }} sur 5</span>
+                <h2 style="margin:0;max-width:34ch;font-size:26px;line-height:1.2;letter-spacing:-.015em;color:#005586">{{ sec.titre }}</h2>
+              </div>
+
+              <sc-for list="{{ sec.blocs }}" as="b" hint-placeholder-count="3">
+                <sc-if value="{{ b.estTexte }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin:0;max-width:68ch;font-size:17px;line-height:1.75;color:#16202a;text-wrap:pretty">{{ b.texte }}</p>
+                </sc-if>
+                <sc-if value="{{ b.estCle }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0;max-width:68ch;font-size:17px;line-height:1.75;color:#16202a;border-left:3px solid #E82A63;padding-left:16px;text-wrap:pretty"><strong>{{ b.titre }}</strong> {{ b.texte }}</p>
+                </sc-if>
+                <sc-if value="{{ b.estListe }}" hint-placeholder-val="{{ false }}">
+                  <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;max-width:68ch">
+                    <sc-for list="{{ b.items }}" as="it" hint-placeholder-count="3">
+                      <li style="display:flex;gap:12px;align-items:flex-start;font-size:17px;line-height:1.7;color:#16202a">
+                        <span aria-hidden="true" style="flex:none;width:7px;height:7px;margin-top:11px;border-radius:2px;background:#005586"></span>
+                        <span style="flex:1 1 0;min-width:0;text-wrap:pretty">{{ it }}</span>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </sc-if>
+              </sc-for>
+
+              <details style="border:1px solid #d8dde2;border-radius:11px;background:rgba(246,247,248,.8)">
+                <summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;font-weight:600;color:#005586">
+                  <span style="flex:1 1 0">Sources de cette section</span>
+                  <span aria-hidden="true" style="font-family:ui-monospace,Menlo,monospace">+</span>
+                </summary>
+                <ul style="margin:0;padding:0 14px 14px 14px;list-style:none;display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ sec.sources }}" as="src" hint-placeholder-count="2">
+                    <li style="font-size:13px;line-height:1.55;color:#566370">{{ src }}</li>
+                  </sc-for>
+                </ul>
+              </details>
+            </section>
+          </sc-for>
+
+          <section aria-labelledby="titre-docs" style="padding:24px 30px;border-radius:16px;background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between">
+              <h2 id="titre-docs" style="margin:0;font-size:22px;line-height:1.2;color:#005586">Documents rattachés</h2>
+              <span style="font-size:13px;color:#566370">5 documents · 2 encore à rattacher</span>
+            </div>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ documents }}" as="d" hint-placeholder-count="5">
+                <li style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-height:52px;padding:10px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66)">
+                  <span style="flex:none;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#003f65;background:#e6f0f5;border-radius:5px;padding:4px 8px">{{ d.nature }}</span>
+                  <span style="flex:1 1 20rem;min-width:0;font-size:15px;line-height:1.45;color:#16202a">{{ d.titre }}</span>
+                  <sc-if value="{{ d.manquant }}" hint-placeholder-val="{{ false }}">
+                    <span style="flex:none;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fdf3e0;color:#8a5a00;border:1px dashed currentColor;border-radius:8px;padding:2px 7px">à rattacher</span>
+                  </sc-if>
+                  <sc-if value="{{ d.disponible }}" hint-placeholder-val="{{ true }}">
+                    <a href="#texte" style="flex:none;font-size:13px;font-weight:600;min-height:44px;display:inline-flex;align-items:center;padding:0 14px;border-radius:10px;border:1px solid #005586;text-decoration:none;color:#005586" style-hover="background:#e6f0f5">Ouvrir</a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+
+          <section aria-labelledby="titre-suite" style="padding:24px 30px;border-radius:16px;background:rgba(0,85,134,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.35);box-shadow:0 14px 40px rgba(0,85,134,.20);display:flex;flex-direction:column;gap:12px">
+            <h2 id="titre-suite" style="margin:0;font-size:22px;line-height:1.25;color:#ffffff">L'évaluation de ce critère comporte 9 questions</h2>
+            <p style="margin:0;max-width:64ch;font-size:15px;line-height:1.6;color:#d9e6ee">QCM, QIM et une mise en situation. Les questions éliminatoires invalident le critère en cas d'erreur, quel que soit le score global. Réussir cette évaluation ne vaut pas habilitation : elle constitue la preuve de l'étape 2 sur 6.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:2px">
+              <button type="button" style="font:inherit;font-size:15px;font-weight:650;min-height:52px;padding:0 24px;border-radius:12px;border:1px solid #ffffff;background:#ffffff;color:#003f65;cursor:pointer" style-hover="background:#d9e6ee">Passer l'évaluation</button>
+              <a href="#texte" style="font-size:15px;font-weight:600;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #ffffff;background:transparent;color:#ffffff" style-hover="background:#003f65">Retour au programme</a>
+            </div>
+          </section>
+
+          <section aria-labelledby="titre-biblio" style="padding:22px 30px;border-radius:16px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.9);display:flex;flex-direction:column;gap:10px">
+            <h2 id="titre-biblio" style="margin:0;font-size:16px;line-height:1.3;color:#005586">Bibliographie du module</h2>
+            <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ biblio }}" as="b" hint-placeholder-count="3">
+                <li style="font-size:13px;line-height:1.6;color:#566370">{{ b }}</li>
+              </sc-for>
+            </ol>
+          </section>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <footer style="position:relative;z-index:1;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-top:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:1120px;margin:0 auto;padding:20px 24px;font-size:12px;line-height:1.55;color:#566370">
+      <p style="margin:0 0 8px"><strong>Aucune donnée nominative n'est enregistrée.</strong> Seul un repère de lecture est stocké localement sur ce poste, et vous pouvez l'effacer depuis le sommaire.</p>
+      <p style="margin:0">Statut du dispositif (outil pédagogique ou preuve opposable en audit BPP 2023 / ISO 9001) : <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fdf3e0;color:#8a5a00;border:1px dashed currentColor;border-radius:8px;padding:1px 6px">[à préciser]</span></p>
+    </div>
+    <div style="background:#005586;color:#ffffff;font-size:11px"><div style="max-width:1120px;margin:0 auto;padding:10px 24px"><strong>CHD Vendée</strong> — Pharmacie à usage intérieur, unité de pharmacotechnie</div></div>
+  </footer>
+
+  <button type="button" ref="{{ refBouton }}" onClick="{{ remonter }}" aria-label="Revenir en haut du module" style="position:fixed;right:24px;bottom:24px;z-index:45;min-height:48px;min-width:48px;padding:0 18px;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:14px;font-weight:650;border-radius:999px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(14px);transition:opacity .22s ease,transform .22s ease,visibility .22s;box-shadow:0 6px 20px rgba(16,24,32,.24)" style-hover="background:#003f65;border-color:#003f65">
+    <span aria-hidden="true" style="font-size:15px;line-height:1">↑</span>Haut du module
+  </button>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;seuilRetourHaut&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.8,&quot;min&quot;:1,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;écrans&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Confort de lecture&quot;}}">
+const CLE_REPRISE = "chd-b1-01-lecture";
+
+class Component extends DCLogic {
+  state = { repere: null };
+
+  componentDidMount() {
+    this.liensSommaire = {};
+    this.sectionsEl = {};
+    this.enAttente = false;
+    this.reduit = window.matchMedia("(prefers-reduced-motion: reduce)");
+    try {
+      const brut = localStorage.getItem(CLE_REPRISE);
+      if (brut) this.setState({ repere: JSON.parse(brut) });
+    } catch (e) { /* stockage indisponible : la lecture fonctionne sans repère */ }
+
+    this.surScroll = () => {
+      if (this.enAttente) return;
+      this.enAttente = true;
+      requestAnimationFrame(this.maj);
+    };
+    window.addEventListener("scroll", this.surScroll, { passive: true, capture: true });
+    window.addEventListener("resize", this.surScroll, { passive: true });
+    if (this.entete && typeof ResizeObserver === "function") {
+      this.observateur = new ResizeObserver(this.majHauteurEntete);
+      this.observateur.observe(this.entete);
+    }
+    this.majHauteurEntete();
+    this.maj();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this.surScroll, { capture: true });
+    window.removeEventListener("resize", this.surScroll);
+    if (this.observateur) this.observateur.disconnect();
+    if (this.minuteur) clearTimeout(this.minuteur);
+  }
+
+  majHauteurEntete = () => {
+    if (!this.entete) return;
+    const h = Math.round(this.entete.getBoundingClientRect().height);
+    if (!h || h === this.hauteurEntete) return;
+    this.hauteurEntete = h;
+    if (this.cale) this.cale.style.height = h + 4 + "px";
+    if (this.racine) this.racine.style.setProperty("--decalage", h + 24 + "px");
+  };
+
+  defileur() {
+    if (this.cache && this.cache.scrollHeight - this.cache.clientHeight > 4) return this.cache;
+    const de = document.documentElement;
+    this.cache = de.scrollHeight - de.clientHeight > 4 ? de : document.body;
+    return this.cache;
+  }
+
+  metriques() {
+    const el = this.defileur();
+    const doc = el === document.documentElement || el === document.body;
+    const haut = doc ? window.scrollY || el.scrollTop || 0 : el.scrollTop;
+    const vue = doc ? window.innerHeight : el.clientHeight;
+    const course = Math.max(1, el.scrollHeight - vue);
+    return { el, doc, haut, vue, course };
+  }
+
+  maj = () => {
+    this.enAttente = false;
+    const { haut, vue, course } = this.metriques();
+
+    const pct = Math.min(100, Math.max(0, (haut / course) * 100));
+    if (this.jauge) this.jauge.style.width = pct.toFixed(2) + "%";
+    if (this.barre) this.barre.setAttribute("aria-valuenow", String(Math.round(pct)));
+
+    if (this.entete) {
+      const hauteur = this.hauteurEntete || 120;
+      const delta = haut - (this.dernier || 0);
+      let cacher = this.cacherEntete;
+      if (haut < hauteur + 8) cacher = false;
+      else if (delta > 6) cacher = true;
+      else if (delta < -6) cacher = false;
+      if (cacher !== this.cacherEntete) {
+        this.cacherEntete = cacher;
+        this.entete.style.transform = cacher ? "translateY(calc(-100% - 4px))" : "translateY(0)";
+      }
+      this.entete.style.boxShadow = haut > 8 ? "0 2px 12px rgba(16,24,32,.10)" : "none";
+    }
+
+    if (this.bouton) {
+      const visible = haut > (this.props.seuilRetourHaut ?? 1.8) * vue;
+      if (visible !== this.boutonVisible) {
+        this.boutonVisible = visible;
+        this.bouton.style.opacity = visible ? "1" : "0";
+        this.bouton.style.visibility = visible ? "visible" : "hidden";
+        this.bouton.style.transform = visible ? "translateY(0)" : "translateY(14px)";
+      }
+    }
+
+    // Section courante : la dernière dont le haut est passé sous l'en-tête.
+    const seuil = (this.hauteurEntete || 120) + 40;
+    let courante = null;
+    this.donnees().forEach((s) => {
+      const el = this.sectionsEl[s.id];
+      if (el && el.getBoundingClientRect().top <= seuil) courante = s;
+    });
+    if (courante && courante.id !== this.idCourant) {
+      this.idCourant = courante.id;
+      this.donnees().forEach((s) => {
+        const a = this.liensSommaire[s.id];
+        if (!a) return;
+        const actif = s.id === courante.id;
+        a.style.borderLeftColor = actif ? "#E82A63" : "transparent";
+        a.style.background = actif ? "#e6f0f5" : "transparent";
+        a.style.fontWeight = actif ? "650" : "400";
+        a.setAttribute("aria-current", actif ? "true" : "false");
+      });
+      this.noterRepere(courante);
+    }
+
+    this.dernier = haut;
+  };
+
+  noterRepere(section) {
+    if (this.minuteur) clearTimeout(this.minuteur);
+    this.minuteur = setTimeout(() => {
+      try {
+        localStorage.setItem(CLE_REPRISE, JSON.stringify({ id: section.id, titre: section.titre, num: section.num }));
+      } catch (e) { /* stockage refusé : on n'insiste pas */ }
+    }, 600);
+  }
+
+  reprendre = () => {
+    const r = this.state.repere;
+    if (!r) return;
+    const el = this.sectionsEl[r.id];
+    if (!el) return;
+    const { haut } = this.metriques();
+    const cible = haut + el.getBoundingClientRect().top - ((this.hauteurEntete || 120) + 24);
+    const d = this.defileur();
+    const hote = d === document.documentElement || d === document.body ? window : d;
+    hote.scrollTo({ top: Math.max(0, cible), behavior: this.reduit.matches ? "auto" : "smooth" });
+    this.setState({ repere: null });
+  };
+
+  oublierReprise = () => {
+    try { localStorage.removeItem(CLE_REPRISE); } catch (e) { /* rien à faire */ }
+    this.setState({ repere: null });
+  };
+
+  remonter = () => {
+    const d = this.defileur();
+    const hote = d === document.documentElement || d === document.body ? window : d;
+    hote.scrollTo({ top: 0, behavior: this.reduit.matches ? "auto" : "smooth" });
+    if (this.entete) {
+      this.entete.style.transform = "translateY(0)";
+      this.cacherEntete = false;
+      this.entete.focus({ preventScroll: true });
+    }
+  };
+
+  fond() {
+    const h = React.createElement;
+    const forme = (s) => h("div", { key: s.k, style: {
+      position: "absolute", pointerEvents: "none",
+      width: s.w, height: s.ht, top: s.t, left: s.l, right: s.r, bottom: s.b,
+      background: "radial-gradient(circle at 38% 34%, " + s.c1 + " 0%, " + s.c2 + " 55%, rgba(255,255,255,0) 76%)",
+      borderRadius: s.rd, filter: "blur(" + s.bl + "px)", opacity: s.o, animation: s.a, willChange: "transform"
+    } });
+    return h("div", { "aria-hidden": "true", style: { position: "fixed", inset: 0, zIndex: -1, overflow: "hidden", pointerEvents: "none" } }, [
+      forme({ k: "b1", w: "46vw", ht: "44vw", t: "-12vw", l: "-8vw", rd: "62% 38% 55% 45% / 48% 58% 42% 52%", c1: "rgba(0,85,134,.34)", c2: "rgba(0,85,134,.14)", bl: 78, o: .85, a: "derive-a 46s ease-in-out infinite alternate" }),
+      forme({ k: "b2", w: "40vw", ht: "38vw", t: "6vw", r: "-10vw", rd: "44% 56% 38% 62% / 56% 42% 58% 44%", c1: "rgba(232,42,99,.30)", c2: "rgba(232,42,99,.10)", bl: 84, o: .8, a: "derive-b 54s ease-in-out infinite alternate" }),
+      forme({ k: "b3", w: "34vw", ht: "32vw", b: "-8vw", l: "18vw", rd: "58% 42% 60% 40% / 40% 58% 42% 60%", c1: "rgba(70,180,179,.24)", c2: "rgba(70,180,179,.08)", bl: 88, o: .7, a: "derive-c 62s ease-in-out infinite alternate" }),
+      forme({ k: "b4", w: "22vw", ht: "22vw", b: "12vw", r: "6vw", rd: "52% 48% 40% 60% / 60% 40% 56% 44%", c1: "rgba(244,193,55,.22)", c2: "rgba(244,193,55,.06)", bl: 92, o: .6, a: "derive-a 68s ease-in-out infinite alternate" })
+    ]);
+  }
+
+  donnees() {
+    const bpp = "ANSM — Décision du 21/07/2023 relative aux bonnes pratiques de préparation (entrée en vigueur le 20/09/2023) · ligne directrice 1 — préparation de médicaments stériles";
+    const bpf = "ANSM — Bonnes pratiques de fabrication, Annexe 1 relative à la fabrication des médicaments stériles (ajoutée par décision du 28/05/2024)";
+    const iso = "ISO / AFNOR — NF EN ISO 14644-1 — Salles propres et environnements maîtrisés apparentés. Partie 1 : classification particulaire de l'air";
+    return [
+      { id: "classe", num: "1", titre: "Ce que classe une classe", sources: [iso, bpp], blocs: [
+        { type: "texte", texte: "Une zone à atmosphère contrôlée est définie par une concentration maximale de particules en suspension dans l'air. La norme NF EN ISO 14644-1 fixe ces limites. Pour les particules de taille supérieure ou égale à 0,5 µm :" },
+        { type: "liste", items: ["ISO 5 : 3 520 particules par m³", "ISO 7 : 352 000 particules par m³", "ISO 8 : 3 520 000 particules par m³"] },
+        { type: "texte", texte: "Soit, d'une classe à la suivante, un facteur cent entre ISO 5 et ISO 7. Deux points sont systématiquement mal compris." },
+        { type: "cle", titre: "Premier point : une classe est une performance d'air, pas une performance de stérilité.", texte: "Une particule n'est pas un micro-organisme. La classification particulaire est un indicateur de maîtrise de l'environnement ; la surveillance microbiologique est un contrôle distinct, avec ses propres méthodes et ses propres seuils. Les deux sont exigés, l'un ne remplace pas l'autre." },
+        { type: "cle", titre: "Second point : une classe se mesure dans un état donné.", texte: "Les référentiels distinguent l'état au repos — installation complète, équipements en fonctionnement, sans personnel — et l'état en activité, personnel présent et travail en cours. Un local peut être ISO 7 au repos et ISO 8 en activité : ce n'est pas une dérive, c'est la définition. Ce qui fait la différence entre les deux états, c'est très largement l'opérateur lui-même." }
+      ] },
+      { id: "grades", num: "2", titre: "Grades A, B, C, D et correspondance", sources: [bpf, bpp], blocs: [
+        { type: "texte", texte: "Les référentiels pharmaceutiques raisonnent en grades, qui se traduisent en classes ISO selon l'état considéré :" },
+        { type: "liste", items: [
+          "Grade A — zone des opérations à haut risque : ISO 5 au repos et en activité. C'est le poste de travail lui-même (isolateur, hotte à flux d'air unidirectionnel).",
+          "Grade B — environnement immédiat d'une zone A en procédé aseptique ouvert : ISO 5 au repos, ISO 7 en activité.",
+          "Grade C — ISO 7 au repos, ISO 8 en activité.",
+          "Grade D — ISO 8 au repos ; l'état en activité n'est pas défini par une valeur."
+        ] },
+        { type: "texte", texte: "Le grade exigé pour l'environnement d'une zone A dépend du degré de confinement du procédé : un isolateur fermé et correctement qualifié admet un environnement de classe inférieure à celui exigé autour d'un poste ouvert, puisque c'est le confinement qui fait la barrière." },
+        { type: "texte", texte: "Classes retenues local par local au CHD Vendée, et régime de pression associé : à préciser avec le pharmacien responsable avant diffusion du module." }
+      ] },
+      { id: "operateur", num: "3", titre: "L'opérateur est la source principale de contamination", sources: [bpp, bpf], blocs: [
+        { type: "texte", texte: "C'est le fait central du module. En zone à atmosphère contrôlée, l'air filtré, les surfaces et les équipements ne sont pas les contributeurs dominants : la personne présente l'est. Elle émet en permanence des particules — squames cutanées, fibres textiles, gouttelettes — et ces particules portent des micro-organismes." },
+        { type: "texte", texte: "Trois conséquences, qui expliquent l'ensemble des règles qui suivent :" },
+        { type: "cle", titre: "La tenue n'habille pas l'opérateur, elle confine ses émissions.", texte: "Une surblouse propre mal fermée, une charlotte laissant passer des cheveux, un masque sous le nez : ce ne sont pas des manquements esthétiques, ce sont des fuites." },
+        { type: "cle", titre: "Le nombre de personnes présentes est un paramètre du procédé.", texte: "Chaque personne supplémentaire ajoute une source. La limitation des effectifs en zone n'est pas une règle d'organisation, c'est une règle de qualité." },
+        { type: "cle", titre: "La vitesse des mouvements compte.", texte: "Les gestes rapides remettent en suspension les particules déposées et perturbent les flux d'air unidirectionnels, notamment en zone A où le flux protège le point critique. Se déplacer lentement n'est pas une précaution de confort." }
+      ] },
+      { id: "habillage", num: "4", titre: "L'habillage : un ordre, et la raison de cet ordre", sources: [bpp, bpf], blocs: [
+        { type: "texte", texte: "Le principe général de l'habillage est du plus haut vers le plus bas, du plus propre vers le plus exposé, avec franchissement de sas et changement d'état à chaque étape." },
+        { type: "texte", texte: "L'enchaînement type comporte : dépose des effets personnels et bijoux en vestiaire, hygiène des mains, tenue de base dédiée, puis en sas d'habillage la surchaussure ou le changement de chaussures avec franchissement du banc de séparation, la coiffe englobant la totalité de la chevelure, le masque couvrant nez et bouche, la combinaison ou surblouse, enfin les gants enfilés en dernier par-dessus les poignets." },
+        { type: "cle", titre: "Le banc de séparation mérite d'être compris plutôt que retenu :", texte: "il matérialise une frontière que les pieds ne franchissent jamais dans le même état. Enjamber sans s'asseoir, ou reposer un pied déjà changé du côté « sale », annule la séparation — l'opération est alors à reprendre depuis le début, ce qui est précisément ce qu'on cherche à éviter." },
+        { type: "cle", titre: "Les gants s'enfilent en dernier", texte: "parce qu'ils sont ce qui touchera le produit : tout geste d'habillage réalisé après eux les contamine." },
+        { type: "texte", texte: "Tenue exacte, composition des sas et sens de circulation dans l'unité : à préciser avec le pharmacien responsable." }
+      ] },
+      { id: "zone", num: "5", titre: "En zone : ce qui se fait et ce qui ne se fait pas", sources: [bpp, bpf], blocs: [
+        { type: "liste", items: [
+          "Les portes de sas ne s'ouvrent jamais simultanément. La cascade de pression n'existe que si un seul battant s'ouvre à la fois ; deux portes ouvertes ensemble, c'est un couloir direct entre deux classes.",
+          "Rien n'entre sans passer par le circuit prévu : sas matériel, bac de transfert, désinfection des emballages selon la procédure. Un objet entré « juste une fois » par la porte de personnel est une entrée non maîtrisée.",
+          "Pas de papier non dédié, pas de crayon à gomme, pas d'objet pelucheux. Les supports d'écriture utilisables en zone sont définis par procédure.",
+          "Ne pas parler au-dessus d'un point critique et limiter les échanges verbaux : la parole projette des gouttelettes.",
+          "Ne pas passer la main ni un objet au-dessus d'un point critique en flux unidirectionnel : ce qui est en amont du flux contamine ce qui est en aval.",
+          "Toute anomalie environnementale se signale immédiatement — alarme de pression, aspect anormal d'un filtre, déchirure de tenue, porte restée ouverte. Un environnement dont on doute ne se rattrape pas après coup : il se traite avant de poursuivre."
+        ] },
+        { type: "cle", titre: "Un dernier point, souvent implicite :", texte: "l'habillage se refait entièrement après toute sortie de zone, même brève. « Je sors deux minutes » n'existe pas comme catégorie." }
+      ] }
+    ];
+  }
+
+  renderVals() {
+    const data = this.donnees();
+    const r = this.state.repere;
+    return {
+      fondOrganique: this.fond(),
+      refRacine: (el) => { this.racine = el; },
+      refBarre: (el) => { this.barre = el; },
+      refJauge: (el) => { this.jauge = el; },
+      refEntete: (el) => { this.entete = el; },
+      refCale: (el) => { this.cale = el; },
+      refBouton: (el) => { this.bouton = el; },
+      remonter: this.remonter,
+      reprendre: this.reprendre,
+      oublierReprise: this.oublierReprise,
+      reprisePossible: !!r,
+      repriseLibelle: r ? "Reprendre : " + r.titre : "",
+      sommaire: data.map((s) => ({
+        num: s.num, titre: s.titre, ancre: "#" + s.id,
+        ref: (el) => { this.liensSommaire[s.id] = el; }
+      })),
+      sections: data.map((s) => ({
+        id: s.id, num: s.num, titre: s.titre, sources: s.sources,
+        ref: (el) => { this.sectionsEl[s.id] = el; },
+        blocs: s.blocs.map((b) => ({
+          estTexte: b.type === "texte", estCle: b.type === "cle", estListe: b.type === "liste",
+          texte: b.texte, titre: b.titre, items: b.items || []
+        }))
+      })),
+      documents: [
+        { nature: "Référentiel", titre: "ANSM — Bonnes pratiques de préparation 2023, ligne directrice 1", disponible: true },
+        { nature: "Référentiel", titre: "ANSM — BPF, Annexe 1 : fabrication des médicaments stériles", disponible: true },
+        { nature: "Référentiel", titre: "NF EN ISO 14644-1:2015 — classification particulaire de l'air", disponible: true },
+        { nature: "Procédure interne", titre: "Habillage et circulation en ZAC — référence et version à préciser", manquant: true },
+        { nature: "Vidéo", titre: "Séquence vidéo — habillage pas à pas — décision de tournage à prendre", manquant: true }
+      ],
+      biblio: [
+        "Décision du 21/07/2023 relative aux bonnes pratiques de préparation (entrée en vigueur le 20/09/2023) — ANSM, 21/07/2023 · ligne directrice 1 — préparation de médicaments stériles.",
+        "Bonnes pratiques de fabrication — Annexe 1 relative à la fabrication des médicaments stériles (ajoutée par décision du 28/05/2024) — ANSM, 28/05/2024.",
+        "NF EN ISO 14644-1 — Salles propres et environnements maîtrisés apparentés. Partie 1 : classification particulaire de l'air — ISO / AFNOR, 2015."
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

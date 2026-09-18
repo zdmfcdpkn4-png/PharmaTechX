@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Formation &amp; habilitation — programme d'intégration, unité de pharmacotechnie | CHD Vendée</title>
+<meta name="description" content="Formation théorique et évaluation des connaissances des préparateurs en pharmacie de l'unité de production du CHD Vendée. Deux des six étapes de la chaîne d'habilitation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #f6f7f8; }
+  a { color: #005586; text-underline-offset: 2px; }
+  a:hover { color: #003f65; }
+  :where(a, button, summary, input, select):focus-visible {
+    outline: 3px solid #005586;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  /* Dérives très lentes des formes organiques de l'arrière-plan. */
+  @keyframes derive-a { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(5%,-4%,0) scale(1.09); } }
+  @keyframes derive-b { from { transform: translate3d(0,0,0) scale(1.04); } to { transform: translate3d(-4%,5%,0) scale(0.96); } }
+  @keyframes derive-c { from { transform: translate3d(0,0,0) scale(0.98); } to { transform: translate3d(3%,4%,0) scale(1.06); } }
+  .lien-evitement {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 60;
+    background: #005586;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 0 0 10px 0;
+    text-decoration: none;
+  }
+  .lien-evitement:focus { left: 0; }
+  /* Respect du réglage système : plus de défilement animé ni de transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      transition-duration: 0.001ms !important;
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</helmet>
+
+<div ref="{{ refRacine }}" style="font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;color:#16202a;border-left:5px solid #E82A63;background:#f5f7f9;min-height:100vh;position:relative;isolation:isolate">
+  {{ fondOrganique }}
+
+  <div role="progressbar" aria-label="Progression de lecture de la page" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" ref="{{ refBarre }}" style="position:fixed;top:0;left:0;right:0;height:4px;background:#dfe4e8;z-index:50">
+    <div ref="{{ refJauge }}" style="height:100%;width:0%;background:#E82A63;transition:width .12s linear"></div>
+  </div>
+
+  <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+  <header ref="{{ refEntete }}" tabindex="-1" style="position:fixed;top:4px;left:5px;right:0;z-index:40;background:rgba(255,255,255,.88);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid rgba(216,221,226,.9);transition:transform .26s ease,box-shadow .2s ease;will-change:transform">
+    <div style="max-width:1120px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:16px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO HDV</div>
+        <div style="width:1px;height:24px;background:#d8dde2"></div>
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO PHARMACO</div>
+      </div>
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <strong style="font-size:14px;line-height:1.3">Formation &amp; habilitation</strong>
+        <span style="font-size:12px;color:#566370">Unité de production — CHD Vendée</span>
+      </div>
+      <nav aria-label="Sections de la page" style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <a href="#modules" style="font-size:13px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px" style-hover="background:#e6f0f5">Mes modules</a>
+        <a href="#dispositif" style="font-size:13px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px" style-hover="background:#e6f0f5">Le dispositif</a>
+        <a href="#evaluation" style="font-size:13px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px" style-hover="background:#e6f0f5">L'évaluation</a>
+        <a href="#questions" style="font-size:13px;font-weight:600;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:10px" style-hover="background:#e6f0f5">Questions</a>
+        <button style="font:inherit;font-size:13px;font-weight:600;min-height:44px;padding:0 16px;margin-left:8px;border-radius:10px;border:1px solid #005586;background:#ffffff;color:#005586;cursor:pointer" style-hover="background:#e6f0f5">Connexion</button>
+      </nav>
+    </div>
+  </header>
+
+  <div aria-hidden="true" ref="{{ refCale }}" style="height:120px"></div>
+
+  <main id="contenu" ref="{{ refContenu }}" style="position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 24px 80px;display:flex;flex-direction:column;gap:56px">
+
+    <section aria-labelledby="titre-accueil" style="margin-top:16px;padding:36px 32px 34px;border-radius:20px;background:rgba(255,255,255,.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 22px 60px rgba(0,85,134,.12);display:flex;flex-direction:column;gap:14px;scroll-margin-top:var(--decalage,124px)">
+      <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b41f4d">Parcours d'intégration · Chimiothérapie · niveau N1a</span>
+      <h1 id="titre-accueil" style="margin:0;max-width:26ch;font-size:42px;line-height:1.1;letter-spacing:-.025em;color:#005586">Lire le module, s'évaluer, remettre la preuve.</h1>
+      <p style="margin:0;max-width:62ch;font-size:17px;line-height:1.6;color:#16202a">Les deux premières étapes de votre habilitation se font ici. Les quatre suivantes se jouent au poste de travail, avec votre tuteur et le pharmacien responsable — <strong>un module validé à l'écran ne vaut pas habilitation.</strong></p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+        <a href="#modules" style="font-size:15px;font-weight:650;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #005586;background:#005586;color:#ffffff" style-hover="background:#003f65;border-color:#003f65">Voir mes deux modules</a>
+        <a href="#dispositif" style="font-size:15px;font-weight:600;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #005586;background:#ffffff;color:#005586" style-hover="background:#e6f0f5">Les 6 étapes de l'habilitation</a>
+      </div>
+      <span style="font-size:13px;color:#566370">Aucun compte nominatif · résultats non conservés · 2 modules en ligne sur 58 critères</span>
+    </section>
+
+    <section id="modules" aria-labelledby="titre-modules" style="display:flex;flex-direction:column;gap:16px;scroll-margin-top:var(--decalage,124px)">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;border-top:1px solid #d8dde2;padding-top:24px">
+        <h2 id="titre-modules" style="margin:0;font-size:26px;line-height:1.2;color:#005586">Deux modules sont ouverts aujourd'hui</h2>
+        <span style="font-size:13px;color:#566370">Bloc 1 — socle transversal, prérequis aux deux parcours</span>
+      </div>
+      <sc-for list="{{ modules }}" as="m" hint-placeholder-count="2">
+        <article style="background:rgba(255,255,255,.84);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.9);border-left:4px solid #005586;box-shadow:0 1px 2px rgba(16,24,32,.04),0 14px 36px rgba(0,85,134,.10);border-radius:12px;padding:20px 22px;display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start" style-hover="border-color:#005586;box-shadow:0 0 0 3px rgba(0,85,134,.16)">
+          <div style="flex:1 1 30rem;min-width:0;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:5px;padding:3px 7px">{{ m.code }}</span>
+              <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Obligatoire</span>
+              <span style="font-size:12px;color:#566370">{{ m.contexte }}</span>
+            </div>
+            <h3 style="margin:0;font-size:21px;line-height:1.25;color:#005586">{{ m.titre }}</h3>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#566370">{{ m.objectif }}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:#566370">
+              <span>{{ m.duree }}</span>
+              <span>9 questions · 1 mise en situation</span>
+              <span>Seuil 80 % · 2 questions éliminatoires</span>
+            </div>
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;gap:8px;width:190px">
+            <button style="font:inherit;font-size:14px;font-weight:650;min-height:44px;border-radius:10px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65;border-color:#003f65">Lire le module</button>
+            <button style="font:inherit;font-size:14px;font-weight:600;min-height:44px;border-radius:10px;border:1px solid #005586;background:transparent;color:#005586;cursor:pointer" style-hover="background:#e6f0f5">Passer l'évaluation</button>
+            <span style="font-size:12px;line-height:1.45;color:#566370">Non évalué dans cette session</span>
+          </div>
+        </article>
+      </sc-for>
+      <p style="margin:0;font-size:14px;line-height:1.6;color:#566370">Les 39 autres critères de votre programme figurent à la fiche d'habilitation et se valident au poste. <a href="#dispositif" style="font-weight:600">Voir comment</a>.</p>
+    </section>
+
+    <section id="dispositif" aria-labelledby="titre-dispositif" style="display:flex;flex-direction:column;gap:18px;scroll-margin-top:var(--decalage,124px)">
+      <div style="border-top:1px solid #d8dde2;padding-top:24px;display:flex;flex-direction:column;gap:6px;max-width:62ch">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#566370">Le dispositif</span>
+        <h2 id="titre-dispositif" style="margin:0;font-size:26px;line-height:1.2;color:#005586">Six étapes, dont deux à l'écran</h2>
+        <p style="margin:0;font-size:15px;line-height:1.6;color:#566370">L'habilitation est prononcée par le pharmacien responsable, sur preuves. Ce site produit la preuve de l'étape 2 : un rapport que vous exportez et remettez vous-même.</p>
+      </div>
+      <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:12px">
+        <sc-for list="{{ etapes }}" as="e" hint-placeholder-count="6">
+          <li style="background:rgba(255,255,255,.80);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);border-radius:11px;padding:16px 18px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="flex:none;width:30px;height:30px;border-radius:9px;background:#e6f0f5;color:#003f65;font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:700;display:grid;place-items:center">{{ e.num }}</span>
+              <sc-if value="{{ e.ici }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#005586;border-radius:999px;padding:3px 9px">Dans ce site</span></sc-if>
+              <sc-if value="{{ e.tuteur }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#16202a;background:#dff0f0;border:1px solid #46b4b3;border-radius:999px;padding:2px 9px">Au poste</span></sc-if>
+              <sc-if value="{{ e.pharmacien }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Pharmacien</span></sc-if>
+            </div>
+            <strong style="font-size:16px;line-height:1.3;color:#16202a">{{ e.titre }}</strong>
+            <span style="font-size:13px;line-height:1.55;color:#566370">{{ e.preuve }}</span>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+
+    <section id="evaluation" aria-labelledby="titre-evaluation" style="display:flex;flex-direction:column;gap:18px;scroll-margin-top:var(--decalage,124px)">
+      <div style="border-top:1px solid #d8dde2;padding-top:24px;display:flex;flex-direction:column;gap:6px;max-width:62ch">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b41f4d">Avant de passer une évaluation</span>
+        <h2 id="titre-evaluation" style="margin:0;font-size:26px;line-height:1.2;color:#005586">Cinq formats de question, cinq barèmes</h2>
+        <p style="margin:0;font-size:15px;line-height:1.6;color:#566370">Le format est annoncé sur chaque question. Répondre au hasard à une QIM ne coûte pas la même chose que se tromper sur un QCM, et une erreur sur une question éliminatoire invalide le critère quel que soit le score.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));gap:14px">
+        <sc-for list="{{ formats }}" as="f" hint-placeholder-count="6">
+          <article style="background:rgba(255,255,255,.80);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:5px;padding:3px 7px">{{ f.sigle }}</span>
+              <sc-if value="{{ f.critique }}" hint-placeholder-val="{{ true }}"><span style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 8px">Invalide le critère</span></sc-if>
+            </div>
+            <h3 style="margin:0;font-size:17px;line-height:1.28;color:#005586">{{ f.titre }}</h3>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:#566370">{{ f.texte }}</p>
+            <span style="margin-top:auto;padding-top:8px;font-size:12px;font-weight:600;color:#16202a;border-top:1px solid #d8dde2">Barème : {{ f.bareme }}</span>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+
+    <section id="questions" aria-labelledby="titre-questions" style="display:flex;flex-direction:column;gap:16px;scroll-margin-top:var(--decalage,124px)">
+      <div style="border-top:1px solid #d8dde2;padding-top:24px;display:flex;flex-direction:column;gap:6px;max-width:62ch">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#566370">Questions fréquentes</span>
+        <h2 id="titre-questions" style="margin:0;font-size:26px;line-height:1.2;color:#005586">Six questions posées à chaque arrivée dans l'unité</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ faq }}" as="q" hint-placeholder-count="6">
+          <details style="background:rgba(255,255,255,.80);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);border-radius:12px">
+            <summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:16px;font-weight:600;line-height:1.35;color:#16202a">
+              <span style="flex:1 1 0;min-width:0">{{ q.question }}</span>
+              <span aria-hidden="true" style="flex:none;font-family:ui-monospace,Menlo,monospace;font-size:15px;color:#005586">+</span>
+            </summary>
+            <div style="padding:0 18px 16px;display:flex;flex-direction:column;gap:6px">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#16202a">{{ q.reponse }}</p>
+              <span style="font-size:12px;line-height:1.5;color:#566370">{{ q.source }}</span>
+            </div>
+          </details>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-label="Commencer le socle transversal" style="background:#005586;border-radius:14px;padding:36px 28px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+      <h2 style="margin:0;max-width:34ch;font-size:28px;line-height:1.16;color:#ffffff">Commencez par le socle transversal</h2>
+      <p style="margin:0;max-width:58ch;font-size:15px;line-height:1.6;color:#d9e6ee">Blocs 1 et 3, exigés des deux parcours. Deux modules sont en ligne ; les autres critères se valident au poste avec votre tuteur.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:4px">
+        <a href="#modules" style="font-size:15px;font-weight:650;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #ffffff;background:#ffffff;color:#003f65" style-hover="background:#d9e6ee">Ouvrir B1-01</a>
+        <a href="#dispositif" style="font-size:15px;font-weight:600;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #ffffff;background:transparent;color:#ffffff" style-hover="background:#003f65">Voir les 41 critères de mon programme</a>
+      </div>
+    </section>
+  </main>
+
+  <footer style="position:relative;z-index:1;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-top:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:1120px;margin:0 auto;padding:20px 24px;font-size:12px;line-height:1.55;color:#566370">
+      <p style="margin:0 0 8px"><strong>Aucune donnée nominative n'est enregistrée.</strong> Les réponses transmises au serveur ne comportent ni nom, ni matricule, ni identifiant. Les résultats vivent en mémoire de l'onglet le temps de la session, puis sont exportés dans un fichier que l'apprenant remet lui-même pour son dossier d'habilitation.</p>
+      <p style="margin:0">Statut du dispositif (outil pédagogique ou preuve opposable en audit BPP 2023 / ISO 9001) : <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fdf3e0;color:#8a5a00;border:1px dashed currentColor;border-radius:8px;padding:1px 6px">[à préciser]</span></p>
+    </div>
+    <div style="background:#005586;color:#ffffff;font-size:11px"><div style="max-width:1120px;margin:0 auto;padding:10px 24px"><strong>CHD Vendée</strong> — La Roche-sur-Yon 85925 • Luçon 85400 • Montaigu 85600 — Pharmacie à usage intérieur, unité de pharmacotechnie</div></div>
+  </footer>
+
+  <button type="button" ref="{{ refBouton }}" onClick="{{ remonter }}" aria-label="Revenir en haut de la page" style="position:fixed;right:24px;bottom:24px;z-index:45;min-height:48px;min-width:48px;padding:0 18px;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:14px;font-weight:650;border-radius:999px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer;opacity:0;visibility:hidden;transform:translateY(14px);transition:opacity .22s ease,transform .22s ease,visibility .22s;box-shadow:0 6px 20px rgba(16,24,32,.24)" style-hover="background:#003f65;border-color:#003f65">
+    <span aria-hidden="true" style="font-size:15px;line-height:1">↑</span>Haut de page
+  </button>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;masquerEnteteAuScroll&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Confort de défilement&quot;},&quot;seuilRetourHaut&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.8,&quot;min&quot;:1,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;écrans&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Confort de défilement&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this.dernier = 0;
+    this.enAttente = false;
+    this.reduit = window.matchMedia("(prefers-reduced-motion: reduce)");
+    this.surScroll = () => {
+      if (this.enAttente) return;
+      this.enAttente = true;
+      requestAnimationFrame(this.majAffichage);
+    };
+    // capture: true — capte aussi le défilement d'un conteneur interne (l'événement
+    // scroll ne remonte pas, mais il traverse bien la phase de capture.
+    window.addEventListener("scroll", this.surScroll, { passive: true, capture: true });
+    window.addEventListener("resize", this.surScroll, { passive: true });
+    // L'en-tête peut passer sur deux lignes selon la largeur : sa hauteur réelle
+    // pilote la cale et le décalage des ancres, plutôt qu'une valeur en dur.
+    if (this.entete && typeof ResizeObserver === "function") {
+      this.observateur = new ResizeObserver(this.majHauteurEntete);
+      this.observateur.observe(this.entete);
+    }
+    this.majHauteurEntete();
+    this.majAffichage();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("scroll", this.surScroll, { capture: true });
+    window.removeEventListener("resize", this.surScroll);
+    if (this.observateur) this.observateur.disconnect();
+  }
+
+  majHauteurEntete = () => {
+    if (!this.entete) return;
+    const h = Math.round(this.entete.getBoundingClientRect().height);
+    if (!h || h === this.hauteurEntete) return;
+    this.hauteurEntete = h;
+    if (this.cale) this.cale.style.height = h + 4 + "px";
+    if (this.racine) this.racine.style.setProperty("--decalage", h + 20 + "px");
+  };
+
+  // Le défilement peut appartenir au document ou à un conteneur englobant.
+  defileur() {
+    if (this.cache && this.cache.scrollHeight - this.cache.clientHeight > 4) return this.cache;
+    const de = document.documentElement;
+    let n = this.contenu ? this.contenu.parentElement : null;
+    while (n && n !== de) {
+      const o = getComputedStyle(n).overflowY;
+      if ((o === "auto" || o === "scroll") && n.scrollHeight - n.clientHeight > 4) {
+        this.cache = n;
+        return n;
+      }
+      n = n.parentElement;
+    }
+    this.cache = de.scrollHeight - de.clientHeight > 4 ? de : document.body;
+    return this.cache;
+  }
+
+  majAffichage = () => {
+    this.enAttente = false;
+    const el = this.defileur();
+    const doc = el === document.documentElement || el === document.body;
+    const haut = doc ? window.scrollY || el.scrollTop || 0 : el.scrollTop;
+    const course = Math.max(1, el.scrollHeight - (doc ? window.innerHeight : el.clientHeight));
+    const vue = doc ? window.innerHeight : el.clientHeight;
+
+    // 3. Progression de lecture
+    const pct = Math.min(100, Math.max(0, (haut / course) * 100));
+    if (this.jauge) this.jauge.style.width = pct.toFixed(2) + "%";
+    if (this.barre) this.barre.setAttribute("aria-valuenow", String(Math.round(pct)));
+
+    // 1. En-tête masqué au défilement descendant, rétabli au moindre défilement montant
+    if (this.entete) {
+      const hauteur = this.hauteurEntete || this.entete.offsetHeight || 72;
+      const masquer = this.props.masquerEnteteAuScroll ?? true;
+      const delta = haut - this.dernier;
+      let cacher = this.cacherEntete;
+      if (!masquer || haut < hauteur + 8) cacher = false;
+      else if (delta > 6) cacher = true;
+      else if (delta < -6) cacher = false;
+      if (cacher !== this.cacherEntete) {
+        this.cacherEntete = cacher;
+        this.entete.style.transform = cacher ? "translateY(calc(-100% - 4px))" : "translateY(0)";
+      }
+      this.entete.style.boxShadow = haut > 8 ? "0 2px 12px rgba(16,24,32,.10)" : "none";
+    }
+
+    // 2. Retour en haut, après le seuil en hauteurs d'écran
+    if (this.bouton) {
+      const seuil = (this.props.seuilRetourHaut ?? 1.8) * vue;
+      const visible = haut > seuil;
+      if (visible !== this.boutonVisible) {
+        this.boutonVisible = visible;
+        this.bouton.style.opacity = visible ? "1" : "0";
+        this.bouton.style.visibility = visible ? "visible" : "hidden";
+        this.bouton.style.transform = visible ? "translateY(0)" : "translateY(14px)";
+      }
+    }
+
+    this.dernier = haut;
+  };
+
+  remonter = () => {
+    const el = this.defileur();
+    const doux = !this.reduit.matches;
+    const cible = el === document.documentElement || el === document.body ? window : el;
+    cible.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" });
+    // L'accessibilité clavier : le focus repart du haut du document.
+    if (this.entete) {
+      this.entete.style.transform = "translateY(0)";
+      this.cacherEntete = false;
+      this.entete.focus({ preventScroll: true });
+    }
+  };
+
+  // Arrière-plan décoratif : formes organiques floutées, teintes de la charte.
+  // Construit ici (et non dans le gabarit) pour que la dérive ne soit pas
+  // relancée à chaque rendu. aria-hidden et sans interaction.
+  fond() {
+    const h = React.createElement;
+    const forme = (s) => h("div", { key: s.k, style: {
+      position: "absolute", pointerEvents: "none",
+      width: s.w, height: s.ht, top: s.t, left: s.l, right: s.r, bottom: s.b,
+      background: "radial-gradient(circle at 38% 34%, " + s.c1 + " 0%, " + s.c2 + " 55%, rgba(255,255,255,0) 76%)",
+      borderRadius: s.rd,
+      filter: "blur(" + s.bl + "px)",
+      opacity: s.o,
+      animation: s.a,
+      willChange: "transform"
+    } });
+    return h("div", {
+      "aria-hidden": "true",
+      style: { position: "fixed", inset: 0, zIndex: -1, overflow: "hidden", pointerEvents: "none" }
+    }, [
+      forme({ k: "b1", w: "46vw", ht: "44vw", t: "-12vw", l: "-8vw", rd: "62% 38% 55% 45% / 48% 58% 42% 52%", c1: "rgba(0,85,134,.34)", c2: "rgba(0,85,134,.14)", bl: 78, o: .85, a: "derive-a 46s ease-in-out infinite alternate" }),
+      forme({ k: "b2", w: "40vw", ht: "38vw", t: "6vw", r: "-10vw", rd: "44% 56% 38% 62% / 56% 42% 58% 44%", c1: "rgba(232,42,99,.30)", c2: "rgba(232,42,99,.10)", bl: 84, o: .8, a: "derive-b 54s ease-in-out infinite alternate" }),
+      forme({ k: "b3", w: "34vw", ht: "32vw", b: "-8vw", l: "18vw", rd: "58% 42% 60% 40% / 40% 58% 42% 60%", c1: "rgba(70,180,179,.24)", c2: "rgba(70,180,179,.08)", bl: 88, o: .7, a: "derive-c 62s ease-in-out infinite alternate" }),
+      forme({ k: "b4", w: "22vw", ht: "22vw", b: "12vw", r: "6vw", rd: "52% 48% 40% 60% / 60% 40% 56% 44%", c1: "rgba(244,193,55,.22)", c2: "rgba(244,193,55,.06)", bl: 92, o: .6, a: "derive-a 68s ease-in-out infinite alternate" })
+    ]);
+  }
+
+  renderVals() {
+    return {
+      fondOrganique: this.fond(),
+      refBarre: (el) => { this.barre = el; },
+      refJauge: (el) => { this.jauge = el; },
+      refEntete: (el) => { this.entete = el; },
+      refRacine: (el) => { this.racine = el; },
+      refCale: (el) => { this.cale = el; },
+      refContenu: (el) => { this.contenu = el; },
+      refBouton: (el) => { this.bouton = el; },
+      remonter: this.remonter,
+      modules: [
+        {
+          code: "B1-01",
+          contexte: "Bloc 1 — tronc commun · revalidation 24 mois",
+          titre: "Comportement et habillage en zone à atmosphère contrôlée",
+          objectif: "Expliquer ce que la classification particulaire garantit et ce qu'elle ne garantit pas, réaliser l'habillage dans l'ordre, adopter les comportements qui préservent la maîtrise de l'environnement.",
+          duree: "40 min de lecture"
+        },
+        {
+          code: "B1-04",
+          contexte: "Bloc 1 — tronc commun · revalidation 24 mois",
+          titre: "Protection de l'opérateur face au risque cytotoxique",
+          objectif: "Identifier les situations d'exposition aux cytotoxiques dans l'unité, porter les protections adaptées et appliquer la conduite à tenir en cas de contamination accidentelle.",
+          duree: "35 min de lecture"
+        }
+      ],
+      etapes: [
+        { num: "01", titre: "Formation théorique", preuve: "Preuve : parcours du module dans l'application", ici: true },
+        { num: "02", titre: "Évaluation des connaissances", preuve: "Preuve : rapport d'évaluation exporté par l'apprenant", ici: true },
+        { num: "03", titre: "Compagnonnage au poste", preuve: "Preuve : portfolio de formation renseigné par le tuteur", tuteur: true },
+        { num: "04", titre: "Évaluation pratique au poste", preuve: "Preuve : fiche d'habilitation — nature, date, visa", tuteur: true },
+        { num: "05", titre: "Validation par le pharmacien responsable", preuve: "Preuve : « Habilitation finale », datée et signée", pharmacien: true },
+        { num: "06", titre: "Maintien et revalidation", preuve: "Prise de poste a minima 6 jours par trimestre, réévaluation tous les 2 ans", pharmacien: true }
+      ],
+      formats: [
+        { sigle: "QCM", titre: "Question à choix unique", texte: "Quatre propositions, une seule exacte. La réponse fausse ne retire pas de point au-delà de la question.", bareme: "1 point, tout ou rien" },
+        { sigle: "QIM", titre: "Question à interprétation multiple", texte: "Cinq propositions vraies ou fausses indépendamment. Cocher au hasard coûte cher : chaque discordance est comptée.", bareme: "une discordance = ½ point ; deux = question annulée" },
+        { sigle: "Vignette", titre: "Mise en situation", texte: "Une scène de 400 à 700 caractères — un carton non décartonné, une porte de sas tenue ouverte — suivie de ses questions.", bareme: "les questions de la vignette sont tirées ensemble" },
+        { sigle: "Élim.", titre: "Question éliminatoire", texte: "Toujours posée. Une erreur invalide le critère quel que soit le score global : il n'y a pas de compensation.", bareme: "erreur = critère non acquis", critique: true },
+        { sigle: "Corr.", titre: "Correction sourcée", texte: "Pour chaque question : votre réponse, l'attendu, la justification et la référence exacte du texte applicable.", bareme: "affiché après validation de l'évaluation" },
+        { sigle: "Rapport", titre: "Rapport exporté", texte: "La seule pièce qui quitte l'outil : score, verdict par question, seuil, date. À remettre pour le dossier d'habilitation.", bareme: "preuve de l'étape 2 sur 6" }
+      ],
+      faq: [
+        { question: "Si je valide le module, suis-je habilité ?", reponse: "Non. Le site couvre la formation théorique et l'évaluation des connaissances — étapes 1 et 2 sur 6. L'habilitation est prononcée par le pharmacien responsable après compagnonnage et évaluation pratique au poste.", source: "Fiche d'habilitation, chapitre IV" },
+        { question: "Qu'arrive-t-il à mes résultats ?", reponse: "Ils vivent en mémoire de l'onglet le temps de la session, puis disparaissent à sa fermeture. Aucun nom, aucun matricule, aucun identifiant n'est transmis. Vous exportez vous-même le rapport et le remettez pour votre dossier.", source: "Aucune donnée nominative enregistrée" },
+        { question: "Une question éliminatoire ratée, et le reste juste ?", reponse: "Le critère est non acquis. Une erreur sur une question éliminatoire invalide le critère quel que soit le score global : il n'y a pas de compensation, et c'est délibéré — ces questions portent un enjeu de sécurité.", source: "Seuil et questions éliminatoires définis par critère" },
+        { question: "Combien de fois peut-on repasser une évaluation ?", reponse: "Autant que nécessaire : chaque passage est un nouveau tirage dans la banque du critère. Le tirage « découverte » sert à se situer avant de reprendre le module ; le tirage « habilitation » est celui à joindre au dossier.", source: "Trois niveaux de tirage : 5, 9 ou toutes les questions" },
+        { question: "Pourquoi 56 critères sur 58 sont-ils vides ?", reponse: "Les 58 critères sont ceux de la fiche d'habilitation, transcrits tels quels. Deux disposent d'un module rédigé ; les autres figurent au programme et se valident au poste, en attendant leur rédaction.", source: "7 blocs, 58 critères, 44 obligatoires" },
+        { question: "Le code d'accès est-il personnel ?", reponse: "Non. Un code ouvre un profil — administration, tutorat, ou poste de travail — et ne désigne aucune personne. Il n'y a pas de compte nominatif dans cet outil.", source: "Contrôle d'accès par code de rôle" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

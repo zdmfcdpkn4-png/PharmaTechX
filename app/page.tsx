@@ -1,0 +1,332 @@
+import Link from "next/link";
+import { composerProgramme, getParcours } from "@/content/store";
+import {
+  arbitrageEnAttente,
+  blocsCompetence,
+  criteres,
+  etapes,
+  filieres,
+  maintien,
+  niveaux,
+} from "@/content/habilitation";
+import type { Module, TypeParcours } from "@/content/types";
+import { TableauDeBord, type ModuleResume } from "@/components/TableauDeBord";
+
+function resumer(m: Module): ModuleResume {
+  return {
+    id: m.id,
+    titre: m.titre,
+    objectif: m.objectif,
+    bloc: typeof m.bloc === "number" ? String(m.bloc) : m.bloc,
+    critereId: m.critereId,
+    affectation: m.affectation,
+    postes: m.postes,
+    niveaux: m.niveaux,
+    dureeMinutes:
+      typeof m.dureeMinutes === "number" ? `${m.dureeMinutes}` : m.dureeMinutes,
+    redige: m.redige,
+    nbQuestions:
+      m.questions.length +
+      m.misesEnSituation.reduce((s, x) => s + x.questions.length, 0),
+    nbSituations: m.misesEnSituation.length,
+    periodiciteMois:
+      typeof m.periodiciteMois === "number"
+        ? `${m.periodiciteMois}`
+        : m.periodiciteMois,
+  };
+}
+
+const LIEUX: Record<string, { texte: string; classe: string }> = {
+  site: { texte: "Dans ce site", classe: "etiquette etiquette--site" },
+  terrain: { texte: "Au poste", classe: "etiquette etiquette--poste" },
+  pharmacien: {
+    texte: "Pharmacien",
+    classe: "etiquette etiquette--pharmacien",
+  },
+};
+
+/** Les six formats d'évaluation et leur barème, annoncés avant toute question. */
+const FORMATS = [
+  {
+    titre: "QCM — une seule réponse",
+    regle: "1 point si la réponse est exacte, 0 sinon.",
+  },
+  {
+    titre: "QCM — plusieurs réponses",
+    regle:
+      "Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu.",
+  },
+  {
+    titre: "QIM — barème à la discordance",
+    regle:
+      "0 discordance → 1 point ; 1 discordance → 0,5 ; 2 ou plus → 0. Une proposition laissée sans réponse compte comme une discordance.",
+  },
+  {
+    titre: "Mise en situation",
+    regle:
+      "Une vignette décrit un cas réel de l'unité ; plusieurs questions s'y rapportent et sont tirées ensemble.",
+  },
+  {
+    titre: "Question éliminatoire",
+    regle:
+      "Une erreur ou une absence de réponse rend le critère non acquis, quel que soit le score global. Toujours incluse dans le tirage.",
+  },
+  {
+    titre: "Correction sourcée",
+    regle:
+      "Chaque question corrigée affiche sa justification et la source réglementaire sur laquelle elle s'appuie.",
+  },
+];
+
+const QUESTIONS_FREQUENTES = [
+  {
+    q: "Si je valide le module, suis-je habilité ?",
+    r: "Non. Ce site couvre les étapes 1 et 2 sur 6. L'habilitation est prononcée par le pharmacien responsable après le compagnonnage et l'évaluation pratique au poste, au vu des preuves réunies.",
+  },
+  {
+    q: "Mes résultats sont-ils enregistrés quelque part ?",
+    r: "Non. Ils vivent en mémoire de l'onglet le temps de la session et disparaissent à sa fermeture. La seule trace durable est le rapport que vous téléchargez sur votre poste et remettez pour votre dossier.",
+  },
+  {
+    q: "Le site sait-il qui je suis ?",
+    r: "Non. Un code d'accès ouvre un profil — poste, tutorat, administration — jamais un compte nominatif. Le serveur ne reçoit que des identifiants de questions et d'options.",
+  },
+  {
+    q: "Que se passe-t-il si je rate une question éliminatoire ?",
+    r: "Le critère est non acquis, même si le reste est juste. Ces questions portent sur la sécurité de l'opérateur ou l'intégrité de la préparation : il n'y a pas de compensation possible.",
+  },
+  {
+    q: "Puis-je refaire une évaluation ?",
+    r: "Oui, autant de fois que vous le souhaitez, avec un nouveau tirage à chaque fois. Rien n'est comptabilisé : l'outil sert à apprendre, pas à sanctionner.",
+  },
+  {
+    q: "Pourquoi certains critères sont-ils marqués « à rédiger » ?",
+    r: "Les 58 critères de la fiche d'habilitation sont tous référencés, mais deux modules seulement sont écrits à ce jour. Les autres apparaissent pour que le programme complet soit visible.",
+  },
+];
+
+export default async function Accueil({
+  searchParams,
+}: {
+  searchParams: Promise<{ parcours?: string }>;
+}) {
+  const params = await searchParams;
+  const parcoursId: TypeParcours =
+    params.parcours === "maintien" ? "maintien" : "integration";
+  const parcours = getParcours(parcoursId)!;
+
+  const troncCommun = composerProgramme(parcoursId, null).troncCommun.map(
+    resumer,
+  );
+  const parPoste: Record<string, ModuleResume[]> = {};
+  for (const f of filieres) {
+    if (f.id === "socle") continue;
+    parPoste[f.id] = composerProgramme(parcoursId, f.id).poste.map(resumer);
+  }
+
+  const rediges = [...troncCommun, ...Object.values(parPoste).flat()].filter(
+    (m) => m.redige,
+  );
+  const obligatoires = criteres.filter((x) => x.obligatoire).length;
+
+  return (
+    <>
+      {/* ───────────────────────────────────────────────────────── héros */}
+      <section className="panneau-titre">
+        <p className="sur-titre">
+          Étapes 1 et 2 sur 6 — {parcours.titre.toLowerCase()}
+        </p>
+        <h1>Se former, puis prouver ce qu&apos;on sait faire</h1>
+        <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>
+          {parcours.description}
+        </p>
+        <div className="actions" style={{ marginTop: 0 }}>
+          <a href="#modules" className="bouton">
+            Voir mes modules
+          </a>
+          <a href="#dispositif" className="bouton bouton--secondaire">
+            Comment fonctionne l&apos;habilitation
+          </a>
+        </div>
+        <p className="mentions-hero">
+          Aucun compte nominatif · résultats non conservés · {rediges.length}{" "}
+          module{rediges.length > 1 ? "s" : ""} en ligne sur {criteres.length}{" "}
+          critères
+        </p>
+      </section>
+
+      <nav className="nav-sections" aria-label="Choix du parcours">
+        <Link
+          href="/?parcours=integration"
+          className={`bouton bouton--compact ${parcoursId === "integration" ? "" : "bouton--discret"}`}
+        >
+          Intégration
+        </Link>
+        <Link
+          href="/?parcours=maintien"
+          className={`bouton bouton--compact ${parcoursId === "maintien" ? "" : "bouton--discret"}`}
+        >
+          Maintien d&apos;habilitation
+        </Link>
+      </nav>
+
+      {/* ──────────────────────────────────────────────────── mes modules */}
+      <section id="modules" className="section">
+        <h2>Mes modules</h2>
+        <p className="section-intro">{parcours.destinataire}.</p>
+        <TableauDeBord
+          troncCommun={troncCommun}
+          parPoste={parPoste}
+          postes={filieres
+            .filter((f) => f.id !== "socle")
+            .map((f) => ({
+              id: f.id,
+              libelle: f.libelle,
+              niveauxRequis: f.niveaux,
+            }))}
+          niveaux={niveaux.map((n) => ({
+            code: n.code,
+            libelle: n.libelle,
+            filiere: n.filiere,
+          }))}
+          parcoursTitre={parcours.titre}
+        />
+      </section>
+
+      {/* ───────────────────────────────────────────────── le dispositif */}
+      <section id="dispositif" className="section">
+        <h2>Le dispositif</h2>
+        <p className="section-intro">
+          Ce site couvre les deux premières étapes. Les quatre suivantes se
+          déroulent au poste de travail et devant le pharmacien responsable :{" "}
+          <strong>un module validé à l&apos;écran ne vaut pas habilitation</strong>.
+        </p>
+        <ol className="etapes">
+          {etapes.map((e) => (
+            <li key={e.numero} className="carte">
+              <div className="etape-tete">
+                <span className="etape-num">{e.numero}</span>
+                <h3>{e.titre}</h3>
+                <span className={LIEUX[e.lieu].classe}>
+                  {LIEUX[e.lieu].texte}
+                </span>
+              </div>
+              <p style={{ marginBottom: ".375rem" }}>{e.description}</p>
+              <p className="etape-preuve">Preuve attendue : {e.preuve}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="encart">
+          <strong>Maintien de l&apos;habilitation.</strong>{" "}
+          {maintien.activiteMinimale} Réévaluation tous les{" "}
+          {maintien.periodiciteMois / 12} ans. {maintien.reserve}
+        </p>
+      </section>
+
+      {/* ────────────────────────────────────────────────── l'évaluation */}
+      <section id="evaluation" className="section">
+        <h2>L&apos;évaluation</h2>
+        <p className="section-intro">
+          Six formats, chacun avec son barème. Ils sont annoncés ici pour
+          qu&apos;aucune règle de notation ne soit découverte en cours
+          d&apos;épreuve.
+        </p>
+        <div className="grille">
+          {FORMATS.map((f) => (
+            <article key={f.titre} className="carte">
+              <h3 style={{ fontSize: "1rem" }}>{f.titre}</h3>
+              <p className="legende" style={{ marginBottom: 0 }}>
+                {f.regle}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ──────────────────────────────── programme complet, par bloc */}
+      <section className="section">
+        <h2>Programme complet</h2>
+        <p className="section-intro">
+          {criteres.length} critères, dont {obligatoires} obligatoires, repris
+          sans réécriture de la fiche d&apos;habilitation préparateur de
+          l&apos;unité. Deux points y restent en attente d&apos;arbitrage
+          pharmacien : {arbitrageEnAttente.marquageObligatoire}{" "}
+          {arbitrageEnAttente.correspondanceBlocsNiveaux}
+        </p>
+        {blocsCompetence.map((b) => {
+          const items = criteres.filter((x) => x.bloc === b.numero);
+          return (
+            <details key={b.numero} className="bloc">
+              <summary>
+                Bloc {b.numero} — {b.titre}
+                <span
+                  className="etiquette etiquette--neutre"
+                  style={{ marginLeft: ".5rem" }}
+                >
+                  {items.length} critères
+                </span>
+              </summary>
+              <div className="contenu-bloc">
+                <p className="legende" style={{ margin: "0 0 .5rem" }}>
+                  Réf. : {b.reference}
+                </p>
+                {items.map((x) => (
+                  <div key={x.id} className="ligne-critere">
+                    <span className="code">{x.id}</span>
+                    <span className="libelle">
+                      {x.libelle}
+                      {x.sousSection ? ` — ${x.sousSection}` : ""}
+                    </span>
+                    <span className="etiquette etiquette--neutre">
+                      {x.niveau}
+                    </span>
+                    {x.obligatoire && (
+                      <span className="obligatoire">Obligatoire</span>
+                    )}
+                    {!x.moduleId && (
+                      <span className="etiquette etiquette--attention">
+                        À rédiger
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+          );
+        })}
+      </section>
+
+      {/* ───────────────────────────────────── conditions des niveaux */}
+      <section className="section">
+        <h2>Conditions d&apos;obtention des niveaux</h2>
+        <p className="section-intro">Chapitre III de la fiche d&apos;habilitation.</p>
+        <ul className="liste-nue">
+          {niveaux.map((n) => (
+            <li key={n.code} className="carte">
+              <span className="etiquette etiquette--code">{n.code}</span>{" "}
+              <strong>{n.libelle}</strong>
+              <p className="legende" style={{ margin: ".375rem 0 0" }}>
+                {n.condition}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ────────────────────────────────────────────────────── questions */}
+      <section id="questions" className="section">
+        <h2>Questions</h2>
+        <div style={{ display: "grid", gap: ".5rem" }}>
+          {QUESTIONS_FREQUENTES.map((x) => (
+            <details key={x.q} className="bloc">
+              <summary>{x.q}</summary>
+              <div className="contenu-bloc">
+                <p style={{ marginBottom: 0 }}>{x.r}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}

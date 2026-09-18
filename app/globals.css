@@ -1,0 +1,992 @@
+/* =============================================================================
+ * app/globals.css — Formation & habilitation, unité de pharmacotechnie
+ * Réécriture complète issue des maquettes de design (septembre 2026).
+ *
+ * Charte graphique Hôpitaux de Vendée (GHT 85, octobre 2025) :
+ *   Primaires    #005586 bleu foncé et #E82A63 rose  — majoritaires
+ *   Secondaires  #46B4B3 turquoise et #F4C137 jaune  — accents ponctuels
+ *   Identité     barre rose verticale à gauche, bandeau bleu en pied,
+ *                logos HdV et Pharmacotechnie jamais déformés ni recolorés
+ *   Typographie  Aptos (postes CHD via Office), Inter en repli web.
+ *                Gilroy réservé à l'imprimé par la charte : non utilisé ici.
+ *
+ * Nouveautés de cette version :
+ *   1. jetons de verre dépoli (--verre-*) et fond organique (.fond-organique)
+ *   2. couleurs de texte conformes AA (le gris #7b8792 n'est plus utilisé
+ *      pour du texte : 3,67:1 sur blanc — remplacé par --texte-doux)
+ *   3. pastille « obligatoire » sur #b41f4d (blanc dessus = 6,5:1)
+ *   4. respect systématique de prefers-reduced-motion
+ *   5. feuille d'impression du rapport d'évaluation
+ *
+ * Le mode sombre est volontairement laissé en attente (décision : à traiter
+ * plus tard). Le bloc en fin de fichier documente ce qu'il faudra reprendre.
+ * ========================================================================== */
+
+:root {
+  /* --- charte ------------------------------------------------------------ */
+  --hdv-bleu: #005586;
+  --hdv-rose: #e82a63;
+  --hdv-turquoise: #46b4b3;
+  --hdv-jaune: #f4c137;
+
+  --marque: #005586;
+  --marque-fonce: #003f65;
+  --marque-clair: #e6f0f5;
+  --marque-accent: #e82a63;
+  /* Rose assombri, réservé aux fonds portant du petit texte blanc (AA). */
+  --marque-accent-texte: #b41f4d;
+  --marque-contraste: #ffffff;
+  --marque-anneau: rgba(0, 85, 134, 0.28);
+
+  /* --- surfaces et texte ------------------------------------------------- */
+  --fond: #f5f7f9;
+  --surface: #ffffff;
+  --surface-douce: #f0f2f4;
+  --bord: #d8dde2;
+  --bord-fort: #b6bec6;
+  --texte: #16202a;          /* 14,8:1 sur --surface */
+  --texte-doux: #566370;     /*  6,1:1 sur --surface — plus petit texte admis */
+  --trait-faible: #7b8792;   /* traits et séparateurs UNIQUEMENT, jamais du texte */
+
+  /* --- couleurs sémantiques (hors charte, faute d'équivalent) ------------ */
+  --succes: #1f6b45;
+  --succes-fond: #e6f3ec;
+  --alerte: #8a5a00;
+  --alerte-fond: #fdf3e0;
+  --echec: #99271f;
+  --echec-fond: #fbeae8;
+
+  /* --- verre dépoli ------------------------------------------------------ */
+  --verre-fort: rgba(255, 255, 255, 0.88);   /* en-tête, barres fixes */
+  --verre: rgba(255, 255, 255, 0.82);        /* cartes courantes */
+  --verre-doux: rgba(255, 255, 255, 0.72);   /* panneaux de titre */
+  --verre-bord: rgba(255, 255, 255, 0.9);
+  --verre-flou: blur(16px) saturate(140%);
+  --verre-flou-fort: blur(20px) saturate(150%);
+
+  /* --- rayons, ombres, mesures ------------------------------------------- */
+  --rayon-xl: 20px;
+  --rayon: 14px;
+  --rayon-sm: 10px;
+  --ombre: 0 1px 2px rgba(16, 24, 32, 0.04), 0 10px 30px rgba(0, 85, 134, 0.08);
+  --ombre-haute: 0 1px 2px rgba(16, 24, 32, 0.04), 0 22px 60px rgba(0, 85, 134, 0.12);
+  --largeur: 70rem;
+  --largeur-texte: 68ch;     /* longueur de ligne de lecture confortable */
+  --cible: 44px;             /* cible tactile minimale (WCAG 2.1 AA) */
+  --cible-large: 52px;       /* actions principales, usage tablette en zone */
+  --transition: 0.22s ease;
+  /* Hauteur réelle de l'en-tête, écrite au runtime par un ResizeObserver.
+     Sert de scroll-margin-top aux sections ancrées. */
+  --decalage: 124px;
+}
+
+/* =============================================================================
+ * Bases
+ * ========================================================================== */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: "Aptos", "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  /* Barre rose verticale de la charte, pleine hauteur du bord gauche. */
+  border-left: 5px solid var(--hdv-rose);
+  position: relative;
+  isolation: isolate;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 0.5rem;
+  color: var(--marque);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h1 { font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.4rem); line-height: 1.12; }
+h2 { font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.65rem); }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 1.02rem; }
+
+p { margin: 0 0 0.9rem; text-wrap: pretty; }
+
+a {
+  color: var(--marque);
+  text-underline-offset: 2px;
+}
+a:hover { color: var(--marque-fonce); }
+
+:where(a, button, input, select, summary, label):focus-visible {
+  outline: 3px solid var(--marque);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Lien d'évitement — premier élément focalisable du document. */
+.lien-evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 60;
+  background: var(--marque);
+  color: var(--marque-contraste);
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: 0 0 var(--rayon-sm) 0;
+  text-decoration: none;
+}
+.lien-evitement:focus { left: 0; }
+
+/* =============================================================================
+ * Fond organique — quatre formes floutées, dérives très lentes
+ * Décoratif : aria-hidden et pointer-events:none côté markup.
+ * ========================================================================== */
+
+.fond-organique {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fond-organique > span {
+  position: absolute;
+  display: block;
+  filter: blur(84px);
+  will-change: transform;
+}
+
+.fond-organique > .forme-1 {
+  width: 46vw; height: 44vw; top: -12vw; left: -8vw; opacity: 0.85;
+  border-radius: 62% 38% 55% 45% / 48% 58% 42% 52%;
+  background: radial-gradient(circle at 38% 34%, rgba(0, 85, 134, 0.34) 0%, rgba(0, 85, 134, 0.14) 55%, rgba(255, 255, 255, 0) 76%);
+  animation: derive-a 46s ease-in-out infinite alternate;
+}
+.fond-organique > .forme-2 {
+  width: 40vw; height: 38vw; top: 6vw; right: -10vw; opacity: 0.8;
+  border-radius: 44% 56% 38% 62% / 56% 42% 58% 44%;
+  background: radial-gradient(circle at 38% 34%, rgba(232, 42, 99, 0.3) 0%, rgba(232, 42, 99, 0.1) 55%, rgba(255, 255, 255, 0) 76%);
+  animation: derive-b 54s ease-in-out infinite alternate;
+}
+.fond-organique > .forme-3 {
+  width: 34vw; height: 32vw; bottom: -8vw; left: 18vw; opacity: 0.7;
+  border-radius: 58% 42% 60% 40% / 40% 58% 42% 60%;
+  background: radial-gradient(circle at 38% 34%, rgba(70, 180, 179, 0.24) 0%, rgba(70, 180, 179, 0.08) 55%, rgba(255, 255, 255, 0) 76%);
+  animation: derive-c 62s ease-in-out infinite alternate;
+}
+.fond-organique > .forme-4 {
+  width: 22vw; height: 22vw; bottom: 12vw; right: 6vw; opacity: 0.6;
+  border-radius: 52% 48% 40% 60% / 60% 40% 56% 44%;
+  background: radial-gradient(circle at 38% 34%, rgba(244, 193, 55, 0.22) 0%, rgba(244, 193, 55, 0.06) 55%, rgba(255, 255, 255, 0) 76%);
+  animation: derive-a 68s ease-in-out infinite alternate;
+}
+
+@keyframes derive-a { from { transform: translate3d(0, 0, 0) scale(1); }    to { transform: translate3d(5%, -4%, 0) scale(1.09); } }
+@keyframes derive-b { from { transform: translate3d(0, 0, 0) scale(1.04); } to { transform: translate3d(-4%, 5%, 0) scale(0.96); } }
+@keyframes derive-c { from { transform: translate3d(0, 0, 0) scale(0.98); } to { transform: translate3d(3%, 4%, 0) scale(1.06); } }
+
+/* =============================================================================
+ * Mise en page
+ * ========================================================================== */
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: var(--largeur);
+  margin: 0 auto;
+  padding: 0 1.5rem 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+.page > section { scroll-margin-top: var(--decalage); }
+
+/* En-tête fixe qui se masque au défilement descendant.
+   .entete--masque est posée par le script de défilement. */
+.entete {
+  position: fixed;
+  top: 4px;                  /* sous la barre de progression */
+  left: 5px;                 /* après la barre rose de la charte */
+  right: 0;
+  z-index: 40;
+  background: var(--verre-fort);
+  backdrop-filter: var(--verre-flou-fort);
+  -webkit-backdrop-filter: var(--verre-flou-fort);
+  border-bottom: 1px solid rgba(216, 221, 226, 0.9);
+  transition: transform 0.26s ease, box-shadow 0.2s ease;
+  will-change: transform;
+}
+.entete--masque { transform: translateY(calc(-100% - 4px)); }
+.entete--decollee { box-shadow: 0 2px 12px rgba(16, 24, 32, 0.1); }
+
+.entete-interne,
+.pied-interne {
+  max-width: var(--largeur);
+  margin: 0 auto;
+  padding: 0.625rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Cale compensant la hauteur réelle de l'en-tête (écrite au runtime). */
+.cale-entete { height: var(--decalage); }
+
+.nav-sections {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+.nav-sections a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible);
+  padding: 0 0.75rem;
+  border-radius: var(--rayon-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.nav-sections a:hover { background: var(--marque-clair); }
+
+/* Barre de progression de lecture, au-dessus de l'en-tête. */
+.progression-lecture {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: #dfe4e8;
+  z-index: 50;
+}
+.progression-lecture > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--hdv-rose);
+  transition: width 0.12s linear;
+}
+
+/* Bouton de retour en haut — révélé au-delà de ~1,8 hauteur d'écran. */
+.retour-haut {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 45;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  border-radius: 999px;
+  border: 1px solid var(--marque);
+  background: var(--marque);
+  color: var(--marque-contraste);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px);
+  transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
+  box-shadow: 0 6px 20px rgba(16, 24, 32, 0.24);
+}
+.retour-haut--visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.retour-haut:hover { background: var(--marque-fonce); border-color: var(--marque-fonce); }
+
+/* Logos — jamais recolorés ni déformés. */
+.logos { display: flex; align-items: center; gap: 0.625rem; }
+.logos img.hdv { height: 30px; width: auto; display: block; }
+.logos img.pharmaco { height: 44px; width: auto; display: block; }
+.separateur-logo { width: 1px; align-self: stretch; background: var(--bord); }
+
+/* Pied de page + bandeau bleu de la charte. */
+.pied {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border-top: 1px solid rgba(216, 221, 226, 0.9);
+  color: var(--texte-doux);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+.bandeau-bleu {
+  background: var(--hdv-bleu);
+  color: #ffffff;
+  font-size: 0.6875rem;
+}
+.bandeau-bleu .pied-interne { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+
+/* =============================================================================
+ * Surfaces de verre
+ * ========================================================================== */
+
+.verre,
+.carte,
+.panneau-titre {
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre);
+  border-radius: var(--rayon);
+}
+
+.panneau-titre {
+  background: var(--verre-doux);
+  border-radius: var(--rayon-xl);
+  box-shadow: var(--ombre-haute);
+  padding: 1.875rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.carte { padding: 1.125rem 1.25rem; }
+.carte--module { border-left: 4px solid var(--marque); padding: 1.25rem 1.375rem; }
+a.carte-lien { display: block; text-decoration: none; color: inherit; }
+a.carte-lien:hover .carte {
+  border-color: rgba(0, 85, 134, 0.6);
+  box-shadow: 0 0 0 3px var(--marque-anneau), var(--ombre);
+}
+
+.grille { display: grid; gap: 0.875rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+
+/* =============================================================================
+ * Étiquettes et états
+ * Jamais la couleur seule : chaque état porte aussi un libellé en texte.
+ * ========================================================================== */
+
+.etiquette {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 999px;
+  background: var(--marque-clair);
+  color: var(--marque-fonce);
+  border: 1px solid transparent;
+}
+.etiquette--code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 5px;
+}
+.etiquette--obligatoire { background: var(--marque-accent-texte); color: #ffffff; }
+.etiquette--site { background: var(--marque); color: #ffffff; }
+.etiquette--poste { background: #dff0f0; color: var(--texte); border-color: var(--hdv-turquoise); }
+.etiquette--pharmacien { background: var(--marque-accent-texte); color: #ffffff; }
+.etiquette--neutre { background: var(--surface-douce); color: var(--texte-doux); border-color: var(--bord); }
+.etiquette--attention { background: var(--alerte-fond); color: var(--alerte); }
+
+.a-preciser {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--alerte-fond);
+  color: var(--alerte);
+  border: 1px dashed currentColor;
+  border-radius: var(--rayon-sm);
+  padding: 0.05em 0.35em;
+  white-space: nowrap;
+}
+
+/* Critères sans module : lignes discrètes, repliées par bloc. */
+.ligne-critere {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--cible);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: var(--surface-douce);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--texte-doux);
+}
+.ligne-critere .code {
+  flex: none;
+  width: 46px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.ligne-critere .libelle { flex: 1 1 0; min-width: 0; }
+.ligne-critere .obligatoire { flex: none; font-size: 0.6875rem; font-weight: 600; color: var(--marque-accent-texte); }
+
+details.bloc {
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  border-radius: var(--rayon-sm);
+  box-shadow: var(--ombre);
+}
+details.bloc > summary {
+  cursor: pointer;
+  min-height: var(--cible);
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.6875rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  list-style: none;
+}
+details.bloc > summary::-webkit-details-marker { display: none; }
+details.bloc > summary::after { content: "+"; font-family: ui-monospace, Menlo, monospace; color: var(--marque); }
+details.bloc[open] > summary::after { content: "–"; }
+details.bloc .contenu-bloc { padding: 0 1rem 0.875rem; font-size: 0.875rem; color: var(--texte-doux); }
+
+/* =============================================================================
+ * Boutons et formulaires — cibles ≥ 44 px, usage tablette en zone
+ * ========================================================================== */
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  min-height: var(--cible-large);
+  padding: 0 1.375rem;
+  border-radius: 12px;
+  border: 1px solid var(--marque);
+  background: var(--marque);
+  color: var(--marque-contraste);
+  text-decoration: none;
+  cursor: pointer;
+}
+.bouton:hover:not(:disabled) { background: var(--marque-fonce); border-color: var(--marque-fonce); }
+.bouton:disabled { opacity: 0.45; cursor: not-allowed; }
+.bouton--secondaire { background: rgba(255, 255, 255, 0.7); color: var(--marque); }
+.bouton--secondaire:hover { background: var(--marque-clair); }
+.bouton--discret { background: rgba(255, 255, 255, 0.7); color: var(--marque); border-color: var(--bord); }
+.bouton--discret:hover { border-color: var(--marque); background: var(--marque-clair); }
+.bouton--compact { min-height: var(--cible); font-size: 0.8125rem; padding: 0 1rem; }
+
+.champ { display: flex; flex-direction: column; gap: 0.375rem; }
+.champ > span { font-size: 0.875rem; font-weight: 600; }
+.champ input,
+.champ select {
+  font: inherit;
+  font-size: 1rem;
+  min-height: var(--cible-large);
+  padding: 0 1rem;
+  border: 1px solid var(--bord-fort);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--texte);
+}
+.champ .aide { font-size: 0.8125rem; line-height: 1.5; color: var(--texte-doux); }
+.champ--code input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  min-height: 56px;
+}
+
+/* =============================================================================
+ * Évaluation — question, options, QIM, vignette
+ * ========================================================================== */
+
+fieldset.question {
+  margin: 0;
+  padding: 1.25rem 1.375rem;
+  border-radius: var(--rayon);
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+fieldset.question legend { padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.question-enonce { font-size: 1.1875rem; font-weight: 650; line-height: 1.35; max-width: 60ch; color: var(--texte); }
+/* Le barème est annoncé sur chaque question : c'est ce qui distingue
+   visuellement un QCM tout-ou-rien d'une QIM à la discordance. */
+.question-bareme { font-size: 0.8125rem; line-height: 1.5; color: var(--texte-doux); }
+.question-avertissement { font-size: 0.8125rem; font-weight: 600; color: var(--marque-accent-texte); }
+
+.option {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-height: 52px;
+  padding: 0.75rem 0.875rem;
+  border-radius: 11px;
+  border: 1px solid var(--bord);
+  background: rgba(255, 255, 255, 0.66);
+  font-size: 1rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.option:hover { border-color: var(--marque); background: var(--marque-clair); }
+.option input { margin-top: 2px; width: 22px; height: 22px; flex: none; accent-color: var(--marque); }
+
+/* QIM : chaque proposition se juge Vrai / Faux séparément. */
+.proposition {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.875rem;
+  border-radius: 11px;
+  border: 1px solid var(--bord);
+  background: rgba(255, 255, 255, 0.66);
+}
+.proposition .libelle { flex: 1 1 24rem; min-width: 0; font-size: 1rem; line-height: 1.5; }
+.proposition .jugement { flex: none; display: flex; gap: 0.5rem; }
+.proposition .jugement label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+  background: var(--surface);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.proposition .jugement label:hover { border-color: var(--marque); background: var(--marque-clair); }
+.proposition .jugement input { width: 20px; height: 20px; accent-color: var(--marque); }
+
+/* Vignette de mise en situation : traitement qui fait ralentir la lecture. */
+.vignette {
+  padding: 1.375rem 1.625rem;
+  border-radius: var(--rayon);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid rgba(0, 85, 134, 0.35);
+  border-left: 5px solid var(--marque);
+  box-shadow: 0 1px 2px rgba(16, 24, 32, 0.04), 0 16px 40px rgba(0, 85, 134, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.vignette p { margin: 0; font-size: 1rem; line-height: 1.7; }
+
+/* Barre d'avancement de session, fixée en bas pendant la passation. */
+.barre-passation {
+  position: fixed;
+  left: 5px;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: var(--verre-flou-fort);
+  -webkit-backdrop-filter: var(--verre-flou-fort);
+  border-top: 1px solid rgba(216, 221, 226, 0.9);
+  box-shadow: 0 -6px 24px rgba(16, 24, 32, 0.1);
+}
+.avancement { height: 6px; border-radius: 999px; background: #dfe4e8; overflow: hidden; }
+.avancement > span { display: block; height: 100%; background: var(--marque); border-radius: 999px; transition: width 0.2s ease; }
+
+/* =============================================================================
+ * Correction
+ * ========================================================================== */
+
+.resultat-entete {
+  padding: 1.5rem 1.625rem;
+  border-radius: var(--rayon);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  box-shadow: var(--ombre);
+  border: 1px solid var(--bord-fort);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: center;
+}
+.resultat-entete--acquis { border-color: var(--succes); }
+.resultat-entete--refuse { border-color: var(--echec); }
+.score { font-size: 2.75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+
+.correction {
+  padding: 1.125rem 1.25rem;
+  border-radius: var(--rayon);
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  border-left: 5px solid var(--trait-faible);
+  box-shadow: var(--ombre);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.correction--exacte { border-left-color: var(--succes); }
+.correction--partielle { border-left-color: var(--alerte); }
+.correction--erronee { border-left-color: var(--echec); }
+.correction .verdict { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.correction--exacte .verdict { color: var(--succes); }
+.correction--partielle .verdict { color: var(--alerte); }
+.correction--erronee .verdict { color: var(--echec); }
+.correction .source { font-size: 0.75rem; line-height: 1.5; color: var(--texte-doux); border-top: 1px solid var(--bord); padding-top: 0.5rem; }
+
+/* =============================================================================
+ * Module — lecture longue
+ * ========================================================================== */
+
+.module { display: grid; grid-template-columns: 238px minmax(0, 1fr); gap: 2rem; align-items: start; }
+.sommaire {
+  position: sticky;
+  top: calc(var(--decalage) + 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.125rem 1rem;
+  border-radius: var(--rayon);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre);
+}
+.sommaire a {
+  display: flex;
+  gap: 0.625rem;
+  align-items: baseline;
+  min-height: var(--cible);
+  padding: 0.5rem 0.625rem;
+  border-radius: 9px;
+  border-left: 3px solid transparent;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--texte);
+  text-decoration: none;
+}
+.sommaire a:hover { background: var(--marque-clair); }
+.sommaire a[aria-current="true"] { border-left-color: var(--hdv-rose); background: var(--marque-clair); font-weight: 650; }
+
+.corps-module { display: flex; flex-direction: column; gap: 1.75rem; }
+.corps-module section {
+  scroll-margin-top: var(--decalage);
+  padding: 1.625rem 1.875rem;
+  border-radius: var(--rayon);
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre);
+}
+.corps-module p,
+.corps-module li { max-width: var(--largeur-texte); font-size: 1.0625rem; line-height: 1.75; color: var(--texte); }
+.corps-module .point-cle { border-left: 3px solid var(--hdv-rose); padding-left: 1rem; }
+.references { font-size: 0.8125rem; color: var(--texte-doux); }
+
+@media (max-width: 62rem) {
+  .module { grid-template-columns: minmax(0, 1fr); }
+  .sommaire { position: static; }
+}
+
+@media (max-width: 40rem) {
+  .page { padding: 0 1rem 4rem; gap: 2.5rem; }
+  .panneau-titre { padding: 1.5rem 1.25rem; }
+  .entete-interne, .pied-interne { padding-left: 1rem; padding-right: 1rem; }
+  .proposition .jugement { width: 100%; }
+  .proposition .jugement label { flex: 1 1 0; justify-content: center; }
+}
+
+/* =============================================================================
+ * Mouvement réduit — réglage système respecté sans exception
+ * ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+ * Impression — rapport d'évaluation remis au pharmacien
+ * Le verre dépoli, le fond organique et les éléments fixes n'existent pas
+ * sur le papier.
+ * ========================================================================== */
+
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+
+  body {
+    background: #ffffff;
+    border-left: 0;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000000;
+  }
+
+  .fond-organique,
+  .entete,
+  .cale-entete,
+  .retour-haut,
+  .progression-lecture,
+  .barre-passation,
+  .nav-sections,
+  .sommaire,
+  .bouton { display: none !important; }
+
+  .verre, .carte, .panneau-titre, .correction, .resultat-entete,
+  fieldset.question, .vignette, details.bloc {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid #333333;
+    border-radius: 0;
+  }
+
+  .entete-impression {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--hdv-rose);
+  }
+
+  h1 { font-size: 22pt; }
+  h2 { font-size: 13pt; }
+  a { color: #000000; text-decoration: none; }
+  .a-preciser { border: 1px dashed #333333; background: transparent; color: #000000; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  th, td { border: 1px solid #333333; padding: 6pt 8pt; font-size: 10.5pt; text-align: left; }
+  th { background: #005586; color: #ffffff; font-size: 9pt; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .correction, .visa, .carte, figure, tr { break-inside: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  .detail-questions { break-before: page; }
+  .visa td { height: 56px; }
+}
+
+/* =============================================================================
+ * Mode sombre — À TRAITER PLUS TARD (décision du 18/09/2026)
+ *
+ * L'ancienne implémentation reposait sur des versions éclaircies des
+ * primaires (#4aa8d8, #ff6d95). Elle reste valable pour les surfaces
+ * opaques, mais trois points doivent être repris avant de la rebrancher :
+ *
+ *   1. le verre dépoli : rgba(255,255,255,.8) devient un voile laiteux sur
+ *      fond sombre — il faut des jetons --verre-* propres au thème sombre
+ *      (rgba(20,30,36,.72) + bordure rgba(255,255,255,.12)) ;
+ *   2. le fond organique : les mêmes teintes à 0,3 d'alpha ressortent trop.
+ *      Diviser les alphas par deux et remonter le flou ;
+ *   3. contraste des primaires éclaircies sur les surfaces de verre, à
+ *      remesurer (le calcul AA de la version claire ne se transpose pas).
+ *
+ * Rebrancher avec @media (prefers-color-scheme: dark) et
+ * :root:not([data-theme="light"]), comme dans la version précédente.
+ * ========================================================================== */
+
+/* =============================================================================
+ * Supplément applicatif — classes non couvertes par la passation de design.
+ * À fusionner dans la feuille principale lors d'une prochaine itération de
+ * design. Tout ce qui est ici est du complément, jamais une redéfinition.
+ * ========================================================================== */
+
+.bandeau-titre {
+  font-weight: 650;
+  color: var(--texte);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.bandeau-sous { font-size: 0.8125rem; color: var(--texte-doux); }
+
+.sur-titre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--marque-accent-texte);
+}
+
+.mentions-hero { font-size: 0.8125rem; color: var(--texte-doux); margin: 0; }
+
+.section { display: flex; flex-direction: column; gap: 1rem; }
+.section > h2 { margin: 0; }
+.section-intro { color: var(--texte-doux); margin: -0.5rem 0 0; max-width: 62ch; }
+
+.meta-module {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etapes { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.etape-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.375rem;
+}
+.etape-tete h3 { margin: 0; flex: 1 1 auto; }
+.etape-num {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--marque-clair);
+  color: var(--marque);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  display: grid;
+  place-items: center;
+}
+.etape-preuve { font-size: 0.8125rem; color: var(--texte-doux); margin: 0; }
+
+.champ { display: block; margin: 0.75rem 0; }
+.champ > span {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  margin-bottom: 0.3125rem;
+  color: var(--texte);
+}
+.champ input,
+.champ select {
+  font: inherit;
+  width: 100%;
+  max-width: 26rem;
+  min-height: var(--cible);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--bord-fort);
+  border-radius: var(--rayon-sm);
+  background: var(--surface);
+  color: var(--texte);
+}
+.champ input[type="file"] { border-style: dashed; background: var(--surface-douce); }
+.rangee { display: flex; flex-wrap: wrap; gap: 1rem; }
+.rangee .champ { flex: 1 1 16rem; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 1rem; align-items: center; }
+
+.tuiles { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.tuile {
+  background: var(--verre);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  border-radius: var(--rayon-sm);
+  box-shadow: var(--ombre);
+  padding: 0.875rem 1rem;
+}
+.tuile .valeur {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--marque);
+}
+.tuile .libelle { display: block; font-size: 0.75rem; color: var(--texte-doux); margin-top: 0.125rem; }
+
+.legende { font-size: 0.8125rem; color: var(--texte-doux); }
+
+.encart {
+  border-left: 4px solid var(--marque);
+  background: var(--marque-clair);
+  padding: 0.875rem 1.0625rem;
+  border-radius: 0 var(--rayon-sm) var(--rayon-sm) 0;
+}
+.encart--attention { border-left-color: var(--alerte); background: var(--alerte-fond); color: var(--alerte); }
+.encart--ok { border-left-color: var(--succes); background: var(--succes-fond); }
+.encart p:last-child { margin-bottom: 0; }
+
+.liste-nue { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+
+.fil { font-size: 0.8125rem; color: var(--texte-doux); }
+.fil a { color: inherit; }
+
+details.bloc > summary {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  min-height: var(--cible);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 650;
+  list-style: none;
+}
+details.bloc > summary::-webkit-details-marker { display: none; }
+details.bloc > summary::after { content: "+"; margin-left: auto; color: var(--texte-doux); font-weight: 700; }
+details.bloc[open] > summary::after { content: "–"; }
+details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem; }
+
+.section-titre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0 0.75rem;
+}
+.section-titre h2 { margin: 0; }
+.section-titre .compte { font-size: 0.8125rem; color: var(--texte-doux); }
+
+.carte--module.est-vide { opacity: 0.66; border-left-color: var(--bord-fort); }
+.carte--module .objectif { color: var(--texte-doux); font-size: 0.9375rem; margin-bottom: 0.375rem; }
+
+.resultat-ligne {
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--rayon-sm);
+  padding: 0.375rem 0.625rem;
+  margin: 0.5rem 0;
+}
+.resultat-ligne.ok { background: var(--succes-fond); color: var(--succes); }
+.resultat-ligne.ko { background: var(--echec-fond); color: var(--echec); }
+
+.choix-difficulte { display: grid; gap: 0.5rem; margin: 1rem 0; }
+.option.est-choisie { border-color: var(--marque); background: var(--marque-clair); }
+
+/* Contenu interne de la barre de passation — même gabarit que l'en-tête. */
+.barre-passation-interne {
+  max-width: var(--largeur);
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}

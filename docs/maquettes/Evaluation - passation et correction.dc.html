@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Évaluation — Comportement et habillage en zone à atmosphère contrôlée | CHD Vendée</title>
+<meta name="description" content="Évaluation des connaissances du critère B1-01. Seuil de réussite 80 %, questions éliminatoires, correction justifiée et sourcée. Étape 2 sur 6 de la chaîne d'habilitation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #f5f7f9; }
+  a { color: #005586; text-underline-offset: 2px; }
+  a:hover { color: #003f65; }
+  :where(a, button, summary, input, select, label):focus-visible {
+    outline: 3px solid #005586;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  .lien-evitement { position: absolute; left: -9999px; top: 0; z-index: 60; background: #005586; color: #fff; font-weight: 600; padding: 12px 18px; border-radius: 0 0 10px 0; text-decoration: none; }
+  .lien-evitement:focus { left: 0; }
+  @keyframes derive-a { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(5%,-4%,0) scale(1.09); } }
+  @keyframes derive-b { from { transform: translate3d(0,0,0) scale(1.04); } to { transform: translate3d(-4%,5%,0) scale(0.96); } }
+  @keyframes derive-c { from { transform: translate3d(0,0,0) scale(0.98); } to { transform: translate3d(3%,4%,0) scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  }
+</style>
+</helmet>
+
+<div style="font-family:Aptos,Inter,ui-sans-serif,system-ui,sans-serif;color:#16202a;border-left:5px solid #E82A63;background:#f5f7f9;min-height:100vh;position:relative;isolation:isolate">
+  {{ fondOrganique }}
+
+  <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+  <header style="position:relative;z-index:2;background:rgba(255,255,255,.88);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-bottom:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:960px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO HDV</div>
+        <div style="width:1px;height:24px;background:#d8dde2"></div>
+        <div style="border:1px dashed #b6bec6;border-radius:4px;padding:4px 8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.06em;color:#566370">LOGO PHARMACO</div>
+      </div>
+      <strong style="font-size:14px">Formation &amp; habilitation</strong>
+      <nav aria-label="Fil d'Ariane" style="margin-left:auto;font-size:13px;color:#566370;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <a href="#contenu" style="font-weight:600">Programme</a><span aria-hidden="true">›</span>
+        <a href="#contenu" style="font-weight:600">B1-01</a><span aria-hidden="true">›</span>
+        <span aria-current="page">Évaluation</span>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu" style="position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 24px 120px;display:flex;flex-direction:column;gap:20px">
+
+    <section aria-labelledby="titre-eval" style="padding:28px 30px;border-radius:20px;background:rgba(255,255,255,.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 22px 60px rgba(0,85,134,.12);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:5px;padding:3px 7px">B1-01</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Obligatoire</span>
+        <span style="font-size:12px;color:#566370">Bloc 1 — socle transversal · étape 2 sur 6</span>
+      </div>
+      <h1 id="titre-eval" style="margin:0;max-width:34ch;font-size:32px;line-height:1.14;letter-spacing:-.02em;color:#005586">Évaluation — comportement et habillage en zone à atmosphère contrôlée</h1>
+      <p style="margin:0;max-width:64ch;font-size:15px;line-height:1.6;color:#16202a">Seuil de réussite {{ seuilTexte }}. Les questions éliminatoires invalident le critère en cas d'erreur, quel que soit le score global. Le résultat n'est conservé nulle part : vous l'exportez et le remettez vous-même.</p>
+    </section>
+
+    <sc-if value="{{ estReglage }}" hint-placeholder-val="{{ true }}">
+      <section aria-labelledby="titre-reglage" style="padding:24px 26px;border-radius:16px;background:rgba(255,255,255,.82);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 14px 36px rgba(0,85,134,.10);display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <h2 id="titre-reglage" style="margin:0;font-size:22px;line-height:1.2;color:#005586">Régler l'évaluation</h2>
+          <p style="margin:0;font-size:14px;line-height:1.6;color:#566370">Les questions sont tirées au sort dans la banque du critère — 9 questions disponibles. Les questions éliminatoires sont toujours posées, et les mises en situation sont tirées avec leur vignette entière.</p>
+        </div>
+        <div role="radiogroup" aria-labelledby="titre-reglage" style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ tirages }}" as="t" hint-placeholder-count="3">
+            <label style="display:flex;gap:12px;align-items:flex-start;min-height:56px;padding:14px 16px;border-radius:12px;border:1px solid #d8dde2;background:rgba(255,255,255,.7);cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+              <input type="radio" name="tirage" checked="{{ t.actif }}" onChange="{{ t.onChoisir }}" style="margin-top:3px;width:22px;height:22px;flex:none;accent-color:#005586">
+              <span style="display:flex;flex-direction:column;gap:2px">
+                <strong style="font-size:16px;line-height:1.3">{{ t.titre }}</strong>
+                <span style="font-size:13px;line-height:1.5;color:#566370">{{ t.detail }}</span>
+              </span>
+            </label>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <button type="button" onClick="{{ commencer }}" style="font:inherit;font-size:15px;font-weight:650;min-height:52px;padding:0 24px;border-radius:12px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65;border-color:#003f65">Commencer l'évaluation</button>
+          <a href="#contenu" style="font-size:15px;font-weight:600;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 24px;border-radius:12px;border:1px solid #005586;background:rgba(255,255,255,.7);color:#005586" style-hover="background:#e6f0f5">Revoir le module</a>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ estPassation }}" hint-placeholder-val="{{ true }}">
+      <form onSubmit="{{ surSoumission }}" style="display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{ questions }}" as="q" hint-placeholder-count="9">
+
+          <sc-if value="{{ q.aVignette }}" hint-placeholder-val="{{ false }}">
+            <aside aria-label="Mise en situation" style="padding:22px 26px;border-radius:16px;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(0,85,134,.35);border-left:5px solid #005586;box-shadow:0 1px 2px rgba(16,24,32,.04),0 16px 40px rgba(0,85,134,.12);display:flex;flex-direction:column;gap:10px">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b41f4d">Mise en situation — lisez posément</span>
+              <h2 style="margin:0;font-size:22px;line-height:1.2;color:#005586">{{ q.vignetteTitre }}</h2>
+              <p style="margin:0;font-size:16px;line-height:1.7;color:#16202a">{{ q.vignetteP1 }}</p>
+              <p style="margin:0;font-size:16px;line-height:1.7;color:#16202a">{{ q.vignetteP2 }}</p>
+              <span style="font-size:13px;color:#566370">Deux questions portent sur cette situation.</span>
+            </aside>
+          </sc-if>
+
+          <fieldset style="margin:0;padding:20px 22px;border-radius:14px;background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:12px">
+            <legend style="padding:0;display:flex;flex-direction:column;gap:8px">
+              <span style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:6px;padding:3px 8px">{{ q.rang }}</span>
+                <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#005586;border-radius:999px;padding:3px 9px">{{ q.formatLibelle }}</span>
+                <sc-if value="{{ q.elim }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Éliminatoire</span>
+                </sc-if>
+              </span>
+              <span style="font-size:19px;font-weight:650;line-height:1.35;color:#16202a;max-width:60ch">{{ q.enonce }}</span>
+              <span style="font-size:13px;line-height:1.5;color:#566370">{{ q.bareme }}</span>
+            </legend>
+
+            <sc-if value="{{ q.estUnique }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <sc-for list="{{ q.options }}" as="o" hint-placeholder-count="4">
+                  <label style="display:flex;gap:12px;align-items:flex-start;min-height:52px;padding:12px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66);cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+                    <input type="radio" name="{{ q.nom }}" checked="{{ o.coche }}" onChange="{{ o.onChoisir }}" style="margin-top:2px;width:22px;height:22px;flex:none;accent-color:#005586">
+                    <span style="font-size:16px;line-height:1.5">{{ o.libelle }}</span>
+                  </label>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ q.estMultiple }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <sc-for list="{{ q.options }}" as="o" hint-placeholder-count="4">
+                  <label style="display:flex;gap:12px;align-items:flex-start;min-height:52px;padding:12px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66);cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+                    <input type="checkbox" checked="{{ o.coche }}" onChange="{{ o.onChoisir }}" style="margin-top:2px;width:22px;height:22px;flex:none;accent-color:#005586">
+                    <span style="font-size:16px;line-height:1.5">{{ o.libelle }}</span>
+                  </label>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ q.estQimVF }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600;color:#b41f4d">Chaque proposition se juge séparément — une proposition laissée sans réponse compte comme une discordance.</span>
+                <sc-for list="{{ q.propositions }}" as="p" hint-placeholder-count="5">
+                  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66)">
+                    <span style="flex:1 1 24rem;min-width:0;font-size:16px;line-height:1.5">{{ p.libelle }}</span>
+                    <div style="flex:none;display:flex;gap:8px">
+                      <label style="display:inline-flex;gap:8px;align-items:center;min-height:48px;padding:0 16px;border-radius:999px;border:1px solid #d8dde2;background:#ffffff;font-size:15px;font-weight:600;cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+                        <input type="radio" name="{{ p.nom }}" checked="{{ p.vraiCoche }}" onChange="{{ p.onVrai }}" style="width:20px;height:20px;accent-color:#005586">Vrai
+                      </label>
+                      <label style="display:inline-flex;gap:8px;align-items:center;min-height:48px;padding:0 16px;border-radius:999px;border:1px solid #d8dde2;background:#ffffff;font-size:15px;font-weight:600;cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+                        <input type="radio" name="{{ p.nom }}" checked="{{ p.fauxCoche }}" onChange="{{ p.onFaux }}" style="width:20px;height:20px;accent-color:#005586">Faux
+                      </label>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ q.estQimCases }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:13px;font-weight:600;color:#b41f4d">Cocher signifie « vraie ». Une proposition vraie laissée décochée compte comme une discordance.</span>
+                <sc-for list="{{ q.propositions }}" as="p" hint-placeholder-count="5">
+                  <label style="display:flex;gap:12px;align-items:flex-start;min-height:52px;padding:12px 14px;border-radius:11px;border:1px solid #d8dde2;background:rgba(255,255,255,.66);cursor:pointer" style-hover="border-color:#005586;background:#e6f0f5">
+                    <input type="checkbox" checked="{{ p.vraiCoche }}" onChange="{{ p.onBascule }}" style="margin-top:2px;width:22px;height:22px;flex:none;accent-color:#005586">
+                    <span style="font-size:16px;line-height:1.5">{{ p.libelle }}</span>
+                  </label>
+                </sc-for>
+              </div>
+            </sc-if>
+          </fieldset>
+        </sc-for>
+      </form>
+    </sc-if>
+
+    <sc-if value="{{ estCorrection }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <section aria-labelledby="titre-resultat" style="padding:24px 26px;border-radius:16px;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid {{ bordureVerdict }};box-shadow:0 1px 2px rgba(16,24,32,.04),0 14px 36px rgba(0,85,134,.10);display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+          <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1">{{ pourcentage }}</span>
+            <span style="font-size:13px;color:#566370">{{ detailPoints }}</span>
+          </div>
+          <div style="flex:1 1 24rem;min-width:0;display:flex;flex-direction:column;gap:6px">
+            <h2 id="titre-resultat" style="margin:0;font-size:22px;line-height:1.25;color:{{ couleurVerdict }}">{{ verdict }}</h2>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#16202a">{{ motifVerdict }}</p>
+            <sc-if value="{{ echecElim }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:13px;font-weight:650;color:#99271f;background:#fbeae8;border:1px solid #99271f;border-radius:10px;padding:8px 12px">Échec sur une question éliminatoire : le critère est non acquis quel que soit le score.</span>
+            </sc-if>
+          </div>
+        </section>
+
+        <sc-for list="{{ corrections }}" as="c" hint-placeholder-count="9">
+          <article style="padding:18px 20px;border-radius:14px;background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);border-left:5px solid {{ c.couleur }};box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;color:#003f65;background:#e6f0f5;border-radius:6px;padding:3px 8px">{{ c.rang }}</span>
+              <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:{{ c.couleur }}">{{ c.etat }}</span>
+              <sc-if value="{{ c.elim }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#ffffff;background:#b41f4d;border-radius:999px;padding:3px 9px">Éliminatoire</span>
+              </sc-if>
+              <span style="margin-left:auto;font-size:13px;font-weight:650;color:#16202a">{{ c.points }}</span>
+            </div>
+            <strong style="font-size:17px;line-height:1.35;color:#16202a;max-width:62ch">{{ c.enonce }}</strong>
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.55">
+              <span style="color:#566370">Votre réponse : <span style="color:#16202a">{{ c.votre }}</span></span>
+              <span style="color:#566370">Attendu : <span style="color:#16202a;font-weight:600">{{ c.attendu }}</span></span>
+            </div>
+            <p style="margin:0;font-size:15px;line-height:1.65;color:#16202a;max-width:66ch">{{ c.justification }}</p>
+            <span style="font-size:12px;line-height:1.5;color:#566370;border-top:1px solid #d8dde2;padding-top:8px">Source : {{ c.source }}</span>
+          </article>
+        </sc-for>
+
+        <section aria-label="Suites de l'évaluation" style="padding:20px 22px;border-radius:14px;background:rgba(255,255,255,.82);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(16,24,32,.04),0 10px 30px rgba(0,85,134,.08);display:flex;flex-direction:column;gap:12px">
+          <p style="margin:0;font-size:14px;line-height:1.6;color:#16202a"><strong>Ce résultat ne vaut pas habilitation.</strong> Il constitue la preuve de l'étape 2 sur 6 : exportez-le, puis remettez-le pour votre dossier. Il disparaît à la fermeture de l'onglet.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button type="button" style="font:inherit;font-size:15px;font-weight:650;min-height:52px;padding:0 22px;border-radius:12px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65;border-color:#003f65">Exporter le rapport</button>
+            <button type="button" onClick="{{ recommencer }}" style="font:inherit;font-size:15px;font-weight:600;min-height:52px;padding:0 22px;border-radius:12px;border:1px solid #005586;background:rgba(255,255,255,.7);color:#005586;cursor:pointer" style-hover="background:#e6f0f5">Nouveau tirage</button>
+            <a href="#contenu" style="font-size:15px;font-weight:600;text-decoration:none;min-height:52px;display:inline-flex;align-items:center;padding:0 22px;border-radius:12px;border:1px solid #d8dde2;background:rgba(255,255,255,.7);color:#005586" style-hover="border-color:#005586;background:#e6f0f5">Revoir le module</a>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ estPassation }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;left:5px;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.9);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border-top:1px solid rgba(216,221,226,.9);box-shadow:0 -6px 24px rgba(16,24,32,.10)">
+      <div style="max-width:960px;margin:0 auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <div style="flex:1 1 20rem;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:600;color:#16202a">{{ avancement }}</span>
+          <div role="progressbar" aria-label="Questions renseignées" aria-valuemin="0" aria-valuemax="9" aria-valuenow="{{ nbRenseignees }}" style="height:6px;border-radius:999px;background:#dfe4e8;overflow:hidden">
+            <div style="height:100%;width:{{ largeurAvancement }};background:#005586;border-radius:999px;transition:width .2s ease"></div>
+          </div>
+          <span style="font-size:12px;color:#566370">Avancement de cette session — ce n'est pas un avancement d'habilitation.</span>
+        </div>
+        <button type="button" onClick="{{ valider }}" style="flex:none;font:inherit;font-size:15px;font-weight:650;min-height:52px;padding:0 24px;border-radius:12px;border:1px solid #005586;background:#005586;color:#ffffff;cursor:pointer" style-hover="background:#003f65;border-color:#003f65">Valider l'évaluation</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <footer style="position:relative;z-index:1;background:rgba(255,255,255,.86);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-top:1px solid rgba(216,221,226,.9)">
+    <div style="max-width:960px;margin:0 auto;padding:20px 24px;font-size:12px;line-height:1.55;color:#566370">
+      <p style="margin:0 0 8px"><strong>Aucune donnée nominative n'est enregistrée.</strong> Les réponses transmises au serveur ne comportent ni nom, ni matricule, ni identifiant.</p>
+      <p style="margin:0">Statut du dispositif (outil pédagogique ou preuve opposable en audit BPP 2023 / ISO 9001) : <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fdf3e0;color:#8a5a00;border:1px dashed currentColor;border-radius:8px;padding:1px 6px">[à préciser]</span></p>
+    </div>
+    <div style="background:#005586;color:#ffffff;font-size:11px"><div style="max-width:960px;margin:0 auto;padding:10px 24px"><strong>CHD Vendée</strong> — Pharmacie à usage intérieur, unité de pharmacotechnie</div></div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;seuilReussite&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:80,&quot;min&quot;:50,&quot;max&quot;:100,&quot;step&quot;:5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Barème&quot;},&quot;qimEnVraiFaux&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Barème&quot;}}">
+class Component extends DCLogic {
+  state = { etape: "reglage", tirage: "habilitation", rep: {} };
+
+  fond() {
+    const h = React.createElement;
+    const forme = (s) => h("div", { key: s.k, style: {
+      position: "absolute", pointerEvents: "none",
+      width: s.w, height: s.ht, top: s.t, left: s.l, right: s.r, bottom: s.b,
+      background: "radial-gradient(circle at 38% 34%, " + s.c1 + " 0%, " + s.c2 + " 55%, rgba(255,255,255,0) 76%)",
+      borderRadius: s.rd, filter: "blur(" + s.bl + "px)", opacity: s.o, animation: s.a, willChange: "transform"
+    } });
+    return h("div", { "aria-hidden": "true", style: { position: "fixed", inset: 0, zIndex: -1, overflow: "hidden", pointerEvents: "none" } }, [
+      forme({ k: "b1", w: "46vw", ht: "44vw", t: "-12vw", l: "-8vw", rd: "62% 38% 55% 45% / 48% 58% 42% 52%", c1: "rgba(0,85,134,.34)", c2: "rgba(0,85,134,.14)", bl: 78, o: .85, a: "derive-a 46s ease-in-out infinite alternate" }),
+      forme({ k: "b2", w: "40vw", ht: "38vw", t: "6vw", r: "-10vw", rd: "44% 56% 38% 62% / 56% 42% 58% 44%", c1: "rgba(232,42,99,.30)", c2: "rgba(232,42,99,.10)", bl: 84, o: .8, a: "derive-b 54s ease-in-out infinite alternate" }),
+      forme({ k: "b3", w: "34vw", ht: "32vw", b: "-8vw", l: "18vw", rd: "58% 42% 60% 40% / 40% 58% 42% 60%", c1: "rgba(70,180,179,.24)", c2: "rgba(70,180,179,.08)", bl: 88, o: .7, a: "derive-c 62s ease-in-out infinite alternate" }),
+      forme({ k: "b4", w: "22vw", ht: "22vw", b: "12vw", r: "6vw", rd: "52% 48% 40% 60% / 60% 40% 56% 44%", c1: "rgba(244,193,55,.22)", c2: "rgba(244,193,55,.06)", bl: 92, o: .6, a: "derive-a 68s ease-in-out infinite alternate" })
+    ]);
+  }
+
+  banque() {
+    return [
+      { id: "q1", type: "unique", enonce: "Selon la norme ISO 14644-1, quelle est la concentration maximale de particules ≥ 0,5 µm par m³ admise en classe ISO 5 ?",
+        options: ["352 particules/m³", "3 520 particules/m³", "35 200 particules/m³", "352 000 particules/m³"], bonne: 1,
+        justification: "La limite ISO 5 est de 3 520 particules ≥ 0,5 µm par m³. La valeur 352 000 correspond à la classe ISO 7 : entre les deux, un facteur cent. Ces valeurs découlent de la formule Cn = 10^N × (0,1/D)^2,08, arrondie à trois chiffres significatifs.",
+        source: "ISO / AFNOR — NF EN ISO 14644-1 : classification particulaire de l'air" },
+      { id: "q2", type: "unique", enonce: "Un local est classé ISO 7 au repos et mesuré ISO 8 pendant une séance de préparation. Comment interpréter ce résultat ?",
+        options: ["C'est une non-conformité : la classe doit être tenue en permanence", "C'est attendu : les classes sont définies par état, au repos et en activité", "C'est le signe d'une défaillance des filtres terminaux", "C'est sans signification : la mesure en activité n'est pas définie"], bonne: 1,
+        justification: "Les référentiels définissent un état au repos et un état en activité, avec des exigences distinctes. Un grade C correspond précisément à ISO 7 au repos et ISO 8 en activité. L'écart entre les deux états ne traduit pas une dérive : il traduit la présence de l'opérateur, source principale de particules.",
+        source: "ANSM — BPF, Annexe 1 ; NF EN ISO 14644-1" },
+      { id: "q3", type: "unique", enonce: "Quelle affirmation sur la classification particulaire est exacte ?",
+        options: ["Une classe ISO 5 garantit l'absence de micro-organismes dans l'air", "La classification particulaire et la surveillance microbiologique sont deux contrôles distincts, tous deux exigés", "La surveillance microbiologique remplace le comptage particulaire lorsqu'elle est conforme", "Le comptage particulaire est un contrôle de stérilité du produit fini"], bonne: 1,
+        justification: "Une particule n'est pas un micro-organisme : le comptage particulaire mesure la maîtrise de l'environnement, pas sa charge biologique. Les deux surveillances ont des méthodes, des seuils et des finalités différentes, et aucune ne se substitue à l'autre. Aucune des deux n'est par ailleurs un contrôle du produit fini.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { id: "q4", type: "unique", elim: true, enonce: "À quel moment de l'habillage les gants sont-ils enfilés ?",
+        options: ["En premier, pour ne rien toucher à mains nues", "Avant la surblouse, pour en protéger l'extérieur", "En dernier, par-dessus les poignets", "Indifféremment, l'ordre relevant de l'habitude de chacun"], bonne: 2,
+        justification: "Les gants sont ce qui approchera le produit : tout geste d'habillage effectué après les avoir enfilés les contamine. Ils viennent donc en dernier, recouvrant les poignets de la tenue — ce qui supprime aussi la zone de peau exposée à la jonction manche-gant.",
+        source: "ANSM — BPP 2023, ligne directrice 1 — préparation de médicaments stériles" },
+      { id: "q5", type: "multiple", enonce: "Quels comportements compromettent la maîtrise de l'environnement en ZAC ?",
+        options: ["Ouvrir les deux portes d'un sas en même temps", "Passer la main au-dessus d'un point critique en flux unidirectionnel", "Effectuer des gestes rapides et amples", "Limiter le nombre de personnes présentes simultanément en zone"], bonnes: [0, 1, 2],
+        justification: "Deux portes ouvertes ensemble annulent la cascade de pression ; une main placée en amont d'un point critique contamine ce qui est en aval du flux ; les gestes rapides remettent en suspension les particules déposées. Limiter les effectifs va au contraire dans le sens de la maîtrise, puisque chaque personne est une source d'émission.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { id: "q6", type: "unique", enonce: "Un opérateur habillé doit sortir de zone une minute pour récupérer un document oublié. Que fait-il au retour ?",
+        options: ["Il réintègre directement la zone, la sortie ayant été brève", "Il change uniquement de gants", "Il refait l'habillage complet selon la procédure", "Il réintègre après désinfection des mains, l'habillage restant valable"], bonne: 2,
+        justification: "La durée de la sortie ne change rien à son effet : la tenue a quitté l'environnement maîtrisé et n'est plus dans l'état qu'elle garantissait. L'habillage se refait intégralement. C'est aussi la raison pour laquelle la préparation de la séance — documents, matériel, consommables — se fait avant l'habillage et non pendant.",
+        source: "ANSM — BPP 2023, ligne directrice 1" },
+      { id: "q7", type: "qim", enonce: "Concernant les zones à atmosphère contrôlée, indiquer la ou les propositions exactes.",
+        propositions: [
+          { libelle: "La classe ISO 5 correspond à 3 520 particules ≥ 0,5 µm par m³", vraie: true },
+          { libelle: "Une zone de grade A doit être ISO 5 au repos comme en activité", vraie: true },
+          { libelle: "Le comptage particulaire renseigne directement sur la charge microbiologique de l'air", vraie: false },
+          { libelle: "L'opérateur est le principal contributeur de particules en zone", vraie: true },
+          { libelle: "Une sortie de zone de moins de cinq minutes dispense de refaire l'habillage", vraie: false }
+        ],
+        justification: "A, B et D sont exactes. C est fausse : une particule n'est pas un micro-organisme, et la surveillance microbiologique est un contrôle distinct avec ses propres méthodes. E est fausse : la durée de la sortie ne change rien à son effet sur la tenue, qui a quitté l'environnement maîtrisé.",
+        source: "NF EN ISO 14644-1 ; ANSM — BPF, Annexe 1 ; ANSM — BPP 2023, ligne directrice 1" },
+      { id: "q8", type: "unique", elim: true,
+        vignette: { titre: "Le sas, la porte et le carton",
+          p1: "Vous êtes habillé et en zone depuis le début de la séance. Un collègue, en tenue de ville, se présente de l'autre côté du sas matériel avec un carton de consommables commandé en urgence pour la fin de série : il manque des poches de perfusion.",
+          p2: "Il vous fait signe à travers le hublot, ouvre la première porte du sas et pose le carton à l'intérieur, tout en maintenant la porte ouverte du pied pour vous parler. Le carton n'a pas été décartonné en zone de déballage. L'alarme de pression différentielle se déclenche." },
+        enonce: "Quel élément de cette situation constitue l'écart le plus grave ?",
+        options: ["Le collègue est en tenue de ville de l'autre côté du sas", "La porte du sas est maintenue ouverte, ce qui rompt la cascade de pression", "Le carton est entré sans avoir été décartonné", "Les consommables ont été commandés en urgence"], bonne: 1,
+        justification: "Le carton non décartonné est un écart réel, mais reste circonscrit au sas tant que la seconde porte n'est pas ouverte. La porte maintenue ouverte rompt en revanche immédiatement la cascade de pression et met la zone en communication directe avec l'extérieur — c'est ce que confirme le déclenchement de l'alarme. La tenue de ville du collègue est normale de son côté du sas ; l'urgence de la commande n'est pas un écart mais un facteur contributif.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" },
+      { id: "q9", type: "qim", enonce: "Concernant la conduite à tenir, indiquer la ou les propositions exactes.",
+        propositions: [
+          { libelle: "Demander la fermeture immédiate de la porte avant tout autre échange", vraie: true },
+          { libelle: "Récupérer le carton dans le sas pour terminer la série, l'urgence patient primant", vraie: false },
+          { libelle: "Faire ressortir le carton et le faire passer par le circuit de décartonnage prévu", vraie: true },
+          { libelle: "Signaler l'événement, alarme de pression à l'appui, au titre des écarts environnementaux", vraie: true },
+          { libelle: "Vérifier le retour de la cascade de pression avant de reprendre la production", vraie: true }
+        ],
+        justification: "A, C, D et E sont exactes et s'enchaînent dans cet ordre. B est fausse : l'urgence de la série ne crée aucune dérogation au circuit d'entrée du matériel. C'est précisément dans ces moments que les barrières sont contournées, et c'est pour cela que la règle s'applique sans arbitrage au cas par cas. La reprise n'est légitime qu'après retour documenté des conditions environnementales.",
+        source: "ANSM — BPP 2023, ligne directrice 1 ; BPF, Annexe 1" }
+    ];
+  }
+
+  lettres = ["A", "B", "C", "D", "E"];
+
+  choisirUnique = (id, i) => this.setState((s) => ({ rep: { ...s.rep, [id]: i } }));
+
+  basculerMultiple = (id, i) => this.setState((s) => {
+    const cur = { ...(s.rep[id] || {}) };
+    cur[i] = !cur[i];
+    return { rep: { ...s.rep, [id]: cur } };
+  });
+
+  jugerProposition = (id, i, valeur) => this.setState((s) => {
+    const cur = { ...(s.rep[id] || {}) };
+    cur[i] = valeur;
+    return { rep: { ...s.rep, [id]: cur } };
+  });
+
+  commencer = () => this.setState({ etape: "passation" });
+  valider = () => this.setState({ etape: "correction" });
+  surSoumission = (e) => { e.preventDefault(); this.valider(); };
+  recommencer = () => this.setState({ etape: "reglage", rep: {} });
+
+  noter(q) {
+    const r = this.state.rep[q.id];
+    if (q.type === "unique") {
+      const juste = r === q.bonne;
+      return { points: juste ? 1 : 0, juste, discordances: juste ? 0 : 1, repondu: r !== undefined };
+    }
+    if (q.type === "multiple") {
+      const choisi = Object.keys(r || {}).filter((k) => r[k]).map(Number).sort();
+      const attendu = q.bonnes.slice().sort();
+      const juste = choisi.length === attendu.length && choisi.every((v, i) => v === attendu[i]);
+      return { points: juste ? 1 : 0, juste, discordances: juste ? 0 : 1, repondu: choisi.length > 0 };
+    }
+    let d = 0, repondu = 0;
+    q.propositions.forEach((p, i) => {
+      const v = (r || {})[i];
+      if (v === undefined) { d += 1; return; }
+      repondu += 1;
+      if (!!v !== p.vraie) d += 1;
+    });
+    const points = d === 0 ? 1 : d === 1 ? 0.5 : 0;
+    return { points, juste: d === 0, discordances: d, repondu: repondu > 0 };
+  }
+
+  fmt(n) { return String(Math.round(n * 10) / 10).replace(".", ","); }
+
+  texteReponse(q) {
+    const r = this.state.rep[q.id];
+    if (q.type === "unique") return r === undefined ? "aucune" : q.options[r];
+    if (q.type === "multiple") {
+      const l = Object.keys(r || {}).filter((k) => r[k]).map((k) => q.options[Number(k)]);
+      return l.length ? l.join(" · ") : "aucune";
+    }
+    const l = q.propositions.map((p, i) => {
+      const v = (r || {})[i];
+      return this.lettres[i] + " " + (v === undefined ? "sans réponse" : v ? "vrai" : "faux");
+    });
+    return l.join(" · ");
+  }
+
+  texteAttendu(q) {
+    if (q.type === "unique") return q.options[q.bonne];
+    if (q.type === "multiple") return q.bonnes.map((i) => q.options[i]).join(" · ");
+    return q.propositions.map((p, i) => this.lettres[i] + " " + (p.vraie ? "vrai" : "faux")).join(" · ");
+  }
+
+  renderVals() {
+    const seuil = this.props.seuilReussite ?? 80;
+    const vf = this.props.qimEnVraiFaux ?? true;
+    const banque = this.banque();
+    const etape = this.state.etape;
+
+    const questions = banque.map((q, idx) => {
+      const r = this.state.rep[q.id];
+      const base = {
+        rang: "Question " + (idx + 1) + " / 9",
+        nom: q.id,
+        enonce: q.enonce,
+        elim: !!q.elim,
+        aVignette: !!q.vignette,
+        vignetteTitre: q.vignette ? q.vignette.titre : "",
+        vignetteP1: q.vignette ? q.vignette.p1 : "",
+        vignetteP2: q.vignette ? q.vignette.p2 : "",
+        estUnique: q.type === "unique",
+        estMultiple: q.type === "multiple",
+        estQimVF: q.type === "qim" && vf,
+        estQimCases: q.type === "qim" && !vf
+      };
+      if (q.type === "unique") {
+        return { ...base, formatLibelle: "QCM — une seule réponse", bareme: "1 point, tout ou rien.",
+          options: q.options.map((libelle, i) => ({ libelle, coche: r === i, onChoisir: () => this.choisirUnique(q.id, i) })) };
+      }
+      if (q.type === "multiple") {
+        return { ...base, formatLibelle: "QCM — plusieurs réponses", bareme: "1 point, tout ou rien : il faut cocher exactement les propositions exactes.",
+          options: q.options.map((libelle, i) => ({ libelle, coche: !!(r || {})[i], onChoisir: () => this.basculerMultiple(q.id, i) })) };
+      }
+      return { ...base, formatLibelle: "QIM — barème à la discordance",
+        bareme: "Une discordance coûte la moitié des points, deux ou plus annulent la question. Ce n'est pas du tout ou rien.",
+        propositions: q.propositions.map((p, i) => ({
+          libelle: this.lettres[i] + ". " + p.libelle,
+          nom: q.id + "-" + i,
+          vraiCoche: (r || {})[i] === true,
+          fauxCoche: (r || {})[i] === false,
+          onVrai: () => this.jugerProposition(q.id, i, true),
+          onFaux: () => this.jugerProposition(q.id, i, false),
+          onBascule: () => this.jugerProposition(q.id, i, !((r || {})[i] === true))
+        })) };
+    });
+
+    const notes = banque.map((q) => this.noter(q));
+    const total = notes.reduce((a, n) => a + n.points, 0);
+    const pct = Math.round((total / banque.length) * 100);
+    const echecElim = banque.some((q, i) => q.elim && !notes[i].juste);
+    const acquis = pct >= seuil && !echecElim;
+    const nbRenseignees = notes.filter((n) => n.repondu).length;
+
+    const corrections = banque.map((q, i) => {
+      const n = notes[i];
+      const couleur = n.juste ? "#1f6b45" : n.points > 0 ? "#8a5a00" : "#99271f";
+      let etat = n.juste ? "Réponse exacte" : "Réponse erronée";
+      if (q.type === "qim") etat = n.discordances === 0 ? "Aucune discordance" : n.discordances + (n.discordances > 1 ? " discordances" : " discordance");
+      return {
+        rang: "Question " + (i + 1), enonce: q.enonce, elim: !!q.elim, couleur, etat,
+        points: this.fmt(n.points) + " / 1 point",
+        votre: this.texteReponse(q), attendu: this.texteAttendu(q),
+        justification: q.justification, source: q.source
+      };
+    });
+
+    return {
+      fondOrganique: this.fond(),
+      seuilTexte: seuil + " %",
+      estReglage: etape === "reglage",
+      estPassation: etape === "passation",
+      estCorrection: etape === "correction",
+      tirages: [
+        { titre: "Découverte — 5 questions", detail: "Tirage court, pour se situer avant de reprendre le module.", actif: this.state.tirage === "decouverte", onChoisir: () => this.setState({ tirage: "decouverte" }) },
+        { titre: "Habilitation — 9 questions", detail: "Tirage de référence, toutes les questions éliminatoires incluses. C'est ce tirage qu'on joint au dossier.", actif: this.state.tirage === "habilitation", onChoisir: () => this.setState({ tirage: "habilitation" }) },
+        { titre: "Complet — 9 questions", detail: "La totalité de la banque du critère.", actif: this.state.tirage === "complet", onChoisir: () => this.setState({ tirage: "complet" }) }
+      ],
+      questions,
+      commencer: this.commencer,
+      valider: this.valider,
+      surSoumission: this.surSoumission,
+      recommencer: this.recommencer,
+      nbRenseignees,
+      avancement: nbRenseignees + " / 9 questions renseignées",
+      largeurAvancement: Math.round((nbRenseignees / 9) * 100) + "%",
+      pourcentage: pct + " %",
+      detailPoints: this.fmt(total) + " / 9 points — seuil de réussite " + seuil + " %",
+      verdict: acquis ? "Critère acquis pour cette évaluation" : "Critère non acquis",
+      motifVerdict: acquis
+        ? "Le seuil est atteint et aucune question éliminatoire n'est en échec. Reste la suite du parcours : compagnonnage, évaluation pratique et validation par le pharmacien responsable."
+        : "Reprenez le module, puis repassez un tirage. Chaque justification ci-dessous renvoie au texte applicable.",
+      couleurVerdict: acquis ? "#1f6b45" : "#99271f",
+      bordureVerdict: acquis ? "#1f6b45" : "#99271f",
+      echecElim,
+      corrections
+    };
+  }
+}
+</script>
+</body>
+</html>
