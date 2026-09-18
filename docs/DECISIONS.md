@@ -220,6 +220,19 @@ pseudonymisées, durée `[à préciser]`. Non fait : courbes d'évolution et
 historique par question (les données sont là ; le tracé attend une décision
 d'affichage).
 
+**Règle des quatre yeux** (question 12, 18/09/2026 ; choix c pour les
+modules, b pour les questions) : un module déposé se publie, se retire ou
+repasse en brouillon en administration seulement, et un module publié ne se
+modifie qu'en administration ; une question se valide par un autre code
+d'accès que son auteur courant, c'est-à-dire le dernier code qui l'a créée ou
+modifiée (`cree_par_acces`, `edite_par`, `edite_par_acces`). Conséquences :
+l'éditeur n'offre plus « validée », une question créée ou modifiée repart
+« à vérifier », la liste n'affiche « Valider » qu'à un autre code et le
+serveur refuse sinon, journalisé. Réserve rappelée : un code désigne un
+profil, pas une personne ; deux codes distincts sont garantis par le site,
+deux personnes par la procédure interne. L'arbitrage et les visas ne sont
+pas couverts par cette question (`docs/QUESTIONS-OUVERTES.md`, D.33).
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

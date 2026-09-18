@@ -57,6 +57,10 @@ export interface LigneQuestion {
   valide_le: string | null;
   edite_le: string;
   version: number;
+  /** Règle des quatre yeux (question 12) : code créateur et dernier code éditeur. */
+  cree_par_acces: number | null;
+  edite_par: string | null;
+  edite_par_acces: number | null;
   image_largeur: number | null;
   image_hauteur: number | null;
   image_alt: string | null;
@@ -108,7 +112,7 @@ const COLONNES = `
   q.id, q.module_id, q.situation_id, q.format, q.enonce, q.options, q.legendes,
   q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.refs, q.statut,
   q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text,
-  q.edite_le::text, q.version,
+  q.edite_le::text, q.version, q.cree_par_acces, q.edite_par, q.edite_par_acces,
   i.largeur AS image_largeur, i.hauteur AS image_hauteur, i.alt AS image_alt,
   s.titre AS situation_titre`;
 
@@ -223,7 +227,7 @@ export async function lireQuestion(id: string): Promise<LigneQuestion | null> {
 
 export async function enregistrerQuestion(
   q: QuestionAEnregistrer,
-  acteur: { role: Role; libelle: string },
+  acteur: { role: Role; libelle: string; acces?: number | null },
   id?: string,
 ): Promise<string> {
   const ident = id ?? nouvelId();
@@ -231,15 +235,19 @@ export async function enregistrerQuestion(
   const legendes = JSON.stringify(q.legendes);
   const refs = JSON.stringify(q.refs);
   const par = `${acteur.role} · ${acteur.libelle}`;
+  const acces = acteur.acces ?? null;
   await sql`
     INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
       mode_reponse, image_id, justification, eliminatoire, refs, statut, depot_id, cree_par,
-      valide_par, valide_le)
+      valide_par, valide_le, cree_par_acces, edite_par, edite_par_acces)
     VALUES (${ident}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
       ${options}::jsonb, ${legendes}::jsonb, ${q.modeReponse}, ${q.imageId},
       ${q.justification}, ${q.eliminatoire}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
-      ${par}, ${q.statut === "valide" ? par : null}, ${q.statut === "valide" ? new Date() : null})
+      ${par}, ${q.statut === "valide" ? par : null}, ${q.statut === "valide" ? new Date() : null},
+      ${acces}, ${par}, ${acces})
     ON CONFLICT (id) DO UPDATE SET
+      edite_par = EXCLUDED.edite_par,
+      edite_par_acces = EXCLUDED.edite_par_acces,
       module_id = EXCLUDED.module_id,
       situation_id = EXCLUDED.situation_id,
       format = EXCLUDED.format,
@@ -262,7 +270,7 @@ export async function enregistrerQuestion(
 export async function changerStatutQuestion(
   id: string,
   statut: StatutQuestion,
-  acteur: { role: Role; libelle: string },
+  acteur: { role: Role; libelle: string; acces?: number | null },
 ): Promise<void> {
   const par = `${acteur.role} · ${acteur.libelle}`;
   await sql`
@@ -335,9 +343,10 @@ export async function listerDepotsQuestions(): Promise<LigneDepotQuestions[]> {
 /** Insère d'un bloc les questions d'un dépôt, dans une transaction. */
 export async function insererLot(
   questions: QuestionAEnregistrer[],
-  acteur: { role: Role; libelle: string },
+  acteur: { role: Role; libelle: string; acces?: number | null },
 ): Promise<string[]> {
   const par = `${acteur.role} · ${acteur.libelle}`;
+  const acces = acteur.acces ?? null;
   return transaction(async (client) => {
     const s = sqlSur(client);
     const ids: string[] = [];
@@ -346,11 +355,13 @@ export async function insererLot(
       const id = nouvelId();
       await s`
         INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
-          mode_reponse, image_id, justification, eliminatoire, refs, statut, depot_id, rang, cree_par)
+          mode_reponse, image_id, justification, eliminatoire, refs, statut, depot_id, rang, cree_par,
+          cree_par_acces, edite_par, edite_par_acces)
         VALUES (${id}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
           ${JSON.stringify(q.options)}::jsonb, ${JSON.stringify(q.legendes)}::jsonb,
           ${q.modeReponse}, ${q.imageId}, ${q.justification}, ${q.eliminatoire},
-          ${JSON.stringify(q.refs)}::jsonb, ${q.statut}, ${q.depotId ?? null}, ${rang++}, ${par})`;
+          ${JSON.stringify(q.refs)}::jsonb, ${q.statut}, ${q.depotId ?? null}, ${rang++}, ${par},
+          ${acces}, ${par}, ${acces})`;
       ids.push(id);
     }
     return ids;

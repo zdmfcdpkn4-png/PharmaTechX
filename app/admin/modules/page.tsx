@@ -23,6 +23,7 @@ const ERREURS: Record<string, string> = {
   critere: "Critère inconnu.",
   inconnu: "Module inconnu.",
   suppression: "Suppression refusée.",
+  publie: "Un module publié ne se modifie qu'en administration : demandez de le repasser en brouillon.",
 };
 
 export default async function Modules({
@@ -45,7 +46,9 @@ export default async function Modules({
           du Lecteur QIM · QCM : titre, objectif, présentation courte, rattachement facultatif à un
           critère, profils (filières, niveaux, parcours), seuil de réussite. Ses questions se déposent
           depuis la banque, ses documents depuis Documents. Il n&apos;entre au programme
-          qu&apos;une fois <strong>publié</strong>.
+          qu&apos;une fois <strong>publié</strong>. Publier, retirer ou repasser en brouillon est{" "}
+          <strong>réservé à l&apos;administration</strong>, et un module publié ne se modifie
+          qu&apos;en administration (règle des quatre yeux, décision du 18/09/2026).
         </p>
       </section>
 
@@ -89,9 +92,11 @@ export default async function Modules({
               {m.nb_documents} document{m.nb_documents > 1 ? "s" : ""}
             </p>
             <div className="actions" style={{ marginTop: ".5rem" }}>
-              <Link href={`/admin/modules/${m.id}`} className="bouton bouton--compact bouton--secondaire">
-                Modifier
-              </Link>
+              {(session.role === "admin" || m.statut !== "publie") && (
+                <Link href={`/admin/modules/${m.id}`} className="bouton bouton--compact bouton--secondaire">
+                  Modifier
+                </Link>
+              )}
               <Link href={`/module/${m.id}`} className="bouton bouton--compact bouton--secondaire">
                 Voir
               </Link>
@@ -104,26 +109,29 @@ export default async function Modules({
               <Link href={`/admin/documents?module=${encodeURIComponent(m.id)}`} className="bouton bouton--compact bouton--secondaire">
                 Documents
               </Link>
-              {m.statut !== "publie" && (
+              {session.role === "admin" && m.statut !== "publie" && (
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="publie" />
                   <button type="submit" className="bouton bouton--compact">Publier</button>
                 </form>
               )}
-              {m.statut === "publie" && (
+              {session.role === "admin" && m.statut === "publie" && (
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="brouillon" />
                   <button type="submit" className="bouton bouton--compact bouton--secondaire">Repasser en brouillon</button>
                 </form>
               )}
-              {m.statut !== "retire" && (
+              {session.role === "admin" && m.statut !== "retire" && (
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="retire" />
                   <button type="submit" className="bouton bouton--compact bouton--secondaire">Retirer</button>
                 </form>
+              )}
+              {session.role !== "admin" && m.statut === "brouillon" && (
+                <span className="legende" style={{ alignSelf: "center" }}>publication réservée à l&apos;administration</span>
               )}
               {session.role === "admin" && (
                 <form action={actionSupprimerModule}>

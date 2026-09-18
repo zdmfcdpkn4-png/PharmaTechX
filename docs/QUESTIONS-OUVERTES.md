@@ -76,9 +76,12 @@ telle. Ordre : ce qui change le déploiement en premier.
    `[à préciser]` la procédure interne réserve les codes d'administration au
    pharmacien responsable et à son suppléant ; un administrateur technique
    n'en détient pas.
-6. **Règle des quatre yeux** : `[à préciser]` le tuteur qui dépose une question
-   peut-il la valider lui-même (choix posé : oui, tracé dans le journal), ou
-   la validation doit-elle venir d'un autre profil ?
+6. **Règle des quatre yeux** — tranché le 18/09/2026 (question 12) : une
+   question se valide par un autre code d'accès que son auteur courant
+   (créateur ou dernier éditeur) ; la publication, le retrait et la
+   modification d'un module publié sont réservés à l'administration. Réserve :
+   deux codes distincts ne font pas deux personnes si des codes sont partagés,
+   `[à préciser]` dans la procédure interne (un code par tuteur).
 7. **Accès aux documents déposés** (procédures internes) : `[à préciser]`
    ouvert à quiconque a l'adresse (état livré, comme les modules) ou réservé
    aux sessions ouvertes par code.
@@ -168,8 +171,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     du pharmacien quand une question du tirage est retirée après le visa du
     tuteur.
 33. **Arbitrage** : porté par tout profil tuteur ou admin, sans exigence que
-    l'arbitre soit distinct du tuteur qui vise (même règle que le point 6).
-    `[à préciser]` le motif doit-il être choisi dans une liste fermée ?
+    l'arbitre soit distinct du tuteur qui vise ; la règle des quatre yeux du
+    point 6 ne couvre pas l'arbitrage ni les visas, `[à préciser]` si elle
+    doit s'y étendre. `[à préciser]` le motif doit-il être choisi dans une
+    liste fermée ?
 34. **Signature** : une image par code d'accès admin, réduite à 600 px de large
     par le navigateur (comme dans la console), conservée en base et non sur le
     poste ; donnée personnelle de plus à déclarer. `[à préciser]` une image de

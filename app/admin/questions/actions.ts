@@ -9,6 +9,7 @@ import { texteDocx } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
+import { peutValider } from "@/content/quatre-yeux";
 import type { Reference } from "@/content/types";
 import {
   changerStatutQuestion,
@@ -116,7 +117,11 @@ export async function actionEnregistrerQuestion(
   if (!(await moduleExiste(moduleId))) return { erreur: "Module inconnu." };
   if (format !== "QCM" && format !== "QIM" && format !== "SCH") return { erreur: "Format inconnu." };
   if (!enonce) return { erreur: "L'énoncé est obligatoire." };
-  if (!["a_verifier", "valide", "retire"].includes(statut)) return { erreur: "Statut inconnu." };
+  // Règle des quatre yeux (question 12) : celui qui écrit ne valide pas ; une
+  // question créée ou modifiée repart « à vérifier » (ou retirée).
+  if (!["a_verifier", "retire"].includes(statut)) {
+    return { erreur: "Une question ne se valide pas à l'enregistrement : un autre code que son auteur la valide depuis la banque." };
+  }
 
   let options: OptionBase[] = [];
   let legendes: Legende[] = [];
@@ -174,6 +179,11 @@ export async function actionChangerStatutQuestion(formData: FormData) {
   if (!["a_verifier", "valide", "retire"].includes(statut)) redirect(retour);
   const q = await lireQuestion(id);
   if (!q) redirect(retour);
+  // Règle des quatre yeux (question 12) : un autre code que l'auteur courant valide.
+  if (statut === "valide" && !peutValider(q, s)) {
+    await journaliser(s, "statut-question:refus-quatre-yeux", id, { moduleId: q.module_id, auteur: q.edite_par ?? q.cree_par });
+    redirect(`${retour}${retour.includes("?") ? "&" : "?"}erreur=quatre-yeux`);
+  }
   await changerStatutQuestion(id, statut, s);
   await journaliser(s, `statut-question:${statut}`, id, { moduleId: q.module_id });
   revalidatePath("/admin/questions");

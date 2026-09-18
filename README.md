@@ -48,8 +48,8 @@ l'administrateur initial** : le code n'est affiché qu'une fois.
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions, modules déposés, documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
-| **tuteur** | Banque de questions (créer, déposer, valider, retirer), **modules déposés** (créer, publier, retirer), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, arbitrage et visa « tuteur » |
+| **admin** | Tout : codes de tous rôles, banque de questions, modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
+| **tuteur** | Banque de questions (créer, déposer, valider les questions d'un autre code, retirer), **modules déposés** (créer, modifier en brouillon), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, code personnel d'un agent (réinitialisation), arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, exporter ou émettre son rapport. Profil par défaut : aucun code requis |
 
 Un code **ne désigne pas une personne** : il ouvre un profil. Les codes sont
@@ -158,16 +158,20 @@ titre, objectif, présentation courte, rattachement facultatif à un critère de
 la fiche, **profils** (filières, niveaux, parcours) et seuil propre ; ses
 questions se déposent depuis la banque, ses documents depuis Documents.
 Cycle brouillon (visible des tuteurs et administrateurs) → publié (au
-programme des profils choisis) → retiré. Suppression réservée à
-l'administrateur, refusée tant que des questions ou des documents s'y
-rattachent.
+programme des profils choisis) → retiré. Publication, retrait, retour en
+brouillon et modification d'un module publié : administration seulement
+(question 12) ; suppression réservée à l'administrateur, refusée tant que
+des questions ou des documents s'y rattachent.
 
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
 niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
 synthèse**, rattachée à un module, s'affiche en fin de test.
 
-Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`. Une
+Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`.
+**Règle des quatre yeux** (décision du 18/09/2026, question 12) : une
+question se valide par un autre code d'accès que celui qui l'a créée ou
+modifiée en dernier ; une question modifiée repart « à vérifier ». Une
 question déposée se rattache à n'importe quel critère, rédigé ou non : un
 module « à rédiger » devient évaluable dès qu'il a des questions validées. La
 banque versionnée avec le code (`content/modules/*.ts`) reste en place et se

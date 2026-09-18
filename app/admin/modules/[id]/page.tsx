@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
 const ERREURS: Record<string, string> = {
   titre: "Le titre est obligatoire.",
   critere: "Critère inconnu.",
+  publie: "Un module publié ne se modifie qu'en administration : demandez de le repasser en brouillon.",
 };
 
 export default async function ModuleDepose({
@@ -60,7 +61,7 @@ export default async function ModuleDepose({
           </Link>
           <Link href={`/admin/questions?module=${encodeURIComponent(m.id)}`} className="bouton bouton--compact bouton--secondaire">Questions</Link>
           <Link href={`/admin/documents?module=${encodeURIComponent(m.id)}`} className="bouton bouton--compact bouton--secondaire">Documents</Link>
-          {m.statut !== "publie" && (
+          {session?.role === "admin" && m.statut !== "publie" && (
             <form action={actionStatutModule}>
               <input type="hidden" name="id" value={m.id} />
               <input type="hidden" name="statut" value="publie" />
@@ -68,7 +69,7 @@ export default async function ModuleDepose({
               <button type="submit" className="bouton bouton--compact">Publier</button>
             </form>
           )}
-          {m.statut === "publie" && (
+          {session?.role === "admin" && m.statut === "publie" && (
             <form action={actionStatutModule}>
               <input type="hidden" name="id" value={m.id} />
               <input type="hidden" name="statut" value="brouillon" />
@@ -76,7 +77,7 @@ export default async function ModuleDepose({
               <button type="submit" className="bouton bouton--compact bouton--secondaire">Repasser en brouillon</button>
             </form>
           )}
-          {m.statut !== "retire" && (
+          {session?.role === "admin" && m.statut !== "retire" && (
             <form action={actionStatutModule}>
               <input type="hidden" name="id" value={m.id} />
               <input type="hidden" name="statut" value="retire" />
@@ -96,7 +97,15 @@ export default async function ModuleDepose({
       {p.ok && MESSAGES[p.ok] && <p className="encart encart--ok">{MESSAGES[p.ok]}</p>}
       {p.erreur && <p className="encart encart--attention">{ERREURS[p.erreur] ?? "Erreur."}</p>}
 
-      <FormulaireModule initiale={m} action={actionEnregistrerModule} seuilDefaut={bareme.seuilDefaut} />
+      {session?.role !== "admin" && (
+        <p className="encart">
+          Publication, retrait et retour en brouillon : réservée à l&apos;administration (règle des quatre yeux, décision du
+          18/09/2026). {m.statut === "publie" ? "Ce module est publié : sa modification aussi." : ""}
+        </p>
+      )}
+      {session?.role === "admin" || m.statut !== "publie" ? (
+        <FormulaireModule initiale={m} action={actionEnregistrerModule} seuilDefaut={bareme.seuilDefaut} />
+      ) : null}
     </>
   );
 }

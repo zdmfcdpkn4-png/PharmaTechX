@@ -4,6 +4,7 @@ import { comptesParModule, listerQuestions, type StatutQuestion } from "@/conten
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
+import { peutValider } from "@/content/quatre-yeux";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ const MESSAGES: Record<string, string> = {
 export default async function Questions({
   searchParams,
 }: {
-  searchParams: Promise<{ module?: string; statut?: string; ok?: string }>;
+  searchParams: Promise<{ module?: string; statut?: string; ok?: string; erreur?: string }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -63,6 +64,12 @@ export default async function Questions({
       </section>
 
       {p.ok && MESSAGES[p.ok] && <p className="encart encart--ok">{MESSAGES[p.ok]}</p>}
+      {p.erreur === "quatre-yeux" && (
+        <p className="encart encart--attention" role="alert">
+          Règle des quatre yeux : une question se valide par un autre code que celui qui l&apos;a écrite (création ou dernière
+          modification).
+        </p>
+      )}
 
       <form method="get" className="carte filtres">
         <div className="rangee">
@@ -123,6 +130,7 @@ export default async function Questions({
                   {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
                   <span className="legende" style={{ marginLeft: "auto" }}>
                     v{q.version} · créée par {q.cree_par}
+                    {q.edite_par && q.edite_par !== q.cree_par ? ` · modifiée par ${q.edite_par}` : ""}
                     {q.valide_par ? ` · validée par ${q.valide_par}` : ""}
                   </span>
                 </div>
@@ -146,14 +154,19 @@ export default async function Questions({
                   <Link href={`/admin/questions/${q.id}`} className="bouton bouton--compact bouton--secondaire">
                     Modifier
                   </Link>
-                  {q.statut !== "valide" && (
-                    <form action={actionChangerStatutQuestion}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <input type="hidden" name="statut" value="valide" />
-                      <input type="hidden" name="retour" value={retour} />
-                      <button type="submit" className="bouton bouton--compact">Valider</button>
-                    </form>
-                  )}
+                  {q.statut !== "valide" &&
+                    (peutValider(q, session) ? (
+                      <form action={actionChangerStatutQuestion}>
+                        <input type="hidden" name="id" value={q.id} />
+                        <input type="hidden" name="statut" value="valide" />
+                        <input type="hidden" name="retour" value={retour} />
+                        <button type="submit" className="bouton bouton--compact">Valider</button>
+                      </form>
+                    ) : (
+                      <span className="legende" style={{ alignSelf: "center" }}>
+                        à valider par un autre code que {q.edite_par ?? q.cree_par}
+                      </span>
+                    ))}
                   {q.statut === "valide" && (
                     <form action={actionChangerStatutQuestion}>
                       <input type="hidden" name="id" value={q.id} />

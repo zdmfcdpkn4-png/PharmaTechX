@@ -53,7 +53,10 @@ export async function actionEnregistrerModule(formData: FormData) {
   const critereId = chaine(formData, "critereId", 20);
   const critere = critereId ? getCritere(critereId) : undefined;
   if (critereId && !critere) redirect(retourErreur("critere"));
-  if (id && !(await lireModuleDepose(id))) redirect("/admin/modules?erreur=inconnu");
+  const existant = id ? await lireModuleDepose(id) : null;
+  if (id && !existant) redirect("/admin/modules?erreur=inconnu");
+  // Règle des quatre yeux (question 12, choix c) : un module publié ne se modifie qu'en administration.
+  if (existant?.statut === "publie" && s.role !== "admin") redirect(retourErreur("publie"));
 
   const { filieres, niveaux } = filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
   const parcours = filtrerParcours(formData.getAll("parcours"));
@@ -87,8 +90,9 @@ const ACTIONS_STATUT: Record<StatutModule, string> = {
   retire: "module:retrait",
 };
 
+/** Publier, retirer, repasser en brouillon : administration seulement (question 12, choix c). */
 export async function actionStatutModule(formData: FormData) {
-  const s = await sessionRequise("tuteur");
+  const s = await sessionRequise("admin");
   const id = chaine(formData, "id", 40);
   const statut = chaine(formData, "statut", 20) as StatutModule;
   const retour = chaine(formData, "retour", 200) || "/admin/modules";

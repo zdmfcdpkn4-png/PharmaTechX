@@ -302,6 +302,11 @@ export const SCHEMA: string[] = [
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id)`,
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS agent_identifiant TEXT`,
   `ALTER TABLE visas DROP COLUMN IF EXISTS nom`,
+  // règle des quatre yeux (question 12) : code d'accès qui a créé la question,
+  // dernier code qui l'a modifiée ; la validation vient d'un autre code
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS cree_par_acces INTEGER`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par TEXT`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par_acces INTEGER`,
   // code personnel de l'agent (haché, scrypt) pour rattacher sa progression — question 11
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_hash TEXT`,
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_maj_le TIMESTAMPTZ`,

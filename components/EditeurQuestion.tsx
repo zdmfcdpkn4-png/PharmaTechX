@@ -247,13 +247,17 @@ export function EditeurQuestion({
         </label>
         <label className="champ">
           <span>Statut</span>
-          <select name="statut" defaultValue={initiale?.statut ?? "a_verifier"}>
+          <select name="statut" defaultValue={initiale?.statut === "retire" ? "retire" : "a_verifier"}>
             <option value="a_verifier">À vérifier — hors tirage</option>
-            <option value="valide">Validée — posée aux apprenants</option>
             <option value="retire">Retirée</option>
           </select>
         </label>
       </div>
+      <p className="legende">
+        {initiale?.statut === "valide"
+          ? "Cette question est validée : enregistrer une modification la remet « à vérifier », et un autre code que le vôtre la validera (règle des quatre yeux)."
+          : "Une question créée ou modifiée part « à vérifier » : un autre code que son auteur la valide depuis la banque (règle des quatre yeux)."}
+      </p>
 
       <label className="option option--compact" style={{ display: "inline-flex" }}>
         <input type="checkbox" name="eliminatoire" defaultChecked={initiale?.eliminatoire ?? false} />

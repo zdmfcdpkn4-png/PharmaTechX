@@ -184,11 +184,14 @@ Justification : cf. procédure interne.`,
   await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
   await page.fill("textarea[name=justification]", "Parce que c'est la bonne.");
   await page.fill("textarea[name=references]", "ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x");
-  await page.selectOption("select[name=statut]", "valide");
+  assert.equal(await page.locator("select[name=statut] option[value=valide]").count(), 0, "pas de validation à l'enregistrement");
   await page.click("button:has-text('Créer la question')");
   await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
   await page.waitForSelector("text=Question de test créée dans le formulaire");
-  ok("question QCM créée et validée");
+  const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
+  assert.equal(await ligneCreee.locator("button:has-text('Valider')").count(), 0, "l'auteur ne valide pas");
+  await ligneCreee.locator("text=à valider par un autre code").waitFor();
+  ok("question QCM créée à vérifier ; validation refusée à son auteur (quatre yeux)");
 
   // 3b. erreur de formulaire (QCM sans réponse exacte) reste sur la page
   await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
@@ -211,17 +214,22 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=10 questions ajoutées");
   ok("import : 10 questions reconnues, image appariée, ajoutées à vérifier");
 
-  // 5. validation des questions importées
-  for (let i = 0; i < 12; i++) {
-    await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
-    const bouton = page.locator("form button:has-text('Valider')").first();
-    if (!(await bouton.count())) break;
-    await bouton.click();
-    await page.waitForLoadState("networkidle");
-  }
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
-  assert.equal(await page.locator(".question-ligne").count(), 10);
-  ok("10 questions importées validées");
+  /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
+  const rebrancher = async (code) => {
+    await page.goto(BASE + "/");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+    await page.click("button:has-text('quitter')");
+    await page.waitForURL(/\/connexion/);
+    await page.fill("input[name=code]", code);
+    await page.click("button:has-text('Entrer')");
+    await page.waitForURL(/\/admin$/);
+  };
+
+  // 5. quatre yeux : le tuteur modifie le schéma importé par l'administrateur, puis valide les neuf autres ;
+  //    le schéma, dont il est devenu l'auteur, attend l'administrateur
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
   await page.locator(".question-ligne:has-text('Schéma') a:has-text('Modifier')").first().click();
@@ -236,6 +244,26 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('Enregistrer les modifications')");
   await page.waitForURL(/ok=modifiee/);
   ok("éditeur de schéma : légende posée au clic et enregistrée (4 légendes)");
+
+  for (let i = 0; i < 12; i++) {
+    await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+    const bouton = page.locator("form button:has-text('Valider')").first();
+    if (!(await bouton.count())) break;
+    await bouton.click();
+    await page.waitForLoadState("networkidle");
+  }
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  assert.equal(await page.locator(".question-ligne").count(), 9, "le tuteur valide les neuf questions écrites par l'administrateur");
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+  assert.equal(await page.locator(".question-ligne").count(), 1);
+  await page.locator(".question-ligne", { hasText: "à valider par un autre code" }).waitFor();
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+  await page.locator("form button:has-text('Valider')").first().click();
+  await page.waitForLoadState("networkidle");
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  assert.equal(await page.locator(".question-ligne").count(), 10);
+  ok("quatre yeux : neuf questions validées par le tuteur, le schéma modifié par le tuteur validé par l'administrateur, dix validées");
 
   // 7. apprenant : tirage complet de dix questions, corrigé connu, 8 / 10
   await page.goto(BASE + "/module/critere-b1-02");
@@ -497,6 +525,8 @@ Justification : justification deux.`;
   await page.waitForSelector("h2:has-text('Aperçu — 2 questions')");
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=2 questions ajoutées");
+  // validation par un autre code que l'auteur : le tuteur ; qui ne publie ni ne modifie un module publié
+  await rebrancher(codeTuteur);
   for (let i = 0; i < 3; i++) {
     await page.goto(BASE + "/admin/questions?module=" + idModule + "&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
@@ -504,6 +534,12 @@ Justification : justification deux.`;
     await bouton.click();
     await page.waitForLoadState("networkidle");
   }
+  await page.goto(BASE + "/admin/modules/" + idModule);
+  assert.equal(await page.locator("button:has-text('Repasser en brouillon')").count(), 0);
+  assert.equal(await page.locator("button:has-text('Retirer')").count(), 0);
+  assert.equal(await page.locator("input[name=titre]").count(), 0, "module publié : pas de formulaire pour le tuteur");
+  await page.waitForSelector("text=réservée à l'administration");
+  await rebrancher(codeAdmin);
   await page.goto(BASE + "/module/" + idModule);
   await page.waitForSelector("h2:has-text('comporte 2 questions')");
   await page.waitForSelector("h2:has-text('Présentation')");
