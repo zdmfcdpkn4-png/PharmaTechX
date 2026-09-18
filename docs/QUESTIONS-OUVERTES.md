@@ -161,8 +161,13 @@ telle. Ordre : ce qui change le déploiement en premier.
 23. **Signalements anonymes** : depuis la question 13 (choix c), tout le
     site exige une session par code, un signalement provient donc toujours
     d'une session (au moins un code de poste) ; son contenu reste anonyme
-    (motif fermé, note libre, aucun identifiant d'agent). `[à préciser]`
-    conserver ainsi, ou le réserver aux codes de tutorat.
+    (motif fermé, note libre, aucun identifiant d'agent). Tranché le
+    18/09/2026 (question 30, choix a) : **conservé ainsi**, tout code peut
+    signaler — le poste est la principale source de retour sur la banque. Un
+    signalement ouvert sur une question du tirage verrouille toujours les
+    visas ; si un apprenant en usait pour retarder le visa de son propre
+    rapport, le choix c (seul un signalement du tutorat verrouille) est la
+    réponse mesurée, en réserve.
 
 ## D. Rapports enregistrés (si mode nominatif)
 

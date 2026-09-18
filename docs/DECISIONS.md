@@ -458,6 +458,21 @@ dossier d'habilitation attend. Si la procédure interne venait à exiger que la
 qualité de l'évalué soit scellée, b reste ouvert et devra être porté au
 registre.
 
+**Qui peut signaler une question** (question 30, choix a, 18/09/2026) :
+n'importe quelle session, y compris un code de poste. Le préparateur au poste
+est celui qui repère une question ambiguë, périmée ou fautive ; réserver le
+signalement au tutorat (choix b) reviendrait à demander aux auteurs des
+questions de détecter seuls leurs propres défauts, ce que la règle des quatre
+yeux cherche à éviter. Le contenu reste anonyme — motif dans une liste
+fermée, note libre, aucun identifiant d'agent — et un signalement ouvert sur
+une question du tirage continue de verrouiller les visas du rapport
+concerné. Revers assumé : un apprenant peut signaler une question qu'il a
+ratée et retarder le visa de son propre rapport. Le blocage est borné, le
+tutorat tranchant et clôturant, et visible dans l'administration. Le choix c
+— ouvert à tous, mais seul un signalement du tutorat verrouille — reste la
+réponse mesurée si un tel usage se manifestait ; il n'est pas retenu faute de
+problème constaté.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
