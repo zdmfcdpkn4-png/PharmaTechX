@@ -13,7 +13,7 @@
 export const A_PRECISER = "[à préciser]" as const;
 
 import { motAttendu, verdictLegende, type Legende, type Repere } from "./schema";
-import { BAREME_DEFAUT, libelleQim, libelleSchema, pointsQim, type Bareme } from "./bareme";
+import { BAREME_DEFAUT, libelleQcm, libelleQim, libelleSchema, noterElements, type Bareme } from "./bareme";
 export type { Legende, Repere };
 export type { Bareme } from "./bareme";
 
@@ -348,16 +348,14 @@ export interface ReponseApprenant {
 }
 
 export interface NoteQuestion {
-  /** Sur 1 point, arrondi au centième. */
+  /** Points obtenus, arrondis au centième ; au plus `max`. */
   note: number;
   /** Propositions mal classées, ou légendes fausses ou vides. */
   discordances: number;
-  /** Propositions ou légendes laissées sans réponse. */
+  /** Propositions ou légendes laissées sans réponse — « je ne sais pas », légende vide. */
   nonJugees: number;
-}
-
-function arrondi(n: number): number {
-  return Math.round(n * 100) / 100;
+  /** Plafond de la question selon le barème : son poids dans le total (1 par défaut). */
+  max: number;
 }
 
 /**
@@ -372,59 +370,46 @@ function arrondi(n: number): number {
 export function noterQuestion(q: Question, rep: ReponseApprenant, bareme: Bareme = BAREME_DEFAUT): NoteQuestion {
   if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {}, bareme);
 
+  const format = q.type === "QIM" ? bareme.qim : bareme.qcm;
   const attendues = new Set(q.bonnesReponses);
   const cochees = new Set(rep.choix);
   const jugees = rep.juges ? new Set(rep.juges) : null;
 
-  let discordances = 0;
+  let justes = 0;
+  let faux = 0;
   let nonJugees = 0;
 
   for (const o of q.options) {
-    const doitEtreCochee = attendues.has(o.id);
-
+    // QIM : une proposition non jugée est un « je ne sais pas » — elle ne
+    // rapporte ni ne retire rien (barème des quiz de Flore), mais elle reste
+    // une discordance : la question n'est pas juste, et une éliminatoire échoue.
     if (q.type === "QIM" && jugees && !jugees.has(o.id)) {
       nonJugees += 1;
-      discordances += 1;
       continue;
     }
-
-    const estCochee = cochees.has(o.id);
-    if (doitEtreCochee !== estCochee) discordances += 1;
+    if (attendues.has(o.id) === cochees.has(o.id)) justes += 1;
+    else faux += 1;
   }
 
-  if (q.type === "QCM") {
-    return { note: discordances === 0 ? 1 : 0, discordances, nonJugees: 0 };
-  }
-
-  const note = arrondi(pointsQim(discordances, bareme));
-  return { note, discordances, nonJugees };
+  const note = noterElements(justes, faux, nonJugees, format);
+  return { note, discordances: faux + nonJugees, nonJugees, max: format.max };
 }
 
 function noterSchema(q: Question, reponses: Record<string, string>, bareme: Bareme): NoteQuestion {
+  const format = bareme.schema;
   const legendes = q.legendes ?? [];
-  const n = legendes.length;
-  if (n === 0) return { note: 0, discordances: 0, nonJugees: 0 };
-  const unite = 1 / n;
-  let brut = 0;
-  let discordances = 0;
-  let nonJugees = 0;
+  if (legendes.length === 0) return { note: 0, discordances: 0, nonJugees: 0, max: format.max };
+  let justes = 0;
+  let faux = 0;
+  let vides = 0;
   for (const l of legendes) {
     const v = verdictLegende(reponses[l.id], l.attendu);
-    if (v === "juste") brut += unite;
-    else if (v === "fausse") {
-      brut -= unite;
-      discordances += 1;
-    } else {
-      if (bareme.schema.videRetire) brut -= unite;
-      nonJugees += 1;
-      discordances += 1;
-    }
+    if (v === "juste") justes += 1;
+    else if (v === "fausse") faux += 1;
+    else vides += 1;
   }
-  if (bareme.schema.mode === "tout_ou_rien") {
-    return { note: discordances === 0 ? 1 : 0, discordances, nonJugees };
-  }
-  const note = arrondi(Math.min(1, Math.max(0, brut)));
-  return { note, discordances, nonJugees };
+  const note = noterElements(justes, faux, vides, format);
+  return { note, discordances: faux + vides, nonJugees: vides, max: format.max };
 }
 
 /** Libellé lisible d'un format, tel qu'il s'annonce à l'apprenant. */
@@ -444,7 +429,5 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
 export function libelleBareme(q: Pick<Question, "type" | "enonce">, bareme: Bareme = BAREME_DEFAUT): string {
   if (q.type === "QIM") return libelleQim(bareme);
   if (q.type === "SCH") return libelleSchema(bareme);
-  return q.enonce.includes("plusieurs")
-    ? "Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu."
-    : "1 point si la réponse est exacte, 0 sinon.";
+  return libelleQcm(bareme);
 }

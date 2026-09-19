@@ -13,7 +13,8 @@ export interface EtatEnCours {
   /** Libellé du tirage à la reprise (« Habilitation · 10 questions »). */
   libelle: string;
   reponses: Record<string, string[]>;
-  qim: Record<string, Record<string, boolean>>;
+  /** Jugement par proposition : vrai, faux, ou « nsp » — « je ne sais pas » (question 35). */
+  qim: Record<string, Record<string, boolean | "nsp">>;
   legendes: Record<string, Record<string, string>>;
   /** Entraînement : question courante et corrections déjà reçues. */
   indexCourant: number;
@@ -43,11 +44,14 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
   if (!mode || !difficulte) return null;
   const reponses: Record<string, string[]> = {};
   for (const [k, v] of Object.entries(objet(b.reponses))) if (questionIds.includes(k)) reponses[k] = chaines(v, 50);
-  const qim: Record<string, Record<string, boolean>> = {};
+  const qim: Record<string, Record<string, boolean | "nsp">> = {};
   for (const [k, v] of Object.entries(objet(b.qim))) {
     if (!questionIds.includes(k)) continue;
-    const d: Record<string, boolean> = {};
-    for (const [o, val] of Object.entries(objet(v))) if (typeof val === "boolean" && o.length <= 80) d[o] = val;
+    const d: Record<string, boolean | "nsp"> = {};
+    for (const [o, val] of Object.entries(objet(v))) {
+      if (o.length > 80) continue;
+      if (typeof val === "boolean" || val === "nsp") d[o] = val;
+    }
     qim[k] = d;
   }
   const legendes: Record<string, Record<string, string>> = {};

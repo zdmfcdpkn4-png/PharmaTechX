@@ -34,6 +34,8 @@ export interface QuestionNotee {
   note: number;
   eliminatoire: boolean;
   correct: boolean;
+  /** Poids de la question (plafond du barème) ; 1 si absent — résultats scellés avant la refonte. */
+  max?: number;
 }
 
 export interface Decision {
@@ -69,7 +71,9 @@ export function decider(detail: QuestionNotee[], seuil: number, options: Options
   const minQuestions = options.minQuestions ?? MIN_QUESTIONS_HABILITATION;
   const retenues = detail.filter((d) => !exclues.has(d.questionId));
   const nbQuestions = retenues.length;
-  const pointsTotal = nbQuestions;
+  // Le total suit le plafond de chaque question : un format peut peser moins
+  // qu'un autre (barème harmonisé, question 34). 1 par défaut.
+  const pointsTotal = Math.round(retenues.reduce((s, d) => s + (d.max ?? 1), 0) * 100) / 100;
   const pointsObtenus = Math.round(retenues.reduce((s, d) => s + d.note, 0) * 100) / 100;
   const score = pointsTotal === 0 ? 0 : Math.round((pointsObtenus / pointsTotal) * 100);
   const bande = largeurBande(nbQuestions, options.bande);

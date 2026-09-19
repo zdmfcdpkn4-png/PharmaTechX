@@ -15,10 +15,21 @@ import { enregistrerBareme, retablirBareme } from "@/lib/bareme-db";
 export async function actionEnregistrerBareme(formData: FormData) {
   const s = await sessionRequise("admin");
   const v = (cle: string) => String(formData.get(cle) ?? "");
+  // Les six mêmes champs pour les trois formats (question 34) ; les bornes et
+  // les valeurs par défaut sont appliquées par `normaliserBareme`.
+  const format = (cle: string) => ({
+    mode: v(`${cle}-mode`),
+    juste: v(`${cle}-juste`),
+    faux: v(`${cle}-faux`),
+    sansReponse: v(`${cle}-sans`),
+    min: v(`${cle}-min`),
+    max: v(`${cle}-max`),
+  });
   const bareme = await enregistrerBareme(
     {
-      qim: { unDiscordance: v("qim1"), deuxDiscordances: v("qim2"), auDela: v("qim3") },
-      schema: { mode: v("schemaMode"), videRetire: formData.get("schemaVide") === "on" },
+      qcm: format("qcm"),
+      qim: format("qim"),
+      schema: format("schema"),
       seuilDefaut: v("seuilDefaut"),
       minQuestions: v("minQuestions"),
       tirages: { decouverte: v("tirageDecouverte"), habilitation: v("tirageHabilitation") },

@@ -111,13 +111,17 @@ telle. Ordre : ce qui change le déploiement en premier.
 
 ## B. Barèmes et règles d'évaluation
 
-10. **Barème QIM** 1 / 0,5 / 0 / 0 selon 0, 1, 2 discordances et au-delà —
-    valeurs par défaut, **réglables** depuis `/admin/bareme` (décision du
-    18/09/2026, question 10) ; `[à préciser]` les valeurs à retenir.
-11. **Barème du schéma à compléter** repris du Lecteur QIM · QCM : 1 point au
-    plus, chaque légende vaut 1/n, fausse elle le retire, vide elle ne compte
-    pas, plancher 0 — valeurs par défaut, **réglables** (mode partiel ou tout
-    ou rien, légende vide comptée ou non) ; `[à préciser]` le réglage à retenir.
+10. **Barème QIM** — tranché le 19/09/2026 (questions 34 et 35) : le barème
+    des quiz de Flore, par défaut. Chaque proposition juste rapporte sa part
+    (1/n), chaque proposition fausse la retire, **« je ne sais pas »** ne
+    rapporte ni ne retire rien ; plancher 0, plafond 1. Une proposition
+    laissée de côté vaut « je ne sais pas », mais reste une discordance : la
+    question n'est pas juste, et une éliminatoire échoue. Réglable depuis
+    `/admin/bareme`, avec les mêmes champs que les deux autres formats.
+11. **Barème du schéma à compléter** — tranché le 19/09/2026 (question 34) :
+    la même règle que les deux autres formats, légende par légende — juste
+    +1/n, fausse −1/n, vide 0, plancher 0, plafond 1. Réglable avec les mêmes
+    six champs ; le mode tout ou rien reste disponible.
 12. **Éliminatoire sur un schéma** — tranché le 18/09/2026 (question 17,
     choix a) : toute légende fausse *ou vide* rend le critère non acquis ;
     règle fixe, non réglable (choix c écarté).

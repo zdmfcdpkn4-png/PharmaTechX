@@ -66,7 +66,12 @@ function estUneSeule(q: QuestionPublique): boolean {
 
 // Tirage et règle des questions réservées : `content/tirage.ts` (testé à part).
 
-type EtatQim = Record<string, Record<string, boolean>>;
+/**
+ * Jugement d'une proposition de QIM : vrai, faux, ou « je ne sais pas »
+ * (décision du 19/09/2026, question 35). Une proposition jamais touchée vaut
+ * « je ne sais pas » : elle ne rapporte ni ne retire rien.
+ */
+type EtatQim = Record<string, Record<string, boolean | "nsp">>;
 type EtatLegendes = Record<string, Record<string, string>>;
 
 function nombre(n: number): string {
@@ -310,8 +315,8 @@ export function Evaluation({
     });
   };
 
-  const jugerQim = (qid: string, optId: string, vrai: boolean) => {
-    setQim((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [optId]: vrai } }));
+  const jugerQim = (qid: string, optId: string, valeur: boolean | "nsp") => {
+    setQim((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [optId]: valeur } }));
   };
 
   const ecrireLegende = (qid: string, lid: string, valeur: string) => {
@@ -334,8 +339,10 @@ export function Evaluation({
         legs[q.id] = legendes[q.id] ?? {};
       } else if (q.type === "QIM" && qimEnVraiFaux) {
         const verdicts = qim[q.id] ?? {};
-        juges[q.id] = Object.keys(verdicts);
-        rep[q.id] = Object.entries(verdicts).filter(([, v]) => v).map(([k]) => k);
+        // « je ne sais pas » n'est pas un jugement : la proposition reste non
+        // jugée, et le barème lui applique sa part « sans réponse ».
+        juges[q.id] = Object.entries(verdicts).filter(([, v]) => v !== "nsp").map(([k]) => k);
+        rep[q.id] = Object.entries(verdicts).filter(([, v]) => v === true).map(([k]) => k);
       } else {
         rep[q.id] = reponses[q.id] ?? [];
       }
@@ -640,8 +647,8 @@ export function Evaluation({
         ) : enVraiFaux ? (
           <>
             <p className="question-avertissement">
-              Chaque proposition se juge séparément — une proposition laissée sans réponse compte
-              comme une discordance.
+              Chaque proposition se juge séparément. « Je ne sais pas » ne rapporte ni ne retire
+              rien ; une proposition laissée de côté compte de la même façon.
             </p>
             {q.options.map((o) => {
               const v = qim[q.id]?.[o.id];
@@ -666,6 +673,15 @@ export function Evaluation({
                         onChange={() => jugerQim(q.id, o.id, false)}
                       />
                       <span>Faux</span>
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`${q.id}-${o.id}`}
+                        checked={v === "nsp"}
+                        onChange={() => jugerQim(q.id, o.id, "nsp")}
+                      />
+                      <span>Je ne sais pas</span>
                     </label>
                   </span>
                 </div>

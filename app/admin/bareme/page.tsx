@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { sessionRequise } from "@/lib/auth";
 import { infoBareme, lireBareme } from "@/lib/bareme-db";
-import { BAREME_DEFAUT, LIMITES_BAREME, estBaremeDefaut, resumeBareme } from "@/content/bareme";
+import {
+  BAREME_DEFAUT,
+  LIBELLES_FORMAT,
+  LIMITES_BAREME,
+  estBaremeDefaut,
+  resumeBareme,
+  type BaremeFormat,
+} from "@/content/bareme";
 import { actionEnregistrerBareme, actionRetablirBareme } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +17,84 @@ const MESSAGES: Record<string, string> = {
   enregistre: "Barème enregistré : il s'applique aux évaluations à venir.",
   defaut: "Valeurs par défaut rétablies.",
 };
+
+const FORMATS = [
+  { cle: "qcm" as const, element: "proposition", sansReponse: "proposition non tranchée" },
+  { cle: "qim" as const, element: "proposition", sansReponse: "« je ne sais pas »" },
+  { cle: "schema" as const, element: "légende", sansReponse: "légende vide" },
+];
+
+/** Les six mêmes réglages pour chaque format : c'est tout l'objet de l'harmonisation. */
+function ReglagesFormat({
+  cle,
+  element,
+  sansReponse,
+  valeur,
+  defaut,
+}: {
+  cle: "qcm" | "qim" | "schema";
+  element: string;
+  sansReponse: string;
+  valeur: BaremeFormat;
+  defaut: BaremeFormat;
+}) {
+  const part = (nom: string, libelle: string, v: number, parDefaut: number) => (
+    <label className="champ">
+      <span>
+        {libelle} (défaut {parDefaut})
+      </span>
+      <input
+        type="number"
+        name={`${cle}-${nom}`}
+        min={LIMITES_BAREME.part.min}
+        max={LIMITES_BAREME.part.max}
+        step={0.05}
+        defaultValue={v}
+      />
+    </label>
+  );
+  return (
+    <>
+      <h3 style={{ fontSize: "1rem", marginBottom: ".25rem" }}>{LIBELLES_FORMAT[cle]}</h3>
+      <div className="rangee">
+        <label className="champ">
+          <span>Mode (défaut : {defaut.mode === "tout_ou_rien" ? "tout ou rien" : "partiel"})</span>
+          <select name={`${cle}-mode`} defaultValue={valeur.mode}>
+            <option value="partiel">Partiel — chaque {element} compte pour sa part</option>
+            <option value="tout_ou_rien">Tout ou rien — le plafond si tout est juste, le plancher sinon</option>
+          </select>
+        </label>
+        {part("juste", `${element[0].toUpperCase()}${element.slice(1)} juste`, valeur.juste, defaut.juste)}
+        {part("faux", `${element[0].toUpperCase()}${element.slice(1)} fausse`, valeur.faux, defaut.faux)}
+      </div>
+      <div className="rangee">
+        {part("sans", `Sans réponse — ${sansReponse}`, valeur.sansReponse, defaut.sansReponse)}
+        <label className="champ">
+          <span>Plancher de la question (défaut {defaut.min})</span>
+          <input
+            type="number"
+            name={`${cle}-min`}
+            min={LIMITES_BAREME.plancher.min}
+            max={LIMITES_BAREME.plancher.max}
+            step={0.05}
+            defaultValue={valeur.min}
+          />
+        </label>
+        <label className="champ">
+          <span>Plafond, poids de la question (défaut {defaut.max})</span>
+          <input
+            type="number"
+            name={`${cle}-max`}
+            min={LIMITES_BAREME.plafond.min}
+            max={LIMITES_BAREME.plafond.max}
+            step={0.05}
+            defaultValue={valeur.max}
+          />
+        </label>
+      </div>
+    </>
+  );
+}
 
 export default async function Bareme({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   await sessionRequise("admin");
@@ -48,42 +133,24 @@ export default async function Bareme({ searchParams }: { searchParams: Promise<{
 
       <section className="carte">
         <form action={actionEnregistrerBareme}>
-          <h2 style={{ fontSize: "1.1rem" }}>QIM — points sur 1 selon le nombre de discordances</h2>
-          <div className="rangee">
-            <label className="champ">
-              <span>1 discordance (défaut {d.qim.unDiscordance})</span>
-              <input type="number" name="qim1" min={0} max={1} step={0.05} defaultValue={bareme.qim.unDiscordance} />
-            </label>
-            <label className="champ">
-              <span>2 discordances (défaut {d.qim.deuxDiscordances})</span>
-              <input type="number" name="qim2" min={0} max={1} step={0.05} defaultValue={bareme.qim.deuxDiscordances} />
-            </label>
-            <label className="champ">
-              <span>Au-delà (défaut {d.qim.auDela})</span>
-              <input type="number" name="qim3" min={0} max={1} step={0.05} defaultValue={bareme.qim.auDela} />
-            </label>
-          </div>
-          <p className="legende">0 discordance vaut toujours 1 point ; une proposition non jugée compte comme une discordance ; le QCM reste tout ou rien.</p>
-
-          <h2 style={{ fontSize: "1.1rem" }}>Schéma à compléter</h2>
-          <div className="rangee">
-            <label className="champ">
-              <span>Mode (défaut : partiel)</span>
-              <select name="schemaMode" defaultValue={bareme.schema.mode}>
-                <option value="partiel">Partiel — chaque légende vaut 1/n, une fausse la retire</option>
-                <option value="tout_ou_rien">Tout ou rien — 1 point si toutes les légendes sont justes</option>
-              </select>
-            </label>
-            <label className="champ" style={{ justifyContent: "end" }}>
-              <span>Légende vide</span>
-              <span className="cases">
-                <label>
-                  <input type="checkbox" name="schemaVide" defaultChecked={bareme.schema.videRetire} />
-                  retire sa part comme une légende fausse (défaut : ne compte pas)
-                </label>
-              </span>
-            </label>
-          </div>
+          <h2 style={{ fontSize: "1.1rem" }}>Notation des trois formats</h2>
+          <p className="legende">
+            La même règle partout : les éléments d&apos;une question — propositions d&apos;un QCM ou
+            d&apos;une QIM, légendes d&apos;un schéma — valent chacun une part, et la note se range
+            entre un plancher et un plafond. Le plafond est aussi le poids de la question dans le
+            total. Un élément « sans réponse » est un « je ne sais pas » de QIM, une légende vide,
+            une proposition non tranchée.
+          </p>
+          {FORMATS.map(({ cle, element, sansReponse }) => (
+            <ReglagesFormat
+              key={cle}
+              cle={cle}
+              element={element}
+              sansReponse={sansReponse}
+              valeur={bareme[cle]}
+              defaut={d[cle]}
+            />
+          ))}
 
           <h2 style={{ fontSize: "1.1rem" }}>Décision</h2>
           <div className="rangee">

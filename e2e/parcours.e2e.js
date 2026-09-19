@@ -604,27 +604,31 @@ Justification : justification deux.`;
   assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/);
   ok("module déposé : deux questions importées et validées, présentation affichée, seuil propre 70 %");
 
-  // 12d. barème réglable : QIM à 0,25 et seuil par défaut 85 %, annoncés, puis valeurs rétablies
+  // 12d. barème harmonisé : la part d'une proposition fausse de QIM passée à
+  // −0,5 et le seuil par défaut à 85 %, annoncés, puis valeurs rétablies
   await page.goto(BASE + "/admin/bareme");
-  await page.fill("input[name=qim1]", "0.25");
+  await page.fill("input[name='qim-faux']", "-0.5");
   await page.fill("input[name=seuilDefaut]", "85");
   await page.click("button:has-text('Enregistrer le barème')");
   await page.waitForURL(/ok=enregistre/);
-  await page.waitForSelector("text=1 discordance → 0,25");
+  await page.waitForSelector("text=faux -0,5");
   await page.goto(BASE + "/");
-  await page.waitForSelector("text=1 discordance → 0,25");
+  await page.waitForSelector("text=faux -0,5");
   await page.goto(BASE + "/module/comportement-zac/evaluation");
   assert.match(await seuilDe("comportement-zac"), /Seuil de réussite 85 %/, "seuil par défaut sur un module du code");
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
   assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/, "seuil propre du module déposé conservé");
   await page.click("button:has-text('Commencer')");
-  await page.waitForSelector("p.question-bareme:has-text('1 discordance → 0,25')");
+  await page.waitForSelector("p.question-bareme:has-text('faux -0,5')");
+  // le « je ne sais pas » est proposé à côté de Vrai et Faux (question 35)
+  const propositionQim = page.locator("fieldset.question .proposition").first();
+  assert.equal(await propositionQim.locator("label:has-text('Je ne sais pas') input").count(), 1, "troisième réponse proposée");
   await page.goto(BASE + "/admin/bareme");
   await page.click("button:has-text('Rétablir les valeurs par défaut')");
   await page.waitForURL(/ok=defaut/);
   await page.goto(BASE + "/");
-  await page.waitForSelector("text=1 discordance → 0,5");
-  ok("barème réglé : QIM à 0,25 et seuil par défaut 85 % annoncés à l'accueil et sous la question, puis valeurs par défaut rétablies");
+  await page.waitForSelector("text=faux -1");
+  ok("barème harmonisé : part d'une proposition fausse à −0,5 et seuil 85 % annoncés à l'accueil et sous la question, « je ne sais pas » proposé, puis valeurs par défaut rétablies");
 
   // 12e. document général proposé aux profils Chimiothérapie · N1c
   await page.goto(BASE + "/admin/documents");

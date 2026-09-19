@@ -61,6 +61,8 @@ export interface DetailQuestion {
   type: Question["type"];
   situation: string | null;
   note: number;
+  /** Poids de la question selon le barème (plafond) ; absent = 1. */
+  max?: number;
   discordances: number;
   /** QIM : propositions laissées sans réponse ; schéma : légendes vides. */
   nonJugees: number;
@@ -203,7 +205,7 @@ export async function POST(request: Request) {
       juges: q.id in juges ? juges[q.id] : undefined,
       legendes: legendes[q.id] ?? {},
     };
-    const { note, discordances, nonJugees } = noterQuestion(q, rep, bareme);
+    const { note, discordances, nonJugees, max } = noterQuestion(q, rep, bareme);
     const libelle = (ids: string[]) =>
       ids
         .map((id) => q.options.find((o) => o.id === id)?.texte)
@@ -215,6 +217,7 @@ export async function POST(request: Request) {
       type: q.type,
       situation: titresSituations.get(q.id) ?? null,
       note,
+      max,
       discordances,
       nonJugees,
       correct: discordances === 0,

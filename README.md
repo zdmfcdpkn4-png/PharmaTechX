@@ -121,8 +121,8 @@ blocs ↔ niveaux) et sont affichés comme tels.
 | Format | Notation par défaut |
 |---|---|
 | **QCM** | Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu |
-| **QIM** | 0 discordance → 1 pt ; 1 → 0,5 ; 2 → 0 ; au-delà → 0. Posée en Vrai/Faux par proposition ; une proposition sans réponse compte comme une discordance |
-| **Schéma à compléter** | 1 pt au plus ; chaque légende vaut 1/n, fausse elle le retire, vide elle ne compte pas ; plancher 0. Légende à écrire (accents, casse, articles ignorés ; variantes admises) ou à choisir dans une liste mélangée |
+| **QIM** | Le barème des quiz de Flore : chaque proposition juste rapporte sa part (1/n), chaque proposition fausse la retire, « je ne sais pas » ne rapporte ni ne retire rien ; plancher 0, plafond 1 pt. Posée en Vrai / Faux / Je ne sais pas, proposition par proposition |
+| **Schéma à compléter** | La même règle, légende par légende : juste +1/n, fausse −1/n, vide 0 ; plancher 0, plafond 1 pt. Légende à écrire (accents, casse, articles ignorés ; variantes admises) ou à choisir dans une liste mélangée |
 | **Mise en situation** | Vignette + questions rattachées, tirées ensemble |
 
 Une question **éliminatoire** invalide le critère quelle que soit la note, et
@@ -136,10 +136,15 @@ Le résultat scellé, le rapport et le registre portent le nombre de questions
 réservées posées. Dans le code, `reservee: true` sur la question ; en base, la
 case de l'éditeur ou la ligne « Réservée à l'évaluation : oui » à l'import.
 
-**Barème réglable** (décision du 18/09/2026, question 10) : depuis
-`/admin/bareme`, l'administrateur règle les points des QIM (1, 2 discordances
-et au-delà), le mode du schéma (partiel ou tout ou rien, légende vide comptée
-ou non), le seuil de réussite par défaut, le minimum de questions pour
+**Barème harmonisé et réglable** (décisions du 18/09/2026, question 10, et du
+19/09/2026, questions 34 et 35) : les trois formats suivent **la même règle**
+et se règlent avec **les six mêmes champs** depuis `/admin/bareme` — mode
+(partiel ou tout ou rien), part d'un élément juste, part d'un élément faux,
+part d'un élément sans réponse, plancher et plafond de la question. Un
+« élément » est une proposition de QCM ou de QIM, une légende de schéma. Le
+plafond vaut aussi poids de la question dans le total : un format peut peser
+moins qu'un autre. L'administrateur règle en plus le seuil de réussite par
+défaut, le minimum de questions pour
 conclure, la taille des tirages Découverte et Habilitation et la bande de
 garde (poids d'une question, d'une demi-question ou largeur fixe). Le seuil
 d'un module du code se règle module par module depuis `/admin/modules` ; un

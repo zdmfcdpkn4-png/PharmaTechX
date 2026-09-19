@@ -515,6 +515,34 @@ dans ses fichiers, marqués hors sceau, et un paquet classé hors du site est
 un traitement de plus à déclarer, dont la conservation et l'accès suivent le
 dossier d'habilitation.
 
+**Barème harmonisé** (question 34, 19/09/2026) : un seul modèle pour les
+trois formats, réglé au même endroit avec les mêmes champs. Les **éléments**
+d'une question — propositions d'un QCM ou d'une QIM, légendes d'un schéma —
+valent chacun une part de 1/n, et cette part compte pour `juste`, `faux` ou
+`sansReponse` ; la note se range entre un **plancher** et un **plafond**, ce
+dernier valant aussi poids de la question dans le total (`decider` somme les
+plafonds au lieu de compter les questions). Une seule fonction applique la
+règle, `noterElements`, et `/admin/bareme` affiche six champs identiques par
+format. Ce qui disparaît : le barème QIM à la discordance (1 / 0,5 / 0 / 0),
+qui n'avait d'équivalent nulle part ailleurs, et la case « légende vide »,
+devenue la part « sans réponse » du schéma. Un barème de l'ancien modèle
+scellé dans un résultat reste lisible : `libelleBaremeCourt` reconnaît sa
+forme et imprime la règle qui a noté ce rapport, avec la mention « avant la
+refonte du 19/09/2026 ». Aucun rapport de la phase d'essai ne vaut preuve,
+c'est ce qui rend cette refonte possible ; après la mise en service, un
+changement de modèle se traiterait comme une nouvelle version du dispositif.
+
+**QIM : « je ne sais pas »** (question 35, 19/09/2026) : chaque proposition
+se juge Vrai, Faux ou **Je ne sais pas**, et le barème par défaut est celui
+des quiz de Flore — juste +1/n, faux −1/n, « je ne sais pas » 0, plancher 0.
+Ce barème avait été écarté au portage (journal d'intégration) ; le pharmacien
+responsable le rétablit, la pénalité de l'erreur étant ce qui décourage le
+cochage au hasard, et le « je ne sais pas » ce qui rend la pénalité
+acceptable. Le format d'échange ne change pas : une proposition « je ne sais
+pas » est une proposition non jugée, comme une proposition laissée de côté.
+Elle reste comptée en discordance — la question n'est pas juste, et une
+question éliminatoire échoue — mais elle ne retire aucun point.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
