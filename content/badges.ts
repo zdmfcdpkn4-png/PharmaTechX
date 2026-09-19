@@ -76,6 +76,7 @@ export const ILLUSTRATIONS: Record<string, Illustration> = {
   "danger-cmr": { libelle: "Danger CMR et protection", fichier: "danger-cmr.webp" },
   "logistique-thermosensible": { libelle: "Logistique des produits thermosensibles", fichier: "logistique-thermosensible.webp" },
   "formation-diplome": { libelle: "Formation et diplôme", fichier: "formation-diplome.webp" },
+  "procede-pharmaceutique": { libelle: "Procédé pharmaceutique", fichier: "procede-pharmaceutique.webp" },
 };
 
 export const NOMS_ILLUSTRATION = Object.keys(ILLUSTRATIONS);
@@ -124,6 +125,7 @@ const PROPOSITIONS: [RegExp, string][] = [
   [/gelose|boite de petri|ensemencement|prelevement de surface|gant.?test|media fill|test de remplissage/, "culture-microbiologique"],
   [/sterilite|essai de sterilite|microbiolog/, "sterilite-microbiologique"],
   [/hotte|psm|poste de securite|flux laminaire|flux d.air/, "poste-securite-microbiologique"],
+  [/procede de fabrication|maitrise du procede|automate|robotis|ligne de production/, "procede-pharmaceutique"],
   [/matiere premiere|pesee|peser|gravimetri|balance|dotation|deconditionnement/, "matieres-premieres"],
   [/isolateur|reconstitution|preparation|cytotoxique|chimiotherapie|seringue|poche/, "preparation-isolateur"],
   [/marche en avant|circuit|cheminement|flux de personnel|flux des produits/, "marche-en-avant"],

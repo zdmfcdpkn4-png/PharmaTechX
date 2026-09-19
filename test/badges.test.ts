@@ -75,6 +75,9 @@ test("seconde série : les mots précis passent avant les mots larges", () => {
   assert.equal(badgeSuggere("Attestation de fin de formation"), "attestation-habilitation");
   assert.equal(badgeSuggere("Compagnonnage du nouvel arrivant"), "formation-diplome");
   assert.equal(badgeSuggere("Marche en avant et circuits"), "marche-en-avant");
+  // « procédé de fabrication » avant « préparation », qui vaut l'isolateur
+  assert.equal(badgeSuggere("Maîtrise du procédé de fabrication"), "procede-pharmaceutique");
+  assert.equal(badgeSuggere("Préparation des chimiothérapies"), "preparation-isolateur");
 });
 
 test("deux illustrations restent au choix de la main, sans mot-clé", () => {

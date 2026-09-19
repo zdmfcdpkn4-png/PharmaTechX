@@ -881,8 +881,8 @@ SCORM). Transposé dans les limites du brief :
   lecture suivante : vide = jamais renseigné (proposition), `aucun` = retiré à
   la main, sinon l'identifiant choisi. Rien n'est proposé quand aucun mot ne
   correspond : une illustration fausse coûte plus cher qu'une case vide.
-  Seconde série le 19/09/2026 : douze illustrations de plus, **trente-deux au
-  total** (708 Ko). Quatre d'entre elles viennent d'une planche au dessin
+  Seconde série le 19/09/2026 : treize illustrations de plus, **trente-trois au
+  total** (732 Ko). Quatre d'entre elles viennent d'une planche au dessin
   différent — aplats colorés, anneau plus fin — et se distinguent des autres
   dans la grille. Presque aucun texte interne cette fois, contrairement à la
   première série. Deux illustrations sont volontairement sans mot-clé de
