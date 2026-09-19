@@ -485,6 +485,22 @@ annuelle (choix b) aurait suivi l'usage documentaire courant ; elle n'est pas
 retenue, et si elle devait l'être, ce serait avant la mise en service : deux
 conventions dans un même registre se défendraient mal.
 
+**Sauvegarde** (question 32, 19/09/2026) : la pièce de référence est le
+rapport visé, classé au dossier d'habilitation — pas la base. La base reste
+l'outil de travail : registre, suivi par agent, banque de questions. La
+sauvegarde protège donc la continuité du service et la traçabilité
+d'ensemble, non la preuve, et le régime le plus léger des trois proposés
+suffit : sauvegardes quotidiennes du plan Pro `[à vérifier]`, `pg_dump`
+conservé dans l'établissement avant chaque mise en service, essai de
+restauration annuel en plus de celui qui précède le premier rapport réel.
+Écartés : un `pg_dump` hebdomadaire ou mensuel, qui borneraient la perte de
+registre à une semaine ou un mois — protection sans objet dès lors que la
+preuve est au dossier. Réserve consignée : le rapport imprimé porte son
+numéro et son empreinte, mais recalculer l'empreinte suppose le résultat
+scellé, en base ou dans le paquet d'archivage ; sans l'un ni l'autre, le
+document classé vaut par ses visas et non par une vérification. Restent
+`[à préciser]` le responsable du dépôt et le support de conservation.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

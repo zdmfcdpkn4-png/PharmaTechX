@@ -318,7 +318,8 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    pharmacien déposée, identifiants d'agents créés et correspondance tenue hors
    du site.
 7. **Sauvegarde** : un `pg_dump` réalisé par le pooler de session et restauré
-   sur une base locale avant le premier rapport réel (voir ci-dessous).
+   sur une base locale avant le premier rapport réel, puis un essai annuel
+   (question 32 ; voir ci-dessous).
 8. **Procédure interne** publiée, qui décrit le dispositif, le visa par clic,
    la signature incrustée, la correspondance des identifiants, la purge
    manuelle et la conservation.
@@ -374,9 +375,25 @@ niveaux :
 
   Le fichier contient des données pseudonymisées d'agents : il se conserve
   sur un support de l'établissement, à accès restreint, pour la durée de
-  conservation des rapports. Fréquence (hebdomadaire proposée) et
-  responsable : `[à préciser]`. Un essai de restauration précède le premier
-  rapport réel et se renouvelle `[à préciser]`.
+  conservation des rapports.
+
+**Ce que la sauvegarde protège** (décision du 19/09/2026, question 32) : la
+pièce de référence est **le rapport visé, classé au dossier d'habilitation**,
+non la base. La base est l'outil de travail : le registre, le suivi par agent
+et la banque de questions. La sauvegarde protège donc la continuité du
+service et la traçabilité d'ensemble, pas la preuve elle-même, qui vit au
+dossier.
+
+Le régime retenu suit de là : les **sauvegardes quotidiennes du plan Pro**
+`[à vérifier]`, plus un **`pg_dump` conservé dans l'établissement avant
+chaque mise en service**, c'est-à-dire à chaque version étiquetée. Essai de
+restauration **annuel**, en plus de celui qui précède le premier rapport
+réel. Responsable du dépôt et support de conservation : `[à préciser]`.
+
+Réserve à connaître : le rapport imprimé porte son numéro et son empreinte,
+mais recalculer cette empreinte suppose le résultat scellé, qui vit en base
+ou dans le paquet d'archivage (JSON). Sans l'un ni l'autre, le document
+classé vaut par ses visas, non par une vérification cryptographique.
 
 Avec Vercel Blob, les fichiers déposés seraient à sauvegarder à part.
 

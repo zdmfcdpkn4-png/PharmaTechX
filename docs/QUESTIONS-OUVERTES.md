@@ -101,9 +101,13 @@ telle. Ordre : ce qui change le déploiement en premier.
 9. **Sauvegarde** : sauvegardes de Supabase sur le plan Pro `[à vérifier]`
    (quotidiennes, rétention), aucune sur le plan gratuit `[à vérifier]` ;
    `pg_dump` par le pooler de session conservé dans l'établissement
-   (`docs/DEPLOIEMENT.md`) ; `[à préciser]` fréquence (hebdomadaire proposée),
-   responsable, périodicité de l'essai de restauration ; un essai précède le
-   premier rapport réel.
+   (`docs/DEPLOIEMENT.md`) ; tranché le 19/09/2026 (question 32) : la
+   pièce de référence est le rapport visé classé au dossier d'habilitation,
+   non la base ; la sauvegarde protège la continuité du service et la
+   traçabilité d'ensemble. Régime : sauvegardes quotidiennes du plan Pro plus
+   un `pg_dump` avant chaque mise en service, essai de restauration annuel en
+   plus de celui qui précède le premier rapport réel. `[à préciser]`
+   responsable du dépôt et support de conservation.
 
 ## B. Barèmes et règles d'évaluation
 
