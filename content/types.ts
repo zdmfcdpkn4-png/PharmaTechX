@@ -12,8 +12,17 @@
 /** Marqueur d'un élément non encore arbitré par le pharmacien responsable. */
 export const A_PRECISER = "[à préciser]" as const;
 
-import { motAttendu, verdictLegende, type Legende, type Repere } from "./schema";
-import { BAREME_DEFAUT, libelleQcm, libelleQim, libelleSchema, noterElements, type Bareme } from "./bareme";
+import { motAttendu, normaliser, verdictLegende, type Legende, type Repere } from "./schema";
+import {
+  BAREME_DEFAUT,
+  libelleOrdre,
+  libelleQcm,
+  libelleQim,
+  libelleSchema,
+  libelleTrous,
+  noterElements,
+  type Bareme,
+} from "./bareme";
 export type { Legende, Repere };
 export type { Bareme } from "./bareme";
 
@@ -116,8 +125,44 @@ export type Option = {
  * - `SCH` — schéma à compléter (repris du Lecteur QIM · QCM) : une image dont
  *   les légendes ont été masquées ; l'apprenant écrit chaque légende (mode
  *   « écrire ») ou l'attribue parmi une liste mélangée (mode « choisir »).
+ * - `ORD` — séquence à ordonner : des étapes présentées dans le désordre,
+ *   auxquelles l'apprenant donne un rang. L'ordre juste est porté par
+ *   `bonnesReponses`, qui ne quitte jamais le serveur ; `options` part
+ *   mélangée. Une étape à sa place vaut sa part, une étape mal placée la
+ *   retire, une étape sans rang ne compte pas.
+ * - `TAT` — texte à trous : l'énoncé porte des marques `{1}`, `{2}`…, et
+ *   chaque trou se remplit avec une vignette prise dans une liste commune
+ *   (menu déroulant). `options` porte les vignettes — les attendues et les
+ *   leurres, mélangées — et `bonnesReponses` la vignette attendue de chaque
+ *   trou, dans l'ordre des trous.
  */
-export type TypeQuestion = "QCM" | "QIM" | "SCH";
+export type TypeQuestion = "QCM" | "QIM" | "SCH" | "ORD" | "TAT";
+
+/** Marque d'un trou dans l'énoncé d'un texte à trous : `{1}`, `{2}`… */
+export const RE_TROU = /\{(\d{1,2})\}/g;
+
+/** Numéros des trous d'un énoncé, dans l'ordre d'apparition, sans doublon. */
+export function trousDuTexte(enonce: string): number[] {
+  const vus: number[] = [];
+  for (const m of enonce.matchAll(RE_TROU)) {
+    const n = Number(m[1]);
+    if (n > 0 && !vus.includes(n)) vus.push(n);
+  }
+  return vus;
+}
+
+/** Découpe un énoncé à trous en morceaux de texte et en numéros de trou. */
+export function morceauxDuTexte(enonce: string): ({ texte: string } | { trou: number })[] {
+  const out: ({ texte: string } | { trou: number })[] = [];
+  let reste = 0;
+  for (const m of enonce.matchAll(RE_TROU)) {
+    if (m.index > reste) out.push({ texte: enonce.slice(reste, m.index) });
+    out.push({ trou: Number(m[1]) });
+    reste = m.index + m[0].length;
+  }
+  if (reste < enonce.length) out.push({ texte: enonce.slice(reste) });
+  return out;
+}
 
 export type ModeReponse = "ecrire" | "choisir";
 
@@ -297,11 +342,26 @@ function melangerTexte(xs: string[]): string[] {
   return a;
 }
 
+function melangerOptions(xs: Option[]): Option[] {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export function sanitizeQuestion(
   q: Question,
   situation: QuestionPublique["situation"] = null,
 ): QuestionPublique {
   const { bonnesReponses: _b, justification: _j, legendes, ...reste } = q;
+  // Séquence et texte à trous : l'ordre de rangement des options porte la
+  // réponse (l'ordre juste, les vignettes attendues d'abord). Il est mélangé
+  // avant l'envoi — `bonnesReponses` est déjà retiré, mais pas l'ordre.
+  if (q.type === "ORD" || q.type === "TAT") {
+    return { ...reste, options: melangerOptions(q.options), situation };
+  }
   if (q.type !== "SCH") return { ...reste, situation };
   const publiques = (legendes ?? []).map((l) => ({ id: l.id, repere: l.repere }));
   const etiquettes =
@@ -345,6 +405,10 @@ export interface ReponseApprenant {
   choix: string[];
   juges?: string[];
   legendes?: Record<string, string>;
+  /** Séquence à ordonner : rang donné à chaque étape (1 = première). */
+  rangs?: Record<string, number>;
+  /** Texte à trous : vignette choisie pour chaque trou, par numéro de trou. */
+  trous?: Record<string, string>;
 }
 
 export interface NoteQuestion {
@@ -369,6 +433,8 @@ export interface NoteQuestion {
  */
 export function noterQuestion(q: Question, rep: ReponseApprenant, bareme: Bareme = BAREME_DEFAUT): NoteQuestion {
   if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {}, bareme);
+  if (q.type === "ORD") return noterOrdre(q, rep.rangs ?? {}, bareme);
+  if (q.type === "TAT") return noterTrous(q, rep.trous ?? {}, bareme);
 
   const format = q.type === "QIM" ? bareme.qim : bareme.qcm;
   const attendues = new Set(q.bonnesReponses);
@@ -412,9 +478,56 @@ function noterSchema(q: Question, reponses: Record<string, string>, bareme: Bare
   return { note, discordances: faux + vides, nonJugees: vides, max: format.max };
 }
 
+/**
+ * Séquence à ordonner : chaque étape est un élément. Elle est juste si son
+ * rang est celui qu'elle occupe dans `bonnesReponses`, fausse si le rang est
+ * un autre, sans réponse si l'apprenant ne lui en a donné aucun.
+ */
+function noterOrdre(q: Question, rangs: Record<string, number>, bareme: Bareme): NoteQuestion {
+  const format = bareme.ordre;
+  const attendu = q.bonnesReponses;
+  if (attendu.length === 0) return { note: 0, discordances: 0, nonJugees: 0, max: format.max };
+  let justes = 0;
+  let faux = 0;
+  let sans = 0;
+  attendu.forEach((id, i) => {
+    const r = rangs[id];
+    if (!r) sans += 1;
+    else if (r === i + 1) justes += 1;
+    else faux += 1;
+  });
+  const note = noterElements(justes, faux, sans, format);
+  return { note, discordances: faux + sans, nonJugees: sans, max: format.max };
+}
+
+/**
+ * Texte à trous : chaque trou est un élément. La comparaison porte sur le
+ * texte de la vignette, non sur son identifiant — deux vignettes peuvent
+ * porter le même mot, et l'apprenant ne choisit que ce qu'il lit.
+ */
+function noterTrous(q: Question, trous: Record<string, string>, bareme: Bareme): NoteQuestion {
+  const format = bareme.trous;
+  const attendu = q.bonnesReponses;
+  if (attendu.length === 0) return { note: 0, discordances: 0, nonJugees: 0, max: format.max };
+  const texteDe = (id: string) => normaliser(q.options.find((o) => o.id === id)?.texte ?? "");
+  let justes = 0;
+  let faux = 0;
+  let sans = 0;
+  attendu.forEach((idAttendu, i) => {
+    const choisi = trous[String(i + 1)];
+    if (!choisi) sans += 1;
+    else if (texteDe(choisi) !== "" && texteDe(choisi) === texteDe(idAttendu)) justes += 1;
+    else faux += 1;
+  });
+  const note = noterElements(justes, faux, sans, format);
+  return { note, discordances: faux + sans, nonJugees: sans, max: format.max };
+}
+
 /** Libellé lisible d'un format, tel qu'il s'annonce à l'apprenant. */
 export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse">): string {
   if (q.type === "QIM") return "QIM — barème à la discordance";
+  if (q.type === "ORD") return "Séquence — étapes à ordonner";
+  if (q.type === "TAT") return "Texte à trous — vignettes à placer";
   if (q.type === "SCH") {
     return q.modeReponse === "choisir"
       ? "Schéma — légendes à attribuer"
@@ -429,5 +542,7 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
 export function libelleBareme(q: Pick<Question, "type" | "enonce">, bareme: Bareme = BAREME_DEFAUT): string {
   if (q.type === "QIM") return libelleQim(bareme);
   if (q.type === "SCH") return libelleSchema(bareme);
+  if (q.type === "ORD") return libelleOrdre(bareme);
+  if (q.type === "TAT") return libelleTrous(bareme);
   return libelleQcm(bareme);
 }

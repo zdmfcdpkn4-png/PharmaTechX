@@ -648,6 +648,49 @@ Ce qui n'est pas fait : le rendu d'une illustration sur le **rapport A4**. Le
 rapport porte les verdicts, pas les énoncés ; y incruster les images
 alourdirait un document qui se relit et s'archive.
 
+**Deux formats de plus : séquence à ordonner et texte à trous** (19/09/2026,
+demande du pharmacien responsable) : l'évaluation ne savait poser que des
+QCM, des QIM et des schémas à compléter. S'y ajoutent :
+
+- **la séquence à ordonner** (`ORD`) — des étapes reçues mélangées, auxquelles
+  l'apprenant donne un rang. Un menu déroulant par étape, pas de
+  glisser-déposer : l'usage se fait gants aux mains, sur tablette, et un menu
+  natif s'ouvre en plein écran sur iPad comme sur téléphone. Un rang déjà pris
+  est retiré à l'étape qui le portait — la réponse reste toujours une
+  permutation lisible ;
+- **le texte à trous** (`TAT`) — l'énoncé porte les marques `{1}`, `{2}`… et
+  chaque trou se remplit avec une vignette prise dans une liste commune
+  (attendues et leurres mêlés, mélangés par le serveur).
+
+Les deux suivent **le barème harmonisé**, avec leurs six réglages propres dans
+`/admin/bareme` : une étape à sa place ou un trou bien rempli vaut sa part,
+une erreur la retire, une absence de réponse ne compte pas, plancher et
+plafond bornent la note. Par défaut, le barème des quiz de Flore, comme les
+autres formats.
+
+Ce qui ne change pas : **la réponse ne quitte jamais le serveur**. L'ordre
+juste et les vignettes attendues vivent dans `bonnesReponses`, retiré par
+`sanitizeQuestion` ; pour ces deux formats, l'ordre de rangement des options
+porterait la réponse à lui seul, il est donc mélangé avant l'envoi. La
+correction d'un texte à trous compare le **mot** et non l'identifiant de la
+vignette : deux vignettes peuvent porter le même mot, et l'apprenant ne
+choisit que ce qu'il lit.
+
+Dépôt et écriture : les deux formats s'écrivent dans l'éditeur et se déposent
+en texte (« SÉQUENCE 1. » puis les étapes numérotées dans l'ordre juste ;
+« TEXTE 1. » avec ses marques, ses vignettes attendues numérotées et une ligne
+« Leurres : … | … »). Le prompt de mise en forme les décrit, et son exemple
+est passé dans l'analyseur réel par `test/prompt-depot.test.ts`.
+
+Deux points à connaître :
+
+- la contrainte de format de la table `questions` a été refaite (`ORD` et
+  `TAT` s'ajoutent à `QCM`, `QIM`, `SCH`) : une base déjà en service la reçoit
+  au démarrage suivant, par les instructions idempotentes de `lib/schema.ts` ;
+- un barème scellé **avant** cette date ne porte pas ces deux formats : son
+  libellé ne les mentionne pas, et un rapport ancien se relit exactement comme
+  il a été noté.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

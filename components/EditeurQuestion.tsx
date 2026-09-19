@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import type { EtatFormulaireQuestion } from "@/app/admin/questions/import-etat";
 import type { Legende } from "@/content/schema";
-import type { ModeReponse, TypeQuestion } from "@/content/types";
+import { trousDuTexte, type ModeReponse, type TypeQuestion } from "@/content/types";
 import { EditeurSchema } from "./EditeurSchema";
 
 /**
@@ -56,11 +56,32 @@ export interface QuestionInitiale {
   statut: "a_verifier" | "valide" | "retire";
 }
 
-const LETTRES = "abcde";
+const LETTRES = "abcdefghijkl";
 
 function optionsVides(n: number): OptionForm[] {
   return Array.from({ length: n }, (_, i) => ({ id: LETTRES[i], texte: "", vrai: false }));
 }
+
+/** Étapes d'une séquence : toutes comptent, c'est leur ordre qui est jugé. */
+function etapesVides(n: number): OptionForm[] {
+  return Array.from({ length: n }, (_, i) => ({ id: LETTRES[i], texte: "", vrai: true }));
+}
+
+/** QCM et QIM partagent la forme « propositions » ; les autres formats non. */
+function memeForme(a: TypeQuestion, b: TypeQuestion): boolean {
+  const proposition = (f: TypeQuestion) => f === "QCM" || f === "QIM";
+  return proposition(a) && proposition(b);
+}
+
+/** Premier identifiant libre : les listes d'un QCM restent en a, b, c… */
+function idLibre(existants: OptionForm[]): string {
+  const pris = new Set(existants.map((o) => o.id));
+  for (const l of LETTRES) if (!pris.has(l)) return l;
+  return `o${existants.length + 1}`;
+}
+
+/** Nombre d'éléments qu'un format accepte : cinq propositions, douze étapes. */
+const MAX_ELEMENTS: Record<string, number> = { QCM: 5, QIM: 5, ORD: 12, TAT: 12 };
 
 export function EditeurQuestion({
   modules,
@@ -81,6 +102,7 @@ export function EditeurQuestion({
   const [options, setOptions] = useState<OptionForm[]>(
     initiale?.options.length ? initiale.options : optionsVides(4),
   );
+  const [enonce, setEnonce] = useState(initiale?.enonce ?? "");
   const [legendes, setLegendes] = useState<Legende[]>(initiale?.legendes ?? []);
   const [image, setImage] = useState<{ url: string; w: number; h: number } | null>(
     initiale?.imageUrl ? { url: initiale.imageUrl, w: initiale.imageLargeur, h: initiale.imageHauteur } : null,
@@ -93,6 +115,39 @@ export function EditeurQuestion({
 
   const majOption = (i: number, patch: Partial<OptionForm>) =>
     setOptions((prec) => prec.map((o, k) => (k === i ? { ...o, ...patch } : o)));
+
+  // Séquence à ordonner : la liste est l'ordre juste ; l'apprenant la reçoit
+  // mélangée. Les flèches suffisent — pas de glisser-déposer, inutilisable
+  // avec des gants et inaccessible au clavier.
+  const deplacer = (i: number, pas: number) =>
+    setOptions((prec) => {
+      const j = i + pas;
+      if (j < 0 || j >= prec.length) return prec;
+      const suite = [...prec];
+      [suite[i], suite[j]] = [suite[j], suite[i]];
+      return suite;
+    });
+
+  // Texte à trous : les vignettes attendues d'abord, dans l'ordre des trous,
+  // puis les leurres. C'est cet ordre que le serveur relit.
+  const trous = useMemo(() => trousDuTexte(enonce), [enonce]);
+  const attendues = options.filter((o) => o.vrai);
+  const leurres = options.filter((o) => !o.vrai);
+  const recomposer = (att: OptionForm[], leu: OptionForm[]) => setOptions([...att, ...leu]);
+
+  useEffect(() => {
+    if (format !== "TAT") return;
+    setOptions((prec) => {
+      const att = prec.filter((o) => o.vrai);
+      const leu = prec.filter((o) => !o.vrai);
+      if (att.length === trous.length) return prec;
+      const suite = att.slice(0, trous.length);
+      while (suite.length < trous.length) {
+        suite.push({ id: idLibre([...suite, ...leu]), texte: "", vrai: true });
+      }
+      return [...suite, ...leu];
+    });
+  }, [format, trous.length]);
 
   const choisirImage = (fichier: File | null) => {
     if (!fichier) return;
@@ -127,17 +182,43 @@ export function EditeurQuestion({
         </label>
         <label className="champ">
           <span>Format</span>
-          <select name="format" value={format} onChange={(e) => setFormat(e.target.value as TypeQuestion)}>
+          <select
+            name="format"
+            value={format}
+            onChange={(e) => {
+              // Changer de format vide la liste : des propositions ne sont pas
+              // des étapes, et des étapes ne sont pas des leurres. Le passage
+              // QCM ↔ QIM, lui, garde les propositions.
+              const suivant = e.target.value as TypeQuestion;
+              if (!memeForme(format, suivant)) {
+                setOptions(suivant === "ORD" ? etapesVides(3) : suivant === "TAT" ? [] : optionsVides(4));
+              }
+              setFormat(suivant);
+            }}
+          >
             <option value="QCM">QCM — tout ou rien</option>
             <option value="QIM">QIM — barème à la discordance</option>
             <option value="SCH">Schéma à compléter</option>
+            <option value="ORD">Séquence à ordonner</option>
+            <option value="TAT">Texte à trous</option>
           </select>
         </label>
       </div>
 
       <label className="champ">
-        <span>Énoncé{format === "QCM" ? " (écrire « plusieurs réponses » s'il y en a plusieurs)" : ""}</span>
-        <textarea name="enonce" rows={3} required maxLength={2000} defaultValue={initiale?.enonce ?? ""} />
+        <span>
+          Énoncé
+          {format === "QCM" ? " (écrire « plusieurs réponses » s'il y en a plusieurs)" : ""}
+          {format === "TAT" ? " — marquez chaque trou par {1}, {2}…" : ""}
+        </span>
+        <textarea
+          name="enonce"
+          rows={format === "TAT" ? 5 : 3}
+          required
+          maxLength={2000}
+          value={enonce}
+          onChange={(e) => setEnonce(e.target.value)}
+        />
       </label>
 
       {/* Image : obligatoire pour un schéma, facultative en illustration d'un
@@ -176,7 +257,135 @@ export function EditeurQuestion({
         )}
       </fieldset>
 
-      {format === "SCH" ? (
+      {format === "ORD" ? (
+        <fieldset className="groupe">
+          <legend className="champ-titre">Étapes, dans l&apos;ordre juste</legend>
+          <p className="legende">
+            L&apos;apprenant les reçoit mélangées et donne un rang à chacune. Les flèches
+            corrigent l&apos;ordre ici.
+          </p>
+          {options.map((o, i) => (
+            <div key={o.id} className="proposition proposition--editeur">
+              <span className="num" aria-hidden="true">{i + 1}</span>
+              <label className="champ" style={{ flex: "1 1 18rem", margin: 0 }}>
+                <span className="visually-hidden">Étape {i + 1}</span>
+                <input
+                  type="text"
+                  value={o.texte}
+                  maxLength={300}
+                  onChange={(e) => majOption(i, { texte: e.target.value })}
+                />
+              </label>
+              <button
+                type="button"
+                className="bouton bouton--compact bouton--discret"
+                disabled={i === 0}
+                aria-label={`Monter l'étape ${i + 1}`}
+                onClick={() => deplacer(i, -1)}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="bouton bouton--compact bouton--discret"
+                disabled={i === options.length - 1}
+                aria-label={`Descendre l'étape ${i + 1}`}
+                onClick={() => deplacer(i, 1)}
+              >
+                ↓
+              </button>
+              {options.length > 2 && (
+                <button
+                  type="button"
+                  className="bouton bouton--compact bouton--discret"
+                  aria-label={`Retirer l'étape ${i + 1}`}
+                  onClick={() => setOptions((prec) => prec.filter((_, k) => k !== i))}
+                >
+                  Retirer
+                </button>
+              )}
+            </div>
+          ))}
+          {options.length < MAX_ELEMENTS.ORD && (
+            <button
+              type="button"
+              className="bouton bouton--compact bouton--secondaire"
+              onClick={() => setOptions((prec) => [...prec, { id: idLibre(prec), texte: "", vrai: true }])}
+            >
+              Ajouter une étape
+            </button>
+          )}
+        </fieldset>
+      ) : format === "TAT" ? (
+        <fieldset className="groupe">
+          <legend className="champ-titre">Trous et vignettes</legend>
+          {trous.length === 0 ? (
+            <p className="encart encart--attention">
+              Aucun trou dans l&apos;énoncé : écrivez {"{1}"}, {"{2}"}… là où l&apos;apprenant
+              devra placer une vignette.
+            </p>
+          ) : (
+            <p className="legende">
+              Une vignette attendue par trou. Les leurres sont proposés dans le même menu
+              déroulant, à tous les trous.
+            </p>
+          )}
+          {trous.map((n, i) => (
+            <div key={`t${n}`} className="proposition proposition--editeur">
+              <span className="num" aria-hidden="true">{n}</span>
+              <label className="champ" style={{ flex: "1 1 18rem", margin: 0 }}>
+                <span className="visually-hidden">Vignette attendue au trou {n}</span>
+                <input
+                  type="text"
+                  value={attendues[i]?.texte ?? ""}
+                  maxLength={120}
+                  placeholder={`Vignette attendue au trou ${n}`}
+                  onChange={(e) =>
+                    recomposer(
+                      attendues.map((o, k) => (k === i ? { ...o, texte: e.target.value } : o)),
+                      leurres,
+                    )
+                  }
+                />
+              </label>
+            </div>
+          ))}
+          <p className="champ-titre" style={{ marginTop: ".5rem" }}>Leurres</p>
+          {leurres.map((o, i) => (
+            <div key={o.id} className="proposition proposition--editeur">
+              <span className="num" aria-hidden="true">·</span>
+              <label className="champ" style={{ flex: "1 1 18rem", margin: 0 }}>
+                <span className="visually-hidden">Leurre {i + 1}</span>
+                <input
+                  type="text"
+                  value={o.texte}
+                  maxLength={120}
+                  onChange={(e) =>
+                    recomposer(attendues, leurres.map((l, k) => (k === i ? { ...l, texte: e.target.value } : l)))
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="bouton bouton--compact bouton--discret"
+                aria-label={`Retirer le leurre ${i + 1}`}
+                onClick={() => recomposer(attendues, leurres.filter((_, k) => k !== i))}
+              >
+                Retirer
+              </button>
+            </div>
+          ))}
+          {options.length < MAX_ELEMENTS.TAT && (
+            <button
+              type="button"
+              className="bouton bouton--compact bouton--secondaire"
+              onClick={() => recomposer(attendues, [...leurres, { id: idLibre(options), texte: "", vrai: false }])}
+            >
+              Ajouter un leurre
+            </button>
+          )}
+        </fieldset>
+      ) : format === "SCH" ? (
         <fieldset className="groupe">
           <legend className="champ-titre">Schéma</legend>
           <label className="champ">

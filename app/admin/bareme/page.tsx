@@ -4,6 +4,7 @@ import { infoBareme, lireBareme } from "@/lib/bareme-db";
 import {
   BAREME_DEFAUT,
   LIBELLES_FORMAT,
+  type CleFormat,
   LIMITES_BAREME,
   estBaremeDefaut,
   resumeBareme,
@@ -22,6 +23,8 @@ const FORMATS = [
   { cle: "qcm" as const, element: "proposition", sansReponse: "proposition non tranchée" },
   { cle: "qim" as const, element: "proposition", sansReponse: "« je ne sais pas »" },
   { cle: "schema" as const, element: "légende", sansReponse: "légende vide" },
+  { cle: "ordre" as const, element: "étape à sa place", sansReponse: "étape sans rang" },
+  { cle: "trous" as const, element: "trou bien rempli", sansReponse: "trou laissé vide" },
 ];
 
 /** Les six mêmes réglages pour chaque format : c'est tout l'objet de l'harmonisation. */
@@ -32,7 +35,7 @@ function ReglagesFormat({
   valeur,
   defaut,
 }: {
-  cle: "qcm" | "qim" | "schema";
+  cle: CleFormat;
   element: string;
   sansReponse: string;
   valeur: BaremeFormat;

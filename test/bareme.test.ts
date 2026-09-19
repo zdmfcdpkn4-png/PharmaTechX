@@ -178,6 +178,7 @@ test("libellés du barème : dynamiques", () => {
   assert.match(libelleBareme(qim, b), /-0,5/);
   assert.match(libelleBareme(qim), /je ne sais pas/);
   assert.match(libelleBareme(qcm), /tout ou rien/);
-  assert.equal(resumeBareme().length, 6);
-  assert.match(resumeBareme(normaliserBareme({ bande: { mode: "fixe", points: 5 } }))[4], /5 points de pourcentage/);
+  // cinq formats, puis seuil, bande de garde et tirages
+  assert.equal(resumeBareme().length, 8);
+  assert.match(resumeBareme(normaliserBareme({ bande: { mode: "fixe", points: 5 } }))[6], /5 points de pourcentage/);
 });

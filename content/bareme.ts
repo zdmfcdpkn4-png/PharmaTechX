@@ -3,7 +3,8 @@
  * 19/09/2026, question 34 ; refonte du barème posé le 18/09/2026, question 10).
  *
  * Chaque question se note de la même façon, quel que soit son format : ses
- * **éléments** (propositions d'un QCM ou d'une QIM, légendes d'un schéma)
+ * **éléments** (propositions d'un QCM ou d'une QIM, légendes d'un schéma,
+ * étapes d'une séquence à ordonner, trous d'un texte à compléter)
  * valent chacun une part de 1/n, et cette part compte pour `juste`, `faux` ou
  * `sansReponse` selon ce qu'en a fait l'apprenant. La note de la question est
  * la somme, ramenée entre un **plancher** (`min`) et un **plafond** (`max`).
@@ -16,7 +17,11 @@
  *     sa part, chaque proposition fausse la retire, « je ne sais pas » ne
  *     rapporte ni ne retire rien ; jamais moins de 0 ;
  *   - schéma : la même règle, légende par légende, une légende vide valant
- *     « je ne sais pas ».
+ *     « je ne sais pas » ;
+ *   - séquence à ordonner : la même règle, étape par étape — une étape à sa
+ *     place rapporte sa part, une étape mal placée la retire, une étape sans
+ *     rang ne compte pas ;
+ *   - texte à trous : la même règle, trou par trou.
  *
  * Le barème en vigueur au moment d'une évaluation est copié dans le résultat
  * scellé (`ResultatEvaluation.bareme`) : un rapport se relit toujours avec le
@@ -56,6 +61,10 @@ export interface Bareme {
   qcm: BaremeFormat;
   qim: BaremeFormat;
   schema: BaremeFormat;
+  /** Séquence à ordonner : une étape à sa place vaut sa part. */
+  ordre: BaremeFormat;
+  /** Texte à trous : un trou bien rempli vaut sa part. */
+  trous: BaremeFormat;
   /** Seuil de réussite (%) des modules sans seuil propre. */
   seuilDefaut: number;
   /** Taille minimale d'un tirage concluant. */
@@ -72,6 +81,8 @@ export const BAREME_DEFAUT: Bareme = {
   qcm: { ...FLORE, mode: "tout_ou_rien" },
   qim: { ...FLORE },
   schema: { ...FLORE },
+  ordre: { ...FLORE },
+  trous: { ...FLORE },
   seuilDefaut: 80,
   minQuestions: 10,
   tirages: { decouverte: 5, habilitation: 10 },
@@ -91,11 +102,17 @@ export const LIMITES_BAREME = {
   plafond: { min: 0.1, max: 1 },
 } as const;
 
-export const LIBELLES_FORMAT: Record<"qcm" | "qim" | "schema", string> = {
+export const LIBELLES_FORMAT: Record<CleFormat, string> = {
   qcm: "QCM",
   qim: "QIM",
   schema: "Schéma à compléter",
+  ordre: "Séquence à ordonner",
+  trous: "Texte à trous",
 };
+
+/** Les formats réglables, dans l'ordre où ils sont présentés. */
+export type CleFormat = "qcm" | "qim" | "schema" | "ordre" | "trous";
+export const CLES_FORMAT: CleFormat[] = ["qcm", "qim", "schema", "ordre", "trous"];
 
 function nombreBorne(v: unknown, defaut: number, min: number, max: number, decimales = 0): number {
   const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v.replace(",", ".")) : NaN;
@@ -151,6 +168,8 @@ export function normaliserBareme(brut: unknown): Bareme {
     qcm: formatNormalise(b.qcm, d.qcm),
     qim: formatNormalise(b.qim, d.qim),
     schema: formatNormalise(b.schema, d.schema),
+    ordre: formatNormalise(b.ordre, d.ordre),
+    trous: formatNormalise(b.trous, d.trous),
     seuilDefaut: nombreBorne(b.seuilDefaut, d.seuilDefaut, LIMITES_BAREME.seuil.min, LIMITES_BAREME.seuil.max),
     minQuestions,
     tirages: {
@@ -222,6 +241,14 @@ export function libelleQcm(b: Bareme = BAREME_DEFAUT): string {
   return libelleFormatBareme(b.qcm, "proposition", "proposition non tranchée");
 }
 
+export function libelleOrdre(b: Bareme = BAREME_DEFAUT): string {
+  return libelleFormatBareme(b.ordre, "étape à sa place", "étape sans rang");
+}
+
+export function libelleTrous(b: Bareme = BAREME_DEFAUT): string {
+  return libelleFormatBareme(b.trous, "trou bien rempli", "trou laissé vide");
+}
+
 export function libelleBande(b: Bareme = BAREME_DEFAUT): string {
   if (b.bande.mode === "fixe") return `${nombreLisible(b.bande.points)} point${b.bande.points > 1 ? "s" : ""} de pourcentage de part et d'autre du seuil`;
   if (b.bande.mode === "demi_question") return "le poids d'une demi-question de part et d'autre du seuil";
@@ -255,7 +282,12 @@ export function libelleBaremeCourt(b: unknown = BAREME_DEFAUT): string {
     return `Barème d'avant la refonte du 19/09/2026 — QCM tout ou rien · QIM 1 / ${nombreLisible(q.unDiscordance)} / ${nombreLisible(q.deuxDiscordances)} / ${nombreLisible(q.auDela)} selon 0, 1, 2 discordances et au-delà · schéma ${schema}`;
   }
   const n = normaliserBareme(b);
-  return `QCM : ${libelleQcm(n)} QIM : ${libelleQim(n)} Schéma : ${libelleSchema(n)} Bande de garde : ${libelleBande(n)} · ${n.minQuestions} question${n.minQuestions > 1 ? "s" : ""} au moins pour conclure`;
+  const brut = objet(b);
+  // Formats ajoutés le 19/09/2026 : passés sous silence pour un barème scellé
+  // avant, qui ne les portait pas — le rapport se relit tel qu'il a été noté.
+  const ordre = "ordre" in brut ? ` Séquence : ${libelleOrdre(n)}` : "";
+  const trous = "trous" in brut ? ` Texte à trous : ${libelleTrous(n)}` : "";
+  return `QCM : ${libelleQcm(n)} QIM : ${libelleQim(n)} Schéma : ${libelleSchema(n)}${ordre}${trous} Bande de garde : ${libelleBande(n)} · ${n.minQuestions} question${n.minQuestions > 1 ? "s" : ""} au moins pour conclure`;
 }
 
 /** Le barème en quelques lignes, pour l'écran de réglage, l'accueil et le rapport. */
@@ -264,6 +296,8 @@ export function resumeBareme(b: Bareme = BAREME_DEFAUT): string[] {
     `QCM : ${libelleQcm(b)}`,
     `QIM : ${libelleQim(b)}`,
     `Schéma à compléter : ${libelleSchema(b)}`,
+    `Séquence à ordonner : ${libelleOrdre(b)}`,
+    `Texte à trous : ${libelleTrous(b)}`,
     `Seuil de réussite par défaut : ${b.seuilDefaut} %.`,
     `Bande de garde (verdict indéterminé, arbitrage du tuteur) : ${libelleBande(b)}.`,
     `Tirages : découverte ${b.tirages.decouverte} question${b.tirages.decouverte > 1 ? "s" : ""}, habilitation ${b.tirages.habilitation} ; ${b.minQuestions} question${b.minQuestions > 1 ? "s" : ""} au moins pour conclure.`,

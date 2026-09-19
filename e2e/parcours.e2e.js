@@ -845,6 +845,83 @@ Justification : justification deux.`;
   );
   ok("illustration d'un QCM : image appariée par son nom au dépôt, conservée et relue dans l'éditeur");
 
+  // 12j. séquence à ordonner et texte à trous (19/09/2026) : dépôt, validation
+  // par un autre code, passation au menu déroulant, notation par éléments
+  const ORDRE_JUSTE = { "Hygiène des mains": 1, Surchaussures: 2, Combinaison: 3 };
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module formats test");
+  await page.fill("input[name=objectif]", "Séquence et texte à trous.");
+  await page.fill("textarea[name=presentation]", "Deux formats à vérifier.");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1c]");
+  await page.fill("input[name=seuil]", "60");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idFormats = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+
+  await page.goto(BASE + "/admin/questions/import?module=" + idFormats);
+  await page.selectOption("select[name=moduleId]", idFormats);
+  await page.fill(
+    "textarea[name=texte]",
+    `SÉQUENCE 1. Remettez dans l'ordre les étapes de l'habillage.
+1. Hygiène des mains
+2. Surchaussures
+3. Combinaison
+Justification : ordre de la procédure.
+
+TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
+1. transfert
+2. zone à atmosphère contrôlée
+Leurres : couloir
+Justification : cascade de pression.`,
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 2 questions')");
+  await page.waitForSelector(".apercu-question .etiquette:has-text('Séquence')");
+  await page.waitForSelector(".apercu-question .etiquette:has-text('Texte à trous')");
+  await page.waitForSelector(".apercu-options li:has-text('leurre')");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=2 questions ajoutées");
+
+  // quatre yeux : c'est un autre code qui valide
+  await rebrancher(codeTuteur);
+  for (let i = 0; i < 3; i++) {
+    await page.goto(BASE + "/admin/questions?module=" + idFormats + "&statut=a_verifier");
+    const bouton = page.locator("form button:has-text('Valider')").first();
+    if (!(await bouton.count())) break;
+    await bouton.click();
+    await page.waitForLoadState("networkidle");
+  }
+  await rebrancher(codeAdmin);
+
+  // passation : la séquence est remise dans l'ordre, un trou est mal rempli
+  await page.goto(BASE + "/module/" + idFormats + "/evaluation");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question .sequence");
+  const lignesSequence = page.locator("fieldset.question .sequence .etape-sequence");
+  const nbEtapes = await lignesSequence.count();
+  assert.equal(nbEtapes, 3, "les trois étapes sont proposées");
+  for (let i = 0; i < nbEtapes; i++) {
+    const libelle = (await lignesSequence.nth(i).locator(".libelle").innerText()).trim();
+    await lignesSequence.nth(i).locator("select").selectOption(String(ORDRE_JUSTE[libelle]));
+  }
+  await capture("formats-passation", page.locator("form.evaluation, main").first());
+  const trousQ = page.locator("fieldset.question .texte-a-trous .trou select");
+  assert.equal(await trousQ.count(), 2, "un menu par trou");
+  await trousQ.nth(0).selectOption({ label: "transfert" });
+  await trousQ.nth(1).selectOption({ label: "couloir" });
+  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await page.waitForSelector(".resultat-entete");
+  const scoreFormats = (await page.locator(".resultat-entete .score").innerText()).replace(/\s+/g, " ");
+  assert.match(scoreFormats, /^50 %$/, "séquence juste (1 pt), texte à trous à moitié faux (0 pt)");
+  // la correction relit l'ordre attendu et les vignettes attendues
+  await page.waitForSelector("text=1. Hygiène des mains");
+  await page.waitForSelector("text=2 → zone à atmosphère contrôlée");
+  await capture("formats-correction");
+  ok("séquence à ordonner et texte à trous : déposés, validés à quatre yeux, passés au menu déroulant, notés par éléments");
+
   // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
   // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
   await page.goto(BASE + "/#progression");

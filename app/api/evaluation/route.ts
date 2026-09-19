@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getModuleComplet } from "@/content/store";
 import { ordreLecture, motAttendu, verdictLegende } from "@/content/schema";
-import { banqueDuModule, noterQuestion } from "@/content/types";
+import { RE_TROU, banqueDuModule, noterQuestion } from "@/content/types";
 import type { Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
@@ -18,8 +18,9 @@ export const dynamic = "force-dynamic";
  *
  * Ce que reçoit le serveur : un identifiant de module et, pour chaque question,
  * les identifiants des options cochées (QCM), jugées vraies et jugées (QIM),
- * ou le mot écrit par légende (schéma). Rien d'autre. Aucun nom, aucun
- * matricule, aucune adresse.
+ * le mot écrit par légende (schéma), le rang donné à chaque étape (séquence)
+ * ou la vignette choisie par trou (texte à trous). Rien d'autre. Aucun nom,
+ * aucun matricule, aucune adresse.
  *
  * Ce que fait le serveur : il corrige, renvoie le résultat et le scelle
  * (`jeton`) pour que le rapport émis plus tard soit bien celui-ci.
@@ -40,6 +41,10 @@ interface CorpsRequete {
   juges?: unknown;
   /** Schémas : mot écrit par légende, par question. */
   legendes?: unknown;
+  /** Séquences à ordonner : rang donné à chaque étape, par question. */
+  rangs?: unknown;
+  /** Textes à trous : vignette choisie par trou, par question. */
+  trous?: unknown;
   /** Libellé du tirage, informatif (« Habilitation · 9 questions »). */
   tirage?: unknown;
   /** `evaluation` (tirage complet, conservé si l'apprenant est rattaché) ou `entrainement`. */
@@ -124,6 +129,22 @@ function listeDeChaines(brut: unknown): Record<string, string[]> {
   return out;
 }
 
+function dictionnaireDeNombres(brut: unknown): Record<string, Record<string, number>> {
+  const out: Record<string, Record<string, number>> = {};
+  if (brut && typeof brut === "object") {
+    for (const [cle, val] of Object.entries(brut as Record<string, unknown>)) {
+      if (val && typeof val === "object") {
+        const d: Record<string, number> = {};
+        for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+          if (typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 50) d[k] = v;
+        }
+        out[cle] = d;
+      }
+    }
+  }
+  return out;
+}
+
 function dictionnaireDeChaines(brut: unknown): Record<string, Record<string, string>> {
   const out: Record<string, Record<string, string>> = {};
   if (brut && typeof brut === "object") {
@@ -192,6 +213,8 @@ export async function POST(request: Request) {
   const reponses = listeDeChaines(corps.reponses);
   const juges = listeDeChaines(corps.juges);
   const legendes = dictionnaireDeChaines(corps.legendes);
+  const rangs = dictionnaireDeNombres(corps.rangs);
+  const trous = dictionnaireDeChaines(corps.trous);
   const bareme = await lireBareme();
 
   const titresSituations = new Map<string, string>();
@@ -204,6 +227,8 @@ export async function POST(request: Request) {
       choix: reponses[q.id] ?? [],
       juges: q.id in juges ? juges[q.id] : undefined,
       legendes: legendes[q.id] ?? {},
+      rangs: rangs[q.id] ?? {},
+      trous: trous[q.id] ?? {},
     };
     const { note, discordances, nonJugees, max } = noterQuestion(q, rep, bareme);
     const libelle = (ids: string[]) =>
@@ -230,6 +255,28 @@ export async function POST(request: Request) {
         (r) => `${r.source} — ${r.libelle}${r.localisation ? ` (${r.localisation})` : ""}`,
       ),
     };
+
+    if (q.type === "ORD") {
+      // L'ordre juste est celui de `bonnesReponses` ; la réponse de
+      // l'apprenant se relit rang par rang, « — » pour une étape sans rang.
+      const texteDe = (id: string) => q.options.find((o) => o.id === id)?.texte ?? id;
+      const donne = rep.rangs ?? {};
+      base.reponsesAttendues = q.bonnesReponses.map((id, i) => `${i + 1}. ${texteDe(id)}`);
+      base.choixApprenant = q.bonnesReponses
+        .map((id) => ({ rang: donne[id] ?? 0, texte: texteDe(id) }))
+        .sort((a, b) => (a.rang || 99) - (b.rang || 99))
+        .map((e) => `${e.rang ? `${e.rang}.` : "—"} ${e.texte}`);
+    }
+
+    if (q.type === "TAT") {
+      const texteDe = (id: string) => q.options.find((o) => o.id === id)?.texte ?? "";
+      const donne = rep.trous ?? {};
+      base.enonce = q.enonce.replace(RE_TROU, (_m, n) => `[${n}]`);
+      base.reponsesAttendues = q.bonnesReponses.map((id, i) => `${i + 1} → ${texteDe(id)}`);
+      base.choixApprenant = q.bonnesReponses.map(
+        (_id, i) => `${i + 1} → ${texteDe(donne[String(i + 1)] ?? "") || "—"}`,
+      );
+    }
 
     if (q.type === "SCH") {
       const liste = q.legendes ?? [];

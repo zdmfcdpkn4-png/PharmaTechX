@@ -12,11 +12,11 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   const r = analyserTexte(EXEMPLE_DEPOT, { formatDefaut: "QCM" });
   assert.deepEqual(
     r.questions.map((q) => q.format),
-    ["QCM", "QIM", "QCM", "SCH"],
-    "quatre questions, dans l'ordre de l'exemple",
+    ["QCM", "QIM", "QCM", "SCH", "ORD", "TAT"],
+    "six questions, dans l'ordre de l'exemple",
   );
 
-  const [qcm, qim, illustre, schema] = r.questions;
+  const [qcm, qim, illustre, schema, sequence, trous] = r.questions;
 
   assert.equal(qcm.options.length, 4);
   assert.deepEqual(
@@ -39,6 +39,25 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.equal(schema.legendes.length, 2);
   assert.equal(schema.imageNom, "isolateur-coupe.png");
   assert.equal(schema.legendes[1].attendu, "filtre HEPA | filtre terminal");
+
+  assert.deepEqual(
+    sequence.options.map((o) => o.texte),
+    ["Hygiène des mains", "Surchaussures", "Combinaison"],
+    "les étapes sont lues dans l'ordre juste",
+  );
+  assert.ok(sequence.options.every((o) => o.vrai), "toutes les étapes comptent, c'est l'ordre qui est jugé");
+
+  assert.equal(trous.enonce.includes("{1}"), true, "les marques de trou restent dans l'énoncé");
+  assert.deepEqual(
+    trous.options.filter((o) => o.vrai).map((o) => o.texte),
+    ["transfert", "zone à atmosphère contrôlée"],
+    "les vignettes attendues suivent l'ordre des trous",
+  );
+  assert.deepEqual(
+    trous.options.filter((o) => !o.vrai).map((o) => o.texte),
+    ["couloir", "décontamination"],
+    "les leurres viennent ensuite",
+  );
 
   assert.equal(r.avertissements.length, 0, "aucun avertissement sur l'exemple de référence");
 });

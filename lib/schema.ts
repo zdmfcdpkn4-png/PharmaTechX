@@ -118,7 +118,7 @@ export const SCHEMA: string[] = [
      id            TEXT PRIMARY KEY,
      module_id     TEXT NOT NULL,
      situation_id  TEXT REFERENCES situations(id) ON DELETE SET NULL,
-     format        TEXT NOT NULL CHECK (format IN ('QCM','QIM','SCH')),
+     format        TEXT NOT NULL CHECK (format IN ('QCM','QIM','SCH','ORD','TAT')),
      enonce        TEXT NOT NULL,
      options       JSONB NOT NULL DEFAULT '[]'::jsonb,
      legendes      JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -320,6 +320,10 @@ export const SCHEMA: string[] = [
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS cree_par_acces INTEGER`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par TEXT`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par_acces INTEGER`,
+  // séquence à ordonner et texte à trous (19/09/2026) : la contrainte de
+  // format est refaite, une base en service ne l'aurait qu'aux trois anciens
+  `ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_format_check`,
+  `ALTER TABLE questions ADD CONSTRAINT questions_format_check CHECK (format IN ('QCM','QIM','SCH','ORD','TAT'))`,
   // code personnel de l'agent (haché, scrypt) pour rattacher sa progression — question 11
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_hash TEXT`,
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_maj_le TIMESTAMPTZ`,

@@ -16,6 +16,10 @@ export interface EtatEnCours {
   /** Jugement par proposition : vrai, faux, ou « nsp » — « je ne sais pas » (question 35). */
   qim: Record<string, Record<string, boolean | "nsp">>;
   legendes: Record<string, Record<string, string>>;
+  /** Séquence à ordonner : rang donné à chaque étape. */
+  rangs: Record<string, Record<string, number>>;
+  /** Texte à trous : vignette choisie par trou. */
+  trous: Record<string, Record<string, string>>;
   /** Entraînement : question courante et corrections déjà reçues. */
   indexCourant: number;
   corrections: Record<string, unknown>;
@@ -61,6 +65,23 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
     for (const [l, val] of Object.entries(objet(v))) if (typeof val === "string" && l.length <= 80) d[l] = val.slice(0, 200);
     legendes[k] = d;
   }
+  const rangs: Record<string, Record<string, number>> = {};
+  for (const [k, v] of Object.entries(objet(b.rangs))) {
+    if (!questionIds.includes(k)) continue;
+    const d: Record<string, number> = {};
+    for (const [o, val] of Object.entries(objet(v))) {
+      if (o.length > 80) continue;
+      if (typeof val === "number" && Number.isInteger(val) && val >= 1 && val <= 50) d[o] = val;
+    }
+    rangs[k] = d;
+  }
+  const trous: Record<string, Record<string, string>> = {};
+  for (const [k, v] of Object.entries(objet(b.trous))) {
+    if (!questionIds.includes(k)) continue;
+    const d: Record<string, string> = {};
+    for (const [t, val] of Object.entries(objet(v))) if (typeof val === "string" && t.length <= 8) d[t] = val.slice(0, 80);
+    trous[k] = d;
+  }
   const corrections: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(objet(b.corrections))) if (questionIds.includes(k) && v && typeof v === "object") corrections[k] = v;
   const indexCourant = typeof b.indexCourant === "number" && Number.isInteger(b.indexCourant) ? Math.min(Math.max(0, b.indexCourant), questionIds.length - 1) : 0;
@@ -73,6 +94,8 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
     reponses,
     qim,
     legendes,
+    rangs,
+    trous,
     indexCourant,
     corrections,
     maj,
@@ -86,6 +109,8 @@ export function questionsRenseignees(e: EtatEnCours): number {
     (id) =>
       (e.reponses[id]?.length ?? 0) > 0 ||
       Object.keys(e.qim[id] ?? {}).length > 0 ||
-      Object.values(e.legendes[id] ?? {}).some((v) => v.trim() !== ""),
+      Object.values(e.legendes[id] ?? {}).some((v) => v.trim() !== "") ||
+      Object.keys(e.rangs?.[id] ?? {}).length > 0 ||
+      Object.values(e.trous?.[id] ?? {}).some((v) => v !== ""),
   ).length;
 }

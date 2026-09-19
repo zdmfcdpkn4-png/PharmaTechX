@@ -46,6 +46,18 @@ SCHÉMA 1. Légendez les éléments repérés sur cette coupe d'isolateur.
 Image : isolateur-coupe.png
 1. sas de transfert (32, 24, 14, 5)
 2. filtre HEPA | filtre terminal (58, 19)
+Justification : …
+
+SÉQUENCE 1. Remettez dans l'ordre les étapes de l'habillage en zone à atmosphère contrôlée.
+1. Hygiène des mains
+2. Surchaussures
+3. Combinaison
+Justification : …
+
+TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
+1. transfert
+2. zone à atmosphère contrôlée
+Leurres : couloir | décontamination
 Justification : …`;
 
 /** Prompt à copier dans l'assistant, avec le texte source à la fin. */
@@ -71,6 +83,8 @@ PRÉCISIONS
 - « Image : nom-du-fichier.png » — illustration d'une question, ou image d'un schéma à compléter. Le fichier se dépose avec le texte, sur le même écran ; le nom doit être exactement celui du fichier.
 - Schéma à compléter : « SCHÉMA n. », puis « Image : … », puis une légende par ligne, numérotée. Entre parenthèses, la place du mot sur l'image en pourcentage de l'image (x, y, largeur, hauteur) ; deux nombres posent un repère sans rien masquer. Si le texte source ne donne pas ces positions, écris les légendes sans parenthèses : elles seront placées à la main dans l'éditeur.
 - Une légende accepte des variantes, séparées par « | » : « filtre HEPA | filtre terminal ».
+- Séquence à ordonner : « SÉQUENCE n. », puis une étape par ligne, numérotée, **dans l'ordre juste**. L'apprenant les recevra mélangées. N'écris une séquence que si le texte source donne l'ordre.
+- Texte à trous : « TEXTE n. », l'énoncé portant les marques {1}, {2}… là où il manque un mot, puis une ligne numérotée par trou avec la vignette attendue, dans l'ordre des marques. Une ligne « Leurres : … | … » ajoute des vignettes fausses au menu. Ne crée des leurres que si le texte source en propose.
 
 TEXTE SOURCE À METTRE EN FORME
 """

@@ -123,6 +123,8 @@ blocs ↔ niveaux) et sont affichés comme tels.
 | **QCM** | Tout ou rien : l'ensemble coché doit être exactement l'ensemble attendu |
 | **QIM** | Le barème des quiz de Flore : chaque proposition juste rapporte sa part (1/n), chaque proposition fausse la retire, « je ne sais pas » ne rapporte ni ne retire rien ; plancher 0, plafond 1 pt. Posée en Vrai / Faux / Je ne sais pas, proposition par proposition |
 | **Schéma à compléter** | La même règle, légende par légende : juste +1/n, fausse −1/n, vide 0 ; plancher 0, plafond 1 pt. Légende à écrire (accents, casse, articles ignorés ; variantes admises) ou à choisir dans une liste mélangée |
+| **Séquence à ordonner** | Des étapes reçues mélangées, auxquelles l'apprenant donne un rang dans un menu déroulant. La même règle, étape par étape : à sa place +1/n, mal placée −1/n, sans rang 0. L'ordre juste vit dans `bonnesReponses` et ne quitte jamais le serveur |
+| **Texte à trous** | Un texte dont les marques `{1}`, `{2}`… se remplissent avec des vignettes prises dans un menu déroulant commun (attendues et leurres mêlés). La même règle, trou par trou. La correction compare le **mot**, pas la vignette : deux vignettes peuvent porter le même mot |
 | **Mise en situation** | Vignette + questions rattachées, tirées ensemble |
 
 Une question **éliminatoire** invalide le critère quelle que soit la note, et
@@ -137,11 +139,12 @@ réservées posées. Dans le code, `reservee: true` sur la question ; en base, l
 case de l'éditeur ou la ligne « Réservée à l'évaluation : oui » à l'import.
 
 **Barème harmonisé et réglable** (décisions du 18/09/2026, question 10, et du
-19/09/2026, questions 34 et 35) : les trois formats suivent **la même règle**
+19/09/2026, questions 34 et 35) : les **cinq** formats suivent **la même règle**
 et se règlent avec **les six mêmes champs** depuis `/admin/bareme` — mode
 (partiel ou tout ou rien), part d'un élément juste, part d'un élément faux,
 part d'un élément sans réponse, plancher et plafond de la question. Un
-« élément » est une proposition de QCM ou de QIM, une légende de schéma. Le
+« élément » est une proposition de QCM ou de QIM, une légende de schéma, une
+étape de séquence, un trou de texte. Le
 plafond vaut aussi poids de la question dans le total : un format peut peser
 moins qu'un autre. L'administrateur règle en plus le seuil de réussite par
 défaut, le minimum de questions pour

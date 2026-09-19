@@ -829,6 +829,41 @@ details.rail-groupe[open] > summary::after { content: "–"; }
   max-width: 62ch;
 }
 
+/* Séquence à ordonner et texte à trous (19/09/2026) : deux menus déroulants
+   natifs, qui s'ouvrent en plein écran sur tablette et sur téléphone. */
+.sequence {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.etape-sequence {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--rayon-sm);
+  border: 1px solid var(--bord);
+  background: #ffffff;
+}
+.etape-sequence .libelle { flex: 1 1 auto; }
+.champ--rang { flex: 0 0 4.5rem; margin: 0; }
+
+.texte-a-trous {
+  max-width: var(--largeur-texte);
+  font-size: 1.0625rem;
+  line-height: 2.4;
+}
+.texte-a-trous .trou { display: inline-block; margin: 0 0.15rem; vertical-align: baseline; }
+.texte-a-trous .trou select { max-width: 16rem; }
+
+@media (max-width: 40rem) {
+  .etape-sequence { align-items: flex-start; }
+  .texte-a-trous .trou select { max-width: 100%; }
+}
+
 /* Illustration d'une question (QCM, QIM) — l'image d'un schéma a son propre
    rendu dans SchemaQuestion. */
 .illustration-question,

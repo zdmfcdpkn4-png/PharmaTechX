@@ -12,6 +12,8 @@ import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/ro
 import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
 import { useSessionFormation } from "./SessionFormation";
 import { SchemaQuestion } from "./SchemaQuestion";
+import { OrdreQuestion } from "./OrdreQuestion";
+import { TrousQuestion } from "./TrousQuestion";
 
 /**
  * Moteur d'évaluation.
@@ -73,6 +75,10 @@ function estUneSeule(q: QuestionPublique): boolean {
  */
 type EtatQim = Record<string, Record<string, boolean | "nsp">>;
 type EtatLegendes = Record<string, Record<string, string>>;
+/** Séquence à ordonner : rang donné à chaque étape, par question. */
+type EtatRangs = Record<string, Record<string, number>>;
+/** Texte à trous : vignette choisie par trou, par question. */
+type EtatTrous = Record<string, Record<string, string>>;
 
 function nombre(n: number): string {
   return String(Math.round(n * 100) / 100).replace(".", ",");
@@ -217,6 +223,8 @@ export function Evaluation({
   const [reponses, setReponses] = useState<Record<string, string[]>>({});
   const [qim, setQim] = useState<EtatQim>({});
   const [legendes, setLegendes] = useState<EtatLegendes>({});
+  const [rangs, setRangs] = useState<EtatRangs>({});
+  const [trous, setTrous] = useState<EtatTrous>({});
   const [resultat, setResultat] = useState<ResultatEvaluation | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -271,6 +279,8 @@ export function Evaluation({
         reponses,
         qim,
         legendes,
+        rangs,
+        trous,
         indexCourant,
         corrections,
         maj: new Date().toISOString(),
@@ -281,7 +291,7 @@ export function Evaluation({
       if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, indexCourant, corrections]);
+  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, rangs, trous, indexCourant, corrections]);
 
   const effacerEnCours = () => {
     if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
@@ -295,6 +305,8 @@ export function Evaluation({
     setReponses(e.reponses);
     setQim(e.qim);
     setLegendes(e.legendes);
+    setRangs(e.rangs ?? {});
+    setTrous(e.trous ?? {});
     setIndexCourant(e.indexCourant);
     setCorrections(e.corrections as Record<string, DetailQuestion>);
     setEntrainementFini(false);
@@ -323,9 +335,31 @@ export function Evaluation({
     setLegendes((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [lid]: valeur } }));
   };
 
+  /**
+   * Séquence : donner un rang à une étape. Le rang est unique — s'il était
+   * pris, l'étape qui le portait le perd, et son menu revient à « — ».
+   */
+  const placerRang = (qid: string, optId: string, rang: number) => {
+    setRangs((prec) => {
+      const courant = { ...(prec[qid] ?? {}) };
+      if (!rang) delete courant[optId];
+      else {
+        for (const [k, v] of Object.entries(courant)) if (v === rang && k !== optId) delete courant[k];
+        courant[optId] = rang;
+      }
+      return { ...prec, [qid]: courant };
+    });
+  };
+
+  const remplirTrou = (qid: string, trou: string, optId: string) => {
+    setTrous((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [trou]: optId } }));
+  };
+
   /** Une question est « renseignée » dès qu'elle a reçu au moins une réponse. */
   const estRenseignee = (q: QuestionPublique): boolean => {
     if (q.type === "SCH") return Object.values(legendes[q.id] ?? {}).some((v) => v.trim() !== "");
+    if (q.type === "ORD") return Object.keys(rangs[q.id] ?? {}).length > 0;
+    if (q.type === "TAT") return Object.values(trous[q.id] ?? {}).some((v) => v !== "");
     if (q.type === "QIM" && qimEnVraiFaux) return Object.keys(qim[q.id] ?? {}).length > 0;
     return (reponses[q.id] ?? []).length > 0;
   };
@@ -334,9 +368,15 @@ export function Evaluation({
     const rep: Record<string, string[]> = {};
     const juges: Record<string, string[]> = {};
     const legs: EtatLegendes = {};
+    const rgs: EtatRangs = {};
+    const trs: EtatTrous = {};
     for (const q of questions) {
       if (q.type === "SCH") {
         legs[q.id] = legendes[q.id] ?? {};
+      } else if (q.type === "ORD") {
+        rgs[q.id] = rangs[q.id] ?? {};
+      } else if (q.type === "TAT") {
+        trs[q.id] = trous[q.id] ?? {};
       } else if (q.type === "QIM" && qimEnVraiFaux) {
         const verdicts = qim[q.id] ?? {};
         // « je ne sais pas » n'est pas un jugement : la proposition reste non
@@ -353,6 +393,8 @@ export function Evaluation({
       reponses: rep,
       juges,
       legendes: legs,
+      rangs: rgs,
+      trous: trs,
       tirage: libelleTirage,
       mode,
       difficulte,
@@ -638,7 +680,16 @@ export function Evaluation({
           {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
         </div>
 
-        <p className="question-enonce">{q.enonce}</p>
+        {q.type === "TAT" ? (
+          <TrousQuestion
+            question={q}
+            valeurs={trous[q.id] ?? {}}
+            onChange={(trou, optId) => remplirTrou(q.id, trou, optId)}
+            verrouille={verrouille}
+          />
+        ) : (
+          <p className="question-enonce">{q.enonce}</p>
+        )}
         {q.type !== "SCH" && q.image && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={q.image.url} alt={q.image.alt} className="illustration-question" />
@@ -652,7 +703,14 @@ export function Evaluation({
             onChange={(lid, v) => ecrireLegende(q.id, lid, v)}
             verrouille={verrouille}
           />
-        ) : enVraiFaux ? (
+        ) : q.type === "ORD" ? (
+          <OrdreQuestion
+            question={q}
+            valeurs={rangs[q.id] ?? {}}
+            onChange={(optId, rang) => placerRang(q.id, optId, rang)}
+            verrouille={verrouille}
+          />
+        ) : q.type === "TAT" ? null : enVraiFaux ? (
           <>
             <p className="question-avertissement">
               Chaque proposition se juge séparément. « Je ne sais pas » ne rapporte ni ne retire

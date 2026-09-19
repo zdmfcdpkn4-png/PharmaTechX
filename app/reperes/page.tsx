@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { modeConservation } from "@/lib/config";
 import { lireBareme } from "@/lib/bareme-db";
-import { libelleQim, libelleSchema, resumeBareme, type Bareme } from "@/content/bareme";
+import {
+  libelleOrdre,
+  libelleQim,
+  libelleSchema,
+  libelleTrous,
+  resumeBareme,
+  type Bareme,
+} from "@/content/bareme";
 import {
   arbitrageEnAttente,
   blocsCompetence,
@@ -47,6 +54,14 @@ const formats = (b: Bareme) => [
   {
     titre: "Schéma à compléter",
     regle: libelleSchema(b),
+  },
+  {
+    titre: "Séquence à ordonner",
+    regle: libelleOrdre(b),
+  },
+  {
+    titre: "Texte à trous",
+    regle: libelleTrous(b),
   },
   {
     titre: "Mise en situation",
@@ -175,7 +190,7 @@ export default async function Reperes() {
           ))}
         </div>
         <p className="legende" style={{ marginTop: ".75rem" }}>
-          {resumeBareme(bareme).slice(3).join(" ")}
+          {resumeBareme(bareme).slice(5).join(" ")}
         </p>
       </section>
 

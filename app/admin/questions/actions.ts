@@ -10,7 +10,7 @@ import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
 import { peutValider } from "@/content/quatre-yeux";
-import type { Reference } from "@/content/types";
+import { trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
   changerStatutQuestion,
   enregistrerDepotQuestions,
@@ -110,12 +110,12 @@ export async function actionEnregistrerQuestion(
   const s = await sessionRequise("tuteur");
   const id = chaine(formData, "id", 80) || undefined;
   const moduleId = chaine(formData, "moduleId", 80);
-  const format = chaine(formData, "format", 3);
+  const format = chaine(formData, "format", 3) as TypeQuestion;
   const enonce = chaine(formData, "enonce", 2000);
   const statut = (chaine(formData, "statut", 12) || "a_verifier") as StatutQuestion;
 
   if (!(await moduleExiste(moduleId))) return { erreur: "Module inconnu." };
-  if (format !== "QCM" && format !== "QIM" && format !== "SCH") return { erreur: "Format inconnu." };
+  if (!["QCM", "QIM", "SCH", "ORD", "TAT"].includes(format)) return { erreur: "Format inconnu." };
   if (!enonce) return { erreur: "L'énoncé est obligatoire." };
   // Règle des quatre yeux (question 12) : celui qui écrit ne valide pas ; une
   // question créée ou modifiée repart « à vérifier » (ou retirée).
@@ -146,6 +146,29 @@ export async function actionEnregistrerQuestion(
     legendes = lues;
     if (!imageId) return { erreur: "Un schéma à compléter a besoin d'une image." };
     if (!schemaPret(legendes)) return { erreur: "Chaque légende doit être posée sur l'image et porter un mot attendu." };
+  } else if (format === "ORD") {
+    // L'ordre de la liste EST la réponse : toutes les étapes sont « vraies »,
+    // et `bonnesReponses` les relit dans cet ordre.
+    const lues = lireOptions(chaine(formData, "options", 20000));
+    if (!lues || lues.length < 2) return { erreur: "Une séquence a au moins deux étapes." };
+    if (lues.some((o) => !o.texte.trim())) return { erreur: "Chaque étape doit porter un texte." };
+    options = lues.map((o) => ({ ...o, vrai: true }));
+  } else if (format === "TAT") {
+    const lues = lireOptions(chaine(formData, "options", 20000));
+    if (!lues) return { erreur: "Vignettes illisibles." };
+    const numeros = trousDuTexte(enonce);
+    if (numeros.length === 0) {
+      return { erreur: "Un texte à trous porte au moins une marque de trou : {1}, {2}…" };
+    }
+    const attendues = lues.filter((o) => o.vrai);
+    if (attendues.length !== numeros.length) {
+      return { erreur: `Il faut une vignette attendue par trou : ${numeros.length} attendue(s), ${attendues.length} donnée(s).` };
+    }
+    if (attendues.some((o) => !o.texte.trim())) {
+      return { erreur: "Chaque trou doit recevoir la vignette attendue." };
+    }
+    // Attendues d'abord, dans l'ordre des trous ; leurres ensuite.
+    options = [...attendues, ...lues.filter((o) => !o.vrai && o.texte.trim())];
   } else {
     const lues = lireOptions(chaine(formData, "options", 20000));
     if (!lues || lues.length < 2) return { erreur: "Il faut au moins deux propositions." };

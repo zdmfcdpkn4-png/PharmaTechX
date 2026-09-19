@@ -79,7 +79,15 @@ export function ImportQuestions({
                   <input type="checkbox" name={`exclure-${i}`} />
                   <span>Exclure</span>
                 </label>
-                <span className="etiquette etiquette--site">{q.format === "SCH" ? "Schéma" : q.format}</span>
+                <span className="etiquette etiquette--site">
+                  {q.format === "SCH"
+                    ? "Schéma"
+                    : q.format === "ORD"
+                      ? "Séquence"
+                      : q.format === "TAT"
+                        ? "Texte à trous"
+                        : q.format}
+                </span>
                 {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                 {!q.corrigeDetecte && <span className="etiquette etiquette--attention">Sans corrigé</span>}
                 {(q.format === "SCH" || q.imageNom) && (
@@ -94,6 +102,23 @@ export function ImportQuestions({
                   {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} :{" "}
                   {q.legendes.map((l) => l.attendu || "(sans mot)").join(" · ")}
                 </p>
+              ) : q.format === "ORD" ? (
+                <ol className="apercu-options">
+                  {q.options.map((o) => (
+                    <li key={o.id} className="vraie">
+                      {o.texte}
+                    </li>
+                  ))}
+                </ol>
+              ) : q.format === "TAT" ? (
+                <ul className="apercu-options">
+                  {q.options.map((o, k) => (
+                    <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
+                      <span className="num">{o.vrai ? k + 1 : "·"}</span> {o.texte}{" "}
+                      <span className="legende">({o.vrai ? "attendue" : "leurre"})</span>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <ul className="apercu-options">
                   {q.options.map((o) => (

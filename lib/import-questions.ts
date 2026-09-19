@@ -1,4 +1,5 @@
 import { poser, type Legende } from "@/content/schema";
+import { trousDuTexte } from "@/content/types";
 import type { Reference, TypeQuestion } from "@/content/types";
 
 /**
@@ -39,6 +40,22 @@ import type { Reference, TypeQuestion } from "@/content/types";
  * largeur, hauteur, en % de l'image) ; deux nombres posent un repère sans
  * rien masquer. Une légende sans coordonnées est posée sur le bord gauche,
  * à retoucher dans l'éditeur.
+ *
+ * Séquence à ordonner et texte à trous (19/09/2026) :
+ *
+ *   SÉQUENCE 1. Remettez les étapes de l'habillage dans l'ordre.
+ *   1. Hygiène des mains
+ *   2. Surchaussures
+ *   3. Combinaison
+ *
+ *   TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
+ *   1. transfert
+ *   2. zone à atmosphère contrôlée
+ *   Leurres : décontamination | couloir
+ *
+ * Les lignes numérotées d'une séquence sont les étapes dans l'ordre juste ;
+ * celles d'un texte à trous sont les vignettes attendues, dans l'ordre des
+ * marques `{1}`, `{2}`… de l'énoncé. Les leurres viennent s'ajouter au menu.
  *
  * Un texte JSON est accepté : soit l'export de ce site, soit une banque au
  * schéma 3.0 du pipeline du Lecteur QIM · QCM (`items[].propositions`).
@@ -84,6 +101,10 @@ export interface OptionsImport {
 export const MAX_QUESTIONS_IMPORT = 120;
 
 const LETTRES = "ABCDE";
+/** Identifiant d'un élément de séquence ou de vignette : a, b, c… puis o13, o14… */
+function cleElement(i: number): string {
+  return "abcdefghijkl"[i] ?? `o${i + 1}`;
+}
 
 const RE_QUESTION = /^(?:(QCM|QIM)|Q(?:uestion)?)?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]\s*(.*)$/i;
 const RE_SCHEMA = /^sch[ée]mas?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
@@ -95,6 +116,11 @@ const RE_SOURCE = /^(?:Sources?|R[ée]f[ée]rences?)\s*[:–—-]\s*(.+)$/i;
 const RE_ELIM = /^[EÉé]liminatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_RESERVEE = /^R[ée]serv[ée]e?(?:\s+[àa]\s+l['’][ée]valuation)?\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
+const RE_SEQUENCE = /^s[ée]quences?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
+const RE_TEXTE = /^textes?(?:\s*[àa]\s*trous)?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
+const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
+/** Ligne numérotée d'une séquence ou d'un texte à trous : « 1. étape ». */
+const RE_ELEMENT = /^(\d{1,2})\s*[.):–—-]\s*(.+)$/;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
 const RE_LETTRES = /\b[A-Ea-e]\b/g;
 const RE_DECOR = /\*\*|__|`/g;
@@ -138,19 +164,23 @@ function place(brut: string | undefined): Legende["repere"] | null {
 }
 
 interface Brouillon {
-  genre: "question" | "schema";
+  genre: "question" | "schema" | "sequence" | "trous";
   format: TypeQuestion;
   numero?: number;
   enonce: string[];
   props: { lettre: string; texte: string; v: boolean | null }[];
   legendes: { texte: string; repere: Legende["repere"] | null }[];
+  /** Séquence : étapes dans l'ordre juste. Texte à trous : vignettes attendues. */
+  items: string[];
+  /** Texte à trous : vignettes proposées en plus des attendues. */
+  leurres: string[];
   imageNom?: string;
   justification: string[];
   refs: Reference[];
   eliminatoire: boolean;
   reservee: boolean;
   corrige: boolean;
-  dernier: "enonce" | "prop" | "justif" | "legende" | "rien";
+  dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "rien";
 }
 
 function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number | undefined, tete: string): Brouillon {
@@ -161,6 +191,8 @@ function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number
     enonce: tete ? [tete] : [],
     props: [],
     legendes: [],
+    items: [],
+    leurres: [],
     justification: [],
     refs: [],
     eliminatoire: false,
@@ -173,6 +205,55 @@ function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number
 function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): QuestionImportee | null {
   const avertissements: string[] = [];
   const enonce = b.enonce.join(" ").replace(/\s+/g, " ").trim();
+
+  if (b.genre === "sequence") {
+    if (b.items.length < 2) return null;
+    return {
+      format: "ORD",
+      enonce: enonce || "Remettez ces étapes dans l'ordre.",
+      // L'ordre de la liste est la réponse : il est relu tel quel.
+      options: b.items.map((t, i) => ({ id: cleElement(i), texte: t, vrai: true })),
+      legendes: [],
+      justification: b.justification.join(" ").trim(),
+      eliminatoire: b.eliminatoire,
+      reservee: b.reservee,
+      refs: b.refs,
+      corrigeDetecte: true,
+      avertissements,
+    };
+  }
+
+  if (b.genre === "trous") {
+    const numeros = trousDuTexte(enonce);
+    if (numeros.length === 0) {
+      avertissements.push("Aucune marque de trou ({1}, {2}…) dans l'énoncé : question ignorée.");
+      return null;
+    }
+    if (b.items.length !== numeros.length) {
+      avertissements.push(
+        `${numeros.length} trou(s) dans l'énoncé, ${b.items.length} vignette(s) attendue(s) : à compléter dans l'éditeur.`,
+      );
+    }
+    const attendues = b.items.slice(0, numeros.length);
+    if (attendues.length === 0) return null;
+    const options = [
+      ...attendues.map((t, i) => ({ id: cleElement(i), texte: t, vrai: true })),
+      ...b.leurres.map((t, i) => ({ id: cleElement(attendues.length + i), texte: t, vrai: false })),
+    ];
+    return {
+      format: "TAT",
+      enonce,
+      options,
+      legendes: [],
+      justification: b.justification.join(" ").trim(),
+      eliminatoire: b.eliminatoire,
+      reservee: b.reservee,
+      refs: b.refs,
+      corrigeDetecte: attendues.length === numeros.length,
+      avertissements,
+    };
+  }
+
   if (b.genre === "schema") {
     if (b.legendes.length === 0) return null;
     let sansPlace = 0;
@@ -281,14 +362,78 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       courant = nouveau("schema", "SCH", Number(s[1]), s[2].trim());
       continue;
     }
+    const seq = RE_SEQUENCE.exec(ligne);
+    if (seq) {
+      clore();
+      courant = nouveau("sequence", "ORD", Number(seq[1]), seq[2].trim());
+      continue;
+    }
+    const tat = RE_TEXTE.exec(ligne);
+    if (tat) {
+      clore();
+      courant = nouveau("trous", "TAT", Number(tat[1]), tat[2].trim());
+      continue;
+    }
     const q = RE_QUESTION.exec(ligne);
-    if (q && !(courant?.genre === "schema" && RE_LEGENDE.test(ligne) && !q[1])) {
+    // Une ligne numérotée sans mot-clé appartient au bloc en cours : c'est une
+    // légende, une étape ou une vignette, pas une nouvelle question.
+    const dansUnBloc =
+      courant !== null &&
+      courant.genre !== "question" &&
+      !q?.[1] &&
+      (RE_LEGENDE.test(ligne) || RE_ELEMENT.test(ligne));
+    if (q && !dansUnBloc) {
       clore();
       const fmt = (q[1]?.toUpperCase() as "QCM" | "QIM" | undefined) ?? options.formatDefaut;
       courant = nouveau("question", fmt, Number(q[2]), q[3].trim());
       continue;
     }
     if (!courant) continue;
+
+    if (courant.genre === "sequence" || courant.genre === "trous") {
+      const el = RE_ELEMENT.exec(ligne);
+      if (el) {
+        courant.items.push(el[2].trim());
+        courant.dernier = "item";
+        continue;
+      }
+      const leu = RE_LEURRES.exec(ligne);
+      if (leu) {
+        for (const t of leu[1].split("|")) {
+          const nu = t.trim();
+          if (nu) courant.leurres.push(nu);
+        }
+        courant.dernier = "rien";
+        continue;
+      }
+      const j = RE_JUSTIF.exec(ligne);
+      if (j) {
+        courant.justification.push(j[1].trim());
+        courant.dernier = "justif";
+        continue;
+      }
+      const src = RE_SOURCE.exec(ligne);
+      if (src) {
+        courant.refs.push(lireReference(src[1]));
+        courant.dernier = "rien";
+        continue;
+      }
+      const e = RE_ELIM.exec(ligne);
+      if (e) {
+        courant.eliminatoire = !e[1] || /^(oui|vrai|yes)$/i.test(e[1]);
+        courant.dernier = "rien";
+        continue;
+      }
+      const rv = RE_RESERVEE.exec(ligne);
+      if (rv) {
+        courant.reservee = !rv[1] || /^(oui|vrai|yes)$/i.test(rv[1]);
+        courant.dernier = "rien";
+        continue;
+      }
+      if (courant.dernier === "enonce") courant.enonce.push(ligne);
+      else if (courant.dernier === "justif") courant.justification.push(ligne);
+      continue;
+    }
 
     if (courant.genre === "schema") {
       const im = RE_IMAGE.exec(ligne);
