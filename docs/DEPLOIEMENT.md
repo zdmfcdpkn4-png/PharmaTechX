@@ -435,16 +435,16 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    `BASE_ATTENDUE=service` (étiquette d'instance : `/api/sante` doit ensuite
    donner `base_instance: "service"`), et branche déployée mise sur
    `production`.
-5. **Présentation** : porter sur les rapports le logo « Pharmacotechnie —
-   unité de production des chimiothérapies » (`public/pharmaco-logo.jpg`,
-   déposé le 18/09/2026 en attente de cette étape ; question 24, choix b). Le
-   logo est incorporé en data URI dans chaque rapport : en produire une
-   réduction — une cinquantaine de kilo-octets au plus — avant de remplacer
-   `public/pharmaco-web.png`, et reprendre la hauteur de la classe
-   `.pharmaco` dans `lib/rapport.ts`, ce logo étant en portrait et non carré.
-   Ici et pas après : deux générations de rapports pour un même dispositif se
-   justifient mal. L'icône d'onglet, elle, porte déjà l'emblème de ce logo
-   (`public/pharmaco-icone.png`).
+5. **Présentation** — **fait le 19/09/2026, rien à reprendre ici** (question
+   41, choix a, qui remplace la question 24, choix b). L'emblème du logo
+   « Pharmacotechnie — unité de production des chimiothérapies » sert déjà
+   d'en-tête au site, d'en-tête au rapport A4 et d'icône d'onglet, servi par
+   `public/pharmaco-web.png` (192 px, 15 Ko) et `public/pharmaco-icone.png`
+   (180 px). Le logo complet — emblème et signature typographique —
+   reste déposé en `public/pharmaco-logo.jpg` (700 × 957), source et
+   référence ; il n'entre dans aucun rendu. Ne pas reposer la question à la
+   mise en service : le changement a eu lieu en phase d'essai, et le repère
+   de version est l'étiquette `vN` de la mise en service elle-même.
 6. **Comptes** : administrateur initial créé par `ADMIN_INITIAL` — variable
    supprimée aussitôt après — puis remplacé par des codes
    nominaux de fonction (jamais des noms), codes tuteur, signature du

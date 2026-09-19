@@ -198,12 +198,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     data URI dans chaque rendu du rapport, téléchargé par l'apprenant, imprimé
     depuis l'administration ou archivé dans le paquet ; le fichier reste
     lisible sans le site. À défaut de lecture, l'adresse du fichier sert.
-    Logo de l'unité tranché le 18/09/2026 (question 24, choix b) : l'emblème
-    du nouveau logo sert d'icône d'onglet dès maintenant
-    (`public/pharmaco-icone.png`) ; le logo des rapports change à la mise en
-    service, avec l'étiquette `v1` qui le date (`public/pharmaco-logo.jpg`
-    déposé en attente, réduction et mise en page à reprendre : liste de mise
-    en service, point 5).
+    Logo de l'unité : **clos le 19/09/2026** (question 41, choix a), qui
+    revient sur la question 24, choix b du 18/09/2026. L'emblème sert
+    l'en-tête du site, l'en-tête du rapport A4 et l'icône d'onglet, tout de
+    suite et non à la mise en service : l'empreinte SHA-256 ne couvre pas les
+    logos, donc aucun rapport déjà émis n'est invalidé, et le repère de
+    version est l'étiquette `vN` de la mise en service. Rien à reprendre sur
+    la liste de mise en service, point 5.
 27. **Sessions** — tranché le 18/09/2026 (question 16, choix b) : douze heures
     au plus, liées à leur code d'accès ; révoquer ou supprimer le code ferme
     ses sessions à la requête suivante, réactiver ne rouvre pas celles

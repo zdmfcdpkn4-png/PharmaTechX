@@ -369,7 +369,9 @@ suppose un second service payant pour garder un site d'essai en ligne et
 n'isole que des données fictives) — c reste possible plus tard, l'étiquette
 le rendant sûr.
 
-**Logo de l'unité** (question 24, choix b, 18/09/2026) : le logo
+**Logo de l'unité** (question 24, choix b, 18/09/2026 — **remplacée le
+19/09/2026 par la question 41, choix a** : le logo des rapports a changé en
+phase d'essai, voir plus bas) : le logo
 « Pharmacotechnie — unité de production des chimiothérapies » fourni ce jour
 devient celui du dispositif. Son emblème circulaire, détouré carré et réduit
 à 180 × 180 (`public/pharmaco-icone.png`), sert d'icône d'onglet
@@ -907,6 +909,13 @@ SCORM). Transposé dans les limites du brief :
   L'empreinte SHA-256 d'un rapport porte sur la forme canonique du résultat et
   **ne couvre pas les logos** (vérifié dans `lib/sceau.ts`) : aucun rapport
   émis n'est invalidé ; seule une réimpression porte le nouveau logo.
+  Cette décision **revient sur la question 24, choix b du 18/09/2026**, qui
+  reportait le changement des rapports à la mise en service pour ne pas laisser
+  deux générations d'une pièce opposable sans rien qui les explique. C'est
+  l'empreinte qui l'a levée : les deux générations ne se distinguent que par
+  l'illustration, jamais par ce qui est scellé, et le repère de version reste
+  l'étiquette `vN`. La liste de mise en service (point 5) et le point 26 des
+  questions ouvertes ne portent donc plus d'étape de logo.
   Logos d'unité versés dans la même banque le 19/09/2026 (question 40,
   choix b) : Préparation, Bionettoyage, Validation pharmacotechnique et
   Pharmacotechnie, **trente-sept illustrations** au total (796 Ko). Ils
