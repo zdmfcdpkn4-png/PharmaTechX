@@ -839,6 +839,14 @@ SCORM). Transposé dans les limites du brief :
   c'est la variable d'exploitation qui bascule, et elle se pose dans le
   tableau de bord de Render, le service ayant été créé hors blueprint. Ce que
   l'examen du DPO ne tranche pas reste marqué dans `docs/RGPD.md`.
+- TLS vers la base, degré retenu le 19/09/2026 (choix a) : `DATABASE_SSL=require`
+  **et** « Enforce SSL on incoming connections » activé côté Supabase, une fois
+  `base_tls` constaté chiffré. L'interrupteur n'ajoute pas de chiffrement — la
+  liaison l'est déjà — il interdit d'en ouvrir une en clair, donc protège d'un
+  `DATABASE_SSL=disable` posé un jour pour dépanner. `verify` (authentification
+  du serveur) est reporté à un créneau avant la mise en service : le certificat
+  de l'autorité de Supabase couvre-t-il l'hôte du pooler, `[à vérifier]`, et
+  sinon le service perd sa base au redéploiement.
 - Chiffrement de la liaison avec la base exposé dans `/api/sante`
   (`base_tls`, 19/09/2026) : le protocole est constaté à l'ouverture de chaque
   connexion du pool, sur notre propre flux (`protocoleTls`, `lib/reseau.ts`),

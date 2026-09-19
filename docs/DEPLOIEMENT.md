@@ -130,14 +130,15 @@ pooler.
    (`[à vérifier]` disponibilité selon le plan). Relire `/api/sante` : la base
    doit rester `joignable`. Sinon, désactiver l'interrupteur — il se retire
    aussi vite qu'il se pose.
-3. Facultatif, et seul degré qui protège d'un interlocuteur substitué :
-   `verify`. Télécharger le certificat de l'autorité (même écran, « Download
+3. **Reporté (décision du 19/09/2026, choix a)** — seul degré qui protège
+   d'un interlocuteur substitué : `verify`. Télécharger le certificat de l'autorité (même écran, « Download
    certificate »), le coller dans `DATABASE_SSL_CA` sur Render — ou le
    déposer et pointer `DATABASE_SSL_CA_FILE` —, puis `DATABASE_SSL=verify`.
    `[à vérifier]` que ce certificat couvre bien l'hôte du pooler et pas
    seulement l'hôte direct : si ce n'est pas le cas, le service perd sa base
-   au redéploiement. À faire sur un créneau où une bascule en arrière est
-   possible, jamais juste avant une session d'évaluation.
+   au redéploiement. C'est ce risque qui fait reporter l'étape : à faire sur
+   un créneau où une bascule en arrière est possible, avant la mise en
+   service, jamais juste avant une session d'évaluation.
 
 Ce que chaque degré protège : `require` empêche de lire la liaison ;
 `verify` empêche en plus de se faire passer pour la base. Entre les deux, la
