@@ -473,6 +473,18 @@ tutorat tranchant et clôturant, et visible dans l'administration. Le choix c
 réponse mesurée si un tel usage se manifestait ; il n'est pas retenu faute de
 problème constaté.
 
+**Numérotation des rapports** (question 31, choix a, 19/09/2026) :
+`RAP-AAAA-NNNN` conservé tel quel, `AAAA` étant l'année d'émission et `NNNN`
+une séquence PostgreSQL globale (`rapports_numero_seq`), jamais remise à
+zéro. Un numéro est un identifiant de pièce, non un compteur de production
+annuelle : la séquence globale garantit qu'aucun numéro ne désigne deux
+documents, y compris à cheval sur un changement d'année ou si l'horloge du
+serveur se décale. Le prix est cosmétique et assumé — `RAP-2027-0123` peut
+surprendre un lecteur qui attend un compteur annuel. La remise à zéro
+annuelle (choix b) aurait suivi l'usage documentaire courant ; elle n'est pas
+retenue, et si elle devait l'être, ce serait avant la mise en service : deux
+conventions dans un même registre se défendraient mal.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

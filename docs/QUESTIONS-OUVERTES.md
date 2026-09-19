@@ -172,7 +172,11 @@ telle. Ordre : ce qui change le déploiement en premier.
 ## D. Rapports enregistrés (si mode nominatif)
 
 24. **Numérotation** `RAP-AAAA-NNNN` avec une séquence globale (non remise à
-    zéro chaque année) : `[à préciser]` acceptable ?
+    zéro chaque année) — tranché le 19/09/2026 (question 31, choix a) :
+    conservée. Un numéro identifie une pièce et n'en désigne jamais deux ; il
+    ne compte pas la production de l'année, et `RAP-2027-0123` peut suivre
+    `RAP-2026-0122`. Une remise à zéro annuelle ne se poserait qu'avant la
+    mise en service.
 25. **Purge** — tranché le 18/09/2026 (question 5, choix d) : manuelle par
     l'administrateur, jamais automatique ; seuls les rapports clos ou annulés
     sont purgeables, confirmation par recopie du numéro ou du mot PURGER,
