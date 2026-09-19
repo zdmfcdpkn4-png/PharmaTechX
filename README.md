@@ -147,7 +147,11 @@ moins qu'un autre. L'administrateur règle en plus le seuil de réussite par
 défaut, le minimum de questions pour
 conclure, la taille des tirages Découverte et Habilitation et la bande de
 garde (poids d'une question, d'une demi-question ou largeur fixe). Le seuil
-d'un module du code se règle module par module depuis `/admin/modules` ; un
+d'un module du code se règle module par module depuis `/admin/modules`, avec
+désormais ses **filières**, ses **niveaux** et sa présence en **intégration**
+ou en **maintien** (décision du 19/09/2026, question 36) : le texte du critère
+reste versionné, son rattachement se règle. Tout écart à la fiche
+d'habilitation est affiché sur la ligne du module et se retire d'un clic. Un
 module déposé porte le sien. Le barème en vigueur est annoncé sur l'accueil
 et sous chaque question, **copié dans chaque résultat scellé** et porté sur
 chaque rapport : une évaluation déjà passée se relit avec le barème de son

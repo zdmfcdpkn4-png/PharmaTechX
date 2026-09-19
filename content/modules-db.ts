@@ -3,6 +3,8 @@ import { requete, sql, type Role } from "@/lib/db";
 import { nouvelId } from "./banque-db";
 import { filieres as FILIERES, getCritere, maintien, niveaux as NIVEAUX } from "./habilitation";
 import { A_PRECISER, type Module, type NiveauHabilitation, type TypeParcours } from "./types";
+import { filieres, niveaux } from "./habilitation";
+import { listeConnue, niveauxConnus, parcoursConnus, reglageVide, type ReglageModule } from "./reglages";
 
 /**
  * Modules déposés depuis l'administration (décision du 18/09/2026, question
@@ -175,8 +177,59 @@ export function versModule(l: LigneModuleDepose): Module {
 // ─────────────────────────────────────────── seuils réglés des modules du code
 
 export async function lireReglagesSeuils(): Promise<Record<string, number>> {
-  const r = await sql<{ module_id: string; seuil: number }>`SELECT module_id, seuil FROM reglages_modules`;
-  return Object.fromEntries(r.rows.map((x) => [x.module_id, x.seuil]));
+  const r = await sql<{ module_id: string; seuil: number | null }>`SELECT module_id, seuil FROM reglages_modules`;
+  return Object.fromEntries(r.rows.filter((x) => x.seuil !== null).map((x) => [x.module_id, x.seuil as number]));
+}
+
+/**
+ * Réglages complets des modules du code (question 36, choix a) : seuil, mais
+ * aussi filières, niveaux et parcours quand ils s'écartent de la fiche.
+ */
+export async function lireReglagesModules(): Promise<Record<string, ReglageModule>> {
+  const r = await sql<{
+    module_id: string;
+    seuil: number | null;
+    filieres: unknown;
+    niveaux: unknown;
+    parcours: unknown;
+  }>`SELECT module_id, seuil, filieres, niveaux, parcours FROM reglages_modules`;
+  const out: Record<string, ReglageModule> = {};
+  for (const x of r.rows) {
+    out[x.module_id] = {
+      seuil: x.seuil,
+      filieres: listeConnue(x.filieres, filieres.map((f) => f.id)),
+      niveaux: niveauxConnus(x.niveaux, niveaux.map((n) => n.code)),
+      parcours: parcoursConnus(x.parcours),
+    };
+  }
+  return out;
+}
+
+/**
+ * Réglage d'un module du code. Un réglage vide est supprimé : le module
+ * revient à ce que dit la fiche d'habilitation.
+ */
+export async function enregistrerReglageModule(
+  moduleId: string,
+  reglage: ReglageModule,
+  acteur: { role: Role; libelle: string },
+): Promise<void> {
+  if (reglageVide(reglage)) {
+    await sql`DELETE FROM reglages_modules WHERE module_id = ${moduleId}`;
+    return;
+  }
+  const par = `${acteur.role} · ${acteur.libelle}`;
+  const json = (v: string[] | null | undefined) => (v && v.length > 0 ? JSON.stringify(v) : null);
+  await sql`
+    INSERT INTO reglages_modules (module_id, seuil, filieres, niveaux, parcours, modifie_par)
+    VALUES (${moduleId}, ${reglage.seuil ?? null}, ${json(reglage.filieres)}, ${json(reglage.niveaux)}, ${json(reglage.parcours)}, ${par})
+    ON CONFLICT (module_id) DO UPDATE SET
+      seuil = EXCLUDED.seuil,
+      filieres = EXCLUDED.filieres,
+      niveaux = EXCLUDED.niveaux,
+      parcours = EXCLUDED.parcours,
+      modifie_par = EXCLUDED.modifie_par,
+      modifie_le = NOW()`;
 }
 
 /** Seuil réglé pour un module du code ; `null` rétablit le seuil par défaut du barème. */

@@ -543,6 +543,28 @@ pas » est une proposition non jugée, comme une proposition laissée de côté.
 Elle reste comptée en discordance — la question n'est pas juste, et une
 question éliminatoire échoue — mais elle ne retire aucun point.
 
+**Réglage des parcours** (question 36, choix a, 19/09/2026) : le rattachement
+d'un critère — **filières**, **niveaux**, présence en **intégration** ou en
+**maintien** — se règle depuis `/admin/modules`, comme pour un module déposé,
+alors que son texte reste versionné avec le site. Le réglage vit dans
+`reglages_modules` (colonnes JSONB, `NULL` = ce que dit la fiche) et
+s'applique partout où un programme se compose : accueil, parcours, module
+suivant, écrans d'administration. La règle est pure et testée
+(`content/reglages.ts`) ; une filière hors socle fait passer le critère au
+programme de poste, le socle seul le remet au tronc commun.
+
+La fiche d'habilitation reste la source : un réglage est un **écart assumé**,
+affiché comme tel sur la ligne du module (« écart à la fiche : parcours :
+maintien »), journalisé, et retiré d'un clic par « Rétablir la fiche ». C'est
+ce qui écarte le choix b comme règle générale : un parcours composé à la main
+serait une seconde source, capable de contredire la fiche sans que rien ne le
+signale, alors que le rapport se lit critère par critère en face d'elle.
+
+**Reste à faire** : le **parcours dégradé** du choix b, demandé pour les cas
+qui ne suivent pas la fiche — intérimaire, remplaçant. Il sera nommé, composé
+à la main, marqué « dégradé » partout où il apparaît, et ne se confondra pas
+avec les deux parcours de la fiche.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

@@ -7,10 +7,12 @@ import { journaliser } from "@/lib/journal";
 import { getCritere } from "@/content/habilitation";
 import { getModule } from "@/content/store";
 import { LIMITES_BAREME } from "@/content/bareme";
+import { filieres, niveaux } from "@/content/habilitation";
+import { listeConnue, niveauxConnus, parcoursConnus } from "@/content/reglages";
 import {
   changerStatutModule,
   enregistrerModuleDepose,
-  enregistrerReglageSeuil,
+  enregistrerReglageModule,
   filtrerParcours,
   filtrerProfils,
   lireModuleDepose,
@@ -114,14 +116,34 @@ export async function actionSupprimerModule(formData: FormData) {
 }
 
 /** Seuil de réussite d'un module du code : réglé, ou remis au seuil par défaut du barème. */
+/**
+ * Réglage d'un module du code (question 36, choix a) : seuil, filières,
+ * niveaux et parcours. « Rétablir la fiche » efface le réglage entier.
+ */
 export async function actionReglerSeuil(formData: FormData) {
   const s = await sessionRequise("admin");
   const moduleId = chaine(formData, "moduleId", 80);
   if (!getModule(moduleId)) redirect("/admin/modules?erreur=inconnu#seuils");
-  const defaut = String(formData.get("mode") ?? "") === "defaut";
-  const seuil = defaut ? null : borneSeuil(formData.get("seuil"), 80);
-  await enregistrerReglageSeuil(moduleId, seuil, s);
-  await journaliser(s, "module:seuil", moduleId, { seuil: seuil ?? "défaut" });
+  if (String(formData.get("mode") ?? "") === "defaut") {
+    await enregistrerReglageModule(moduleId, {}, s);
+    await journaliser(s, "module:reglage", moduleId, { reglage: "fiche" });
+    rafraichir();
+    redirect("/admin/modules?ok=seuil#seuils");
+  }
+  const liste = (cle: string) => formData.getAll(cle).map((v) => String(v));
+  const reglage = {
+    seuil: borneSeuil(formData.get("seuil"), 80),
+    filieres: listeConnue(liste("filieres"), filieres.map((f) => f.id)),
+    niveaux: niveauxConnus(liste("niveaux"), niveaux.map((n) => n.code)),
+    parcours: parcoursConnus(liste("parcours")),
+  };
+  await enregistrerReglageModule(moduleId, reglage, s);
+  await journaliser(s, "module:reglage", moduleId, {
+    seuil: reglage.seuil,
+    filieres: reglage.filieres ?? "fiche",
+    niveaux: reglage.niveaux ?? "fiche",
+    parcours: reglage.parcours ?? "fiche",
+  });
   rafraichir();
   redirect("/admin/modules?ok=seuil#seuils");
 }

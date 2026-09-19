@@ -8,7 +8,8 @@ import { filieres } from "./habilitation";
 import { baseConfiguree, lireOrdonnancement } from "@/lib/db";
 import { lireBareme } from "@/lib/bareme-db";
 import { comptesParModule, questionsValideesDuModule } from "./banque-db";
-import { lireModuleDepose, lireReglagesSeuils, listerModulesDeposes, versModule } from "./modules-db";
+import { lireModuleDepose, lireReglagesModules, listerModulesDeposes, versModule } from "./modules-db";
+import { appliquerReglage } from "./reglages";
 
 /**
  * Accès au contenu — serveur uniquement.
@@ -53,11 +54,11 @@ export async function getModuleComplet(id: string, options: OptionsLecture = {})
   const code = index.get(id);
   if (!baseConfiguree()) return code ? { ...code, origine: "code" } : undefined;
   if (code) {
-    const [bareme, reglages, banque] = await Promise.all([lireBareme(), lireReglagesSeuils(), questionsValideesDuModule(id)]);
+    const [bareme, reglages, banque] = await Promise.all([lireBareme(), lireReglagesModules(), questionsValideesDuModule(id)]);
+    const regle = appliquerReglage(code, reglages[id], bareme.seuilDefaut);
     return {
-      ...code,
+      ...regle,
       origine: "code",
-      seuilReussite: reglages[id] ?? bareme.seuilDefaut,
       questions: [...code.questions, ...banque.questions],
       misesEnSituation: [...code.misesEnSituation, ...banque.misesEnSituation],
     };
@@ -82,8 +83,22 @@ export async function moduleExiste(id: string): Promise<boolean> {
  */
 export async function getTousModulesAvecDeposes(options: { publiesSeulement?: boolean } = {}): Promise<Module[]> {
   if (!baseConfiguree()) return tousModules;
-  const deposes = await listerModulesDeposes(options.publiesSeulement ? "publie" : undefined);
-  return [...tousModules, ...deposes.map(versModule)];
+  const [deposes, code] = await Promise.all([
+    listerModulesDeposes(options.publiesSeulement ? "publie" : undefined),
+    modulesDuCodeRegles(),
+  ]);
+  return [...code, ...deposes.map(versModule)];
+}
+
+/**
+ * Modules du code, réglages appliqués (question 36, choix a) : c'est cette
+ * liste, et non `tousModules`, qui dit à quel parcours et à quels profils un
+ * critère appartient. Sans base, la fiche seule fait foi.
+ */
+export async function modulesDuCodeRegles(): Promise<Module[]> {
+  if (!baseConfiguree()) return tousModules;
+  const [bareme, reglages] = await Promise.all([lireBareme(), lireReglagesModules()]);
+  return tousModules.map((m) => appliquerReglage(m, reglages[m.id], bareme.seuilDefaut));
 }
 
 /**
@@ -144,7 +159,8 @@ export async function composerProgramme(parcoursId: TypeParcours): Promise<Progr
   const avecBase = baseConfiguree();
   const deposes = avecBase ? (await listerModulesDeposes("publie").catch(() => [])).map(versModule) : [];
   const rangs: Record<string, number> = avecBase ? await lireOrdonnancement(parcoursId).catch(() => ({})) : {};
-  const duParcours = [...tousModules, ...deposes].filter((m) => m.parcours.includes(parcoursId));
+  const code = avecBase ? await modulesDuCodeRegles().catch(() => tousModules) : tousModules;
+  const duParcours = [...code, ...deposes].filter((m) => m.parcours.includes(parcoursId));
   const ordonner = (liste: Module[]): Module[] =>
     liste
       .map((m, i) => ({ m, cle: rangs[m.id] ?? 1_000_000 + i }))

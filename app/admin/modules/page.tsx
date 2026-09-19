@@ -2,7 +2,9 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
 import { getTousModules } from "@/content/store";
-import { STATUTS_MODULE, lireReglagesSeuils, listerModulesDeposes } from "@/content/modules-db";
+import { STATUTS_MODULE, lireReglagesModules, listerModulesDeposes } from "@/content/modules-db";
+import { filieres, niveaux } from "@/content/habilitation";
+import { ecartsDeLaFiche } from "@/content/reglages";
 import { FormulaireModule } from "./formulaire";
 import { actionEnregistrerModule, actionReglerSeuil, actionStatutModule, actionSupprimerModule } from "./actions";
 
@@ -33,7 +35,7 @@ export default async function Modules({
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
-  const [deposes, bareme, reglages] = await Promise.all([listerModulesDeposes(), lireBareme(), lireReglagesSeuils()]);
+  const [deposes, bareme, reglages] = await Promise.all([listerModulesDeposes(), lireBareme(), lireReglagesModules()]);
   const modulesCode = getTousModules();
 
   return (
@@ -152,35 +154,117 @@ export default async function Modules({
       {session.role === "admin" && (
         <section className="section" id="seuils">
           <div className="section-titre">
-            <h2>Seuil de réussite des modules du code</h2>
+            <h2>Réglage des modules du code</h2>
             <span className="compte">défaut du barème : {bareme.seuilDefaut} %</span>
           </div>
           <p className="legende">
-            Chaque module du code suit le seuil par défaut du barème (<Link href="/admin/bareme">Barème</Link>),
-            sauf seuil réglé ici pour lui. Le seuil d&apos;un module déposé se règle dans son formulaire.
+            Le texte d&apos;un critère reste versionné avec le site, mais son rattachement se règle
+            ici (décision du 19/09/2026, question 36) : seuil, <strong>filières</strong>,{" "}
+            <strong>niveaux</strong> et présence en <strong>intégration</strong> ou en{" "}
+            <strong>maintien</strong>. La fiche d&apos;habilitation reste la source : un réglage est
+            un écart assumé, signalé ici, et « Rétablir la fiche » le retire. Le seuil par défaut
+            vient du <Link href="/admin/bareme">barème</Link> ; un module déposé se règle dans son
+            formulaire.
           </p>
           <details className="bloc">
             <summary>
-              {modulesCode.length} modules · {Object.keys(reglages).length} seuil(s) réglé(s)
+              {modulesCode.length} modules · {Object.keys(reglages).length} réglé(s)
             </summary>
             <div className="contenu-bloc">
               {modulesCode.map((m) => {
                 const regle = reglages[m.id];
+                const ecarts = ecartsDeLaFiche(m, regle, bareme.seuilDefaut);
                 return (
-                  <form key={m.id} action={actionReglerSeuil} className="ligne-critere" style={{ alignItems: "center" }}>
+                  <form key={m.id} action={actionReglerSeuil} className="ligne-critere" style={{ alignItems: "center", flexWrap: "wrap" }}>
                     <span className="code">{typeof m.critereId === "string" ? m.critereId : "—"}</span>
                     <span className="libelle">
                       {m.titre.slice(0, 70)}{" "}
-                      <span className="legende">— {regle !== undefined ? `réglé à ${regle} %` : `défaut, ${bareme.seuilDefaut} %`}</span>
+                      <span className="legende">
+                        — {ecarts.length > 0 ? `écart à la fiche : ${ecarts.join(" · ")}` : `fiche, seuil ${bareme.seuilDefaut} %`}
+                      </span>
                     </span>
                     <input type="hidden" name="moduleId" value={m.id} />
-                    <input type="number" name="seuil" min={50} max={100} step={1} defaultValue={regle ?? bareme.seuilDefaut} style={{ width: "5rem" }} aria-label={`Seuil de ${m.titre}`} />
+                    <input
+                      type="number"
+                      name="seuil"
+                      min={50}
+                      max={100}
+                      step={1}
+                      defaultValue={regle?.seuil ?? bareme.seuilDefaut}
+                      style={{ width: "5rem" }}
+                      aria-label={`Seuil de ${m.titre}`}
+                    />
                     <button type="submit" className="bouton bouton--compact bouton--secondaire">Régler</button>
-                    {regle !== undefined && (
+                    {regle && (
                       <button type="submit" name="mode" value="defaut" className="bouton bouton--compact bouton--discret">
-                        Défaut
+                        Rétablir la fiche
                       </button>
                     )}
+                    <details style={{ flexBasis: "100%" }}>
+                      <summary className="legende">Profils : filières, niveaux, parcours</summary>
+                      <div className="rangee">
+                        <fieldset className="champ">
+                          <legend className="legende">Filières</legend>
+                          <span className="cases">
+                            {filieres.map((f) => (
+                              <label key={f.id}>
+                                <input
+                                  type="checkbox"
+                                  name="filieres"
+                                  value={f.id}
+                                  defaultChecked={(regle?.filieres ?? m.postes).includes(f.id)}
+                                />
+                                {f.id}
+                              </label>
+                            ))}
+                          </span>
+                        </fieldset>
+                        <fieldset className="champ">
+                          <legend className="legende">Niveaux</legend>
+                          <span className="cases">
+                            {niveaux.map((n) => (
+                              <label key={n.code}>
+                                <input
+                                  type="checkbox"
+                                  name="niveaux"
+                                  value={n.code}
+                                  defaultChecked={(regle?.niveaux ?? m.niveaux).includes(n.code)}
+                                />
+                                {n.code}
+                              </label>
+                            ))}
+                          </span>
+                        </fieldset>
+                        <fieldset className="champ">
+                          <legend className="legende">Parcours</legend>
+                          <span className="cases">
+                            <label>
+                              <input
+                                type="checkbox"
+                                name="parcours"
+                                value="integration"
+                                defaultChecked={(regle?.parcours ?? m.parcours).includes("integration")}
+                              />
+                              intégration
+                            </label>
+                            <label>
+                              <input
+                                type="checkbox"
+                                name="parcours"
+                                value="maintien"
+                                defaultChecked={(regle?.parcours ?? m.parcours).includes("maintien")}
+                              />
+                              maintien
+                            </label>
+                          </span>
+                        </fieldset>
+                      </div>
+                      <p className="legende" style={{ margin: 0 }}>
+                        Tout décocher dans une liste revient à suivre la fiche pour elle. Une filière
+                        hors socle fait passer le critère au programme de poste ; le socle seul le
+                        remet au tronc commun.
+                      </p>
+                    </details>
                   </form>
                 );
               })}

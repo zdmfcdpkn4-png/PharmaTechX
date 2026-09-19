@@ -292,6 +292,13 @@ export const SCHEMA: string[] = [
   // décision du 18/09/2026 (question 18, choix c) : question réservée à
   // l'évaluation, jamais posée en entraînement ni en Découverte
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS reservee BOOLEAN NOT NULL DEFAULT FALSE`,
+  // réglage des modules du code (décision du 19/09/2026, question 36, choix a) :
+  // filières, niveaux et parcours d'un critère se règlent en administration,
+  // en écart assumé à la fiche d'habilitation. NULL = ce que dit la fiche.
+  `ALTER TABLE reglages_modules ALTER COLUMN seuil DROP NOT NULL`,
+  `ALTER TABLE reglages_modules ADD COLUMN IF NOT EXISTS filieres JSONB`,
+  `ALTER TABLE reglages_modules ADD COLUMN IF NOT EXISTS niveaux JSONB`,
+  `ALTER TABLE reglages_modules ADD COLUMN IF NOT EXISTS parcours JSONB`,
   // décision : arbitrage motivé du tuteur (verdict indéterminé) et questions
   // exclues du calcul (retirées de la banque après signalement), fixées au
   // premier acte de décision — NULL tant qu'elles ne le sont pas.

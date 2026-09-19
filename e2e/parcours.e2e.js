@@ -684,6 +684,42 @@ Justification : justification deux.`;
   await page.waitForSelector("text=Parcours : Socle transversal, module");
   ok("fin de test : document de synthèse affiché, question ratée rejouée en entraînement, module suivant du parcours");
 
+  // 12g. réglage d'un module du code (question 36, choix a) : un critère
+  // restreint au maintien disparaît du parcours d'intégration, puis la fiche
+  // est rétablie
+  const TITRE_ZAC = "Comportement et habillage en zone à atmosphère contrôlée";
+  await page.goto(BASE + "/?parcours=integration");
+  assert.ok(
+    (await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0,
+    "le critère figure au parcours d'intégration selon la fiche",
+  );
+  await page.goto(BASE + "/admin/modules");
+  // la liste des modules du code et le détail « Profils » sont deux replis
+  await page.click("summary:has-text('réglé(s)')");
+  const ligneZac = page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) });
+  await ligneZac.locator("summary").click();
+  await ligneZac.locator("input[name=parcours][value=integration]").uncheck();
+  await ligneZac.locator("input[name=parcours][value=maintien]").check();
+  await ligneZac.locator("button:has-text('Régler')").click();
+  await page.waitForURL(/ok=seuil/);
+  // le repli est refermé au rechargement : le texte est présent, non visible
+  await page.waitForSelector("text=écart à la fiche : parcours : maintien", { state: "attached" });
+  await page.goto(BASE + "/?parcours=integration");
+  assert.equal(
+    await page.locator(`a:has-text("${TITRE_ZAC}")`).count(),
+    0,
+    "réglé sur le maintien seul, le critère quitte le parcours d'intégration",
+  );
+  await page.goto(BASE + "/?parcours=maintien");
+  assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "il reste au maintien");
+  await page.goto(BASE + "/admin/modules");
+  await page.click("summary:has-text('réglé(s)')");
+  await page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) }).locator("button:has-text('Rétablir la fiche')").click();
+  await page.waitForURL(/ok=seuil/);
+  await page.goto(BASE + "/?parcours=integration");
+  assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "fiche rétablie");
+  ok("réglage d'un module du code : parcours restreint au maintien, écart signalé, puis fiche rétablie");
+
   // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
   // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
   await page.goto(BASE + "/#progression");
