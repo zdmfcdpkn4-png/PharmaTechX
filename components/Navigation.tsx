@@ -12,17 +12,41 @@ export interface LienRail {
   indice?: string;
 }
 
-export interface GroupeRail {
+/** Sous-partie d'un groupe : un intitulé fin, jamais repliable. */
+export interface SousGroupeRail {
   titre: string;
   liens: LienRail[];
 }
 
+export interface GroupeRail {
+  /** Sert à décider quel groupe s'ouvre selon la page courante. */
+  id: "formation" | "reperes" | "administration";
+  titre: string;
+  liens?: LienRail[];
+  sous?: SousGroupeRail[];
+}
+
 /**
- * Contenu du volet de navigation (question 37, choix c).
+ * Contenu du volet de navigation (question 37, choix c ; refondu le
+ * 19/09/2026, choix a + b + c).
  *
- * Les liens sont fournis par le gabarit racine, qui seul connaît la session :
- * ce composant n'ajoute que le repérage de la page courante et le repli du
- * groupe d'administration, ouvert de lui-même sur les écrans d'administration.
+ * Trois partis, pris ensemble parce qu'ils règlent trois défauts distincts :
+ *
+ *   a. **Tous les groupes se replient.** Le volet alignait trente-quatre
+ *      liens : plus haut que l'écran, donc parcouru au défilement. Un seul
+ *      groupe s'ouvre de lui-même, celui de la page courante ; les autres
+ *      attendent. Un repli ou une ouverture décidés à la main l'emportent
+ *      ensuite sur cette règle, et tiennent jusqu'à la fin de la session de
+ *      navigation.
+ *   b. **L'administration se range en sous-parties.** Seize liens à plat ne
+ *      se lisent pas. Trois sous-parties — Suivi, Contenu, Réglages — les
+ *      rangent par usage et non par ordre d'écriture.
+ *   c. **Le rythme se resserre**, mais au-dessus de 62 rem seulement : dans
+ *      le tiroir de tablette et de téléphone, la cible tactile reste pleine
+ *      (`--cible`).
+ *
+ * Les liens restent composés par le gabarit racine, seul endroit qui connaisse
+ * la session, la conservation et la base.
  */
 export function Navigation({
   groupes,
@@ -32,9 +56,23 @@ export function Navigation({
   administration: GroupeRail | null;
 }) {
   const chemin = usePathname();
-  // Ouvert par défaut : replié, le groupe cachait le dépôt de questions à
-  // qui le cherchait (remarque du 19/09/2026). Le repli reste possible.
-  const [adminOuvert, setAdminOuvert] = useState(true);
+
+  /**
+   * Le groupe qui contient la page courante s'ouvre de lui-même. C'est ce qui
+   * répond à l'objection du 19/09 : replié par défaut, le groupe
+   * d'administration cachait le dépôt de questions à qui le cherchait.
+   */
+  const porteLaPage = (id: GroupeRail["id"]) => {
+    if (id === "administration") return chemin.startsWith("/admin");
+    if (id === "reperes") return chemin.startsWith("/reperes") || chemin.startsWith("/donnees-personnelles");
+    return chemin === "/" || chemin.startsWith("/module");
+  };
+
+  const [choisis, setChoisis] = useState<Record<string, boolean>>({});
+  const estOuvert = (id: GroupeRail["id"]) => choisis[id] ?? porteLaPage(id);
+  const basculer = (id: GroupeRail["id"], ouvert: boolean) =>
+    setChoisis((c) => (c[id] === ouvert ? c : { ...c, [id]: ouvert }));
+
   // Repérage : seuls les liens de page entière sont marqués. Les ancres d'une
   // même page ne le sont pas — c'est le défilement qui y répond, pas le volet.
   const courant = (href: string) => !href.includes("#") && chemin === href;
@@ -46,25 +84,30 @@ export function Navigation({
     </Link>
   );
 
+  const groupe = (g: GroupeRail) => (
+    <details
+      key={g.id}
+      className="rail-groupe"
+      open={estOuvert(g.id)}
+      onToggle={(e) => basculer(g.id, e.currentTarget.open)}
+    >
+      <summary>{g.titre}</summary>
+      <div className="rail-liens">
+        {g.liens?.map(lien)}
+        {g.sous?.map((s) => (
+          <div key={s.titre} className="rail-sous">
+            <span className="rail-sous-titre">{s.titre}</span>
+            {s.liens.map(lien)}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+
   return (
     <>
-      {groupes.map((g) => (
-        <div key={g.titre} className="rail-groupe">
-          <span className="rail-titre">{g.titre}</span>
-          {g.liens.map(lien)}
-        </div>
-      ))}
-
-      {administration && (
-        <details
-          className="rail-groupe"
-          open={adminOuvert || chemin.startsWith("/admin")}
-          onToggle={(e) => setAdminOuvert(e.currentTarget.open)}
-        >
-          <summary>{administration.titre}</summary>
-          <div className="rail-liens">{administration.liens.map(lien)}</div>
-        </details>
-      )}
+      {groupes.map(groupe)}
+      {administration && groupe(administration)}
 
       {/* Rend `null` hors session : le volet de la connexion n'en porte pas. */}
       <BoutonRevoirTutoriel />

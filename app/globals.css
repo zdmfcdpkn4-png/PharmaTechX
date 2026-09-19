@@ -694,8 +694,8 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.125rem 1rem;
+  gap: 0.25rem;
+  padding: 0.75rem 0.75rem 1rem;
   border-radius: var(--rayon);
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: var(--verre-flou);
@@ -715,16 +715,21 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   padding: 0 0.625rem 0.25rem;
 }
 
+/* Hauteur de ligne resserrée (choix c, 19/09/2026) : 32 px sur poste, où le
+   pointeur est précis. La cible tactile pleine est rétablie dans le tiroir,
+   sous 62 rem — voir la requête média plus bas. 44 px relève de la règle
+   WCAG 2.1 « Target Size » 2.5.5, qui est de niveau AAA et non AA ; le
+   minimum AA (WCAG 2.2, 2.5.8) est de 24 px. Nous gardons 44 en tactile. */
 .rail a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: var(--cible);
-  padding: 0.375rem 0.625rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
   border-radius: 9px;
   border-left: 3px solid transparent;
   font-size: 0.8125rem;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--texte);
   text-decoration: none;
 }
@@ -740,23 +745,63 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   color: var(--marque);
 }
 
+/* L'intitulé de groupe se lit comme un bandeau et non comme un lien de plus :
+   fond, texte de la couleur de marque, chevron. Sans quoi « FORMATION » et
+   « Mes modules » se confondent au premier coup d'œil (remarque du
+   19/09/2026). */
 details.rail-groupe > summary {
   cursor: pointer;
-  min-height: var(--cible);
+  min-height: 2.125rem;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   list-style: none;
   font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--marque);
+  background: var(--surface-douce);
+  border-radius: 8px;
+  padding: 0 0.625rem;
+}
+details.rail-groupe + details.rail-groupe { margin-top: 0.125rem; }
+details.rail-groupe > summary:hover { background: var(--marque-clair); }
+details.rail-groupe > summary::-webkit-details-marker { display: none; }
+/* Chevron : pointe vers le bas quand le groupe est ouvert. */
+details.rail-groupe > summary::after {
+  content: "";
+  margin-left: auto;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 2px solid var(--marque);
+  border-bottom: 2px solid var(--marque);
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+details.rail-groupe[open] > summary::after { transform: rotate(45deg); }
+
+/* Les liens d'un groupe ouvert sont tenus par un filet : ils se lisent comme
+   les enfants de leur bandeau, pas comme une liste indépendante. */
+details.rail-groupe > .rail-liens {
+  margin: 0.25rem 0 0.375rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--bord);
+  gap: 0;
+}
+
+/* Sous-partie (choix b) : un cran de moins que le bandeau, un cran de plus
+   qu'un lien. Seize liens d'administration à plat ne se lisaient pas. */
+.rail-sous { display: flex; flex-direction: column; }
+.rail-sous + .rail-sous { margin-top: 0.375rem; }
+.rail-sous-titre {
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--texte-doux);
-  padding: 0 0.625rem;
-  border-top: 1px solid var(--bord);
+  padding: 0.25rem 0.625rem 0.125rem;
 }
-details.rail-groupe > summary::-webkit-details-marker { display: none; }
-details.rail-groupe > summary::after { content: "+"; margin-left: auto; color: var(--marque); font-weight: 700; }
-details.rail-groupe[open] > summary::after { content: "–"; }
 
 /* Texte d'information du volet, avant connexion : pas un lien, pas cliquable. */
 .rail-info {
@@ -774,8 +819,9 @@ details.rail-groupe[open] > summary::after { content: "–"; }
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  min-height: var(--cible);
-  padding: 0.375rem 0.625rem;
+  min-height: 2rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.625rem;
   border: 1px solid var(--bord);
   border-radius: 9px;
   background: transparent;
@@ -931,6 +977,11 @@ details.rail-groupe[open] > summary::after { content: "–"; }
     transition: transform 0.26s ease, visibility 0.26s ease;
   }
   .rail--ouvert { transform: none; visibility: visible; }
+  /* En tiroir, le doigt remplace le pointeur : cible pleine (44 px). */
+  .rail { gap: 0.375rem; padding-left: 1rem; padding-right: 1rem; }
+  .rail a { min-height: var(--cible); padding-top: 0.375rem; padding-bottom: 0.375rem; }
+  details.rail-groupe > summary { min-height: var(--cible); }
+  .rail-bouton { min-height: var(--cible); }
   .voile {
     display: block;
     position: fixed;

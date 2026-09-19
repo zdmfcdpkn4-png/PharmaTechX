@@ -79,6 +79,7 @@ export default async function RootLayout({
   const progressionVisible = conservation && baseConfiguree();
   const groupes: GroupeRail[] = [
     {
+      id: "formation",
       titre: "Formation",
       liens: [
         { href: "/#modules", libelle: "Mes modules" },
@@ -90,6 +91,7 @@ export default async function RootLayout({
       ],
     },
     {
+      id: "reperes",
       titre: "Repères",
       liens: [
         { href: "/reperes#dispositif", libelle: "Le dispositif" },
@@ -106,38 +108,53 @@ export default async function RootLayout({
   if (gestionnaire && baseConfiguree()) {
     signalementsOuverts = await compterSignalementsOuverts().catch(() => 0);
   }
+  // Trois sous-parties par usage (19/09/2026, choix b) : ce qu'on consulte,
+  // ce qu'on fabrique, ce qu'on règle. L'ordre suit la fréquence d'ouverture,
+  // pas l'ordre d'écriture des écrans.
   const administration: GroupeRail | null = gestionnaire
     ? {
+        id: "administration",
         titre: "Administration",
-        liens: [
-          { href: "/admin/pilotage", libelle: "Pilotage" },
-          { href: "/admin", libelle: "Accès" },
-          { href: "/admin/modules", libelle: "Modules" },
-          { href: "/admin/questions", libelle: "Banque de questions" },
-          { href: "/admin/questions/import", libelle: "Déposer des questions" },
-          { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
-          { href: "/admin/questions/situations", libelle: "Mises en situation" },
-          { href: "/admin/documents", libelle: "Documents" },
-          ...(conservation
-            ? [
-                { href: "/admin/rapports", libelle: "Rapports" },
-                { href: "/admin/personnel", libelle: "Personnel" },
-              ]
-            : []),
+        sous: [
           {
-            href: "/admin/signalements",
-            libelle: "Signalements",
-            indice: signalementsOuverts > 0 ? String(signalementsOuverts) : undefined,
+            titre: "Suivi",
+            liens: [
+              { href: "/admin/pilotage", libelle: "Pilotage" },
+              ...(conservation ? [{ href: "/admin/rapports", libelle: "Rapports" }] : []),
+              {
+                href: "/admin/signalements",
+                libelle: "Signalements",
+                indice: signalementsOuverts > 0 ? String(signalementsOuverts) : undefined,
+              },
+              ...(conservation ? [{ href: "/admin/personnel", libelle: "Personnel" }] : []),
+            ],
           },
-          { href: "/admin/ordonnancement", libelle: "Ordre" },
-          ...(session?.role === "admin"
-            ? [
-                { href: "/admin/referentiel", libelle: "Référentiel" },
-          { href: "/admin/bareme", libelle: "Barème" },
-                { href: "/admin/signature", libelle: "Signature" },
-                { href: "/admin/journal", libelle: "Journal" },
-              ]
-            : []),
+          {
+            titre: "Contenu",
+            liens: [
+              { href: "/admin/questions", libelle: "Banque de questions" },
+              { href: "/admin/questions/import", libelle: "Déposer des questions" },
+              { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
+              { href: "/admin/questions/situations", libelle: "Mises en situation" },
+              { href: "/admin/modules", libelle: "Modules" },
+              { href: "/admin/documents", libelle: "Documents" },
+              { href: "/admin/ordonnancement", libelle: "Ordre" },
+            ],
+          },
+          {
+            titre: "Réglages",
+            liens: [
+              { href: "/admin", libelle: "Accès" },
+              ...(session?.role === "admin"
+                ? [
+                    { href: "/admin/referentiel", libelle: "Référentiel" },
+                    { href: "/admin/bareme", libelle: "Barème" },
+                    { href: "/admin/signature", libelle: "Signature" },
+                    { href: "/admin/journal", libelle: "Journal" },
+                  ]
+                : []),
+            ],
+          },
         ],
       }
     : null;

@@ -846,12 +846,37 @@ Justification : justification deux.`;
   // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
   // modules repliés
   await page.goto(BASE + "/");
-  await page.waitForSelector("#volet-principal a[href='/reperes#dispositif']");
+  // Groupes repliables (19/09/2026, choix a) : sur l'accueil, seul « Formation »
+  // s'ouvre de lui-même ; les deux autres attendent qu'on les demande.
+  await page.waitForSelector("#volet-principal a[href='/#modules']", { state: "visible" });
+  assert.equal(
+    await page.locator("#volet-principal a[href='/reperes#dispositif']").isVisible(),
+    false,
+    "le groupe Repères devrait être replié sur l'accueil",
+  );
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/journal']").isVisible(),
+    false,
+    "le groupe Administration devrait être replié sur l'accueil",
+  );
+  await page.click("#volet-principal summary:has-text('Repères')");
+  await page.waitForSelector("#volet-principal a[href='/reperes#dispositif']", { state: "visible" });
+  ok("volet : un seul groupe ouvert sur l'accueil, les autres se déplient au clic");
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/journal']").count(),
     1,
     "les écrans d'administration sont portés par le volet",
   );
+  // Sous-parties de l'administration (choix b) : Suivi, Contenu, Réglages.
+  await page.click("#volet-principal summary:has-text('Administration')");
+  await page.waitForSelector("#volet-principal .rail-sous-titre", { state: "visible" });
+  const sousParties = await page.locator("#volet-principal .rail-sous-titre").allInnerTexts();
+  assert.deepEqual(
+    sousParties.map((t) => t.toLowerCase()),
+    ["suivi", "contenu", "réglages"],
+    "sous-parties de l'administration",
+  );
+  ok("volet : l'administration rangée en Suivi, Contenu et Réglages");
   assert.equal(
     await page.locator("main section#dispositif").count(),
     0,
