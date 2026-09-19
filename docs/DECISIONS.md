@@ -892,6 +892,18 @@ SCORM). Transposé dans les limites du brief :
   vérifié par des tests appariés — « tri des déchets » avant « déchet »,
   « HEPA » avant « flux d'air », « combinaison » avant « tenue »,
   « classification SGH » avant « classification ».
+- Logo d'unité de l'en-tête du site remplacé le 19/09/2026 par le mandala
+  « pharmacotechnie — unité de production des chimiothérapies », sur demande du
+  pharmacien responsable. Fichier propre (`public/pharmaco-entete.png`,
+  192 px, palette de 160 couleurs, 15 Ko) et non `pharmaco-web.png`, qui sert
+  aussi de logo **sur chaque rapport** : la demande portait sur le site, le
+  rapport n'est pas touché et garde l'ancien logo. Hauteur de rendu portée de
+  44 à 56 px — mesuré, ce dessin au trait fin n'est pas lisible en dessous ; le
+  bandeau garde sa hauteur, fixée par le titre à deux lignes. L'empreinte
+  SHA-256 d'un rapport porte sur la forme canonique du résultat et **ne couvre
+  pas les logos** (vérifié dans `lib/sceau.ts`) : aucun rapport émis n'est
+  invalidé par un changement de logo ; seule une réimpression porterait le
+  nouveau.
   Logos d'unité versés dans la même banque le 19/09/2026 (question 40,
   choix b) : Préparation, Bionettoyage, Validation pharmacotechnique et
   Pharmacotechnie, **trente-sept illustrations** au total (796 Ko). Ils

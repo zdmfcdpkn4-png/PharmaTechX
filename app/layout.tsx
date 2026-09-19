@@ -184,11 +184,11 @@ export default async function RootLayout({
                 <span className="separateur-logo" aria-hidden="true" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/pharmaco-web.png"
-                  alt="Service Pharmacotechnie"
+                  src="/pharmaco-entete.png"
+                  alt="Pharmacotechnie — unité de production des chimiothérapies"
                   className="pharmaco"
-                  width={96}
-                  height={96}
+                  width={192}
+                  height={192}
                 />
               </div>
 

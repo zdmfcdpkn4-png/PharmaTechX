@@ -329,7 +329,10 @@ a:hover { color: var(--marque-fonce); }
 /* Logos — jamais recolorés ni déformés. */
 .logos { display: flex; align-items: center; gap: 0.625rem; }
 .logos img.hdv { height: 30px; width: auto; display: block; }
-.logos img.pharmaco { height: 44px; width: auto; display: block; }
+/* 56 px et non 44 : le logo d'unité est un mandala au trait fin, mesuré
+   illisible en dessous. Le bandeau, lui, garde sa hauteur — c'est le titre à
+   deux lignes qui la fixe. */
+.logos img.pharmaco { height: 56px; width: auto; display: block; }
 .separateur-logo { width: 1px; align-self: stretch; background: var(--bord); }
 
 /* Pied de page + bandeau bleu de la charte. */
