@@ -259,6 +259,18 @@ Justification : cf. procédure interne.`,
     await page.waitForURL(/\/admin$/);
   };
 
+  /**
+   * Déplie les grands modules repliés (question 37, choix c) : à l'accueil,
+   * les critères sont groupés par bloc et un seul groupe est ouvert au départ.
+   */
+  const deplierTousLesGroupes = async () => {
+    for (let garde = 0; garde < 20; garde++) {
+      const replies = page.locator(".groupe-modules:not([open]) > summary");
+      if ((await replies.count()) === 0) return;
+      await replies.first().click();
+    }
+  };
+
   // 5. quatre yeux : le tuteur modifie le schéma importé par l'administrateur, puis valide les neuf autres ;
   //    le schéma, dont il est devenu l'auteur, attend l'administrateur
   await rebrancher(codeTuteur);
@@ -555,6 +567,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/ok=publie/);
   await page.goto(BASE + "/");
   await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
+  await deplierTousLesGroupes();
   await page.waitForSelector("h3:has-text('Module déposé test')");
   await page.selectOption("label:has-text('Niveau visé') select", "P1");
   assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "absent au niveau P1");
@@ -612,7 +625,7 @@ Justification : justification deux.`;
   await page.click("button:has-text('Enregistrer le barème')");
   await page.waitForURL(/ok=enregistre/);
   await page.waitForSelector("text=faux -0,5");
-  await page.goto(BASE + "/");
+  await page.goto(BASE + "/reperes");
   await page.waitForSelector("text=faux -0,5");
   await page.goto(BASE + "/module/comportement-zac/evaluation");
   assert.match(await seuilDe("comportement-zac"), /Seuil de réussite 85 %/, "seuil par défaut sur un module du code");
@@ -626,9 +639,9 @@ Justification : justification deux.`;
   await page.goto(BASE + "/admin/bareme");
   await page.click("button:has-text('Rétablir les valeurs par défaut')");
   await page.waitForURL(/ok=defaut/);
-  await page.goto(BASE + "/");
+  await page.goto(BASE + "/reperes");
   await page.waitForSelector("text=faux -1");
-  ok("barème harmonisé : part d'une proposition fausse à −0,5 et seuil 85 % annoncés à l'accueil et sous la question, « je ne sais pas » proposé, puis valeurs par défaut rétablies");
+  ok("barème harmonisé : part d'une proposition fausse à −0,5 et seuil 85 % annoncés sur la page des repères et sous la question, « je ne sais pas » proposé, puis valeurs par défaut rétablies");
 
   // 12e. document général proposé aux profils Chimiothérapie · N1c
   await page.goto(BASE + "/admin/documents");
@@ -720,6 +733,90 @@ Justification : justification deux.`;
   assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "fiche rétablie");
   ok("réglage d'un module du code : parcours restreint au maintien, écart signalé, puis fiche rétablie");
 
+  // 12h. volet de navigation (question 37, choix c) : barre latérale sur poste,
+  // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
+  // modules repliés
+  await page.goto(BASE + "/");
+  await page.waitForSelector("#volet-principal a[href='/reperes#dispositif']");
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/journal']").count(),
+    1,
+    "les écrans d'administration sont portés par le volet",
+  );
+  assert.equal(
+    await page.locator("main section#dispositif").count(),
+    0,
+    "les explications ont quitté l'accueil",
+  );
+  await page.waitForSelector("main #modules");
+  assert.equal(
+    await page.locator("button.bouton-menu").isVisible(),
+    false,
+    "pas de bouton de menu là où le volet est permanent",
+  );
+  const nbGroupes = await page.locator(".groupe-modules").count();
+  assert.ok(nbGroupes > 1, "les critères du socle sont répartis en grands modules");
+
+  // onglet neuf : un seul grand module ouvert, le reste replié
+  const ongletNeuf = await ctx.newPage();
+  await ongletNeuf.goto(BASE + "/");
+  await ongletNeuf.waitForSelector(".groupe-modules");
+  assert.equal(
+    await ongletNeuf.locator(".groupe-modules[open]").count(),
+    1,
+    "un seul grand module ouvert dans un onglet neuf",
+  );
+  await ongletNeuf.close();
+
+  // tout déplier, tout replier, et le choix gardé le temps de la session
+  const boutonSocle = page.locator(".section-titre:has(h2:text('Socle transversal')) button");
+  await boutonSocle.click();
+  if ((await page.locator(".groupe-modules[open]").count()) !== nbGroupes) await boutonSocle.click();
+  assert.equal(
+    await page.locator(".groupe-modules[open]").count(),
+    nbGroupes,
+    "« Tout déplier » ouvre tous les grands modules",
+  );
+  await boutonSocle.click();
+  assert.equal(
+    await page.locator(".groupe-modules[open]").count(),
+    0,
+    "« Tout replier » les referme tous",
+  );
+  await page.reload();
+  await page.waitForSelector(".groupe-modules");
+  assert.equal(
+    await page.locator(".groupe-modules[open]").count(),
+    0,
+    "le repli des grands modules est gardé le temps de la session",
+  );
+
+  // tiroir : sous le seuil, le volet est fermé, s'ouvre au bouton et se ferme à Échap
+  await page.setViewportSize({ width: 390, height: 844 });
+  // rouvert à cette taille, en haut de page : c'est l'état d'arrivée sur un
+  // téléphone, sans la transition que déclenche un simple redimensionnement
+  await page.goto(BASE + "/");
+  await page.waitForSelector("button.bouton-menu", { state: "visible" });
+  assert.equal(
+    await page.locator("#volet-principal").isVisible(),
+    false,
+    "volet fermé au chargement sur téléphone",
+  );
+  await page.click("button.bouton-menu");
+  await page.waitForSelector("#volet-principal", { state: "visible" });
+  assert.equal(await page.locator("button.bouton-menu").getAttribute("aria-expanded"), "true");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#volet-principal", { state: "hidden" });
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  // les explications sont sur leur page, avec leurs cinq ancres
+  await page.goto(BASE + "/reperes");
+  for (const id of ["dispositif", "evaluation", "programme", "niveaux", "questions"]) {
+    await page.waitForSelector(`section#${id}`);
+  }
+  await page.waitForSelector("text=ne vaut pas habilitation");
+  ok("volet de navigation : barre latérale sur poste, tiroir au hamburger, repères sortis de l'accueil, grands modules repliés");
+
   // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
   // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
   await page.goto(BASE + "/#progression");
@@ -738,7 +835,8 @@ Justification : justification deux.`;
   await page.click("button:has-text('Choisir ce code')");
   await page.waitForURL(/progression=ok/);
   await page.waitForSelector("#progression code:has-text('AG-002')");
-  await page.waitForSelector("a[title='Progression rattachée']:has-text('AG-002')");
+  // l'identifiant rattaché est porté par le volet, en regard de « Ma progression »
+  await page.waitForSelector("#volet-principal a[href='/#progression']:has-text('AG-002')");
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("fieldset.question");

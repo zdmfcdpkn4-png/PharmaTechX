@@ -204,12 +204,25 @@ a:hover { color: var(--marque-fonce); }
  * Mise en page
  * ========================================================================== */
 
+/* Cadre : volet de navigation à gauche, page à droite (question 37, choix c). */
+.cadre {
+  /* Pas de contexte d'empilement ici : le tiroir doit pouvoir passer
+     au-dessus de l'en-tête fixe (z-index 40) sur petit écran. */
+  max-width: calc(var(--largeur) + 252px);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
 .page {
   position: relative;
   z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: var(--largeur);
-  margin: 0 auto;
-  padding: 0 1.5rem 5rem;
+  padding: 0 0 5rem;
   display: flex;
   flex-direction: column;
   gap: 3.5rem;
@@ -662,6 +675,166 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
 .correction .source { font-size: 0.75rem; line-height: 1.5; color: var(--texte-doux); border-top: 1px solid var(--bord); padding-top: 0.5rem; }
 
 /* =============================================================================
+ * Volet de navigation — permanent au-dessus de 62 rem, tiroir en deçà
+ * ========================================================================== */
+
+.rail {
+  flex: 0 0 232px;
+  width: 232px;
+  position: sticky;
+  z-index: 2;
+  top: calc(var(--decalage) + 1rem);
+  max-height: calc(100vh - var(--decalage) - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.125rem 1rem;
+  border-radius: var(--rayon);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre);
+}
+
+.rail-groupe,
+.rail-liens { display: flex; flex-direction: column; gap: 0.125rem; }
+.rail-titre {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  padding: 0 0.625rem 0.25rem;
+}
+
+.rail a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--cible);
+  padding: 0.375rem 0.625rem;
+  border-radius: 9px;
+  border-left: 3px solid transparent;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--texte);
+  text-decoration: none;
+}
+.rail a:hover { background: var(--marque-clair); }
+.rail a[aria-current="page"] {
+  border-left-color: var(--hdv-rose);
+  background: var(--marque-clair);
+  font-weight: 650;
+}
+.rail .indice {
+  margin-left: auto;
+  font: 700 0.6875rem/1 ui-monospace, Menlo, monospace;
+  color: var(--marque);
+}
+
+details.rail-groupe > summary {
+  cursor: pointer;
+  min-height: var(--cible);
+  display: flex;
+  align-items: center;
+  list-style: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  padding: 0 0.625rem;
+  border-top: 1px solid var(--bord);
+}
+details.rail-groupe > summary::-webkit-details-marker { display: none; }
+details.rail-groupe > summary::after { content: "+"; margin-left: auto; color: var(--marque); font-weight: 700; }
+details.rail-groupe[open] > summary::after { content: "–"; }
+
+/* Bouton d'ouverture : seulement là où le volet n'est pas permanent. */
+.bouton-menu {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--cible);
+  padding: 0 0.75rem;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+  background: #ffffff;
+  color: var(--texte);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bouton-menu .barres { display: inline-flex; flex-direction: column; gap: 3px; }
+.bouton-menu .barres span { display: block; width: 16px; height: 2px; background: var(--marque); border-radius: 2px; }
+
+.voile { display: none; }
+
+@media (max-width: 61.9375rem) {
+  .bouton-menu { display: inline-flex; }
+  .cadre { display: block; }
+  .rail {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(19rem, 86vw);
+    max-height: none;
+    border-radius: 0;
+    border-left: 0;
+    padding-top: 1.25rem;
+    z-index: 70;
+    background: var(--verre-fort);
+    backdrop-filter: var(--verre-flou-fort);
+    -webkit-backdrop-filter: var(--verre-flou-fort);
+    /* Fermé : hors de l'ordre de tabulation et non annoncé. */
+    transform: translateX(-102%);
+    visibility: hidden;
+    transition: transform 0.26s ease, visibility 0.26s ease;
+  }
+  .rail--ouvert { transform: none; visibility: visible; }
+  .voile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    background: rgba(16, 24, 32, 0.38);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+  }
+  .voile--visible { opacity: 1; pointer-events: auto; }
+  body.menu-ouvert { overflow: hidden; }
+}
+
+/* En-tête et pied alignés sur le cadre, volet compris. */
+@media (min-width: 62rem) {
+  .entete-interne,
+  .pied-interne { max-width: calc(var(--largeur) + 252px); }
+}
+
+/* Actions de l'en-tête, poussées à droite depuis que la navigation a quitté la barre. */
+.entete-actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+/* Avertissement de tête d'accueil : la seule phrase qui compte, hors défilement. */
+.avertissement-hero {
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-left: 3px solid var(--hdv-rose);
+  border-radius: var(--rayon-sm);
+  background: var(--marque-clair);
+  font-size: 0.875rem;
+  max-width: 62ch;
+}
+
+/* Grands modules repliés (question 37, choix c). */
+.groupes-modules { display: flex; flex-direction: column; gap: 0.5rem; }
+.groupe-modules > summary { gap: 0.5rem; }
+.groupe-modules .contenu-bloc { padding: 0.25rem 1rem 1rem; }
+
+/* =============================================================================
  * Module — lecture longue
  * ========================================================================== */
 
@@ -712,13 +885,20 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
 .corps-module .point-cle { border-left: 3px solid var(--hdv-rose); padding-left: 1rem; }
 .references { font-size: 0.8125rem; color: var(--texte-doux); }
 
-@media (max-width: 62rem) {
+/* Deux colonnes latérales (volet + sommaire du module) ne tiennent qu'au-delà
+   de 75 rem ; en deçà, le sommaire du module repasse au-dessus du texte. */
+@media (max-width: 75rem) {
   .module { grid-template-columns: minmax(0, 1fr); }
   .sommaire { position: static; }
 }
 
 @media (max-width: 40rem) {
-  .page { padding: 0 1rem 4rem; gap: 2.5rem; }
+  .cadre { padding: 0 1rem; }
+  .page { padding: 0 0 4rem; gap: 2.5rem; }
+  /* En-tête fixe compacté : sur 844 px de haut, chaque ligne de bandeau est
+     prise à la fois sur la vue et sur la cale qui la compense en flux. */
+  .entete-interne { gap: 0.625rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .bandeau-sous { display: none; }
   .panneau-titre { padding: 1.5rem 1.25rem; }
   .entete-interne, .pied-interne { padding-left: 1rem; padding-right: 1rem; }
   .proposition .jugement { width: 100%; }
@@ -764,6 +944,9 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   .barre-passation,
   .nav-sections,
   .sommaire,
+  .rail,
+  .voile,
+  .bouton-menu,
   .bouton { display: none !important; }
 
   .verre, .carte, .panneau-titre, .correction, .resultat-entete,
@@ -1204,7 +1387,7 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 }
 
 @media print {
-  .nav-admin, .signaler, .sommaire { display: none !important; }
+  .nav-admin, .signaler, .sommaire, .rail { display: none !important; }
 }
 
 /* ── listes de cases (profils d'un module ou d'un document) ───────────────── */

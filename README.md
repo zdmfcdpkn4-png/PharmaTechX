@@ -152,7 +152,7 @@ désormais ses **filières**, ses **niveaux** et sa présence en **intégration*
 ou en **maintien** (décision du 19/09/2026, question 36) : le texte du critère
 reste versionné, son rattachement se règle. Tout écart à la fiche
 d'habilitation est affiché sur la ligne du module et se retire d'un clic. Un
-module déposé porte le sien. Le barème en vigueur est annoncé sur l'accueil
+module déposé porte le sien. Le barème en vigueur est annoncé sur `/reperes`
 et sous chaque question, **copié dans chaque résultat scellé** et porté sur
 chaque rapport : une évaluation déjà passée se relit avec le barème de son
 époque. Valeurs par défaut et règles dans `content/bareme.ts`.
@@ -287,6 +287,8 @@ répertoire par identifiant et par critère (export CSV).
 | Rôles, codes, sessions, limiteur | `lib/auth.ts`, `lib/limiteur.ts` |
 | Réglages d'exploitation | `lib/config.ts`, `.env.example` |
 | Actions d'administration | `app/actions.ts`, `app/admin/**/actions.ts` |
+| Volet de navigation (barre latérale, tiroir) | `components/Menu.tsx`, `components/Navigation.tsx` ; liens composés dans `app/layout.tsx` |
+| Repères (dispositif, barème, programme, niveaux, questions) | `app/reperes/page.tsx` |
 | Couleurs et charte HdV | `app/globals.css` |
 
 ## 10. Tests

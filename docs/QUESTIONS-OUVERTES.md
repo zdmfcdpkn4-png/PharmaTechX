@@ -293,3 +293,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     l'environnement ; les fonctions ont été relevées sur les pages indexées.
     `[à préciser]` fonctions attendues qui manqueraient : embranchements de
     scénario, vidéo interactive, export SCORM.
+
+39. **Tutoriel d'usage du site** (soulevé le 19/09/2026 avec la question 37) :
+    il n'en existe aucun. `/reperes` explique le **dispositif d'habilitation**,
+    pas le maniement de l'outil. `[à préciser]` destinataire (poste, tutorat,
+    les deux) et contenu attendu : première connexion, passation d'une
+    évaluation, dépôt d'une question, visa d'un rapport. Tant que rien n'est
+    précisé, aucune page « tuto » n'est écrite — un tutoriel inventé serait
+    faux dès la première capture.

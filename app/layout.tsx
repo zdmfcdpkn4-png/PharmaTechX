@@ -4,10 +4,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
+import { MenuProvider, BoutonMenu, VoletMenu } from "@/components/Menu";
+import { Navigation, type GroupeRail } from "@/components/Navigation";
 import { etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
 import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
+import { compterSignalementsOuverts } from "@/content/banque-db";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
@@ -57,6 +60,71 @@ export default async function RootLayout({
   const procedure = procedureReference();
   const enService = miseEnService();
 
+  // Volet de navigation (question 37, choix c) : les liens sont composés ici,
+  // seul endroit qui connaisse la session, la conservation et la base.
+  const progressionVisible = conservation && baseConfiguree();
+  const groupes: GroupeRail[] = [
+    {
+      titre: "Formation",
+      liens: [
+        { href: "/#modules", libelle: "Mes modules" },
+        { href: "/#composer", libelle: "Composer le programme" },
+        ...(progressionVisible
+          ? [{ href: "/#progression", libelle: "Ma progression", indice: ratt?.identifiant }]
+          : []),
+        { href: "/#rapport", libelle: conservation ? "Mes évaluations" : "Rapport de session" },
+      ],
+    },
+    {
+      titre: "Repères",
+      liens: [
+        { href: "/reperes#dispositif", libelle: "Le dispositif" },
+        { href: "/reperes#evaluation", libelle: "L'évaluation et son barème" },
+        { href: "/reperes#programme", libelle: "Programme complet" },
+        { href: "/reperes#niveaux", libelle: "Conditions des niveaux" },
+        { href: "/reperes#questions", libelle: "Questions fréquentes" },
+        { href: "/donnees-personnelles", libelle: "Vos données et vos droits" },
+      ],
+    },
+  ];
+
+  let signalementsOuverts = 0;
+  if (gestionnaire && baseConfiguree()) {
+    signalementsOuverts = await compterSignalementsOuverts().catch(() => 0);
+  }
+  const administration: GroupeRail | null = gestionnaire
+    ? {
+        titre: "Administration",
+        liens: [
+          { href: "/admin", libelle: "Accès" },
+          { href: "/admin/modules", libelle: "Modules" },
+          { href: "/admin/questions", libelle: "Questions" },
+          { href: "/admin/questions/import", libelle: "Dépôt" },
+          { href: "/admin/questions/situations", libelle: "Mises en situation" },
+          { href: "/admin/documents", libelle: "Documents" },
+          ...(conservation
+            ? [
+                { href: "/admin/rapports", libelle: "Rapports" },
+                { href: "/admin/personnel", libelle: "Personnel" },
+              ]
+            : []),
+          {
+            href: "/admin/signalements",
+            libelle: "Signalements",
+            indice: signalementsOuverts > 0 ? String(signalementsOuverts) : undefined,
+          },
+          { href: "/admin/ordonnancement", libelle: "Ordre" },
+          ...(session?.role === "admin"
+            ? [
+                { href: "/admin/bareme", libelle: "Barème" },
+                { href: "/admin/signature", libelle: "Signature" },
+                { href: "/admin/journal", libelle: "Journal" },
+              ]
+            : []),
+        ],
+      }
+    : null;
+
   return (
     <html lang="fr">
       <head>
@@ -97,64 +165,64 @@ export default async function RootLayout({
             horodatageIso: e.horodatage_iso,
           }))}
         >
-          <Chrome>
-            <div className="logos">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/hdv.png"
-                alt="Hôpitaux de Vendée"
-                className="hdv"
-                width={396}
-                height={120}
-              />
-              <span className="separateur-logo" aria-hidden="true" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/pharmaco-web.png"
-                alt="Service Pharmacotechnie"
-                className="pharmaco"
-                width={96}
-                height={96}
-              />
-            </div>
+          <MenuProvider>
+            <Chrome>
+              <BoutonMenu />
 
-            <div>
-              <Link href="/" className="bandeau-titre">
-                Formation &amp; habilitation
-              </Link>
-              <div className="bandeau-sous">
-                Unité de production — CHD Vendée
+              <div className="logos">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/hdv.png"
+                  alt="Hôpitaux de Vendée"
+                  className="hdv"
+                  width={396}
+                  height={120}
+                />
+                <span className="separateur-logo" aria-hidden="true" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/pharmaco-web.png"
+                  alt="Service Pharmacotechnie"
+                  className="pharmaco"
+                  width={96}
+                  height={96}
+                />
               </div>
+
+              <div>
+                <Link href="/" className="bandeau-titre">
+                  Formation &amp; habilitation
+                </Link>
+                <div className="bandeau-sous">
+                  Unité de production — CHD Vendée
+                </div>
+              </div>
+
+              <div className="entete-actions">
+                {session ? (
+                  <form action={actionDeconnexion}>
+                    <button type="submit" className="bouton bouton--compact">
+                      {session.libelle} — quitter
+                    </button>
+                  </form>
+                ) : (
+                  <Link href="/connexion" className="bouton bouton--compact">
+                    Connexion
+                  </Link>
+                )}
+              </div>
+            </Chrome>
+
+            <div className="cadre">
+              <VoletMenu>
+                <Navigation groupes={groupes} administration={administration} />
+              </VoletMenu>
+
+              <main id="contenu" className="page">
+                {children}
+              </main>
             </div>
-
-            <nav className="nav-sections" aria-label="Sections">
-              <Link href="/#modules">Mes modules</Link>
-              <Link href="/#dispositif">Le dispositif</Link>
-              <Link href="/#evaluation">L&apos;évaluation</Link>
-              <Link href="/#questions">Questions</Link>
-              {gestionnaire && <Link href="/admin">Administration</Link>}
-              {ratt && (
-                <Link href="/#progression" className="bouton bouton--compact bouton--secondaire" title="Progression rattachée">
-                  {ratt.identifiant}
-                </Link>
-              )}
-              {session ? (
-                <form action={actionDeconnexion}>
-                  <button type="submit" className="bouton bouton--compact">
-                    {session.libelle} — quitter
-                  </button>
-                </form>
-              ) : (
-                <Link href="/connexion" className="bouton bouton--compact">
-                  Connexion
-                </Link>
-              )}
-            </nav>
-          </Chrome>
-
-          <main id="contenu" className="page">
-            {children}
-          </main>
+          </MenuProvider>
 
           <footer className="pied">
             <div className="pied-interne">

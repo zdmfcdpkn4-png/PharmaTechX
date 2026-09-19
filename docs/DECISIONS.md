@@ -565,6 +565,54 @@ qui ne suivent pas la fiche — intérimaire, remplaçant. Il sera nommé, compo
 à la main, marqué « dégradé » partout où il apparaît, et ne se confondra pas
 avec les deux parcours de la fiche.
 
+**Volet de navigation et accueil allégé** (question 37, choix c, 19/09/2026) :
+le site n'avait ni barre latérale ni menu d'accès rapide — la navigation
+tenait dans une barre de liens en en-tête, repliée sur deux lignes sous
+1000 px, et l'administration répétait treize liens en tête de chaque écran.
+Mesuré au navigateur avant la reprise : l'accueil faisait **10,6 écrans de
+défilement sur poste (1280 × 800) et 19,5 sur téléphone (390 × 844)**, dont
+38 % à 47 % pour la seule liste des critères et 38 % à 43 % pour les
+explications.
+
+Trois pièces, décidées ensemble :
+
+1. **Un volet unique** (`components/Menu.tsx`, `components/Navigation.tsx`) :
+   barre latérale permanente au-dessus de 62 rem, **tiroir ouvert par un
+   bouton « Menu »** en deçà, fermé à Échap, au voile et au suivi d'un lien.
+   Fermé, il est en `visibility: hidden` : ses liens sortent de l'ordre de
+   tabulation. Il porte les sections de l'accueil, les repères, et — pour un
+   profil de tutorat ou d'administration — les écrans d'administration, dans
+   un repli ouvert de lui-même sur `/admin`. La barre `nav-admin` disparaît
+   des écrans d'administration : elle y était la même treize fois.
+2. **Les explications quittent l'accueil** pour `/reperes` : le dispositif en
+   six étapes, les formats et leur barème, le programme complet des 58
+   critères, les conditions des niveaux, les questions fréquentes. La page
+   est en rendu dynamique — elle annonce le barème **en vigueur**, jamais
+   celui figé à la construction. L'avertissement qui compte reste en tête
+   d'accueil, hors défilement : « Valider un module à l'écran ne vaut pas
+   habilitation ».
+3. **Les critères se replient par grand module** (bloc de la fiche), un seul
+   groupe ouvert à l'arrivée, avec « Tout déplier » / « Tout replier ». Le
+   choix est gardé le temps de la session, sur le poste, dans le
+   `sessionStorage` — rien de nominatif, rien de transmis.
+
+Écart assumé par rapport à ce qui était annoncé : les groupes ne sont **pas**
+un accordéon strict — plusieurs peuvent rester ouverts. Sur tablette, gants
+aux mains, un repli refermé d'office à chaque ouverture coûte un appui de
+plus à chaque fois.
+
+Résultat mesuré, base vide, même méthode : accueil **4 032 px (5,0 écrans)
+sur poste et 7 422 px (8,8 écrans) sur téléphone**, soit **−53 %** et
+**−55 %**. Les écrans d'administration perdent leur barre de liens (−11 % à
+−20 %). La page d'un module **s'allonge de 7 % sur poste** (5 462 → 5 833 px)
+: le volet prend 232 px, la colonne de texte se resserre. Le sommaire d'un
+module ne passe en colonne qu'au-delà de 75 rem — deux colonnes latérales ne
+tiennent pas en deçà — et se replace au-dessus du texte en dessous.
+
+Ce qui n'est pas fait : il n'existe **aucun tutoriel d'usage du site**. Les
+repères portent le dispositif d'habilitation, pas le maniement de l'outil.
+Destinataire et contenu restent `[à préciser]`.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

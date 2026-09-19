@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSessionFormation, type ResultatSession } from "./SessionFormation";
 import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
@@ -117,6 +117,88 @@ function CarteModule({ m }: { m: ModuleResume }) {
   );
 }
 
+/** Un grand module de la fiche : son numéro de bloc et son intitulé. */
+export interface BlocResume {
+  numero: string;
+  titre: string;
+}
+
+interface GroupeModules {
+  cle: string;
+  numero: string;
+  titre: string;
+  modules: ModuleResume[];
+}
+
+/**
+ * Regroupe les critères par grand module (question 37, choix c) : la liste
+ * plate faisait à elle seule près de la moitié du défilement de l'accueil sur
+ * téléphone. L'ordre est celui de la fiche ; un bloc inconnu — module déposé
+ * sans rattachement — passe en fin de liste.
+ */
+function grouperParBloc(
+  liste: ModuleResume[],
+  blocs: BlocResume[],
+  prefixe: string,
+): GroupeModules[] {
+  const rang = new Map(blocs.map((b, i) => [b.numero, i]));
+  const par = new Map<string, ModuleResume[]>();
+  for (const m of liste) {
+    const deja = par.get(m.bloc);
+    if (deja) deja.push(m);
+    else par.set(m.bloc, [m]);
+  }
+  return [...par.entries()]
+    .sort((a, b) => (rang.get(a[0]) ?? 999) - (rang.get(b[0]) ?? 999))
+    .map(([numero, modules]) => ({
+      cle: `${prefixe}:${numero}`,
+      numero,
+      titre: blocs.find((b) => b.numero === numero)?.titre ?? "",
+      modules,
+    }));
+}
+
+function GroupesModules({
+  groupes,
+  estOuvert,
+  basculer,
+}: {
+  groupes: GroupeModules[];
+  estOuvert: (cle: string, parDefaut: boolean) => boolean;
+  basculer: (cle: string, ouvert: boolean) => void;
+}) {
+  return (
+    <div className="groupes-modules">
+      {groupes.map((g, i) => (
+        <details
+          key={g.cle}
+          className="bloc groupe-modules"
+          open={estOuvert(g.cle, i === 0)}
+          onToggle={(e) => basculer(g.cle, e.currentTarget.open)}
+        >
+          <summary>
+            Bloc <Marqueur valeur={g.numero} />
+            {g.titre ? ` — ${g.titre}` : ""}
+            <span className="etiquette etiquette--neutre">
+              {g.modules.length} critère{g.modules.length > 1 ? "s" : ""}
+            </span>
+          </summary>
+          <div className="contenu-bloc">
+            <div className="grille">
+              {g.modules.map((m) => (
+                <CarteModule key={m.id} m={m} />
+              ))}
+            </div>
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+/** Repli des grands modules, gardé le temps de la session, sur ce poste. */
+const CLE_GROUPES = "fp-groupes-ouverts";
+
 function nombre(n: number): string {
   return String(Math.round(n * 100) / 100).replace(".", ",");
 }
@@ -126,6 +208,7 @@ export function TableauDeBord({
   parPoste,
   postes,
   niveaux,
+  blocs,
   parcoursTitre,
   conservation,
   procedure,
@@ -140,6 +223,8 @@ export function TableauDeBord({
   parPoste: Record<string, ModuleResume[]>;
   postes: PosteResume[];
   niveaux: NiveauResume[];
+  /** Grands modules de la fiche, pour le regroupement des critères. */
+  blocs: BlocResume[];
   parcoursTitre: string;
   conservation: "aucune" | "pseudonyme";
   /** Référence de la procédure interne, portée sur les rapports téléchargés. */
@@ -168,6 +253,51 @@ export function TableauDeBord({
   const [identifiant, setIdentifiant] = useState(identifiantRattache ?? "");
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Replis des grands modules : premier groupe ouvert par défaut, choix de
+  // l'agent gardé le temps de la session (jamais nominatif, jamais transmis).
+  const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
+  const [replisLus, setReplisLus] = useState(false);
+
+  useEffect(() => {
+    try {
+      const brut = sessionStorage.getItem(CLE_GROUPES);
+      if (brut) setOuverts(JSON.parse(brut) as Record<string, boolean>);
+    } catch {
+      /* stockage refusé : les replis par défaut suffisent */
+    }
+    setReplisLus(true);
+  }, []);
+
+  useEffect(() => {
+    if (!replisLus) return;
+    try {
+      sessionStorage.setItem(CLE_GROUPES, JSON.stringify(ouverts));
+    } catch {
+      /* stockage refusé : le repli reste valable pour la page en cours */
+    }
+  }, [ouverts, replisLus]);
+
+  const estOuvert = (cle: string, parDefaut: boolean) => ouverts[cle] ?? parDefaut;
+  const basculer = (cle: string, ouvert: boolean) =>
+    setOuverts((o) => (o[cle] === ouvert ? o : { ...o, [cle]: ouvert }));
+  const deplierTout = (groupes: GroupeModules[], valeur: boolean) =>
+    setOuverts((o) => {
+      const suite = { ...o };
+      for (const g of groupes) suite[g.cle] = valeur;
+      return suite;
+    });
+  const tousOuverts = (groupes: GroupeModules[]) =>
+    groupes.length > 0 && groupes.every((g, i) => estOuvert(g.cle, i === 0));
+  const BoutonReplis = ({ groupes }: { groupes: GroupeModules[] }) =>
+    groupes.length > 1 ? (
+      <button
+        type="button"
+        className="bouton bouton--compact bouton--discret"
+        onClick={() => deplierTout(groupes, !tousOuverts(groupes))}
+      >
+        {tousOuverts(groupes) ? "Tout replier" : "Tout déplier"}
+      </button>
+    ) : null;
 
   const parNiveau = (liste: ModuleResume[]) =>
     niveauCode ? liste.filter((m) => m.niveaux.includes(niveauCode)) : liste;
@@ -176,6 +306,11 @@ export function TableauDeBord({
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
   const programme = useMemo(() => [...socle, ...modulesPoste], [socle, modulesPoste]);
+  const groupesSocle = useMemo(() => grouperParBloc(socle, blocs, "socle"), [socle, blocs]);
+  const groupesPoste = useMemo(
+    () => grouperParBloc(modulesPoste, blocs, "poste"),
+    [modulesPoste, blocs],
+  );
   // Un document sans profil est proposé à tous ; sinon il suit la filière et le niveau choisis.
   const documentsVisibles = documents.filter(
     (d) =>
@@ -238,7 +373,7 @@ export function TableauDeBord({
 
   return (
     <>
-      <section className="carte" aria-labelledby="t-filtres">
+      <section className="carte" id="composer" aria-labelledby="t-filtres">
         <h2 id="t-filtres">Composer le programme</h2>
         <p className="legende">
           Le programme d&apos;un agent se compose du socle transversal (blocs 1 et 3), exigé de
@@ -306,25 +441,19 @@ export function TableauDeBord({
           {socle.length} critère{socle.length > 1 ? "s" : ""} — blocs 1 et 3, prérequis aux deux
           parcours
         </span>
+        <BoutonReplis groupes={groupesSocle} />
       </div>
-      <div className="grille">
-        {socle.map((m) => (
-          <CarteModule key={m.id} m={m} />
-        ))}
-      </div>
+      <GroupesModules groupes={groupesSocle} estOuvert={estOuvert} basculer={basculer} />
 
       <div className="section-titre">
         <h2>Critères de la filière</h2>
         <span className="compte">
           {posteId ? `${modulesPoste.length} critère(s)` : "aucune filière choisie"}
         </span>
+        {posteId ? <BoutonReplis groupes={groupesPoste} /> : null}
       </div>
       {posteId ? (
-        <div className="grille">
-          {modulesPoste.map((m) => (
-            <CarteModule key={m.id} m={m} />
-          ))}
-        </div>
+        <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} />
       ) : (
         <p className="encart">
           Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
