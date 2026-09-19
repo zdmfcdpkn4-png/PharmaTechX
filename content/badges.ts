@@ -61,6 +61,21 @@ export const ILLUSTRATIONS: Record<string, Illustration> = {
   etiquetage: { libelle: "Étiquetage et traçabilité", fichier: "etiquetage.webp" },
   "dossier-de-lot": { libelle: "Dossier de lot et documentation", fichier: "dossier-de-lot.webp" },
   "dechets-chimiques": { libelle: "Déchets chimiques et biologiques", fichier: "dechets-chimiques.webp" },
+  // Seconde série, 19/09/2026. Les quatre dernières viennent d'une planche au
+  // dessin différent — aplats colorés, anneau plus fin : elles voisinent
+  // correctement mais ne se confondent pas avec les autres.
+  "analyse-microscopique": { libelle: "Analyse microscopique", fichier: "analyse-microscopique.webp" },
+  "filtration-hepa": { libelle: "Filtration HEPA et flux d'air", fichier: "filtration-hepa.webp" },
+  "hotte-laminaire": { libelle: "Hotte à flux laminaire", fichier: "hotte-laminaire.webp" },
+  "combinaison-integrale": { libelle: "Tenue intégrale et flux d'air", fichier: "combinaison-integrale.webp" },
+  "marche-en-avant": { libelle: "Circuits et marche en avant", fichier: "marche-en-avant.webp" },
+  "tri-dechets": { libelle: "Tri des déchets et collecteurs", fichier: "tri-dechets.webp" },
+  "registre-releves": { libelle: "Registre et relevés", fichier: "registre-releves.webp" },
+  "attestation-habilitation": { libelle: "Attestation d'habilitation", fichier: "attestation-habilitation.webp" },
+  "resultats-conformes": { libelle: "Résultats conformes", fichier: "resultats-conformes.webp" },
+  "danger-cmr": { libelle: "Danger CMR et protection", fichier: "danger-cmr.webp" },
+  "logistique-thermosensible": { libelle: "Logistique des produits thermosensibles", fichier: "logistique-thermosensible.webp" },
+  "formation-diplome": { libelle: "Formation et diplôme", fichier: "formation-diplome.webp" },
 };
 
 export const NOMS_ILLUSTRATION = Object.keys(ILLUSTRATIONS);
@@ -85,15 +100,24 @@ export const SANS_BADGE = "aucun";
 const PROPOSITIONS: [RegExp, string][] = [
   [/autoclav|sterilisateur|chaleur humide/, "autoclave"],
   [/sip|sterilisation en place|vapeur/, "sterilisation-sip"],
+  [/hepa|filtre terminal|integrite du filtre|test dop|test pao|filtration de l.air/, "filtration-hepa"],
   [/eau ppi|eau pour preparation|osmose|osmoseur|eau purifiee|qualite de l.eau/, "eau-ppi"],
+  [/tri des dechets|collecteur|opct|aiguille|objet piquant/, "tri-dechets"],
   [/dechet|dasri|elimination|effluent|excreta/, "dechets-chimiques"],
+  [/cmr|cancerogene|mutagene|reprotoxique|pictogramme de danger|classification sgh|toxicite/, "danger-cmr"],
   [/chromatograph|hplc|controle qualite|dosage|analyse quantitative|spectroph/, "controle-qualite"],
+  [/microscop|examen direct|coloration de gram|lame et lamelle/, "analyse-microscopique"],
   [/dossier de lot|documentation|fiche de fabrication|enregistrement|tracabilite documentaire/, "dossier-de-lot"],
+  [/registre|releve|cahier de|feuille de suivi/, "registre-releves"],
+  [/attestation|certificat|visa d.habilitation/, "attestation-habilitation"],
+  [/diplome|cursus|compagnonnage|tutorat|formation initiale|nouvel arrivant/, "formation-diplome"],
   [/etiquet|code.barre|datamatrix|marquage|identification du produit/, "etiquetage"],
+  [/thermosensible|temperature dirigee|2 a 8|chaine thermique/, "logistique-thermosensible"],
   [/chaine du froid|logistique|acheminement|livraison|coursier/, "chaine-du-froid"],
   [/transport|glaciere|expedition|conteneur isotherme/, "transport-refrigere"],
   [/stockage|conservation|refrigerateur|frigo|armoire|enceinte thermostat/, "stockage-chimio"],
   [/nettoyage|cip|rincage|decontamination|bionettoyage|desinfection/, "nettoyage-cip"],
+  [/combinaison|scaphandre|tenue integrale|surblouse/, "combinaison-integrale"],
   [/habillage|habillement|gowning|tenue|epi|protection de l.operateur|protection operateur|equipement de protection/, "habillage-sterile"],
   [/particul|surveillance environnementale|biocontamination|monitoring|pression differentielle/, "surveillance-environnementale"],
   [/iso 5|classe iso|classification|grade a|grade b/, "classe-iso-5"],
@@ -102,8 +126,17 @@ const PROPOSITIONS: [RegExp, string][] = [
   [/hotte|psm|poste de securite|flux laminaire|flux d.air/, "poste-securite-microbiologique"],
   [/matiere premiere|pesee|peser|gravimetri|balance|dotation|deconditionnement/, "matieres-premieres"],
   [/isolateur|reconstitution|preparation|cytotoxique|chimiotherapie|seringue|poche/, "preparation-isolateur"],
+  [/marche en avant|circuit|cheminement|flux de personnel|flux des produits/, "marche-en-avant"],
   [/zac|zone d.atmosphere|zone sterile|salle propre|sas|comportement|circulation/, "zone-sterile"],
 ];
+
+/*
+ * Deux illustrations n'ont volontairement aucun mot-clé : « Hotte à flux
+ * laminaire » et « Résultats conformes » recouvrent des domaines déjà tenus
+ * par « Poste de sécurité microbiologique » et « Contrôle qualité ». Plutôt
+ * que d'inventer une distinction qui n'existe pas dans les titres, elles
+ * restent au choix de la main.
+ */
 
 function sansAccent(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

@@ -54,6 +54,44 @@ test("proposition d'après le titre : le plus spécifique l'emporte", () => {
   assert.equal(badgeSuggere("Module 4", "Savoir réaliser un essai de stérilité."), "sterilite-microbiologique");
 });
 
+test("seconde série : les mots précis passent avant les mots larges", () => {
+  // « tri des déchets » avant « déchet », sinon la seconde série ne sort jamais
+  assert.equal(badgeSuggere("Tri des déchets et collecteurs d'aiguilles"), "tri-dechets");
+  assert.equal(badgeSuggere("Élimination des déchets cytotoxiques"), "dechets-chimiques");
+  // « HEPA » avant « flux d'air », qui appartient au poste de sécurité
+  assert.equal(badgeSuggere("Test d'intégrité des filtres HEPA"), "filtration-hepa");
+  assert.equal(badgeSuggere("Travail sous hotte à flux d'air"), "poste-securite-microbiologique");
+  // « combinaison » avant « tenue », qui appartient à l'habillage
+  assert.equal(badgeSuggere("Combinaison intégrale en salle propre"), "combinaison-integrale");
+  assert.equal(badgeSuggere("Tenue de travail et habillage"), "habillage-sterile");
+  // « classification SGH » avant « classification », qui vaut ISO 5
+  assert.equal(badgeSuggere("Classification SGH des cytotoxiques"), "danger-cmr");
+  assert.equal(badgeSuggere("Classification des zones"), "classe-iso-5");
+  // « thermosensible » avant « logistique »
+  assert.equal(badgeSuggere("Produits thermosensibles"), "logistique-thermosensible");
+  assert.equal(badgeSuggere("Logistique des préparations"), "chaine-du-froid");
+  assert.equal(badgeSuggere("Registre des relevés de température"), "registre-releves");
+  assert.equal(badgeSuggere("Examen direct au microscope"), "analyse-microscopique");
+  assert.equal(badgeSuggere("Attestation de fin de formation"), "attestation-habilitation");
+  assert.equal(badgeSuggere("Compagnonnage du nouvel arrivant"), "formation-diplome");
+  assert.equal(badgeSuggere("Marche en avant et circuits"), "marche-en-avant");
+});
+
+test("deux illustrations restent au choix de la main, sans mot-clé", () => {
+  // Elles recouvrent un domaine déjà tenu : inventer une distinction que les
+  // titres ne portent pas produirait de mauvaises propositions.
+  const proposables = new Set(
+    [
+      "Hotte", "Résultats", "Conforme", "Laminaire", "Flux", "Qualité", "Microscope",
+      "Contrôle", "Validation", "Vérification", "Analyse", "Mesure",
+    ].map((t) => badgeSuggere(t)),
+  );
+  assert.ok(!proposables.has("hotte-laminaire"));
+  assert.ok(!proposables.has("resultats-conformes"));
+  assert.ok(NOMS_ILLUSTRATION.includes("hotte-laminaire"), "mais elle existe dans la banque");
+  assert.ok(NOMS_ILLUSTRATION.includes("resultats-conformes"));
+});
+
 test("rien n'est proposé quand aucun mot ne correspond", () => {
   assert.equal(badgeSuggere("Module 12"), undefined);
   assert.equal(badgeSuggere(""), undefined);
