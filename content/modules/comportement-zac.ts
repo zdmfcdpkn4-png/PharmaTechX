@@ -35,6 +35,7 @@ const ISO_14644_1 = {
 
 export const comportementZac: Module = {
   id: "comportement-zac",
+  badge: "zone-sterile",
   titre: "Comportement et habillage en zone à atmosphère contrôlée",
   objectif:
     "Expliquer ce que la classification particulaire garantit et ce qu'elle ne garantit pas, réaliser l'habillage dans l'ordre et adopter les comportements qui préservent la maîtrise de l'environnement.",

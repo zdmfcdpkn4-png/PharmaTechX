@@ -839,6 +839,28 @@ SCORM). Transposé dans les limites du brief :
   c'est la variable d'exploitation qui bascule, et elle se pose dans le
   tableau de bord de Render, le service ayant été créé hors blueprint. Ce que
   l'examen du DPO ne tranche pas reste marqué dans `docs/RGPD.md`.
+- Illustrations de domaine (19/09/2026, images fournies par le pharmacien
+  responsable) : 20 aquarelles rondes découpées des cinq planches, détourées en
+  WebP 256 px (484 Ko au total), versionnées dans `public/badges/` plutôt que
+  déposées en base — elles suivent le déploiement, survivent à une remise à
+  zéro et se servent sans session. Deux familles cohabitent et ne se
+  confondent pas : les pictogrammes SVG restent pour ce qui se rend en
+  pastille (filière, 24 px), les illustrations pour la vignette d'un module
+  (72 à 96 px). Mesuré : en dessous de ~72 px le dessin ne se lit plus, et
+  leurs légendes internes ne se lisent à aucune taille d'écran — ce sont des
+  ornements, sans valeur normative, jamais repris sur un rapport (certaines
+  portent des mentions décoratives sans signification, ce qui n'a pas sa place
+  sur une pièce opposable).
+  Un module porte son badge (`modules_deposes.badge`) ; pour ceux déjà en
+  place, une illustration est **proposée d'après le titre et l'objectif**
+  (`badgeSuggere`, `content/badges.ts`) et se remplace dans le formulaire.
+  Trois états distincts, sans quoi retirer un badge le ferait revenir à la
+  lecture suivante : vide = jamais renseigné (proposition), `aucun` = retiré à
+  la main, sinon l'identifiant choisi. Rien n'est proposé quand aucun mot ne
+  correspond : une illustration fausse coûte plus cher qu'une case vide.
+  La cohérence des deux fichiers est tenue par le type — `PICTOGRAMMES` est un
+  `Record<NomPictogramme, …>`, donc une entrée oubliée ou inventée est une
+  erreur de compilation, vérifié.
 - TLS vers la base, degré retenu le 19/09/2026 (choix a) : `DATABASE_SSL=require`
   **et** « Enforce SSL on incoming connections » activé côté Supabase, une fois
   `base_tls` constaté chiffré. L'interrupteur n'ajoute pas de chiffrement — la

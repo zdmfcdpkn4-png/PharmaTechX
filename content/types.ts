@@ -262,6 +262,12 @@ export type Affectation = "tronc-commun" | "poste";
 export interface Module {
   id: string;
   titre: string;
+  /**
+   * Illustration de domaine (`content/badges.ts`). Vide ou absent : une
+   * proposition est faite d'après le titre à l'affichage (`badgeEffectif`) ;
+   * `SANS_BADGE` la refuse.
+   */
+  badge?: string;
   /** Une phrase : ce que l'apprenant sait faire à l'issue du module. */
   objectif: string;
   /** Bloc de compétence de rattachement (fiche d'habilitation CHD Vendée). */

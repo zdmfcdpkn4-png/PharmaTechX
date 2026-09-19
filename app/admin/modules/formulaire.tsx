@@ -2,6 +2,8 @@ import { criteres } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
 import type { LigneModuleDepose } from "@/content/modules-db";
 import { LIMITES_BAREME } from "@/content/bareme";
+import { badgeSuggere, SANS_BADGE } from "@/content/badges";
+import { ChoixBadge } from "@/components/ChoixBadge";
 
 /**
  * Formulaire d'un module déposé (création et modification). Rendu serveur :
@@ -91,6 +93,19 @@ export async function FormulaireModule({
           </label>
         </div>
       </fieldset>
+      {/*
+        À la création, le titre n'est pas encore connu du serveur : « aucun »
+        vaut « pas encore renseigné » (chaîne vide) et laisse le site proposer
+        une illustration d'après le titre à la première lecture. À la
+        modification, la proposition est déjà pré-cochée, donc « aucun » est un
+        refus explicite (`SANS_BADGE`), qui ne se fait pas rattraper.
+      */}
+      <ChoixBadge
+        nom="badge"
+        defaut={initiale?.badge || badgeSuggere(initiale?.titre ?? "", initiale?.objectif ?? "")}
+        valeurAucun={initiale ? SANS_BADGE : ""}
+        libelleAucun={initiale ? "Aucun" : "Aucun — proposé d'après le titre"}
+      />
       <div className="rangee">
         <label className="champ">
           <span>Seuil de réussite (%)</span>

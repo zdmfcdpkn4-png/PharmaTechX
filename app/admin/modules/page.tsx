@@ -1,3 +1,5 @@
+import { Badge } from "@/components/Badge";
+import { badgeEffectif } from "@/content/badges";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
@@ -82,8 +84,13 @@ export default async function Modules({
                 v{m.version} · créé par {m.cree_par} · <code>{m.id}</code>
               </span>
             </div>
-            <h3 style={{ margin: ".25rem 0" }}>{m.titre}</h3>
-            {m.objectif && <p className="legende" style={{ margin: 0 }}>{m.objectif}</p>}
+            <div className="titre-vignette">
+              <Badge nom={badgeEffectif(m.badge, m.titre, m.objectif)} taille={72} />
+              <div>
+                <h3 style={{ margin: ".25rem 0" }}>{m.titre}</h3>
+                {m.objectif && <p className="legende" style={{ margin: 0 }}>{m.objectif}</p>}
+              </div>
+            </div>
             <p className="legende" style={{ margin: ".25rem 0 0" }}>
               {m.filieres.length > 0 ? `Filières : ${m.filieres.join(", ")}` : "Tronc commun (tous postes)"}
               {" · "}

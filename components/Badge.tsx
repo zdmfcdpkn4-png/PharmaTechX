@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ILLUSTRATIONS, NOMS_ILLUSTRATION, NOMS_PICTOGRAMME, type NomPictogramme } from "@/content/badges";
 
 /**
  * Banque de pictogrammes du site.
@@ -16,10 +17,13 @@ import type { ReactNode } from "react";
 
 export interface DefinitionBadge {
   libelle: string;
-  trace: ReactNode;
+  /** Tracé SVG (pictogramme), ou `image` pour une illustration. */
+  trace?: ReactNode;
+  /** Nom du fichier dans `public/badges/` (illustration). */
+  image?: string;
 }
 
-export const BADGES: Record<string, DefinitionBadge> = {
+export const PICTOGRAMMES: Record<NomPictogramme, DefinitionBadge> = {
   isolateur: {
     libelle: "Isolateur",
     trace: (
@@ -209,6 +213,19 @@ export const BADGES: Record<string, DefinitionBadge> = {
   },
 };
 
+export { NOMS_PICTOGRAMME };
+
+/**
+ * La banque complète : pictogrammes puis illustrations. Un identifiant est
+ * unique d'une famille à l'autre — ce que garantit le test `badges`.
+ */
+export const BADGES: Record<string, DefinitionBadge> = {
+  ...PICTOGRAMMES,
+  ...Object.fromEntries(
+    NOMS_ILLUSTRATION.map((n) => [n, { libelle: ILLUSTRATIONS[n].libelle, image: ILLUSTRATIONS[n].fichier }]),
+  ),
+};
+
 export const NOMS_BADGE = Object.keys(BADGES);
 
 /** Le pictogramme d'un identifiant, ou rien si l'identifiant est inconnu ou vide. */
@@ -223,6 +240,23 @@ export function Badge({
 }) {
   const def = nom ? BADGES[nom] : undefined;
   if (!def) return null;
+  if (def.image) {
+    // `alt` vide : l'illustration n'apporte rien que le texte voisin ne dise
+    // déjà (titre du module, libellé dans la grille de choix). La faire lire
+    // par un lecteur d'écran doublerait l'information.
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className={className ? `badge badge--illustration ${className}` : "badge badge--illustration"}
+        src={`/badges/${def.image}`}
+        width={taille}
+        height={taille}
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
   return (
     <svg
       className={className ? `badge ${className}` : "badge"}

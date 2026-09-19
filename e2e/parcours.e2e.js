@@ -1228,7 +1228,56 @@ Justification : cascade de pression.`,
   await page.waitForURL(/\/connexion/);
   ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
 
-  // 14d. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
+  // 14d. illustrations de domaine (19/09/2026) : proposées d'après le titre pour les modules déjà
+  //      en place, modifiables, et le retrait explicite ne se fait pas rattraper par la proposition
+  const vignette = (f) => page.locator(`.titre-vignette img.badge--illustration[src$="/badges/${f}"]`);
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.goto(BASE + "/admin/modules");
+  assert.ok(
+    (await page.locator('.grille-badges--vignettes img.badge--illustration').count()) >= 20,
+    "la banque d'illustrations est proposée au dépôt d'un module",
+  );
+  await page.fill("input[name=titre]", "Élimination des déchets cytotoxiques");
+  await page.fill("input[name=objectif]", "Trier et éliminer les déchets de production.");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idBadge = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  // proposition : aucun badge n'a été choisi, le titre suffit
+  await page.goto(BASE + "/module/" + idBadge);
+  await vignette("dechets-chimiques.webp").waitFor();
+  await page.goto(BASE + "/admin/modules");
+  await page.locator("li.carte", { hasText: "Élimination des déchets cytotoxiques" })
+    .locator('img.badge--illustration[src$="/badges/dechets-chimiques.webp"]').first().waitFor();
+  // la proposition est pré-cochée dans le formulaire, et se remplace
+  await page.goto(BASE + "/admin/modules/" + idBadge);
+  assert.equal(
+    await page.locator('input[name=badge][value="dechets-chimiques"]').first().isChecked(),
+    true,
+    "proposition pré-cochée à la modification",
+  );
+  await page.locator('input[name=badge][value="autoclave"]').first().check();
+  await page.click("button:has-text('Enregistrer')");
+  await page.waitForURL(/ok=/);
+  await page.goto(BASE + "/module/" + idBadge);
+  await vignette("autoclave.webp").waitFor();
+  assert.equal(await vignette("dechets-chimiques.webp").count(), 0, "le choix remplace la proposition");
+  // retrait explicite : la proposition ne revient pas à la lecture suivante
+  await page.goto(BASE + "/admin/modules/" + idBadge);
+  await page.locator('input[name=badge][value="aucun"]').first().check();
+  await page.click("button:has-text('Enregistrer')");
+  await page.waitForURL(/ok=/);
+  await page.goto(BASE + "/module/" + idBadge);
+  await page.waitForSelector("h1:has-text('Élimination des déchets cytotoxiques')");
+  assert.equal(await page.locator("img.badge--illustration").count(), 0, "badge retiré, proposition non rattrapée");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("illustrations : banque proposée au dépôt, proposée d'après le titre, remplacée au choix, retrait définitif");
+
+  // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {
     const h = (await page.request.get(BASE + u)).headers();

@@ -52,6 +52,7 @@ const ANSES_CYTO = {
 
 export const protectionOperateur: Module = {
   id: "protection-operateur-cytotoxiques",
+  badge: "habillage-sterile",
   titre: "Protection de l'opérateur face au risque cytotoxique",
   objectif:
     "Identifier les situations d'exposition aux cytotoxiques dans l'unité, porter les protections adaptées et appliquer la conduite à tenir en cas de contamination accidentelle.",

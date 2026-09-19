@@ -245,7 +245,8 @@ export const SCHEMA: string[] = [
      cree_le       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
      edite_le      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
      publie_le     TIMESTAMPTZ,
-     version       INTEGER NOT NULL DEFAULT 1
+     version       INTEGER NOT NULL DEFAULT 1,
+     badge         TEXT NOT NULL DEFAULT ''
    )`,
   // seuil de réussite réglé pour un module du code (sinon : seuil par défaut du barème)
   `CREATE TABLE IF NOT EXISTS reglages_modules (
@@ -330,6 +331,9 @@ export const SCHEMA: string[] = [
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_hash TEXT`,
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_maj_le TIMESTAMPTZ`,
   // documents liés à un ou plusieurs profils (filières, niveaux) — question 10
+  // illustration de domaine d'un module (19/09/2026) : vide = jamais renseigné,
+  // une proposition est alors faite d'après le titre ; « aucun » = retiré à la main
+  `ALTER TABLE modules_deposes ADD COLUMN IF NOT EXISTS badge TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,
 

@@ -7,6 +7,8 @@ import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db"
 import { getSession } from "@/lib/auth";
 import { STATUTS_MODULE } from "@/content/modules-db";
 import { Corps } from "@/components/Corps";
+import { Badge } from "@/components/Badge";
+import { badgeEffectif } from "@/content/badges";
 import { LectureModule } from "@/components/LectureModule";
 
 export const dynamic = "force-dynamic";
@@ -203,8 +205,13 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
             {" · "}revalidation {typeof mod.periodiciteMois === "number" ? `${mod.periodiciteMois} mois` : A_PRECISER}
           </li>
         </ul>
-        <h1>{mod.titre}</h1>
-        <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>{mod.objectif}</p>
+        <div className="titre-vignette">
+          <Badge nom={badgeEffectif(mod.badge, mod.titre, mod.objectif)} taille={96} />
+          <div>
+            <h1>{mod.titre}</h1>
+            <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>{mod.objectif}</p>
+          </div>
+        </div>
         <ul className="meta-module" style={{ margin: 0 }}>
           {mod.sections.length > 0 && (
             <li className="etiquette etiquette--neutre">

@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes } from "@/content/referentiel-db";
-import { BADGES, Badge, NOMS_BADGE } from "@/components/Badge";
+import { Badge } from "@/components/Badge";
+import { ChoixBadge } from "@/components/ChoixBadge";
 import {
   actionEnregistrerFiliere,
   actionEnregistrerNiveau,
@@ -23,28 +24,6 @@ const ERREURS: Record<string, string> = {
   code: "Le code du niveau est obligatoire.",
   "filiere-manquante": "Un niveau se rattache à une filière.",
 };
-
-function ChoixBadge({ nom, defaut }: { nom: string; defaut?: string }) {
-  return (
-    <fieldset className="groupe">
-      <legend className="champ-titre">Badge</legend>
-      <div className="grille-badges">
-        <label className="choix-badge">
-          <input type="radio" name={nom} value="" defaultChecked={!defaut} />
-          <span className="badge badge--vide" aria-hidden="true" />
-          <span className="legende">Aucun</span>
-        </label>
-        {NOMS_BADGE.map((n) => (
-          <label key={n} className="choix-badge">
-            <input type="radio" name={nom} value={n} defaultChecked={defaut === n} />
-            <Badge nom={n} />
-            <span className="legende">{BADGES[n].libelle}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 export default async function Referentiel({
   searchParams,
@@ -138,7 +117,7 @@ export default async function Referentiel({
                         <span>Description</span>
                         <textarea name="description" defaultValue={f.description} maxLength={400} rows={2} />
                       </label>
-                      <ChoixBadge nom="badge" defaut={f.badge} />
+                      <ChoixBadge nom="badge" defaut={f.badge} familles="pictogrammes" />
                       <label className="case-seule">
                         <input type="checkbox" name="actif" defaultChecked={d?.actif !== false} />
                         <span>Proposée dans les listes de rattachement</span>

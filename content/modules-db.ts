@@ -47,6 +47,8 @@ export interface LigneModuleDepose {
   edite_le: string;
   publie_le: string | null;
   version: number;
+  /** Identifiant de badge : vide = jamais renseigné, `SANS_BADGE` = retiré. */
+  badge: string;
   nb_questions: number;
   nb_valides: number;
   nb_documents: number;
@@ -62,6 +64,7 @@ export interface ModuleDeposeAEnregistrer {
   parcours: TypeParcours[];
   seuil: number;
   dureeMinutes: number;
+  badge: string;
 }
 
 /** Valeurs de formulaire ramenées à des chaînes distinctes et bornées. */
@@ -111,7 +114,7 @@ export function filtrerParcours(parcours: unknown): TypeParcours[] {
 const COLONNES = `
   m.id, m.titre, m.objectif, m.presentation, m.critere_id, m.filieres, m.niveaux, m.parcours,
   m.seuil, m.duree_minutes, m.statut, m.cree_par, m.cree_le::text, m.edite_le::text,
-  m.publie_le::text, m.version,
+  m.publie_le::text, m.version, m.badge,
   (SELECT COUNT(*)::int FROM questions q WHERE q.module_id = m.id AND q.statut <> 'retire') AS nb_questions,
   (SELECT COUNT(*)::int FROM questions q WHERE q.module_id = m.id AND q.statut = 'valide') AS nb_valides,
   (SELECT COUNT(*)::int FROM depots d WHERE d.module_id = m.id) AS nb_documents`;
@@ -140,14 +143,15 @@ export async function enregistrerModuleDepose(
   const par = `${acteur.role} · ${acteur.libelle}`;
   await sql`
     INSERT INTO modules_deposes (id, titre, objectif, presentation, critere_id, filieres, niveaux, parcours,
-      seuil, duree_minutes, cree_par)
+      seuil, duree_minutes, badge, cree_par)
     VALUES (${ident}, ${m.titre}, ${m.objectif}, ${m.presentation}, ${m.critereId},
       ${JSON.stringify(m.filieres)}::jsonb, ${JSON.stringify(m.niveaux)}::jsonb, ${JSON.stringify(m.parcours)}::jsonb,
-      ${m.seuil}, ${m.dureeMinutes}, ${par})
+      ${m.seuil}, ${m.dureeMinutes}, ${m.badge}, ${par})
     ON CONFLICT (id) DO UPDATE SET
       titre = EXCLUDED.titre, objectif = EXCLUDED.objectif, presentation = EXCLUDED.presentation,
       critere_id = EXCLUDED.critere_id, filieres = EXCLUDED.filieres, niveaux = EXCLUDED.niveaux,
       parcours = EXCLUDED.parcours, seuil = EXCLUDED.seuil, duree_minutes = EXCLUDED.duree_minutes,
+      badge = EXCLUDED.badge,
       edite_le = NOW(), version = modules_deposes.version + 1`;
   return ident;
 }
@@ -199,6 +203,7 @@ export function versModule(l: LigneModuleDepose): Module {
     origine: "base",
     filieres,
     statut: l.statut,
+    badge: l.badge || undefined,
   };
 }
 

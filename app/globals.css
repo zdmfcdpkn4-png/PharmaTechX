@@ -1485,7 +1485,7 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 }
 .grille-badges {
   display: grid; gap: 0.5rem; margin: 0.25rem 0 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
 }
 .choix-badge {
   display: flex; align-items: center; gap: 0.5rem;
@@ -1495,7 +1495,19 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 }
 .choix-badge input { width: 18px; height: 18px; accent-color: var(--marque); flex: none; }
 .choix-badge:has(input:checked) { border-color: var(--marque); background: var(--marque-clair); }
-.choix-badge .legende { margin: 0; }
+.choix-badge .legende { margin: 0; min-width: 0; }
+.grille-badges--vignettes { grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); }
+.grille-badges--aucun { grid-template-columns: minmax(0, 20rem); }
+/* Illustrations de domaine : aquarelles rondes, lisibles à partir de ~72 px.
+   Jamais en pastille — voir content/badges.ts. */
+.badge--illustration { border-radius: 50%; object-fit: contain; vertical-align: middle; }
+.titre-vignette { display: flex; align-items: flex-start; gap: 1rem; }
+.titre-vignette > div { min-width: 0; }
+.titre-vignette > div > :first-child { margin-top: 0; }
+@media (max-width: 34rem) {
+  .titre-vignette { gap: 0.75rem; }
+  .titre-vignette .badge--illustration { width: 56px; height: 56px; }
+}
 .case-seule {
   display: inline-flex; align-items: center; gap: 0.5rem;
   min-height: var(--cible); font-size: 0.9375rem; margin: 0.25rem 0;

@@ -7,6 +7,7 @@ import { journaliser } from "@/lib/journal";
 import { getCritere } from "@/content/habilitation";
 import { getModule } from "@/content/store";
 import { LIMITES_BAREME } from "@/content/bareme";
+import { NOMS_ILLUSTRATION, NOMS_PICTOGRAMME, SANS_BADGE } from "@/content/badges";
 import { filieres, niveaux } from "@/content/habilitation";
 import { listeConnue, niveauxConnus, parcoursConnus } from "@/content/reglages";
 import {
@@ -46,6 +47,17 @@ function rafraichir(): void {
   revalidatePath("/admin/documents");
 }
 
+/**
+ * Badge du formulaire, validé contre la banque : un identifiant inconnu est
+ * ramené à la chaîne vide (« jamais renseigné »), jamais enregistré tel quel.
+ * `SANS_BADGE` est accepté : c'est le refus explicite d'illustration.
+ */
+function badgeChoisi(formData: FormData): string {
+  const v = String(formData.get("badge") ?? "").trim().slice(0, 40);
+  if (v === SANS_BADGE) return SANS_BADGE;
+  return NOMS_ILLUSTRATION.includes(v) || (NOMS_PICTOGRAMME as readonly string[]).includes(v) ? v : "";
+}
+
 export async function actionEnregistrerModule(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = chaine(formData, "id", 40) || undefined;
@@ -72,6 +84,7 @@ export async function actionEnregistrerModule(formData: FormData) {
     parcours,
     seuil: borneSeuil(formData.get("seuil"), 80),
     dureeMinutes: Math.min(600, Math.max(0, Math.round(Number(formData.get("dureeMinutes")) || 0))),
+    badge: badgeChoisi(formData),
   };
   const ident = await enregistrerModuleDepose(m, s, id);
   await journaliser(s, id ? "module:modification" : "module:creation", ident, {
