@@ -96,11 +96,29 @@ l'état de session ; le service est un processus persistant.
 Environment :
 
 - `DATABASE_URL` : URI du pooler de session ;
+- `AUTH_SECRET` : 32 caractères au moins (`openssl rand -base64 32`, ou la
+  valeur générée par Render). **Sans lui, aucune session ne s'ouvre** : le
+  site répond, mais aucun code d'accès ne fonctionne ;
 - `DATABASE_SSL` : `require`, ou supprimer la variable (défaut pour un hôte
   non local) ; `disable`, posé pour la base interne de Render, ne convient
   plus ;
 - `DATABASE_IP` : `4` (défaut du code ; le poser rend le choix visible) ;
-- `DATABASE_POOL_MAX` : `3`.
+- `DATABASE_POOL_MAX` : `3` ;
+- `CONSERVATION_RAPPORTS` : `aucune` ou `pseudonyme` — identifiants d'agents,
+  rapports enregistrés et circuit de visas n'existent qu'en `pseudonyme`
+  (question 6) ;
+- `MISE_EN_SERVICE`, `PROCEDURE_HABILITATION`, `BASE_ATTENDUE` : vides en
+  phase d'essai (voir « Mise en service »).
+
+> **Un service créé à la main ne reçoit aucune variable du blueprint.**
+> `render.yaml` ne s'applique qu'à un service créé ou mis à jour par
+> « Apply » ; le service en ligne a été créé à la main le 18/09/2026. Sa
+> signature dans `/api/sante` : `base: "non-configuree"` **et**
+> `secret: "absent"` — constatée le 19/09/2026. Conséquences, à connaître :
+> sans base, le filtre d'entrée **laisse tout le site ouvert** (il ne garde
+> que si une base est configurée), aucun code d'accès n'existe, et les écrans
+> d'administration affichent « Base de données non branchée ». Ce n'est pas
+> une panne du site : ce sont les variables qui manquent.
 
 Enregistrer : Render redéploie. Puis `/api/sante` doit répondre
 `base: "joignable"`, `base_ip: "4"`, `base_erreur: null`. En cas d'échec,
