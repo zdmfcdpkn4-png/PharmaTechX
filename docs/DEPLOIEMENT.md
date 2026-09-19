@@ -344,6 +344,26 @@ service (« Outbound IPs ») et Supabase accepte une liste d'adresses
 autorisées (« Network restrictions »), `[à vérifier]` l'un et l'autre, et la
 disponibilité selon le plan.
 
+**En-têtes de sécurité.** Toute réponse du service porte
+`Content-Security-Policy: frame-ancestors 'self'` et
+`X-Frame-Options: SAMEORIGIN` : aucun autre site ne peut enfermer une page
+dans une iframe pour détourner un clic (révocation d'un code, visa d'un
+rapport). `X-Powered-By` est retiré : la pile technique n'est plus annoncée.
+Rien à régler dans le tableau de bord — c'est `next.config.ts`. À vérifier
+après un déploiement :
+
+```bash
+curl -sSD - -o /dev/null https://pharmatechx.onrender.com/connexion \
+  | grep -Ei 'x-powered-by|content-security-policy|x-frame-options'
+# attendu : les deux en-têtes de cadrage, et aucune ligne x-powered-by
+```
+
+Les en-têtes ajoutés par le mandataire de Render (`Server`, identifiants de
+requête) ne sont pas de notre ressort : `[à vérifier]` s'ils se désactivent
+dans le tableau de bord. La politique ne couvre que l'encadrement : elle ne
+déclare ni `script-src` ni `style-src`, donc ne protège pas de l'injection de
+script — chantier à part, `[à préciser]`.
+
 **Source de temps.** Les dates des rapports sont celles de l'horloge du
 serveur. `/api/sante` renvoie `horloge` (ISO 8601, UTC) : la comparer à une
 horloge de référence de l'établissement avant la mise en service, puis

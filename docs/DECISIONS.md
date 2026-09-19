@@ -831,6 +831,18 @@ SCORM). Transposé dans les limites du brief :
   dès qu'il a des questions validées.
 - Tests unitaires (`node --test` via `tsx`) sur le barème, la comparaison des
   légendes, l'analyseur d'import et le constructeur de rapport.
+- En-têtes de sécurité posés par `next.config.ts` (19/09/2026), donc sur
+  toutes les réponses — pages, routes d'API, fichiers statiques, et jusqu'aux
+  redirections et aux 401 du middleware, mesurés : `poweredByHeader: false`
+  retire `X-Powered-By: Next.js` (défaut de Next, `config-shared.js`), qui
+  annonçait la pile technique ; `Content-Security-Policy: frame-ancestors
+  'self'`, doublé de `X-Frame-Options: SAMEORIGIN` pour les navigateurs
+  anciens, interdit à toute autre origine d'enfermer une page dans une iframe
+  (détournement de clic). `'self'` et non `'none'` : les documents de synthèse
+  PDF s'affichent dans une iframe de même origine (`/api/fichiers/<id>`,
+  `components/Evaluation.tsx`). Ce n'est pas une politique de sécurité du
+  contenu complète : sans `script-src`, elle ne protège pas de l'injection de
+  script — non fait, à décider.
 
 ## Non fait
 

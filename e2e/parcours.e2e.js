@@ -28,6 +28,7 @@
  */
 const path = require("node:path");
 const fs = require("node:fs");
+const http = require("node:http");
 const os = require("node:os");
 const zlib = require("node:zlib");
 const assert = require("node:assert/strict");
@@ -1219,6 +1220,39 @@ Justification : cascade de pression.`,
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
+
+  // 14d. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
+  //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
+  for (const u of ["/connexion", "/api/sante"]) {
+    const h = (await page.request.get(BASE + u)).headers();
+    assert.equal(h["x-powered-by"], undefined, "X-Powered-By retiré sur " + u);
+    assert.match(h["content-security-policy"] ?? "", /frame-ancestors 'self'/, "frame-ancestors sur " + u);
+    assert.equal(h["x-frame-options"], "SAMEORIGIN", "X-Frame-Options sur " + u);
+  }
+  const champCadre = () => page.frameLocator("iframe#cadre-test").locator("input[name=code]").count();
+  // Témoin : la même page, encadrée depuis le site lui-même, s'affiche. Sans lui, un test qui
+  // ne voit rien dans l'iframe ne prouverait pas que c'est la politique qui l'a refusée.
+  await page.goto(BASE + "/connexion");
+  await page.evaluate((src) => {
+    const f = document.createElement("iframe");
+    f.id = "cadre-test";
+    f.src = src;
+    document.body.appendChild(f);
+  }, BASE + "/connexion");
+  await page.waitForTimeout(1500);
+  assert.equal(await champCadre(), 1, "même origine : la page s'affiche dans l'iframe (documents de synthèse PDF)");
+  // Une page servie par une autre origine (autre port, autre hôte) n'obtient rien.
+  const pirate = http.createServer((_req, res) => {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`<!doctype html><title>origine tierce</title><iframe id="cadre-test" src="${BASE}/connexion"></iframe>`);
+  });
+  await new Promise((r) => pirate.listen(0, "127.0.0.1", r));
+  await page.goto("http://127.0.0.1:" + pirate.address().port + "/");
+  await page.waitForTimeout(1500);
+  assert.equal(await champCadre(), 0, "autre origine : le site refuse d'être encadré");
+  await new Promise((r) => pirate.close(r));
+  await page.goto(BASE + "/connexion");
+  ok("en-têtes : pile technique non annoncée, encadrement refusé à toute autre origine, même origine préservée");
   // L'URL ne change pas d'un échec à l'autre : attendre la réponse de l'action,
   // pas une navigation, sinon les soumissions se chevauchent.
   const soumettreCode = async (code) => {
