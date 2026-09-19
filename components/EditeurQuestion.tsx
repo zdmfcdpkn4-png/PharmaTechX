@@ -140,24 +140,45 @@ export function EditeurQuestion({
         <textarea name="enonce" rows={3} required maxLength={2000} defaultValue={initiale?.enonce ?? ""} />
       </label>
 
+      {/* Image : obligatoire pour un schéma, facultative en illustration d'un
+          QCM ou d'une QIM (décision du 19/09/2026). */}
+      <fieldset className="groupe">
+        <legend className="champ-titre">
+          {format === "SCH" ? "Image du schéma" : "Illustration (facultative)"}
+        </legend>
+        <div className="rangee">
+          <label className="champ">
+            <span>Image (PNG ou JPEG, 2 Mo au plus){image ? " — laisser vide pour conserver l'actuelle" : ""}</span>
+            <input
+              type="file"
+              name="image"
+              accept="image/png,image/jpeg"
+              onChange={(e) => choisirImage(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          <label className="champ">
+            <span>
+              Description de l&apos;image (lue à la place de l&apos;image)
+              {format === "SCH" ? "" : " — sans donner la réponse"}
+            </span>
+            <input type="text" name="imageAlt" maxLength={300} defaultValue={initiale?.imageAlt ?? ""} />
+          </label>
+        </div>
+        {format !== "SCH" && image && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={image.url} alt="" className="apercu-illustration" />
+            <label className="option option--compact">
+              <input type="checkbox" name="retirerImage" />
+              <span>Retirer l&apos;illustration</span>
+            </label>
+          </>
+        )}
+      </fieldset>
+
       {format === "SCH" ? (
         <fieldset className="groupe">
           <legend className="champ-titre">Schéma</legend>
-          <div className="rangee">
-            <label className="champ">
-              <span>Image (PNG ou JPEG, 2 Mo au plus){image ? " — laisser vide pour conserver l'actuelle" : ""}</span>
-              <input
-                type="file"
-                name="image"
-                accept="image/png,image/jpeg"
-                onChange={(e) => choisirImage(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <label className="champ">
-              <span>Description de l&apos;image (lue à la place de l&apos;image)</span>
-              <input type="text" name="imageAlt" maxLength={300} defaultValue={initiale?.imageAlt ?? ""} />
-            </label>
-          </div>
           <label className="champ">
             <span>Réponse de l&apos;apprenant</span>
             <select name="modeReponse" defaultValue={initiale?.modeReponse ?? "ecrire"}>

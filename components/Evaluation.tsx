@@ -587,6 +587,10 @@ export function Evaluation({
       <p>
         <strong>{d.enonce}</strong>
       </p>
+      {d.type !== "SCH" && q?.image && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={q.image.url} alt={q.image.alt} className="illustration-question" />
+      )}
       {d.type === "SCH" && q && d.legendes ? (
         <SchemaQuestion question={q} valeurs={{}} verrouille revelation={d.legendes} />
       ) : (
@@ -635,6 +639,10 @@ export function Evaluation({
         </div>
 
         <p className="question-enonce">{q.enonce}</p>
+        {q.type !== "SCH" && q.image && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={q.image.url} alt={q.image.alt} className="illustration-question" />
+        )}
         <p className="question-bareme">{libelleBareme(q, bareme)}</p>
 
         {q.type === "SCH" ? (

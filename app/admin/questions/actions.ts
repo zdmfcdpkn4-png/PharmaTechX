@@ -127,20 +127,23 @@ export async function actionEnregistrerQuestion(
   let legendes: Legende[] = [];
   let imageId: string | null = null;
 
+  // Image : le schéma en exige une, les autres formats peuvent en porter une
+  // en illustration (« Possibilité d'intégrer des images », 19/09/2026).
+  const fichier = formData.get("image") as File | null;
+  if (fichier && fichier.size > 0) {
+    if (fichier.size > IMAGE_MAX_OCTETS) return { erreur: "Image trop lourde (2 Mo au plus)." };
+    const im = await enregistrerImage(Buffer.from(await fichier.arrayBuffer()), chaine(formData, "imageAlt", 300));
+    if (!im) return { erreur: "L'image doit être un PNG ou un JPEG lisible." };
+    imageId = im.id;
+  } else if (id && formData.get("retirerImage") !== "on") {
+    const existante = await lireQuestion(id);
+    imageId = existante?.image_id ?? null;
+  }
+
   if (format === "SCH") {
     const lues = lireLegendes(chaine(formData, "legendes", 20000));
     if (!lues) return { erreur: "Légendes illisibles." };
     legendes = lues;
-    const fichier = formData.get("image") as File | null;
-    if (fichier && fichier.size > 0) {
-      if (fichier.size > IMAGE_MAX_OCTETS) return { erreur: "Image trop lourde (2 Mo au plus)." };
-      const im = await enregistrerImage(Buffer.from(await fichier.arrayBuffer()), chaine(formData, "imageAlt", 300));
-      if (!im) return { erreur: "L'image doit être un PNG ou un JPEG lisible." };
-      imageId = im.id;
-    } else if (id) {
-      const existante = await lireQuestion(id);
-      imageId = existante?.image_id ?? null;
-    }
     if (!imageId) return { erreur: "Un schéma à compléter a besoin d'une image." };
     if (!schemaPret(legendes)) return { erreur: "Chaque légende doit être posée sur l'image et porter un mot attendu." };
   } else {
@@ -242,14 +245,32 @@ function cleFichier(nom: string): string {
     .replace(/\.[a-z0-9]+$/, "");
 }
 
-/** Apparie les schémas lus aux images déposées : par nom annoncé, sinon par rang, sinon l'image unique. */
+/**
+ * Apparie les images déposées aux questions lues.
+ *
+ * Schéma : par nom annoncé, sinon l'image unique, sinon le rang — l'image y
+ * est la question elle-même. Illustration d'un QCM ou d'une QIM : par nom
+ * seulement, jamais au rang, qui collerait l'image d'un schéma voisin sur une
+ * question qui n'en demandait pas.
+ */
 function apparierImages(
   questions: QuestionImportee[],
   images: { nom: string; id: string }[],
 ): QuestionImporteeAvecImage[] {
   const cles = images.map((i) => cleFichier(i.nom));
   return questions.map((q) => {
-    if (q.format !== "SCH") return q;
+    if (q.format !== "SCH") {
+      if (!q.imageNom) return q;
+      const n = cles.indexOf(cleFichier(q.imageNom));
+      if (n < 0) {
+        return {
+          ...q,
+          imageId: null,
+          avertissements: [...q.avertissements, `Image « ${q.imageNom} » non déposée : à choisir dans l'éditeur.`],
+        };
+      }
+      return { ...q, imageId: images[n].id };
+    }
     let k = -1;
     if (q.imageNom) k = cles.indexOf(cleFichier(q.imageNom));
     if (k < 0 && images.length === 1) k = 0;
@@ -345,7 +366,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     options: q.format === "SCH" ? [] : q.options.map((o) => ({ id: o.id, texte: o.texte.slice(0, 500), vrai: o.vrai })),
     legendes: q.format === "SCH" ? q.legendes : [],
     modeReponse: "ecrire",
-    imageId: q.format === "SCH" ? (q.imageId ?? null) : null,
+    imageId: q.imageId ?? null,
     justification: q.justification.slice(0, 3000),
     eliminatoire: q.eliminatoire,
     reservee: q.reservee,

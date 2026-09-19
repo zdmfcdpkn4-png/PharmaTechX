@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export interface LienRail {
   href: string;
@@ -30,6 +31,9 @@ export function Navigation({
   administration: GroupeRail | null;
 }) {
   const chemin = usePathname();
+  // Ouvert par défaut : replié, le groupe cachait le dépôt de questions à
+  // qui le cherchait (remarque du 19/09/2026). Le repli reste possible.
+  const [adminOuvert, setAdminOuvert] = useState(true);
   // Repérage : seuls les liens de page entière sont marqués. Les ancres d'une
   // même page ne le sont pas — c'est le défilement qui y répond, pas le volet.
   const courant = (href: string) => !href.includes("#") && chemin === href;
@@ -51,7 +55,11 @@ export function Navigation({
       ))}
 
       {administration && (
-        <details className="rail-groupe" open={chemin.startsWith("/admin")}>
+        <details
+          className="rail-groupe"
+          open={adminOuvert || chemin.startsWith("/admin")}
+          onToggle={(e) => setAdminOuvert(e.currentTarget.open)}
+        >
           <summary>{administration.titre}</summary>
           <div className="rail-liens">{administration.liens.map(lien)}</div>
         </details>

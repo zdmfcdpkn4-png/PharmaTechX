@@ -210,7 +210,21 @@ banque versionnée avec le code (`content/modules/*.ts`) reste en place et se
 fusionne à la lecture.
 
 Format du texte déposé (repris du Lecteur QIM · QCM) : voir l'aide en ligne de
-`/admin/questions/import` et `lib/import-questions.ts`.
+`/admin/questions/import` et `lib/import-questions.ts`. L'écran de dépôt porte
+aussi un **prompt à copier** (`content/prompt-depot.ts`) pour faire mettre en
+forme un texte brut — polycopié, questionnaire papier — par l'assistant de son
+choix : il lui interdit d'inventer un corrigé, une justification ou une source,
+et `test/prompt-depot.test.ts` passe son exemple dans l'analyseur réel, de
+sorte que le prompt et le format ne puissent pas diverger. Le dépôt lui-même
+n'appelle aucune IA.
+
+**Images** : une question de n'importe quel format peut porter une
+illustration (PNG ou JPEG, 2 Mo au plus), en plus de l'image d'un schéma à
+compléter, qui reste obligatoire pour ce format. Au dépôt, la ligne
+`Image : nom-du-fichier.png` l'attache au fichier déposé du même nom ; l'image
+d'un schéma s'apparie à défaut par rang ou parce qu'elle est seule, jamais
+celle d'une illustration. Dans l'éditeur, le champ « Illustration » est offert
+pour les QCM et les QIM, avec sa description lue à la place de l'image.
 
 ## 8. Rapports et visas
 

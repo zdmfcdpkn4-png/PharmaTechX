@@ -98,8 +98,9 @@ export default async function RootLayout({
         liens: [
           { href: "/admin", libelle: "Accès" },
           { href: "/admin/modules", libelle: "Modules" },
-          { href: "/admin/questions", libelle: "Questions" },
-          { href: "/admin/questions/import", libelle: "Dépôt" },
+          { href: "/admin/questions", libelle: "Banque de questions" },
+          { href: "/admin/questions/import", libelle: "Déposer des questions" },
+          { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
           { href: "/admin/questions/situations", libelle: "Mises en situation" },
           { href: "/admin/documents", libelle: "Documents" },
           ...(conservation

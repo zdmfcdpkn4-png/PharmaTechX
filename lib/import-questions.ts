@@ -15,6 +15,12 @@ import type { Reference, TypeQuestion } from "@/content/types";
  *   Éliminatoire : oui
  *   Réservée à l'évaluation : oui
  *
+ * Une question de n'importe quel format peut porter une illustration :
+ *
+ *   Image : sas-habillage.jpg
+ *
+ * Le fichier est déposé avec le texte et apparié par son nom.
+ *
  * Le mot-clé QCM ou QIM fixe le format ; sans lui, le format par défaut du
  * dépôt s'applique. Une question sans corrigé est importée quand même, toutes
  * ses propositions à Faux, et signalée : un tuteur tranche dans l'éditeur.
@@ -51,7 +57,7 @@ export interface QuestionImportee {
   enonce: string;
   options: OptionImportee[];
   legendes: Legende[];
-  /** Schéma : nom de fichier d'image annoncé (« Image : … »). */
+  /** Nom de fichier d'image annoncé (« Image : … ») — schéma ou illustration. */
   imageNom?: string;
   /** Schéma : numéro lu dans « SCHÉMA n. », pour apparier une image par rang. */
   numeroSchema?: number;
@@ -220,6 +226,8 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     enonce,
     options,
     legendes: [],
+    imageNom: b.imageNom,
+    numeroSchema: b.numero,
     justification: b.justification.join(" ").trim(),
     eliminatoire: b.eliminatoire,
     reservee: b.reservee,
@@ -326,6 +334,13 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       }
       courant.props.push({ lettre: LETTRES[courant.props.length] ?? lettre, texte: t, v });
       courant.dernier = "prop";
+      continue;
+    }
+    const img = RE_IMAGE.exec(ligne);
+    if (img) {
+      // Illustration d'un QCM ou d'une QIM : même ligne que pour un schéma.
+      courant.imageNom = img[1];
+      courant.dernier = "rien";
       continue;
     }
     const c = RE_CORRIGE.exec(ligne);

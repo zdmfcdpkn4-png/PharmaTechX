@@ -829,6 +829,19 @@ details.rail-groupe[open] > summary::after { content: "–"; }
   max-width: 62ch;
 }
 
+/* Illustration d'une question (QCM, QIM) — l'image d'un schéma a son propre
+   rendu dans SchemaQuestion. */
+.illustration-question,
+.apercu-illustration {
+  display: block;
+  max-width: min(100%, 34rem);
+  height: auto;
+  margin: 0.5rem 0 0.75rem;
+  border-radius: var(--rayon-sm);
+  border: 1px solid var(--bord);
+  background: #ffffff;
+}
+
 /* Grands modules repliés (question 37, choix c). */
 .groupes-modules { display: flex; flex-direction: column; gap: 0.5rem; }
 .groupe-modules > summary { gap: 0.5rem; }

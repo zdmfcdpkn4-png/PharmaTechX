@@ -11,8 +11,9 @@ type ActionImport = (prec: EtatImport, fd: FormData) => Promise<EtatImport>;
  * Dépôt de questions en deux temps — repris du Lecteur QIM · QCM : le texte
  * (collé ou déposé en .txt, .md, .docx, .json) est analysé, l'aperçu montre
  * chaque question reconnue avec ses avertissements, puis l'ajout crée les
- * questions au statut « à vérifier ». Les images des schémas se déposent
- * avec le texte et s'apparient par nom de fichier ou par rang.
+ * questions au statut « à vérifier ». Les images se déposent avec le texte :
+ * celle d'un schéma s'apparie par nom, sinon par rang ; l'illustration d'un
+ * QCM ou d'une QIM, par son nom seulement.
  */
 export function ImportQuestions({
   modules,
@@ -81,7 +82,7 @@ export function ImportQuestions({
                 <span className="etiquette etiquette--site">{q.format === "SCH" ? "Schéma" : q.format}</span>
                 {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                 {!q.corrigeDetecte && <span className="etiquette etiquette--attention">Sans corrigé</span>}
-                {q.format === "SCH" && (
+                {(q.format === "SCH" || q.imageNom) && (
                   <span className={`etiquette ${q.imageId ? "etiquette--neutre" : "etiquette--attention"}`}>
                     {q.imageId ? "Image appariée" : "Image à choisir"}
                   </span>
@@ -155,7 +156,7 @@ export function ImportQuestions({
         <textarea
           name="texte"
           rows={14}
-          placeholder={"QCM 1. Énoncé de la question\nA. Proposition (V)\nB. Proposition (F)\nC. Proposition (F)\nD. Proposition (F)\nRéponses : A\nJustification : …\nSource : ANSM — BPP 2023 — 21/07/2023 — https://…\nÉliminatoire : oui\n\nSCHÉMA 1. Légendez ce schéma.\nImage : isolateur.png\n1. sas de transfert (32, 24, 14, 5)\n2. filtre HEPA | filtre terminal (58, 19)"}
+          placeholder={"QCM 1. Énoncé de la question\nA. Proposition (V)\nB. Proposition (F)\nC. Proposition (F)\nD. Proposition (F)\nRéponses : A\nJustification : …\nSource : ANSM — BPP 2023 — 21/07/2023 — https://…\nÉliminatoire : oui\n\nQCM 2. Sur cette photographie, quel équipement manque-t-il ?\nImage : sas-habillage.jpg\nA. Les surchaussures (V)\nB. La charlotte (F)\n\nSCHÉMA 1. Légendez ce schéma.\nImage : isolateur.png\n1. sas de transfert (32, 24, 14, 5)\n2. filtre HEPA | filtre terminal (58, 19)"}
         />
       </label>
       <div className="rangee">
@@ -164,7 +165,7 @@ export function ImportQuestions({
           <input type="file" name="fichier" accept=".txt,.md,.docx,.json,text/plain,text/markdown,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
         </label>
         <label className="champ">
-          <span>Images des schémas (PNG ou JPEG)</span>
+          <span>Images des schémas et illustrations (PNG ou JPEG)</span>
           <input type="file" name="images" accept="image/png,image/jpeg" multiple />
         </label>
       </div>

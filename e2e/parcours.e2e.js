@@ -817,6 +817,34 @@ Justification : justification deux.`;
   await page.waitForSelector("text=ne vaut pas habilitation");
   ok("volet de navigation : barre latérale sur poste, tiroir au hamburger, repères sortis de l'accueil, grands modules repliés");
 
+  // 12i. illustration d'un QCM déposé (19/09/2026) : la ligne « Image : … »
+  // apparie le fichier déposé du même nom, et l'image suit la question.
+  const ENONCE_ILLUSTRE = "Sur cette photographie du sas, quel équipement manque-t-il ?";
+  await page.goto(BASE + "/admin/questions/import?module=comportement-zac");
+  await page.waitForSelector("summary:has-text('copier le prompt')");
+  await page.fill(
+    "textarea[name=texte]",
+    `QCM 1. ${ENONCE_ILLUSTRE}\nImage : ${path.basename(PNG)}\nA. Les surchaussures (V)\nB. La charlotte (F)\nJustification : illustration de dépôt.`,
+  );
+  await page.setInputFiles("input[name=images]", PNG);
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("text=Image appariée");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=question ajoutée");
+  // la question reste « à vérifier » : elle n'entre dans aucun tirage
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page
+    .locator(".question-ligne", { hasText: ENONCE_ILLUSTRE.slice(0, 40) })
+    .locator("a:has-text('Modifier')")
+    .click();
+  await page.waitForSelector("img.apercu-illustration");
+  assert.equal(
+    await page.locator("fieldset.groupe:has(legend:has-text('Illustration')) input[name=image]").count(),
+    1,
+    "le champ d'image est proposé hors schéma",
+  );
+  ok("illustration d'un QCM : image appariée par son nom au dépôt, conservée et relue dans l'éditeur");
+
   // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
   // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
   await page.goto(BASE + "/#progression");

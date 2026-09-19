@@ -1,4 +1,6 @@
 import { ImportQuestions } from "@/components/ImportQuestions";
+import { PromptDepot } from "@/components/PromptDepot";
+import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
 import { actionAnalyserImport, actionConfirmerImport } from "../actions";
 import { choixModules } from "../commun";
 
@@ -19,38 +21,20 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
       <details className="bloc" style={{ marginBottom: "1rem" }}>
         <summary>Format attendu</summary>
         <div className="contenu-bloc">
-          <pre className="exemple">{`QCM 1. Énoncé de la question (plusieurs réponses)
-A. Première proposition (V)
-B. Deuxième proposition (F)
-C. Troisième proposition (V)
-D. Quatrième proposition (F)
-Réponses : A C
-Justification : texte affiché après correction.
-Source : ANSM — Bonnes pratiques de préparation 2023 — 21/07/2023 — https://ansm.sante.fr/…
-Éliminatoire : oui
-Réservée à l'évaluation : oui
-
-QIM 2. Concernant …, indiquer la ou les propositions exactes.
-A. … (V)
-B. … (F)
-C. … (V)
-D. … (F)
-E. … (V)
-
-SCHÉMA 1. Légendez les éléments repérés sur cette coupe d'isolateur.
-Image : isolateur-coupe.png
-1. sas de transfert (32, 24, 14, 5)
-2. filtre HEPA | filtre terminal (58, 19)
-Justification : …`}</pre>
+          <pre className="exemple">{EXEMPLE_DEPOT}</pre>
           <p className="legende">
             Le mot-clé QCM ou QIM fixe le format ; sans lui, le format par défaut s&apos;applique. Un
             corrigé se lit dans « (V) / (F) » en fin de proposition ou dans « Réponses : A C ».
             Pour un schéma, les quatre nombres sont le rectangle du mot d&apos;origine (x, y,
             largeur, hauteur en % de l&apos;image) ; deux nombres posent un repère sans cache. Un
             JSON exporté de ce site ou une banque au schéma 3.0 du Lecteur QIM · QCM sont aussi lus.
+            Une question de n&apos;importe quel format peut porter une{" "}
+            <strong>illustration</strong> : la ligne « Image : nom-du-fichier.png » l&apos;attache
+            au fichier déposé du même nom, ci-dessous.
           </p>
         </div>
       </details>
+      <PromptDepot />
       <ImportQuestions
         modules={await choixModules()}
         moduleInitial={p.module}

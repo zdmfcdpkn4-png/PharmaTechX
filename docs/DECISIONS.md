@@ -613,6 +613,41 @@ Ce qui n'est pas fait : il n'existe **aucun tutoriel d'usage du site**. Les
 repères portent le dispositif d'habilitation, pas le maniement de l'outil.
 Destinataire et contenu restent `[à préciser]`.
 
+**Dépôt de questions : prompt de mise en forme et illustrations** (19/09/2026,
+demande du pharmacien responsable) : trois points, dont un qui n'était qu'un
+défaut de visibilité.
+
+1. **Le dépôt existait et ne se voyait pas.** Il est à
+   `/admin/questions/import`, atteignable depuis la banque de questions et
+   depuis chaque ligne de module, mais le volet l'appelait « Dépôt » dans un
+   groupe « Administration » replié. Le groupe s'ouvre désormais de lui-même,
+   et les entrées portent leur nom : « Banque de questions », « Déposer des
+   questions », « Écrire une question ».
+2. **Un prompt de mise en forme** (`content/prompt-depot.ts`), copiable depuis
+   l'écran de dépôt, pour faire passer un texte brut au format attendu par
+   l'assistant de son choix. Le site, lui, **n'appelle aucune IA** : aucun
+   texte de l'unité ne sort par le serveur, et l'analyseur reste celui qui ne
+   devine rien. Le prompt interdit explicitement d'inventer un corrigé, une
+   justification ou une source — c'est le risque propre de l'exercice, une IA
+   complétant volontiers ce qui manque — et impose `[à vérifier]` quand le
+   texte source est muet. Deux garde-fous derrière : toute question déposée
+   entre « à vérifier » et attend un autre code que son auteur (question 12) ;
+   et `test/prompt-depot.test.ts` passe l'exemple du prompt dans l'analyseur
+   réel, de sorte que le format décrit et le format lu ne puissent pas
+   diverger en silence.
+3. **Les illustrations** : jusqu'ici, seule une question de format schéma
+   pouvait porter une image. N'importe quelle question peut désormais en
+   porter une — photographie d'un sas, d'un plateau, d'une étiquette — dans
+   l'éditeur comme au dépôt, avec sa description lue à la place de l'image.
+   Au dépôt, l'illustration s'apparie **par son nom de fichier seulement** :
+   l'appariement au rang ou à l'image unique reste réservé aux schémas, où
+   l'image est la question ; l'étendre aux QCM collerait l'image d'un schéma
+   voisin sur une question qui n'en demandait pas.
+
+Ce qui n'est pas fait : le rendu d'une illustration sur le **rapport A4**. Le
+rapport porte les verdicts, pas les énoncés ; y incruster les images
+alourdirait un document qui se relit et s'archive.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis
