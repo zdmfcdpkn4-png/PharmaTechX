@@ -52,7 +52,10 @@ déploiement de cette version ferme une fois les sessions ouvertes avant elle.
 
 **Pourquoi IPv4.** L'hôte de connexion directe d'un projet Supabase
 (`db.<ref>.supabase.co`, port 5432) ne porte qu'une adresse IPv6, sauf
-option payante « IPv4 address » `[à vérifier]`. Render ne sort pas en IPv6
+option payante « IPv4 address » `[à vérifier]`. Mesuré le 19/09/2026 sur le
+projet de l'établissement : cet hôte ne publie **aucun enregistrement A**
+(`ENODATA`) et un seul `AAAA` ; l'hôte d'API `<ref>.supabase.co`, lui, est
+bien en IPv4, mais il ne sert que l'API REST, pas PostgreSQL. Render ne sort pas en IPv6
 `[à vérifier]` : depuis le service, cet hôte est injoignable (`ENETUNREACH`
 sur une adresse IPv6). Le **pooler de session** de Supabase (Supavisor,
 hôte `aws-<n>-<région>.pooler.supabase.com`, port 5432, utilisateur
@@ -67,9 +70,13 @@ l'état de session ; le service est un processus persistant.
 **Créer le projet.**
 
 1. Sur supabase.com : nouveau projet dans l'organisation de l'établissement,
-   région **Union européenne** (Francfort, `eu-central-1`, comme le service ;
-   `[à préciser]` la région si le projet existe déjà, à consigner au registre
-   RGPD) ; mot de passe de base fort, conservé dans le coffre de la DSI.
+   région **Union européenne** (Francfort, `eu-central-1`, comme le service) ;
+   mot de passe de base fort, conservé dans le coffre de la DSI. Le projet de
+   l'établissement, ouvert avant cette note, est en `eu-west-1` (Irlande) :
+   Union européenne, donc conforme au registre RGPD, mais pas la région du
+   service. L'écart coûte un aller-retour réseau de plus à chaque requête
+   `[à vérifier]` ; il est accepté — la région d'un projet Supabase ne se
+   change pas après coup `[à vérifier]`, il faudrait recréer et migrer.
 2. Tableau de bord → **Connect** → **Session pooler** : copier l'URI et y
    remplacer `[YOUR-PASSWORD]` (caractères spéciaux encodés : `@` devient
    `%40`). `[à vérifier]` l'intitulé exact de l'onglet et le nom d'hôte, la
