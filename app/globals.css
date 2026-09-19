@@ -332,11 +332,23 @@ a:hover { color: var(--marque-fonce); }
 /* 56 px et non 44 : le logo d'unité est un mandala au trait fin, mesuré
    illisible en dessous. Le bandeau, lui, garde sa hauteur — c'est le titre à
    deux lignes qui la fixe. */
-/* Logo d'unité, à l'extrémité droite du bandeau (19/09/2026). C'est lui qui
-   pousse la fin du bandeau, d'où la marge automatique portée ici et non plus
-   par les actions, qui le suivent. */
+.logos img.pharmaco { height: 56px; width: auto; display: block; }
+.separateur-logo { width: 1px; align-self: stretch; background: var(--bord); }
+
+/* Second logo d'unité, à l'extrémité droite (19/09/2026). C'est lui qui pousse
+   la fin du bandeau, d'où la marge automatique portée ici et non plus par les
+   actions, qui le suivent.
+   56 px, et le choix est mesuré, pas esthétique. Hauteur du bandeau selon la
+   taille de ce logo : 48 → 77 px, 56 → 77 px, 64 → 85 px, 72 → 93 px. C'est
+   le mandala à 56 px qui fixe le plancher, donc 56 ne coûte rien. Or la
+   signature « pharmacotechnie » de ce disque, qui porte une large marge
+   interne, ne devient lisible qu'à 72 px — mesuré à 48, 56 et 72. Payer 8 px
+   de bandeau sur chaque écran pour une signature qui reste illisible n'achète
+   rien ; passer à 72 la rendrait lisible mais allongerait le bandeau de 21 %.
+   Retenu : 56 px, signature décorative, le nom de l'unité étant déjà écrit en
+   toutes lettres dans le bandeau. */
 .logo-fin { margin-left: auto; display: flex; align-items: center; }
-.logo-fin img.pharmaco { height: 56px; width: auto; display: block; }
+.logo-fin img.pharmaco-p { height: 56px; width: auto; display: block; }
 
 /* Pied de page + bandeau bleu de la charte. */
 .pied {

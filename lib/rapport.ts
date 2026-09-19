@@ -73,7 +73,7 @@ export interface OptionsRapport {
    * Logos encodés en data URI (décision du 18/09/2026, question 20, choix c) :
    * le fichier reste lisible hors du site. Absents, l'adresse `baseUrl` sert.
    */
-  logos?: { hdv?: string; pharmaco?: string };
+  logos?: { hdv?: string; pharmaco?: string; pharmacoP?: string };
   conservation?: "aucune" | "pseudonyme";
   dureeConservationMois?: number | null;
   /** Date d'édition, sinon maintenant. */
@@ -372,8 +372,12 @@ export function construireRapport(
   .entete-page { display: flex; align-items: flex-end; gap: 14px; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 2pt solid #E82A63; }
   .entete-page img { display: block; }
   .entete-page img.hdv { height: 26px; }
-  /* Logo d'unité à l'extrémité droite du bandeau (19/09/2026), comme à l'écran. */
-  .entete-page img.pharmaco { height: 48px; margin-left: 10px; }
+  .entete-page img.pharmaco { height: 48px; }
+  /* Second logo d'unité, à l'extrémité droite du bandeau (19/09/2026), comme à
+     l'écran. 56 px et non 48 : disque à large marge interne, dont la signature
+     ne se lit qu'à partir de 72 px. La hauteur du bandeau ne bouge pas, elle
+     est fixée par le bloc de titre sur quatre lignes. */
+  .entete-page img.pharmaco-p { height: 56px; margin-left: 10px; }
   .entete-page .sep { width: 1px; height: 26px; background: #d8dde2; }
   .entete-page .t { font-size: 10pt; line-height: 1.3; }
   .entete-page .t strong { display: block; }
@@ -440,9 +444,10 @@ ${bandeauEssai}
     <div class="entete-page">
       <img class="hdv" src="${options.logos?.hdv ?? `${base}/hdv.png`}" alt="Hôpitaux de Vendée">
       <span class="sep"></span>
+      <img class="pharmaco" src="${options.logos?.pharmaco ?? `${base}/pharmaco-web.png`}" alt="Pharmacotechnie — unité de production des chimiothérapies">
       <div class="t"><strong>CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie</strong><span>Rapport d'évaluation des connaissances — fiche d'habilitation, chapitre III</span></div>
       <span class="ref">${options.numero ? `${echapper(options.numero)} · ` : ""}édité le ${echapper(date)}</span>
-      <img class="pharmaco" src="${options.logos?.pharmaco ?? `${base}/pharmaco-web.png`}" alt="Pharmacotechnie — unité de production des chimiothérapies">
+      <img class="pharmaco-p" src="${options.logos?.pharmacoP ?? `${base}/pharmaco-p.png`}" alt="">
     </div>
   </td></tr></thead>
   <tfoot><tr><td>
@@ -472,7 +477,7 @@ export function nomFichierRapport(nom: string, numero?: string): string {
 }
 
 /** Logos lus depuis le site et encodés en data URI, pour un fichier téléchargé autoportant ; à défaut, leur adresse sert. */
-async function logosDepuisLeSite(origine: string): Promise<{ hdv?: string; pharmaco?: string }> {
+async function logosDepuisLeSite(origine: string): Promise<{ hdv?: string; pharmaco?: string; pharmacoP?: string }> {
   const lire = async (nom: string): Promise<string | undefined> => {
     try {
       const reponse = await fetch(`${origine}/${nom}`);
@@ -488,8 +493,16 @@ async function logosDepuisLeSite(origine: string): Promise<{ hdv?: string; pharm
       return undefined;
     }
   };
-  const [hdv, pharmaco] = await Promise.all([lire("hdv.png"), lire("pharmaco-web.png")]);
-  return { ...(hdv ? { hdv } : {}), ...(pharmaco ? { pharmaco } : {}) };
+  const [hdv, pharmaco, pharmacoP] = await Promise.all([
+    lire("hdv.png"),
+    lire("pharmaco-web.png"),
+    lire("pharmaco-p.png"),
+  ]);
+  return {
+    ...(hdv ? { hdv } : {}),
+    ...(pharmaco ? { pharmaco } : {}),
+    ...(pharmacoP ? { pharmacoP } : {}),
+  };
 }
 
 /** Construit et télécharge le rapport sur le poste, sans passer par le serveur ; logos incorporés (question 20, choix c). */

@@ -6,6 +6,8 @@ import path from "node:path";
 export interface LogosRapport {
   hdv?: string;
   pharmaco?: string;
+  /** Second logo d'unité, à l'extrémité droite de l'en-tête (19/09/2026). */
+  pharmacoP?: string;
 }
 
 let cache: Promise<LogosRapport> | null = null;
@@ -27,9 +29,17 @@ export function logosIncorpores(): Promise<LogosRapport> {
         return undefined;
       }
     };
-    const [hdv, pharmaco] = await Promise.all([lire("hdv.png"), lire("pharmaco-web.png")]);
-    if (!hdv || !pharmaco) cache = null;
-    return { ...(hdv ? { hdv } : {}), ...(pharmaco ? { pharmaco } : {}) };
+    const [hdv, pharmaco, pharmacoP] = await Promise.all([
+      lire("hdv.png"),
+      lire("pharmaco-web.png"),
+      lire("pharmaco-p.png"),
+    ]);
+    if (!hdv || !pharmaco || !pharmacoP) cache = null;
+    return {
+      ...(hdv ? { hdv } : {}),
+      ...(pharmaco ? { pharmaco } : {}),
+      ...(pharmacoP ? { pharmacoP } : {}),
+    };
   })();
   return cache;
 }

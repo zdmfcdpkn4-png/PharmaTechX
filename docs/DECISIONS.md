@@ -916,6 +916,21 @@ SCORM). Transposé dans les limites du brief :
   l'illustration, jamais par ce qui est scellé, et le repère de version reste
   l'étiquette `vN`. La liste de mise en service (point 5) et le point 26 des
   questions ouvertes ne portent donc plus d'étape de logo.
+  **Second logo d'unité ajouté le 19/09/2026** à l'opposé du premier, sur les
+  écrans comme sur le rapport : le mandala et le logo HdV tiennent la gauche,
+  le monogramme « P » (`public/pharmaco-p.png`, 192 px, 5,1 Ko, blanc rendu
+  transparent) ferme le bandeau à droite. Taille retenue **56 px à l'écran et
+  56 px sur le rapport**, par mesure et non par goût : la hauteur du bandeau
+  vaut 77 px pour un logo de 48 ou 56 px, 85 px à 64 et 93 px à 72 — c'est le
+  mandala à 56 px qui fixe le plancher, donc 56 ne coûte rien. Or la signature
+  « pharmacotechnie » de ce disque, qui porte une large marge interne, ne
+  devient lisible qu'à 72 px (mesuré à 48, 56 et 72) : payer 8 px de bandeau
+  sur chaque écran pour une signature qui resterait illisible n'achète rien,
+  et 72 px allongerait le bandeau de 21 %. La signature est donc assumée
+  décorative, le nom de l'unité étant déjà écrit en toutes lettres à côté.
+  Son `alt` est vide : le premier logo porte déjà ce nom, le répéter ferait
+  entendre deux fois la même chose à un lecteur d'écran. Même mesure sur le
+  rapport : en-tête de 115 px à 48 comme à 56 px, 132 px à 64.
   Logos d'unité versés dans la même banque le 19/09/2026 (question 40,
   choix b) : Préparation, Bionettoyage, Validation pharmacotechnique et
   Pharmacotechnie, **trente-sept illustrations** au total (796 Ko). Ils

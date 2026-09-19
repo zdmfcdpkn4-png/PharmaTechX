@@ -213,6 +213,15 @@ export default async function RootLayout({
                   width={396}
                   height={120}
                 />
+                <span className="separateur-logo" aria-hidden="true" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/pharmaco-web.png"
+                  alt="Pharmacotechnie — unité de production des chimiothérapies"
+                  className="pharmaco"
+                  width={192}
+                  height={192}
+                />
               </div>
 
               <div>
@@ -224,14 +233,17 @@ export default async function RootLayout({
                 </div>
               </div>
 
-              {/* Logo d'unité à l'opposé de celui de l'établissement (19/09/2026) :
-                  les deux encadrent le titre au lieu de se serrer à gauche. */}
+              {/* Second logo d'unité, à l'opposé du premier (19/09/2026) : le
+                  mandala et le logo HdV tiennent la gauche, le monogramme P
+                  ferme le bandeau à droite. `alt` vide — le premier logo porte
+                  déjà le nom de l'unité, le répéter ferait entendre deux fois
+                  la même chose à un lecteur d'écran. */}
               <div className="logo-fin">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/pharmaco-web.png"
-                  alt="Pharmacotechnie — unité de production des chimiothérapies"
-                  className="pharmaco"
+                  src="/pharmaco-p.png"
+                  alt=""
+                  className="pharmaco-p"
                   width={192}
                   height={192}
                 />
