@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { BoutonRevoirTutoriel } from "./Tutoriel";
 
 export interface LienRail {
   href: string;
@@ -64,6 +65,9 @@ export function Navigation({
           <div className="rail-liens">{administration.liens.map(lien)}</div>
         </details>
       )}
+
+      {/* Rend `null` hors session : le volet de la connexion n'en porte pas. */}
+      <BoutonRevoirTutoriel />
     </>
   );
 }

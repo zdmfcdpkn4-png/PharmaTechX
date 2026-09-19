@@ -79,7 +79,7 @@ export default function DonneesPersonnelles() {
       </section>
 
       <p className="encart">
-        {enService ? `En service depuis le ${dateMiseEnServiceLisible(enService)}. ` : "Phase d'essai : aucun rapport ne vaut preuve tant que la mise en service n'est pas prononcée. "}Statut du dispositif : {STATUT_DISPOSITIF.long}, décision du {STATUT_DISPOSITIF.decideLe} ; le rapport ne vaut pas habilitation. Procédure de référence : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
+        {enService ? `En service depuis le ${dateMiseEnServiceLisible(enService)}. Statut du dispositif : ` : ""}{enService ? <>{STATUT_DISPOSITIF.long}, décision du {STATUT_DISPOSITIF.decideLe} ; </> : null}Le rapport ne vaut pas habilitation. Procédure de référence : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre et texte de référence : <code>docs/RGPD.md</code>, à valider par le délégué à la protection des données avant la mise en service.
       </p>
     </article>
   );

@@ -509,17 +509,14 @@ export function TableauDeBord({
         </span>
       </div>
       <section className="carte">
+        {/* Mention d'essai retirée des écrans le 19/09/2026 : le rapport
+            continue de la porter, lui, en toutes lettres. */}
         {miseEnService ? (
           <p className="legende">
             Le rapport est un <strong>document qualité</strong> : preuve de l&apos;étape 2 au dossier
             d&apos;habilitation, opposable en audit (décision du 18/09/2026). Il ne vaut pas habilitation.
           </p>
-        ) : (
-          <p className="encart encart--attention">
-            <strong>Phase d&apos;essai :</strong> aucun rapport ne vaut preuve tant que la mise en service
-            n&apos;est pas prononcée. Les rapports portent la mention en clair.
-          </p>
-        )}
+        ) : null}
         {pseudonyme ? (
           <p>
             Deux issues pour chaque évaluation : <strong>télécharger</strong> le rapport sur ce

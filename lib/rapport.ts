@@ -372,7 +372,8 @@ export function construireRapport(
   .entete-page { display: flex; align-items: flex-end; gap: 14px; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 2pt solid #E82A63; }
   .entete-page img { display: block; }
   .entete-page img.hdv { height: 26px; }
-  .entete-page img.pharmaco { height: 48px; }
+  /* Logo d'unité à l'extrémité droite du bandeau (19/09/2026), comme à l'écran. */
+  .entete-page img.pharmaco { height: 48px; margin-left: 10px; }
   .entete-page .sep { width: 1px; height: 26px; background: #d8dde2; }
   .entete-page .t { font-size: 10pt; line-height: 1.3; }
   .entete-page .t strong { display: block; }
@@ -439,9 +440,9 @@ ${bandeauEssai}
     <div class="entete-page">
       <img class="hdv" src="${options.logos?.hdv ?? `${base}/hdv.png`}" alt="Hôpitaux de Vendée">
       <span class="sep"></span>
-      <img class="pharmaco" src="${options.logos?.pharmaco ?? `${base}/pharmaco-web.png`}" alt="Pharmacotechnie — unité de production des chimiothérapies">
       <div class="t"><strong>CHD Vendée — Pharmacie à usage intérieur, unité de pharmacotechnie</strong><span>Rapport d'évaluation des connaissances — fiche d'habilitation, chapitre III</span></div>
       <span class="ref">${options.numero ? `${echapper(options.numero)} · ` : ""}édité le ${echapper(date)}</span>
+      <img class="pharmaco" src="${options.logos?.pharmaco ?? `${base}/pharmaco-web.png`}" alt="Pharmacotechnie — unité de production des chimiothérapies">
     </div>
   </td></tr></thead>
   <tfoot><tr><td>

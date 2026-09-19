@@ -6,6 +6,9 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { MenuProvider, BoutonMenu, VoletMenu } from "@/components/Menu";
 import { Navigation, type GroupeRail } from "@/components/Navigation";
+import { VoletConnexion } from "@/components/VoletConnexion";
+import { TutorielProvider } from "@/components/Tutoriel";
+import { etapesTutoriel } from "@/content/tutoriel";
 import { etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
@@ -59,6 +62,17 @@ export default async function RootLayout({
     : [[], []];
   const procedure = procedureReference();
   const enService = miseEnService();
+
+  // Visite guidée du premier passage (19/09/2026). `session.role` est de type
+  // `Role` ; l'indexation échoue à la compilation si les trois profils de
+  // `content/tutoriel.ts` cessent de recouvrir ceux de `lib/db.ts`.
+  const profilVisite = session?.role ?? null;
+  const etapesVisite = profilVisite ? etapesTutoriel(profilVisite, conservation) : [];
+
+  // Volet d'avant-connexion : le filtre d'entrée garde tout le site, donc
+  // chaque raccourci ramènerait ici. Sans base, le site reste ouvert et les
+  // raccourcis fonctionnent : le volet habituel est alors le bon.
+  const avantConnexion = baseConfiguree() && !session;
 
   // Volet de navigation (question 37, choix c) : les liens sont composés ici,
   // seul endroit qui connaisse la session, la conservation et la base.
@@ -168,6 +182,7 @@ export default async function RootLayout({
             horodatageIso: e.horodatage_iso,
           }))}
         >
+          <TutorielProvider profil={profilVisite} etapes={etapesVisite}>
           <MenuProvider>
             <Chrome>
               <BoutonMenu />
@@ -181,15 +196,6 @@ export default async function RootLayout({
                   width={396}
                   height={120}
                 />
-                <span className="separateur-logo" aria-hidden="true" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/pharmaco-web.png"
-                  alt="Pharmacotechnie — unité de production des chimiothérapies"
-                  className="pharmaco"
-                  width={192}
-                  height={192}
-                />
               </div>
 
               <div>
@@ -199,6 +205,19 @@ export default async function RootLayout({
                 <div className="bandeau-sous">
                   Unité de production — CHD Vendée
                 </div>
+              </div>
+
+              {/* Logo d'unité à l'opposé de celui de l'établissement (19/09/2026) :
+                  les deux encadrent le titre au lieu de se serrer à gauche. */}
+              <div className="logo-fin">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/pharmaco-web.png"
+                  alt="Pharmacotechnie — unité de production des chimiothérapies"
+                  className="pharmaco"
+                  width={192}
+                  height={192}
+                />
               </div>
 
               <div className="entete-actions">
@@ -218,7 +237,11 @@ export default async function RootLayout({
 
             <div className="cadre">
               <VoletMenu>
-                <Navigation groupes={groupes} administration={administration} />
+                {avantConnexion ? (
+                  <VoletConnexion />
+                ) : (
+                  <Navigation groupes={groupes} administration={administration} />
+                )}
               </VoletMenu>
 
               <main id="contenu" className="page">
@@ -226,6 +249,7 @@ export default async function RootLayout({
               </main>
             </div>
           </MenuProvider>
+          </TutorielProvider>
 
           <footer className="pied">
             <div className="pied-interne">
@@ -252,20 +276,21 @@ export default async function RootLayout({
                   personne.
                 </p>
               )}
+              {/* La mention « phase d'essai » a quitté les écrans le 19/09/2026 :
+                  elle ne disait rien d'utile à un apprenant et occupait le pied de
+                  chaque page. Tant que la mise en service n'est pas prononcée, le
+                  pied n'annonce donc aucun statut — il n'en affirme pas non plus
+                  un faux. L'état réel reste lisible côté administration et sur le
+                  rapport lui-même. */}
               <p>
                 {enService ? (
                   <>
                     Statut du dispositif&nbsp;: {STATUT_DISPOSITIF.long}, décision du{" "}
-                    {STATUT_DISPOSITIF.decideLe}, en service depuis le {dateMiseEnServiceLisible(enService)}.
-                    Un rapport ne vaut pas habilitation.
+                    {STATUT_DISPOSITIF.decideLe}, en service depuis le {dateMiseEnServiceLisible(enService)}.{" "}
                   </>
-                ) : (
-                  <>
-                    <strong>Phase d&apos;essai&nbsp;:</strong> aucun rapport ne vaut preuve tant que la
-                    mise en service n&apos;est pas prononcée. Statut cible&nbsp;: {STATUT_DISPOSITIF.long}.
-                  </>
-                )}{" "}
-                Procédure de référence&nbsp;:{" "}
+                ) : null}
+                Un rapport ne vaut pas habilitation&nbsp;: les étapes suivantes se déroulent hors du
+                site. Procédure de référence&nbsp;:{" "}
                 {procedure ? <code>{procedure}</code> : <code className="a-preciser">[à compléter]</code>}
               </p>
             </div>

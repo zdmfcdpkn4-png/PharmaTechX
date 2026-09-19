@@ -171,6 +171,23 @@ Justification : cf. procédure interne.`,
   );
   ok("amorçage : aucune porte publique sur /connexion");
 
+  // 1 bis. volet d'avant-connexion (19/09/2026) : plus un seul raccourci vers
+  //        une page gardée — ils renvoyaient tous ici —, des informations à la
+  //        place, et le seul écran réellement public.
+  const volet = page.locator("nav.rail");
+  for (const absent of ["Mes modules", "Composer le programme", "Ma progression", "Le dispositif", "Questions fréquentes"]) {
+    assert.equal(await volet.locator(`text=${absent}`).count(), 0, `volet de connexion : « ${absent} » encore présent`);
+  }
+  assert.equal(await volet.locator("text=Avant d'entrer").count(), 1, "volet de connexion : bloc d'information");
+  assert.equal(await volet.locator("text=Votre code").count(), 1, "volet de connexion : bloc « Votre code »");
+  assert.equal(await volet.locator('a[href="/donnees-personnelles"]').count(), 1, "volet de connexion : lien public conservé");
+  assert.equal(await volet.locator("a").count(), 1, "volet de connexion : un seul lien, le public");
+  ok("volet de connexion : aucun raccourci gardé, trois blocs d'information");
+
+  // La mention « phase d'essai » a quitté les écrans (19/09/2026).
+  assert.equal(await page.locator("text=Phase d'essai").count(), 0, "mention d'essai encore à l'écran");
+  ok("écrans : plus aucune mention de phase d'essai");
+
   const codeAdmin = process.env.ADMIN_INITIAL ?? "";
   assert.match(codeAdmin, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/, "ADMIN_INITIAL posé pour la vérification");
   await page.fill("input[name=code]", codeAdmin);
@@ -178,6 +195,43 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/admin/);
   await page.waitForSelector("text=Administrateur initial");
   ok("amorçage par ADMIN_INITIAL : session administrateur ouverte");
+
+  // 1 ter. visite guidée du premier passage (19/09/2026) : elle s'ouvre seule,
+  //        se parcourt, se ferme, ne revient pas, et se rouvre à la demande.
+  const visite = page.locator(".visite");
+  await visite.waitFor({ state: "visible", timeout: 5000 });
+  assert.match(await page.locator(".visite-entete .sur-titre").innerText(), /étape 1 sur 6/i, "visite admin : six étapes");
+  await page.click('.visite button:has-text("Suivant")');
+  assert.match(await page.locator(".visite-entete .sur-titre").innerText(), /étape 2 sur 6/i);
+  assert.equal(await page.locator('.visite a[href="/admin/pilotage"]').count(), 1, "visite admin : lien vers le pilotage");
+  await page.click('.visite button:has-text("Passer")');
+  await visite.waitFor({ state: "detached", timeout: 3000 });
+  await page.reload();
+  await page.waitForTimeout(400);
+  assert.equal(await page.locator(".visite").count(), 0, "la visite revient après avoir été vue");
+  await page.click('.rail-bouton:has-text("Revoir la présentation")');
+  await visite.waitFor({ state: "visible", timeout: 3000 });
+  assert.match(await page.locator(".visite-entete .sur-titre").innerText(), /étape 1 sur 6/i, "reprise à la première étape");
+  await page.keyboard.press("Escape");
+  await visite.waitFor({ state: "detached", timeout: 3000 });
+  ok("visite guidée : ouverte au premier passage, six étapes admin, non rejouée, rouvrable");
+
+  /**
+   * Referme la visite du profil qui vient d'entrer et rend ce qu'elle disait,
+   * ou `null` si ce profil l'avait déjà vue. Chaque première connexion d'un
+   * profil l'ouvre : sans cette fermeture, son voile intercepte les clics de
+   * tout ce qui suit.
+   */
+  const fermerVisite = async () => {
+    const boite = page.locator(".visite");
+    await page.waitForTimeout(400);
+    if ((await boite.count()) === 0) return null;
+    const entete = await page.locator(".visite-entete .sur-titre").innerText();
+    const texte = await boite.innerText();
+    await page.keyboard.press("Escape");
+    await boite.waitFor({ state: "detached", timeout: 3000 });
+    return { entete, texte };
+  };
 
   // 2. codes tuteur et poste
   await page.selectOption("select[name=role]", "tuteur");
@@ -276,6 +330,7 @@ Justification : cf. procédure interne.`,
     await page.fill("input[name=code]", code);
     await page.click("button:has-text('Entrer')");
     await page.waitForURL(/\/admin$/);
+    return fermerVisite();
   };
 
   /**
@@ -292,7 +347,11 @@ Justification : cf. procédure interne.`,
 
   // 5. quatre yeux : le tuteur modifie le schéma importé par l'administrateur, puis valide les neuf autres ;
   //    le schéma, dont il est devenu l'auteur, attend l'administrateur
-  await rebrancher(codeTuteur);
+  const visiteTuteur = await rebrancher(codeTuteur);
+  assert.ok(visiteTuteur, "visite du tutorat non ouverte à sa première connexion");
+  assert.match(visiteTuteur.entete, /sur 6/i, "visite tutorat : six étapes");
+  assert.match(visiteTuteur.texte, /code de tutorat/, "visite tutorat : texte du profil");
+  ok("visite guidée : le tutorat a la sienne, distincte de celle de l'administration");
   await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
@@ -1126,6 +1185,8 @@ Justification : cascade de pression.`,
   await page.fill("input[name=code]", codeTuteur);
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/admin$/);
+  // Le tutorat a déjà vu la sienne (étape 5) : elle ne doit pas revenir.
+  assert.equal(await fermerVisite(), null, "la visite du tutorat revient après avoir été vue");
   await page.goto(BASE + "/admin/journal");
   await page.waitForURL(/\/admin$/);
   ok("connexion tuteur : administration accessible, journal réservé");
