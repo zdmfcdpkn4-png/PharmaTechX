@@ -37,12 +37,10 @@ export function VoletConnexion() {
         </p>
       </div>
 
+      {/* Le détail de ce qui est enregistré est sur la page elle-même : le
+          répéter ici faisait lire deux fois la même chose. Le lien reste. */}
       <div className="rail-groupe">
-        <span className="rail-titre">Ce qui est enregistré</span>
-        <p className="rail-info">
-          Aucun nom. Les réponses transmises pour correction ne portent ni nom, ni matricule, ni
-          adresse.
-        </p>
+        <span className="rail-titre">En savoir plus</span>
         <Link href="/donnees-personnelles">Vos données et vos droits</Link>
       </div>
     </>

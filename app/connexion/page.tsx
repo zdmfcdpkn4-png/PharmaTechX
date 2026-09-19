@@ -3,6 +3,7 @@ import { baseConfiguree } from "@/lib/db";
 import { secretConfigure } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { actionConnexion } from "@/app/actions";
+import { Badge } from "@/components/Badge";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +34,8 @@ export default async function Connexion({
       <section className="panneau-titre">
         <p className="sur-titre">Accès à l&apos;outil</p>
         <h1>Un code ouvre un profil, pas un compte</h1>
-        <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>
-          Le site est réservé au personnel de l&apos;unité : tout s&apos;ouvre par un code de rôle,
-          poste de travail, tutorat ou administration. Un code ne désigne aucune personne. Seul
-          l&apos;agent qui le décide rattache sa progression à son identifiant, avec un code
-          personnel.
+        <p style={{ fontSize: "1.0625rem", maxWidth: "52ch" }}>
+          Réservé au personnel de l&apos;unité. Un code ouvre un profil — il ne désigne personne.
         </p>
       </section>
 
@@ -100,11 +98,6 @@ export default async function Connexion({
                 </Link>
               )}
             </div>
-            <p className="legende">
-              {pret
-                ? "Le code de poste ouvre les modules, les évaluations et les documents. Les codes de tutorat et d'administration ouvrent en plus la banque de questions, les dépôts, les visas et l'ordonnancement des modules."
-                : "Sans base, vous accédez aux modules et aux évaluations. La banque de questions, les dépôts de documents, les visas et l'ordonnancement des modules demandent un code de tutorat ou d'administration."}
-            </p>
           </form>
         </section>
 
@@ -112,38 +105,57 @@ export default async function Connexion({
           <h2 id="titre-profils">Ce qu&apos;ouvre chaque profil</h2>
           <ul className="profils">
             <li>
-              <strong>Poste de travail</strong> <span className="etiquette etiquette--neutre">apprenant</span>
-              <p>Lecture des modules, passation des évaluations et des entraînements, documents, export ou émission du rapport. Code remis par le tutorat, requis pour tout le site (décision du 18/09/2026).</p>
+              <Badge nom="preparation" taille={28} />
+              <div>
+                <strong>Poste de travail</strong>{" "}
+                <span className="etiquette etiquette--neutre">apprenant</span>
+                <p>Modules, entraînements, évaluations, rapport.</p>
+              </div>
             </li>
             <li>
-              <strong>Tutorat</strong> <span className="etiquette etiquette--neutre">N3</span>
-              <p>Banque de questions (création, dépôt, validation), mises en situation, documents rattachés, signalements, codes de poste{conservation ? ", identifiants d'agents, visa tuteur des rapports" : ""}.</p>
+              <Badge nom="formation" taille={28} />
+              <div>
+                <strong>Tutorat</strong> <span className="etiquette etiquette--neutre">N3</span>
+                <p>
+                  Et&nbsp;: banque de questions, dépôts, signalements, codes de poste
+                  {conservation ? ", identifiants d'agents, visa tuteur" : ""}.
+                </p>
+              </div>
             </li>
             <li>
-              <strong>Administration</strong> <span className="etiquette etiquette--neutre">pharmacien</span>
-              <p>Tout ce qui précède, plus les codes de tous rôles, la suppression, le journal{conservation ? ", le visa pharmacien, l'annulation et la purge des rapports" : ""}.</p>
+              <Badge nom="controle" taille={28} />
+              <div>
+                <strong>Administration</strong>{" "}
+                <span className="etiquette etiquette--neutre">pharmacien</span>
+                <p>
+                  Et&nbsp;: codes de tous rôles, référentiel, barème, journal
+                  {conservation ? ", visa pharmacien, annulation et purge" : ""}.
+                </p>
+              </div>
             </li>
           </ul>
         </section>
       </div>
 
-      <section className="encart" aria-labelledby="titre-donnees">
-        <h2 id="titre-donnees" style={{ fontSize: "1.1rem" }}>
-          {conservation ? "Ce que le site enregistre : aucun nom" : "Ce que le site enregistre : rien de nominatif"}
+      {/* Trois lignes au lieu de cinq paragraphes (19/09/2026) : le détail
+          complet vit sur « Vos données et vos droits », qui est sa place. Le
+          répéter ici faisait de l'écran d'entrée un texte à lire. */}
+      <section className="encart bandeau-donnees" aria-labelledby="titre-donnees">
+        <h2 id="titre-donnees">
+          {conservation ? "Aucun nom n'est enregistré" : "Rien de nominatif n'est enregistré"}
         </h2>
-        <ul style={{ margin: ".5rem 0 0", paddingLeft: "1.25rem" }}>
-          <li>Les codes d&apos;accès, hachés : la base ne permet pas de les relire.</li>
-          <li>Les réponses transmises pour correction ne portent ni nom, ni matricule, ni adresse ; les échecs de connexion sont comptés par empreinte d&apos;adresse, jamais l&apos;adresse elle-même.</li>
-          <li>Les résultats vivent en mémoire de l&apos;onglet le temps de la session ; le repère de lecture d&apos;un module reste sur le poste, effaçable depuis le sommaire.</li>
-          {conservation ? (
-            <li>
-              <strong>Les rapports émis par l&apos;apprenant</strong> sont enregistrés sous son identifiant d&apos;agent (AG-001…), sans nom, numérotés, scellés et visés par le tuteur puis le pharmacien responsable ; la correspondance identifiant ↔ agent est tenue hors du site et le nom n&apos;est porté qu&apos;à l&apos;édition du rapport. Conservation jusqu&apos;à purge manuelle. <a href="/donnees-personnelles">Vos données et vos droits</a>.
-            </li>
-          ) : (
-            <li>Aucun résultat n&apos;est conservé : le rapport téléchargé par l&apos;apprenant est le seul support.</li>
-          )}
-          <li>Les actions d&apos;administration sont journalisées par rôle et libellé de profil.</li>
+        <ul>
+          <li>Ni nom, ni matricule, ni adresse dans ce qui est transmis pour correction.</li>
+          <li>Les codes d&apos;accès sont hachés : la base ne permet pas de les relire.</li>
+          <li>
+            {conservation
+              ? "Un rapport émis est enregistré sous un identifiant d'agent (AG-001…) ; la correspondance avec la personne est tenue hors du site."
+              : "Aucun résultat n'est conservé : le rapport téléchargé est le seul support."}
+          </li>
         </ul>
+        <p>
+          <Link href="/donnees-personnelles">Vos données et vos droits</Link>
+        </p>
       </section>
 
     </article>
