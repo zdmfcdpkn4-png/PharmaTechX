@@ -96,6 +96,7 @@ export default async function RootLayout({
     ? {
         titre: "Administration",
         liens: [
+          { href: "/admin/pilotage", libelle: "Pilotage" },
           { href: "/admin", libelle: "Accès" },
           { href: "/admin/modules", libelle: "Modules" },
           { href: "/admin/questions", libelle: "Banque de questions" },

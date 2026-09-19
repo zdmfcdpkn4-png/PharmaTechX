@@ -839,6 +839,29 @@ SCORM). Transposé dans les limites du brief :
   c'est la variable d'exploitation qui bascule, et elle se pose dans le
   tableau de bord de Render, le service ayant été créé hors blueprint. Ce que
   l'examen du DPO ne tranche pas reste marqué dans `docs/RGPD.md`.
+- Tableau de bord de pilotage (19/09/2026), `/admin/pilotage`, ouvert aux
+  tuteurs et à l'administration. Il répond dans l'ordre à : où en est-on,
+  qu'est-ce qui attend quelqu'un, où ça coince — d'où le classement des
+  critères par taux d'acquis **croissant**, le plus bas en tête. Cinq filtres
+  communs à tous les blocs (filière, niveau, bloc de compétence, module,
+  période) : un indicateur et son graphique portent toujours sur le même
+  périmètre, rappelé en clair sous le formulaire. Aucun nom n'y paraît.
+  Graphiques tracés en SVG **côté serveur** — aucune bibliothèque, aucun
+  script au navigateur, la page s'imprime telle quelle ; chaque figure porte
+  un `aria-label` et les chiffres qu'elle résume restent écrits à côté d'elle.
+  Agrégation faite **dans la base** (`lib/pilotage-db.ts`) : un rapport porte
+  son résultat scellé en JSONB, détail des questions compris, et les charger
+  tous pour compter en mémoire coûterait des dizaines de méga-octets par
+  affichage. Le verdict compté est celui de `verdictFinal` — l'arbitrage du
+  tuteur l'emporte sur un verdict brut indéterminé — transcrit une seule fois
+  en SQL et vérifié de bout en bout par le parcours e2e, qui arbitre un
+  rapport puis lit le tableau de bord.
+  Deux conventions de lecture, nommées comme telles et non comme des normes :
+  une question n'est signalée « manquée » qu'au-delà de cinq passages et
+  jusqu'à 60 % de réussite ; un critère sans rapport est mis à part, comme non
+  couvert, jamais classé comme mauvais. Sans conservation des rapports
+  (`CONSERVATION_RAPPORTS=aucune`), la page ne montre que l'état de la banque
+  et le dit.
 - Illustrations de domaine (19/09/2026, images fournies par le pharmacien
   responsable) : 20 aquarelles rondes découpées des cinq planches, détourées en
   WebP 256 px (484 Ko au total), versionnées dans `public/badges/` plutôt que

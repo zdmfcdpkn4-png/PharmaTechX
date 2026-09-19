@@ -462,6 +462,37 @@ Justification : cf. procédure interne.`,
   await capture("03-rapport-clos");
   ok("arbitrage puis visas tuteur et pharmacien : rapport clos, signature incrustée, aucun nom saisi ; retrait postérieur signalé sans bloquer");
 
+  // 10c-bis. tableau de bord de pilotage : c'est le verdict arbitré qui compte, et les filtres
+  //          partagent les rapports au lieu d'en inventer
+  const avantPilotage = page.url();
+  const cartouche = (libelle) =>
+    page.locator(".cartouche", { hasText: libelle }).first().locator(".cartouche-valeur");
+  await page.goto(BASE + "/admin/pilotage");
+  await page.waitForSelector("h1:has-text('Pilotage des résultats')");
+  assert.equal((await cartouche("Rapports au périmètre").innerText()).trim(), "1");
+  // Le verdict brut était indéterminé (80 %, dans la bande de garde) et l'arbitrage du tuteur l'a
+  // porté à « acquis » : le tableau de bord doit compter celui-là, pas le brut.
+  const legendeVerdicts = await page.locator(".legende-graphique").first().innerText();
+  assert.match(legendeVerdicts, /Acquis\s*1/, "verdict arbitré compté");
+  assert.match(legendeVerdicts, /Indéterminé\s*0/, "le verdict brut ne subsiste pas");
+  assert.equal((await cartouche("Critères acquis").innerText()).trim(), "100 %");
+  assert.equal((await cartouche("En attente d'un acte").innerText()).trim(), "0", "le rapport est clos");
+  for (const sel of ["svg.anneau", "svg.courbe", "svg.histogramme", ".liste-criteres li", ".barre-verdicts"]) {
+    await page.waitForSelector(sel);
+  }
+  const compteAvec = async (q) => {
+    await page.goto(BASE + "/admin/pilotage?" + q);
+    return Number((await cartouche("Rapports au périmètre").innerText()).trim());
+  };
+  assert.equal(await compteAvec("module=critere-b1-02"), 1, "filtré sur le module évalué : le rapport est là");
+  assert.equal(await compteAvec("module=comportement-zac"), 0, "filtré sur un autre module : rien");
+  assert.equal(await compteAvec("bloc=1"), 1, "le critère évalué relève du bloc 1");
+  await page.goto(BASE + "/admin/pilotage?periode=30");
+  await page.locator(".filtres-pilotage .legende", { hasText: "30 derniers jours" }).waitFor();
+  assert.equal((await cartouche("Rapports au périmètre").innerText()).trim(), "1", "rapport du jour dans les 30 jours");
+  await page.goto(avantPilotage);
+  ok("pilotage : verdict arbitré compté, indicateurs, anneau, courbe, histogramme, filtres par module et par période");
+
   // 10d. rapport A4 pseudonyme (GET) puis avec le nom porté à l'édition (POST), hors sceau
   const impr = await page.request.get(urlRapport + "/imprimer");
   const html = await impr.text();
