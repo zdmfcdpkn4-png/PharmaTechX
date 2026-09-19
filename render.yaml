@@ -61,7 +61,11 @@ services:
                                   # SUPPRIMER la variable. Sans administrateur actif, elle
                                   # en recrée un au démarrage ; avec, elle est sans effet.
       - key: CONSERVATION_RAPPORTS
-        value: aucune             # « pseudonyme » après validation RGPD — voir docs/RGPD.md
+        value: pseudonyme         # 19/09/2026, vu avec le DPO : résultats conservés sous le seul
+                                  # numéro d'anonymisation (AG-NNN), aucun nom en base ; le fichier
+                                  # de rapprochement numéro ↔ personne est tenu hors du site
+                                  # (question 28, choix a). « aucune » désactive rapports, visas et
+                                  # identifiants d'agents — voir docs/RGPD.md.
       - key: PROCEDURE_HABILITATION
         value: ""                 # référence de la procédure interne — [à compléter]
       - key: MISE_EN_SERVICE

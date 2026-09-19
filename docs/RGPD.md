@@ -8,6 +8,18 @@ identifiant ↔ agent est tenue par le pharmacien hors du site ; le nom n'est
 porté qu'à l'édition du rapport (impression, paquet d'archivage) et n'est
 jamais conservé.
 
+**Examen par le DPO — 19/09/2026.** Le pharmacien responsable rapporte que le
+DPO a examiné le dispositif et validé le principe : **les résultats des agents
+sont conservés sous le seul numéro d'anonymisation**, le **fichier de
+rapprochement** numéro ↔ personne étant tenu hors du site. Le mode
+`CONSERVATION_RAPPORTS=pseudonyme` est activé en conséquence. Ce que cet
+examen ne dit pas, et qui reste ouvert : `[à compléter]` la trace écrite de
+l'avis (date, forme, référence à citer au registre) ; `[à vérifier]` la base
+légale retenue, le rattachement à la fiche « gestion du personnel » ou une
+fiche propre, la nécessité d'une analyse d'impact, les contrats de
+sous-traitance de Render et de Supabase et les mécanismes de transfert. Ces
+points ne sont pas réputés tranchés par le seul fait de l'examen.
+
 Ce document est une proposition : il ne vaut ni inscription au registre ni
 validation juridique. Les éléments que seul l'établissement détient sont
 marqués `[à compléter]` ; ceux qui demandent un arbitrage du DPO sont marqués
@@ -80,10 +92,13 @@ dossier d'habilitation.
 
 ## 4. Ce qui reste à faire avant la mise en service
 
-1. `[à vérifier]` DPO : base légale retenue ; rattachement à la fiche
-   « gestion du personnel » ou fiche propre ; nécessité d'une analyse
+1. `[à vérifier]` DPO — **examiné le 19/09/2026**, principe validé
+   (conservation sous le seul numéro d'anonymisation, fichier de rapprochement
+   hors du site) ; restent ouverts : base légale retenue ; rattachement à la
+   fiche « gestion du personnel » ou fiche propre ; nécessité d'une analyse
    d'impact ; contrats de sous-traitance de Render et de Supabase,
    sous-traitants ultérieurs et mécanismes de transfert hors UE.
+   `[à compléter]` la trace écrite de l'avis.
 2. `[à compléter]` Établissement : responsable de traitement, contact du DPO,
    entités contractantes de Render et de Supabase, région du projet Supabase,
    titulaire du compte Supabase. Support de la correspondance
@@ -94,8 +109,12 @@ dossier d'habilitation.
    des rapports et du journal (la progression rattachée suit la question 15 :
    purge manuelle au départ de l'agent) ; mode
    d'information des agents en plus de la page du site.
-4. Compléter la page `/donnees-personnelles` et cette fiche avec les réponses,
-   puis activer `CONSERVATION_RAPPORTS=pseudonyme`.
+4. `CONSERVATION_RAPPORTS=pseudonyme` — **activé le 19/09/2026** après examen
+   du DPO, avant que les points 1 à 3 ne soient tous clos : le dispositif est
+   en phase d'essai (`MISE_EN_SERVICE` absente) et chaque écran et chaque
+   rapport le disent. Ces points restent à clore **avant la mise en service
+   comme preuve**, et la page `/donnees-personnelles` comme cette fiche sont à
+   compléter avec les réponses.
 
 ## Sources
 

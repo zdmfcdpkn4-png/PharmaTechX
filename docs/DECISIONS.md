@@ -831,6 +831,24 @@ SCORM). Transposé dans les limites du brief :
   dès qu'il a des questions validées.
 - Tests unitaires (`node --test` via `tsx`) sur le barème, la comparaison des
   légendes, l'analyseur d'import et le constructeur de rapport.
+- Conservation des rapports activée le 19/09/2026 après examen du DPO
+  (`CONSERVATION_RAPPORTS=pseudonyme`) : les résultats des agents sont
+  conservés sous le seul numéro d'anonymisation (`AG-NNN`), le fichier de
+  rapprochement numéro ↔ personne étant tenu hors du site (question 28,
+  choix a). Le code ne change pas — ce mode existait depuis le 18/09/2026 ;
+  c'est la variable d'exploitation qui bascule, et elle se pose dans le
+  tableau de bord de Render, le service ayant été créé hors blueprint. Ce que
+  l'examen du DPO ne tranche pas reste marqué dans `docs/RGPD.md`.
+- Chiffrement de la liaison avec la base exposé dans `/api/sante`
+  (`base_tls`, 19/09/2026) : le protocole est constaté à l'ouverture de chaque
+  connexion du pool, sur notre propre flux (`protocoleTls`, `lib/reseau.ts`),
+  pas dans la vue `pg_stat_ssl` — qui décrirait la connexion du pooler de
+  session vers PostgreSQL et non la nôtre vers le pooler. Mesuré à
+  l'ouverture et mémorisé, donc lu sans ouvrir de connexion : la page de
+  santé sert de contrôle de santé à Render, elle ne doit pas ralentir. Sert à
+  constater que la liaison est déjà chiffrée **avant** d'exiger TLS côté
+  Supabase, un interrupteur posé sur une liaison en clair coupant le service
+  de sa base.
 - En-têtes de sécurité posés par `next.config.ts` (19/09/2026), donc sur
   toutes les réponses — pages, routes d'API, fichiers statiques, et jusqu'aux
   redirections et aux 401 du middleware, mesurés : `poweredByHeader: false`

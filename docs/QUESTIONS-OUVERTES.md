@@ -25,11 +25,16 @@ telle. Ordre : ce qui change le déploiement en premier.
    par le site, correspondance tenue par le pharmacien hors du site, nom porté
    à l'édition seulement. Le traitement reste pseudonymisé, donc soumis au
    RGPD : fiche de registre et texte d'information rédigés (`docs/RGPD.md`,
-   page `/donnees-personnelles`), `[à vérifier]` par le DPO (base légale,
+   page `/donnees-personnelles`). **DPO : examiné le 19/09/2026**, principe
+   validé — résultats conservés sous le seul numéro d'anonymisation, fichier
+   de rapprochement tenu hors du site ; `CONSERVATION_RAPPORTS=pseudonyme`
+   activé en conséquence. Restent `[à vérifier]` par le DPO : base légale,
    rattachement à la fiche « gestion du personnel », hébergeur et
-   sous-traitance, analyse d'impact) ; `[à compléter]` responsable de
-   traitement, contact du DPO, support de la correspondance ; `[à préciser]`
-   durée de référence de conservation.
+   sous-traitance, analyse d'impact ; `[à compléter]` responsable de
+   traitement, contact du DPO, trace écrite de l'avis, chemin et droits du
+   fichier de rapprochement ; `[à préciser]` durée de référence de
+   conservation. Ces points sont à clore avant la mise en service comme
+   preuve, pas avant l'essai.
 3. **Statut du dispositif** — tranché le 18/09/2026 (question 7, choix b) :
    **preuve opposable de l'étape 2** de l'habilitation en audit BPP 2023 /
    ISO 9001, jamais preuve d'habilitation. Le code porte la mention « document

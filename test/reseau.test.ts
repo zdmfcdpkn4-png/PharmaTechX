@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import net from "node:net";
-import { enrichirErreurReseau, fabriqueSocket, familleIp, libelleFamille } from "../lib/reseau";
+import { enrichirErreurReseau, fabriqueSocket, familleIp, libelleFamille, protocoleTls } from "../lib/reseau";
 
 test("familleIp : 4 par défaut, 6 et auto acceptés, le reste refusé", () => {
   assert.equal(familleIp(undefined), 4);
@@ -75,4 +75,17 @@ test("enrichirErreurReseau : hôte sans adresse dans la famille, IPv6 injoignabl
   assert.equal(enrichirErreurReseau(e3, 4).message, "connect ECONNREFUSED 127.0.0.1:5432");
   const e4 = Object.assign(new Error("getaddrinfo ENOTFOUND hote"), { code: "ENOTFOUND" });
   assert.equal(enrichirErreurReseau(e4, null).message, "getaddrinfo ENOTFOUND hote");
+});
+
+test("protocoleTls : lecture défensive du flux de la connexion", () => {
+  assert.equal(protocoleTls({ connection: { stream: { getProtocol: () => "TLSv1.3" } } }), "TLSv1.3");
+  // socket en clair : `net.Socket` n'expose pas getProtocol
+  assert.equal(protocoleTls({ connection: { stream: {} } }), "absent");
+  // TLSSocket pas encore négocié
+  assert.equal(protocoleTls({ connection: { stream: { getProtocol: () => null } } }), "absent");
+  // propriété interne de `pg` absente ou déplacée : on n'affirme rien
+  assert.equal(protocoleTls({ connection: {} }), "inconnu");
+  assert.equal(protocoleTls({}), "inconnu");
+  assert.equal(protocoleTls(null), "inconnu");
+  assert.equal(protocoleTls(undefined), "inconnu");
 });

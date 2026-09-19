@@ -1157,6 +1157,13 @@ Justification : cascade de pression.`,
   assert.equal((await page.request.get(BASE + lien)).status(), 401, "document déposé refusé sans session");
   assert.equal((await page.request.get(BASE + "/api/images/inconnu")).status(), 401, "API refusée sans session");
   assert.equal((await page.request.get(BASE + "/api/sante")).status(), 200, "page de santé publique");
+  // `base_tls` est lu sur une propriété interne de `pg` : « inconnu » signalerait que cette
+  // propriété a bougé, pas que la liaison a changé. Le parcours local tourne en clair.
+  const etatSante = await (await page.request.get(BASE + "/api/sante")).json();
+  assert.ok(
+    etatSante.base_tls === "absent" || /^TLS/.test(etatSante.base_tls ?? ""),
+    `chiffrement de la liaison constaté, base_tls = ${etatSante.base_tls}`,
+  );
   await page.goto(BASE + "/module/comportement-zac");
   await page.waitForURL(/\/connexion\?suite=%2Fmodule%2Fcomportement-zac/);
   await page.goto(BASE + "/");

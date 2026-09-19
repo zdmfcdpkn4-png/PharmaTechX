@@ -37,7 +37,7 @@ preuve.
 | `DATABASE_SSL` | non | `disable` (défaut sur hôte local), `require` (défaut ailleurs : chiffre sans vérifier l'autorité), `verify` (+ `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE`, certificat de l'autorité de Supabase) |
 | `DATABASE_POOL_MAX` | non | connexions simultanées, 5 par défaut ; 3 avec le pooler de session |
 | `BLOB_READ_WRITE_TOKEN` | non | Vercel Blob pour les documents ; sans lui, les fichiers vont en base (15 Mo max). Les adresses Blob sont publiques : incompatible avec la réserve des documents aux sessions (question 13), à laisser vide |
-| `CONSERVATION_RAPPORTS` | non | `aucune` (défaut) ou `pseudonyme` (rapports enregistrés sous identifiant d'agent, sans nom) — voir `docs/RGPD.md` avant d'activer |
+| `CONSERVATION_RAPPORTS` | non | `aucune` (défaut du code) ou `pseudonyme` (rapports enregistrés sous le seul numéro d'anonymisation, sans nom). **`pseudonyme` en production depuis le 19/09/2026**, vu avec le DPO ; `aucune` désactive rapports, visas et identifiants d'agents — voir `docs/RGPD.md` |
 | `RAPPORTS_CONSERVATION_MOIS` | non | durée annoncée sur les rapports enregistrés |
 | `PROCEDURE_HABILITATION` | non | référence de la procédure interne portée sur les écrans et les rapports (preuve opposable de l'étape 2) ; vide = marqueur `[à compléter]` |
 | `MISE_EN_SERVICE` | non | date (AAAA-MM-JJ) de mise en service comme preuve ; absente = phase d'essai, mention « Phase d'essai — ne vaut pas preuve » sur les écrans et les rapports |
@@ -93,12 +93,56 @@ l'état de session ; le service est un processus persistant.
    schémas exposés, ou désactiver l'API (`[à vérifier]` l'intitulé). Le site
    se connecte avec le rôle `postgres` de l'URI, propriétaire des tables qu'il
    crée, qui n'est pas soumis à RLS ; un autre rôle ne verrait aucune ligne.
-4. **TLS.** `DATABASE_SSL=require` (défaut pour un hôte non local) chiffre
-   sans vérifier l'autorité. Pour `verify` : télécharger le certificat de
-   l'autorité de Supabase (Project Settings → Database → SSL) et le poser
-   dans `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE` ; `[à vérifier]` qu'il
-   couvre le pooler. Activer « Enforce SSL on incoming connections »
-   (`[à vérifier]` disponibilité selon le plan).
+4. **TLS.** Voir « Chiffrement de la liaison » ci-dessous : constater avant
+   d'exiger.
+
+### Chiffrement de la liaison avec la base
+
+Trois degrés, du plus faible au plus fort. Chacun a été **mesuré** le
+19/09/2026 contre un PostgreSQL 16 local en TLS, pas seulement lu dans une
+documentation :
+
+| Réglage | Ce que cela fait | `base_tls` dans `/api/sante` |
+|---|---|---|
+| `DATABASE_SSL=disable` | liaison en clair | `absent` |
+| `DATABASE_SSL=require` | chiffre, **ne vérifie pas** à qui l'on parle | `TLSv1.3` |
+| `DATABASE_SSL=verify` + autorité | chiffre **et** authentifie le serveur | `TLSv1.3` |
+| `DATABASE_SSL=verify` sans l'autorité | refuse de se connecter | base `injoignable`, `base_erreur: DEPTH_ZERO_SELF_SIGNED_CERT` |
+
+La dernière ligne est la preuve que `verify` n'est pas un placebo : privé du
+certificat de l'autorité, le service refuse la connexion au lieu de
+l'accepter en silence.
+
+`base_tls` est constaté sur **notre propre flux** à l'ouverture de chaque
+connexion du pool (`lib/reseau.ts`, `protocoleTls`), et non lu dans la vue
+`pg_stat_ssl` : la base est jointe par le pooler de session, et cette vue
+décrirait la connexion du pooler vers PostgreSQL, pas la nôtre vers le
+pooler.
+
+**Ordre des opérations — l'inverse coupe le service de sa base.**
+
+1. Lire `/api/sante`. Si `base_tls` vaut `TLSv1.3` (ou une autre version),
+   la liaison est déjà chiffrée : l'interrupteur de Supabase ne changera rien
+   pour le service. S'il vaut `absent`, poser `DATABASE_SSL=require` sur
+   Render, attendre le redéploiement, relire.
+2. Alors seulement, Supabase → Project Settings → Database → SSL
+   configuration → **« Enforce SSL on incoming connections »**
+   (`[à vérifier]` disponibilité selon le plan). Relire `/api/sante` : la base
+   doit rester `joignable`. Sinon, désactiver l'interrupteur — il se retire
+   aussi vite qu'il se pose.
+3. Facultatif, et seul degré qui protège d'un interlocuteur substitué :
+   `verify`. Télécharger le certificat de l'autorité (même écran, « Download
+   certificate »), le coller dans `DATABASE_SSL_CA` sur Render — ou le
+   déposer et pointer `DATABASE_SSL_CA_FILE` —, puis `DATABASE_SSL=verify`.
+   `[à vérifier]` que ce certificat couvre bien l'hôte du pooler et pas
+   seulement l'hôte direct : si ce n'est pas le cas, le service perd sa base
+   au redéploiement. À faire sur un créneau où une bascule en arrière est
+   possible, jamais juste avant une session d'évaluation.
+
+Ce que chaque degré protège : `require` empêche de lire la liaison ;
+`verify` empêche en plus de se faire passer pour la base. Entre les deux, la
+différence porte sur un attaquant capable de détourner le trafic entre Render
+et Supabase — pas sur un simple écouteur.
 
 **Brancher le service.** Tableau de bord Render → service `pharmatechx` →
 Environment :
@@ -112,9 +156,9 @@ Environment :
   plus ;
 - `DATABASE_IP` : `4` (défaut du code ; le poser rend le choix visible) ;
 - `DATABASE_POOL_MAX` : `3` ;
-- `CONSERVATION_RAPPORTS` : `aucune` ou `pseudonyme` — identifiants d'agents,
-  rapports enregistrés et circuit de visas n'existent qu'en `pseudonyme`
-  (question 6) ;
+- `CONSERVATION_RAPPORTS` : `pseudonyme` (19/09/2026, vu avec le DPO) —
+  identifiants d'agents, rapports enregistrés et circuit de visas n'existent
+  qu'en `pseudonyme` (question 6) ; `aucune` les désactive tous ;
 - `MISE_EN_SERVICE`, `PROCEDURE_HABILITATION`, `BASE_ATTENDUE` : vides en
   phase d'essai (voir « Mise en service »).
 

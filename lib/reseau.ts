@@ -77,3 +77,26 @@ export function fabriqueSocket(famille: FamilleIp): () => net.Socket {
     return s;
   };
 }
+
+/**
+ * Protocole TLS d'une connexion `pg` ouverte, lu sur notre propre flux :
+ * « TLSv1.3 », « absent » si la liaison est en clair, « inconnu » si le flux
+ * n'est pas lisible.
+ *
+ * Pourquoi pas la vue `pg_stat_ssl` : la base est jointe par le pooler de
+ * session de Supabase, et cette vue décrit la connexion que le pooler ouvre
+ * vers PostgreSQL — pas la nôtre vers le pooler. Le seul point de mesure de
+ * notre liaison est le flux du client.
+ *
+ * `pg` remplace son flux par un `tls.TLSSocket` une fois la négociation faite ;
+ * un flux sans `getProtocol` n'est pas chiffré. Lecture défensive : c'est une
+ * propriété interne de `pg`. Si elle change, on répond « inconnu » plutôt que
+ * d'affirmer un chiffrement qu'on n'a pas constaté.
+ */
+export function protocoleTls(client: unknown): string {
+  const flux = (client as { connection?: { stream?: unknown } } | null | undefined)?.connection
+    ?.stream as { getProtocol?: () => string | null } | undefined;
+  if (!flux) return "inconnu";
+  if (typeof flux.getProtocol !== "function") return "absent";
+  return flux.getProtocol() ?? "absent";
+}

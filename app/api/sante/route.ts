@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { baseConfiguree, etatBase } from "@/lib/db";
+import { baseConfiguree, chiffrementBase, etatBase } from "@/lib/db";
 import { familleIp, libelleFamille } from "@/lib/reseau";
 import { modeStockage } from "@/lib/stockage";
 import { miseEnService, modeConservation } from "@/lib/config";
@@ -37,6 +37,12 @@ export async function GET() {
         : "non-configuree",
       base_ip: baseIp,
       base_erreur: etat.erreur,
+      // Chiffrement constaté de la liaison avec la base : « TLSv1.3 »,
+      // « absent » (liaison en clair) ou « inconnu » (aucune connexion encore
+      // ouverte). Renseigné même quand la base est refusée : c'est là qu'on en
+      // a le plus besoin. À lire avant d'exiger TLS côté serveur —
+      // docs/DEPLOIEMENT.md, « Chiffrement de la liaison ».
+      base_tls: chiffrementBase(),
       // Étiquette d'instance et refus (question 23, choix b) : la base servie
       // n'est pas celle que l'environnement déclare (`BASE_ATTENDUE`).
       base_instance: etat.instance,

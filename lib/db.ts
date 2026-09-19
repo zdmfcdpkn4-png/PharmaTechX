@@ -2,7 +2,7 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { SCHEMA } from "./schema";
-import { fabriqueSocket, familleIp } from "./reseau";
+import { fabriqueSocket, familleIp, protocoleTls } from "./reseau";
 import { conformiteInstance } from "./instance";
 import { hacherCode } from "./codes";
 
@@ -64,6 +64,8 @@ function optionsTls(u: URL): false | { rejectUnauthorized: boolean; ca?: string 
 const g = globalThis as unknown as {
   __fpPool?: Pool;
   __fpSchema?: Promise<void>;
+  /** Protocole TLS constaté à l'ouverture de la dernière connexion du pool. */
+  __fpTls?: string;
   /** Refus d'instance déjà journalisé : une ligne par processus, pas par requête. */
   __fpRefusSignale?: boolean;
 };
@@ -87,6 +89,12 @@ function pool(): Pool {
   // s'arrêterait. Le client est retiré du pool, la requête suivante en ouvre un autre.
   g.__fpPool.on("error", (e) => {
     console.error(`[base] connexion inactive perdue : ${e.message}`);
+  });
+  // Chiffrement constaté à l'ouverture, pas à la demande : la page de santé le
+  // lit sans ouvrir de connexion, donc sans risque de la ralentir (Render s'en
+  // sert comme contrôle de santé).
+  g.__fpPool.on("connect", (client) => {
+    g.__fpTls = protocoleTls(client);
   });
   return g.__fpPool;
 }
@@ -307,6 +315,21 @@ export async function etatBase(): Promise<EtatBase> {
     }
     return { joignable: false, erreur: code, instance: null, refus: null };
   }
+}
+
+/**
+ * Chiffrement de la liaison avec la base, constaté sur la dernière connexion
+ * ouverte : `null` sans base, « absent » si la liaison est en clair, « inconnu »
+ * si aucune connexion n'a encore été ouverte ou si le flux n'est pas lisible,
+ * sinon le protocole négocié.
+ *
+ * À quoi cela sert : avant d'exiger TLS côté serveur (Supabase, « Enforce SSL
+ * on incoming connections »), constater que le service est déjà en TLS.
+ * L'interrupteur posé sur une liaison en clair coupe le service de sa base.
+ */
+export function chiffrementBase(): string | null {
+  if (!baseConfiguree()) return null;
+  return g.__fpTls ?? "inconnu";
 }
 
 export async function baseJoignable(): Promise<boolean> {
