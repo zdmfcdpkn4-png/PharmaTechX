@@ -117,7 +117,8 @@ export default async function RootLayout({
           { href: "/admin/ordonnancement", libelle: "Ordre" },
           ...(session?.role === "admin"
             ? [
-                { href: "/admin/bareme", libelle: "Barème" },
+                { href: "/admin/referentiel", libelle: "Référentiel" },
+          { href: "/admin/bareme", libelle: "Barème" },
                 { href: "/admin/signature", libelle: "Signature" },
                 { href: "/admin/journal", libelle: "Journal" },
               ]

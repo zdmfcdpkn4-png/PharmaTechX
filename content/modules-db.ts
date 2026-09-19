@@ -2,6 +2,7 @@ import "server-only";
 import { requete, sql, type Role } from "@/lib/db";
 import { nouvelId } from "./banque-db";
 import { filieres as FILIERES, getCritere, maintien, niveaux as NIVEAUX } from "./habilitation";
+import { getReferentiel } from "./referentiel-db";
 import { A_PRECISER, type Module, type NiveauHabilitation, type TypeParcours } from "./types";
 import { filieres, niveaux } from "./habilitation";
 import { listeConnue, niveauxConnus, parcoursConnus, reglageVide, type ReglageModule } from "./reglages";
@@ -63,14 +64,41 @@ export interface ModuleDeposeAEnregistrer {
   dureeMinutes: number;
 }
 
-const FILIERES_VALIDES = new Set(FILIERES.map((f) => f.id).filter((id) => id !== "socle"));
-const NIVEAUX_VALIDES = new Set<string>(NIVEAUX.map((n) => n.code));
+/** Valeurs de formulaire ramenées à des chaînes distinctes et bornées. */
+function chainesDistinctes(brut: unknown, connues?: Set<string>): string[] {
+  const l = Array.isArray(brut)
+    ? brut.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 40)
+    : [];
+  return [...new Set(connues ? l.filter((x) => connues.has(x)) : l)].slice(0, 40);
+}
 
-/** Filières et niveaux reconnus ; les autres valeurs sont ignorées. */
-export function filtrerProfils(filieres: unknown, niveaux: unknown): { filieres: string[]; niveaux: string[] } {
-  const f = Array.isArray(filieres) ? filieres.filter((x): x is string => typeof x === "string" && FILIERES_VALIDES.has(x)) : [];
-  const n = Array.isArray(niveaux) ? niveaux.filter((x): x is string => typeof x === "string" && NIVEAUX_VALIDES.has(x)) : [];
-  return { filieres: [...new Set(f)], niveaux: [...new Set(n)] };
+/**
+ * Filières et niveaux reconnus **au moment de la saisie** ; les autres valeurs
+ * sont ignorées. Les listes viennent du référentiel servi aux écrans (fiche
+ * versionnée + dépôts actifs, `content/referentiel-db.ts`) : une filière
+ * déposée est donc acceptée, ce que la liste figée du code refusait.
+ */
+export async function filtrerProfils(
+  filieres: unknown,
+  niveaux: unknown,
+): Promise<{ filieres: string[]; niveaux: string[] }> {
+  const { filieres: F, niveaux: N } = await getReferentiel().catch(() => ({
+    filieres: FILIERES,
+    niveaux: NIVEAUX,
+  }));
+  const valides = new Set(F.map((f) => f.id).filter((id) => id !== "socle"));
+  const codes = new Set<string>(N.map((n) => String(n.code)));
+  return { filieres: chainesDistinctes(filieres, valides), niveaux: chainesDistinctes(niveaux, codes) };
+}
+
+/**
+ * Relecture d'une ligne déjà enregistrée : on ne refiltre pas contre le
+ * référentiel courant. Les valeurs ont été validées à l'écriture, et une
+ * filière retirée depuis ne doit pas disparaître en silence du module qui la
+ * cite — elle doit rester visible pour être corrigée.
+ */
+function profilsEnregistres(filieres: unknown, niveaux: unknown): { filieres: string[]; niveaux: string[] } {
+  return { filieres: chainesDistinctes(filieres), niveaux: chainesDistinctes(niveaux) };
 }
 
 export function filtrerParcours(parcours: unknown): TypeParcours[] {
@@ -148,7 +176,7 @@ export async function supprimerModuleDepose(id: string): Promise<{ ok: true } | 
 /** Un module déposé lu comme un module du modèle de contenu (sans ses questions). */
 export function versModule(l: LigneModuleDepose): Module {
   const critere = l.critere_id ? getCritere(l.critere_id) : undefined;
-  const { filieres, niveaux } = filtrerProfils(l.filieres, l.niveaux);
+  const { filieres, niveaux } = profilsEnregistres(l.filieres, l.niveaux);
   return {
     id: l.id,
     titre: l.titre,

@@ -4,7 +4,7 @@ import type { Module, Parcours, TypeParcours } from "./types";
 import { protectionOperateur } from "./modules/protection-operateur";
 import { comportementZac } from "./modules/comportement-zac";
 import { emplacements, parcours, voisins } from "./parcours";
-import { filieres } from "./habilitation";
+import { listeFilieres } from "./referentiel-db";
 import { baseConfiguree, lireOrdonnancement } from "@/lib/db";
 import { lireBareme } from "@/lib/bareme-db";
 import { comptesParModule, questionsValideesDuModule } from "./banque-db";
@@ -167,7 +167,7 @@ export async function composerProgramme(parcoursId: TypeParcours): Promise<Progr
       .sort((a, b) => a.cle - b.cle)
       .map((x) => x.m);
   const parFiliere: Record<string, Module[]> = {};
-  for (const f of filieres) {
+  for (const f of await listeFilieres()) {
     if (f.id === "socle") continue;
     parFiliere[f.id] = ordonner(duParcours.filter((m) => m.affectation === "poste" && m.postes.includes(f.id)));
   }
@@ -193,7 +193,9 @@ export async function positionDansParcours(parcoursId: TypeParcours, moduleId: s
   const p = await composerProgramme(parcoursId);
   const listes: { liste: string; libelle: string; modules: Module[] }[] = [
     { liste: "tronc-commun", libelle: "Socle transversal", modules: p.troncCommun },
-    ...filieres.filter((f) => f.id !== "socle").map((f) => ({ liste: f.id, libelle: f.libelle, modules: p.parFiliere[f.id] ?? [] })),
+    ...(await listeFilieres())
+      .filter((f) => f.id !== "socle")
+      .map((f) => ({ liste: f.id, libelle: f.libelle, modules: p.parFiliere[f.id] ?? [] })),
   ];
   for (const { liste, libelle, modules } of listes) {
     const v = voisins(modules, moduleId);

@@ -5,7 +5,8 @@ import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { rattachement } from "@/lib/progression";
 import { Progression } from "@/components/Progression";
-import { blocsCompetence, criteres, filieres, niveaux } from "@/content/habilitation";
+import { blocsCompetence, criteres } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type DocumentResume, type ModuleResume } from "@/components/TableauDeBord";
 
@@ -45,6 +46,7 @@ export default async function Accueil({
     params.parcours === "maintien" ? "maintien" : "integration";
   const parcours = getParcours(parcoursId)!;
   const conservation = modeConservation();
+  const { filieres, niveaux } = await getReferentiel();
   const [enBase, programme, session, ratt] = await Promise.all([
     comptesQuestionsBase(),
     composerProgramme(parcoursId),

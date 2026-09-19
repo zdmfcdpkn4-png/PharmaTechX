@@ -30,15 +30,21 @@ export type { Bareme } from "./bareme";
  * Niveaux d'habilitation de l'unité.
  * Socle transversal N1a ; parcours Chimiothérapie N1c → N2 → N3 ;
  * parcours Préparatoire P1 → P2.
+ *
+ * Depuis la décision du 19/09/2026 (question 38, choix b), des niveaux
+ * peuvent être **déposés en base** : le type reste donc ouvert. Les codes
+ * ci-dessous sont ceux de la fiche d'habilitation, gardés nommément pour que
+ * l'éditeur continue de les proposer ; `(string & {})` accepte les autres
+ * sans faire disparaître cette complétion.
  */
+export const NIVEAUX_FICHE = ["N1a", "N1c", "N2", "N3", "P1", "P2"] as const;
+
 export type NiveauHabilitation =
-  | "N1a"
-  | "N1c"
-  | "N2"
-  | "N3"
-  | "P1"
-  | "P2"
-  | typeof A_PRECISER;
+  | (typeof NIVEAUX_FICHE)[number]
+  | typeof A_PRECISER
+  // `string & {}` : accepte n'importe quel code déposé sans faire disparaître
+  // la complétion sur les codes de la fiche.
+  | (string & NonNullable<unknown>);
 
 export type TypeParcours = "integration" | "maintien";
 

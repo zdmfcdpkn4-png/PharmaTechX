@@ -5,6 +5,8 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
 import { peutValider } from "@/content/quatre-yeux";
+import { getReferentiel } from "@/content/referentiel-db";
+import { ArbreBanque } from "@/components/ArbreBanque";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +27,10 @@ export default async function Questions({
     ? (p.statut as StatutQuestion)
     : undefined;
   const moduleId = modules.some((m) => m.id === p.module) ? p.module : undefined;
-  const [questions, comptes] = await Promise.all([
+  const [questions, comptes, referentiel] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
+    getReferentiel(),
   ]);
   const parModule = new Map<string, typeof questions>();
   for (const q of questions) {
@@ -70,6 +73,20 @@ export default async function Questions({
           modification).
         </p>
       )}
+
+      <ArbreBanque
+        filieres={referentiel.filieres}
+        niveaux={referentiel.niveaux}
+        modules={modules.map((m) => ({
+          id: m.id,
+          titre: m.titre,
+          etiquette: etiquetteModule(m),
+          postes: m.postes ?? [],
+          niveaux: (m.niveaux ?? []).map(String),
+        }))}
+        comptes={comptes}
+        moduleActif={moduleId}
+      />
 
       <form method="get" className="carte filtres">
         <div className="rangee">

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
 import { getTousModules } from "@/content/store";
 import { STATUTS_MODULE, lireReglagesModules, listerModulesDeposes } from "@/content/modules-db";
-import { filieres, niveaux } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 import { ecartsDeLaFiche } from "@/content/reglages";
 import { FormulaireModule } from "./formulaire";
 import { actionEnregistrerModule, actionReglerSeuil, actionStatutModule, actionSupprimerModule } from "./actions";
@@ -34,6 +34,7 @@ export default async function Modules({
   searchParams: Promise<{ ok?: string; erreur?: string; message?: string }>;
 }) {
   const p = await searchParams;
+  const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const [deposes, bareme, reglages] = await Promise.all([listerModulesDeposes(), lireBareme(), lireReglagesModules()]);
   const modulesCode = getTousModules();

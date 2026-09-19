@@ -10,6 +10,7 @@ import { tirageConforme, type Difficulte } from "@/content/tirage";
 import { refusApiSansSession } from "@/lib/auth";
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
+import { referentielDuModule } from "@/content/referentiel-db";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,12 @@ export interface DetailQuestion {
   legendes?: DetailLegende[];
 }
 
+/** Filières et niveaux du module, figés au moment de l'évaluation. */
+export interface ReferentielScelle {
+  filieres: { id: string; libelle: string }[];
+  niveaux: { code: string; libelle: string; condition: string }[];
+}
+
 export interface ResultatEvaluation {
   moduleId: string;
   moduleTitre: string;
@@ -107,6 +114,14 @@ export interface ResultatEvaluation {
   minQuestions: number;
   /** Barème en vigueur à l'évaluation (copié, scellé) : le rapport se relit avec lui. */
   bareme: Bareme;
+  /**
+   * Référentiel du module au moment de l'évaluation (copié, scellé) : filières
+   * et niveaux avec leurs libellés du moment. Depuis le 19/09/2026, ces listes
+   * sont modifiables en base (question 38, choix b) ; un rapport renommé ou
+   * retiré du référentiel se relit donc tel qu'il a été émis. Absent des
+   * résultats antérieurs : un rapport ancien s'affiche sans cette mention.
+   */
+  referentiel?: ReferentielScelle;
   detail: DetailQuestion[];
   horodatage: string;
   horodatageIso: string;
@@ -318,6 +333,7 @@ export async function POST(request: Request) {
     concluant: decision.concluant,
     minQuestions: decision.minQuestions,
     bareme,
+    referentiel: await referentielDuModule(mod),
     detail,
     horodatage: maintenant.toLocaleString("fr-FR", {
       timeZone: "Europe/Paris",

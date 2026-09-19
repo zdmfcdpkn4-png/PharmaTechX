@@ -730,6 +730,62 @@ continuent d'importer depuis `lib/auth.ts`, qui réexporte. Le parcours de bout
 en bout vérifie désormais qu'**aucun bouton ni encart d'amorçage ne subsiste**
 sur `/connexion`, puis entre avec le code d'`ADMIN_INITIAL`.
 
+**Filières et niveaux ajoutables, référentiel scellé** (question 38, choix b,
+19/09/2026) : l'unité peut créer ses propres filières et ses propres niveaux
+depuis **Administration → Référentiel**, sans livraison de code. Une ligne
+déposée qui reprend l'identifiant d'une filière de la fiche la **corrige**
+(libellé, description, badge, blocs) ; un identifiant nouveau l'**ajoute**.
+Un dépôt désactivé quitte les listes de rattachement sans rien effacer.
+
+Le choix b a été préféré au choix a (filières seules) en connaissance de son
+coût : la chaîne « niveau → prérequis → acquis → rapport » devient une donnée
+modifiable après coup. **La contrepartie est le scellement.** Un résultat
+d'évaluation recopie désormais, à côté du barème, le référentiel du module au
+moment où il est passé — identifiants et libellés des filières et des niveaux,
+avec la condition d'obtention (`ResultatEvaluation.referentiel`). Un rapport
+se relit donc tel qu'il a été émis, même après un renommage, un retrait ou une
+réorganisation. Le champ est facultatif : un rapport antérieur au 19/09/2026
+s'affiche sans cette mention, il n'est pas réécrit.
+
+Ce qui change dans le code :
+
+- `content/referentiel-db.ts` sert les listes aux écrans (fiche versionnée
+  corrigée et complétée par les dépôts actifs) ; sans base, ce sont les listes
+  de la fiche, inchangées ;
+- `NiveauHabilitation` n'est plus une union fermée : les codes de la fiche
+  restent nommés — l'éditeur les propose toujours — et `string & {}` accepte
+  les autres. `Niveau.filiere` s'ouvre de même ;
+- `filtrerProfils` valide contre le référentiel **servi**, plus contre une
+  liste figée : une filière déposée est acceptée au rattachement d'un module.
+  À la **relecture** d'une ligne déjà enregistrée, en revanche, aucun filtrage
+  n'est appliqué : une filière retirée depuis ne doit pas disparaître en
+  silence du module qui la cite, elle doit rester visible pour être corrigée ;
+- les écrans lisent le référentiel au lieu d'importer la constante.
+
+**Banque de badges** (19/09/2026) : dix-sept pictogrammes dessinés dans
+`components/Badge.tsx`, en SVG monochrome sur une grille de 24 — isolateur,
+hotte, flacon, seringue, poche, gants, balance, sonde, filtre, déchets,
+étiquette, contrôle, document, formation, sas, nettoyage, préparation,
+stockage. Rien n'est téléchargé, aucune licence tierce n'entre dans le dépôt,
+et le trait reste lisible en impression noir et blanc. Une filière porte le
+sien ; le choix se fait sur une grille qui montre les pictogrammes, pas une
+liste de noms.
+
+**Arborescence de la banque de questions** (19/09/2026) : en tête de
+**Banque de questions**, filière → niveau → module, avec le compte des
+questions validées et à vérifier et une jauge par ligne. Elle ne remplace pas
+la liste, elle la précède et sert à s'y rendre — un clic sur un module ouvre
+la liste filtrée dessus. Sa valeur est autant dans ce qu'elle montre que dans
+ce qu'elle laisse voir en creux : **un module sans question apparaît en grisé**,
+et les trous de la banque sautent aux yeux.
+
+Trois cas sont rendus fidèlement plutôt que masqués : un module rattaché à deux
+niveaux figure sous chacun ; un module sans niveau est listé sous « tous
+niveaux » ; une filière ou un niveau cité par un module mais absent du
+référentiel apparaît sous une étiquette d'avertissement, au lieu de disparaître.
+Le repli est en `<details>` : pas une ligne de script, et il fonctionne au
+clavier comme le reste du site.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

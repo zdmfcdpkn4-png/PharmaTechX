@@ -1,7 +1,7 @@
 import { listerDepots } from "@/lib/db";
 import { modeStockage, stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { filieres, niveaux } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 import { NATURES_DOCUMENT, libelleNature } from "@/content/types";
 import { actionDeposer, actionSupprimerDepot } from "@/app/actions";
 import { etiquetteModule, titreModule } from "../questions/commun";
@@ -22,6 +22,7 @@ export default async function Documents({
   searchParams: Promise<{ erreur?: string; ok?: string; module?: string }>;
 }) {
   const p = await searchParams;
+  const { filieres, niveaux } = await getReferentiel();
   const [depots, modules] = await Promise.all([listerDepots(), getTousModulesAvecDeposes()]);
   const mode = modeStockage();
   const moduleInitial = modules.some((m) => m.id === p.module) ? p.module : "";

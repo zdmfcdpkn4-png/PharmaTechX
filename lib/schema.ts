@@ -43,6 +43,8 @@ export const TABLES = [
   "parametres",
   "progression",
   "en_cours",
+  "filieres_deposees",
+  "niveaux_deposes",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -330,6 +332,36 @@ export const SCHEMA: string[] = [
   // documents liés à un ou plusieurs profils (filières, niveaux) — question 10
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE depots ADD COLUMN IF NOT EXISTS niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,
+
+  // ── référentiel déposé : filières et niveaux (question 38, choix b) ───────
+  // La fiche d'habilitation versionnée (`content/habilitation.ts`) reste la
+  // référence ; ces tables l'étendent et la corrigent. Un rapport émis scelle
+  // les libellés du moment, il ne dépend donc pas de ces tables pour se relire.
+  `CREATE TABLE IF NOT EXISTS filieres_deposees (
+     id          TEXT PRIMARY KEY,
+     libelle     TEXT NOT NULL,
+     description TEXT NOT NULL DEFAULT '',
+     badge       TEXT NOT NULL DEFAULT '',
+     blocs       JSONB NOT NULL DEFAULT '[]'::jsonb,
+     rang        INTEGER NOT NULL DEFAULT 0,
+     actif       BOOLEAN NOT NULL DEFAULT TRUE,
+     cree_le     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     modifie_par TEXT NOT NULL DEFAULT ''
+   )`,
+  `CREATE TABLE IF NOT EXISTS niveaux_deposes (
+     code        TEXT PRIMARY KEY,
+     libelle     TEXT NOT NULL,
+     filiere_id  TEXT NOT NULL,
+     condition   TEXT NOT NULL DEFAULT '',
+     prerequis   JSONB NOT NULL DEFAULT '[]'::jsonb,
+     rang        INTEGER NOT NULL DEFAULT 0,
+     actif       BOOLEAN NOT NULL DEFAULT TRUE,
+     cree_le     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     modifie_par TEXT NOT NULL DEFAULT ''
+   )`,
+  `CREATE INDEX IF NOT EXISTS niveaux_deposes_filiere ON niveaux_deposes (filiere_id)`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

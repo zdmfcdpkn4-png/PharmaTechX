@@ -60,7 +60,7 @@ export async function actionEnregistrerModule(formData: FormData) {
   // Règle des quatre yeux (question 12, choix c) : un module publié ne se modifie qu'en administration.
   if (existant?.statut === "publie" && s.role !== "admin") redirect(retourErreur("publie"));
 
-  const { filieres, niveaux } = filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
+  const { filieres, niveaux } = await filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
   const parcours = filtrerParcours(formData.getAll("parcours"));
   const m = {
     titre,

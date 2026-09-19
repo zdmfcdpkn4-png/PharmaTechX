@@ -32,10 +32,16 @@ export const arbitrageEnAttente = {
 export interface Niveau {
   code: NiveauHabilitation;
   libelle: string;
-  filiere: "socle" | "chimiotherapie" | "preparatoire" | "encadrement";
+  /**
+   * Filière de rattachement. Ouvert depuis le 19/09/2026 (question 38,
+   * choix b) : une filière déposée porte son propre identifiant.
+   */
+  filiere: string;
   /** Condition d'obtention, reprise du chapitre III de la fiche. */
   condition: string;
   prerequis: NiveauHabilitation[];
+  /** `base` pour un niveau déposé, `code` (ou absent) pour la fiche versionnée. */
+  origine?: "code" | "base";
 }
 
 export const niveaux: Niveau[] = [
@@ -105,6 +111,10 @@ export interface Filiere {
   description: string;
   blocs: number[];
   niveaux: NiveauHabilitation[];
+  /** Pictogramme de la banque (`components/Badge.tsx`) ; vide = aucun. */
+  badge?: string;
+  /** `base` pour une filière déposée, `code` (ou absent) pour la fiche versionnée. */
+  origine?: "code" | "base";
 }
 
 export const filieres: Filiere[] = [

@@ -1,4 +1,5 @@
-import { criteres, filieres, niveaux } from "@/content/habilitation";
+import { criteres } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 import type { LigneModuleDepose } from "@/content/modules-db";
 import { LIMITES_BAREME } from "@/content/bareme";
 
@@ -6,7 +7,7 @@ import { LIMITES_BAREME } from "@/content/bareme";
  * Formulaire d'un module déposé (création et modification). Rendu serveur :
  * les cases cochées partent telles quelles à l'action.
  */
-export function FormulaireModule({
+export async function FormulaireModule({
   initiale,
   action,
   seuilDefaut,
@@ -16,6 +17,7 @@ export function FormulaireModule({
   /** Seuil par défaut du barème, proposé à la création. */
   seuilDefaut: number;
 }) {
+  const { filieres, niveaux } = await getReferentiel();
   const coche = (liste: string[] | undefined, v: string, defaut = false) => (liste ? liste.includes(v) : defaut);
   return (
     <form action={action} className="carte">

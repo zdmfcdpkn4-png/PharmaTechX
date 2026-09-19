@@ -940,6 +940,64 @@ Justification : cascade de pression.`,
   await capture("formats-correction");
   ok("séquence à ordonner et texte à trous : déposés, validés à quatre yeux, passés au menu déroulant, notés par éléments");
 
+  // 12k. référentiel déposé (question 38, choix b) et arborescence de la banque
+  //      Une filière et un niveau ajoutés en base doivent apparaître dans les
+  //      listes de rattachement d'un module, sans livraison de code.
+  await page.goto(BASE + "/admin/referentiel");
+  await page.waitForSelector("text=Référentiel : filières et niveaux");
+  const avantFilieres = await page.locator(".arbre-groupe, li.carte").count();
+  const ajoutFiliere = page.locator("form", { hasText: "Ajouter une filière" });
+  await ajoutFiliere.locator("input[name=libelle]").fill("Parcours Stérilisation");
+  await ajoutFiliere.locator("input[name=id]").fill("sterilisation");
+  await ajoutFiliere.locator("input[name=blocs]").fill("1, 3");
+  await ajoutFiliere.locator('input[name=badge][value="sas"]').check();
+  await ajoutFiliere.locator('button:has-text("Ajouter la filière")').click();
+  await page.waitForURL(/ok=filiere/);
+  assert.ok(avantFilieres >= 0);
+  await page.waitForSelector("text=Parcours Stérilisation");
+  // Le badge choisi est rendu dans l'en-tête de la filière. La recherche est
+  // faite dans sa carte : les formulaires de modification des autres filières
+  // portent eux aussi tous les pictogrammes, repliés dans leur `<details>`.
+  const carteSterilisation = page.locator("li.carte", { hasText: "Parcours Stérilisation" }).first();
+  assert.equal(
+    await carteSterilisation.locator('.etape-tete svg[aria-label="Sas"]').isVisible(),
+    true,
+    "badge de la filière rendu dans sa carte",
+  );
+
+  const ajoutNiveau = page.locator("form", { hasText: "Ajouter un niveau" });
+  await ajoutNiveau.locator("input[name=code]").fill("S1");
+  await ajoutNiveau.locator("input[name=libelle]").fill("S1 — stérilisation (base)");
+  await ajoutNiveau.locator("select[name=filiereId]").selectOption("sterilisation");
+  await ajoutNiveau.locator("textarea[name=condition]").fill("Critères obligatoires du bloc 1 validés.");
+  await ajoutNiveau.locator('button:has-text("Ajouter le niveau")').click();
+  await page.waitForURL(/ok=niveau/);
+  await page.waitForSelector("text=S1 — stérilisation (base)");
+  ok("référentiel : filière et niveau déposés, badge rendu");
+
+  // la filière déposée est proposée au rattachement d'un module déposé
+  await page.goto(BASE + "/admin/modules");
+  const casesFiliere = page.locator('input[name=filieres][value="sterilisation"]');
+  assert.ok(await casesFiliere.count() > 0, "filière déposée proposée au rattachement d'un module");
+  const casesNiveau = page.locator('input[name=niveaux][value="S1"]');
+  assert.ok(await casesNiveau.count() > 0, "niveau déposé proposé au rattachement d'un module");
+  ok("référentiel déposé proposé dans les listes de rattachement des modules");
+
+  // arborescence de la banque : filière → niveau → module, avec les comptes
+  await page.goto(BASE + "/admin/questions");
+  await page.waitForSelector("text=Couverture de la banque");
+  const groupes = await page.locator(".arbre-groupe").count();
+  assert.ok(groupes >= 1, "au moins un groupe dans l'arborescence");
+  assert.ok(await page.locator(".arbre-module").count() >= 1, "au moins un module dans l'arborescence");
+  assert.ok(await page.locator(".jauge").count() >= 1, "jauge de couverture affichée");
+  // un module de l'arbre conduit à la liste filtrée sur ce module
+  const premier = page.locator(".arbre-module a").first();
+  const cible = await premier.getAttribute("href");
+  assert.match(cible, /\/admin\/questions\?module=/, "un module de l'arbre renvoie à sa liste");
+  await premier.click();
+  await page.waitForURL(/module=/);
+  ok("arborescence de la banque : filière, niveau, module, comptes et renvoi vers la liste");
+
   // 12g. progression rattachée (question 11, choix c) : première fois, code personnel, évaluation conservée
   // AG-001 a été clos plus haut : un identifiant clos ne se rattache pas, d'où un second identifiant.
   await page.goto(BASE + "/#progression");

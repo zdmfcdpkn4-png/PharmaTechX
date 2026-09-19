@@ -119,7 +119,7 @@ export async function actionDeposer(formData: FormData) {
   const critereId = String(formData.get("critereId") ?? "") || null;
   if (moduleId && !(await moduleExiste(moduleId))) redirect("/admin/documents?erreur=module-inconnu");
   // profils (filières, niveaux) auxquels un document général est proposé — question 10
-  const profils = filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
+  const profils = await filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
 
   const octets = Buffer.from(await fichier.arrayBuffer());
   const { url } = await deposerFichier(fichier.name, fichier.type, octets);

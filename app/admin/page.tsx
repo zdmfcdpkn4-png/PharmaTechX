@@ -3,7 +3,7 @@ import { getSession, peutGererRole, LIBELLES_ROLE } from "@/lib/auth";
 import { listerAcces } from "@/lib/db";
 import { modeStockage } from "@/lib/stockage";
 import { modeConservation } from "@/lib/config";
-import { filieres, niveaux } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
 import { comptesRapports } from "@/lib/rapports";
 import { actionBasculerCode, actionCreerCode, actionSupprimerCode } from "@/app/actions";
@@ -21,6 +21,7 @@ export default async function Admin({
   searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string }>;
 }) {
   const p = await searchParams;
+  const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
   const [acces, comptes, ouverts] = await Promise.all([
