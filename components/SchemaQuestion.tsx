@@ -115,6 +115,11 @@ export function SchemaQuestion({
                     type="text"
                     autoComplete="off"
                     spellCheck={false}
+                    // Tablette et téléphone : ni correction ni majuscule automatiques,
+                    // qui réécriraient une abréviation (« TCP ») à l'insu de l'apprenant.
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    enterKeyHint="next"
                     value={valeurs[l.id] ?? ""}
                     disabled={verrouille}
                     onChange={(e) => onChange?.(l.id, e.target.value)}
