@@ -52,8 +52,10 @@ la réclame), les sauvegardes et la **liste de mise en service** (DPO, DSI, plan
 variables, comptes, essai de restauration, procédure) ; Vercel y reste
 documenté en repli. Au 18/09/2026, service et base sont sur les plans
 gratuits : phase d'essai, `MISE_EN_SERVICE` absente. Le schéma de la base est
-appliqué automatiquement au premier accès. Puis `/connexion` → **Créer
-l'administrateur initial** : le code n'est affiché qu'une fois.
+appliqué automatiquement au premier accès. Le premier administrateur naît de
+la variable `ADMIN_INITIAL` posée chez l'hébergeur, jamais d'un bouton public
+(19/09/2026) : poser la variable, redéployer, entrer ce code sur `/connexion`,
+créer ses propres codes, révoquer celui-ci, puis **supprimer la variable**.
 
 ## 3. Les trois rôles
 
@@ -323,7 +325,7 @@ sceau, barème porté), registre CSV et JSON, archive zip.
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
 serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme`
 et `MISE_EN_SERVICE` posée :
-page de santé (base jointe en IPv4), amorçage, codes, dépôt de la signature, création d'un identifiant d'agent,
+page de santé (base jointe en IPv4), absence de porte d'amorçage publique, entrée de l'administrateur initial, codes, dépôt de la signature, création d'un identifiant d'agent,
 création et import de dix questions avec image, éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
 d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas

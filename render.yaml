@@ -51,6 +51,15 @@ services:
         value: "3"                # pooler de session : une connexion serveur par connexion du pool
       - key: AUTH_SECRET
         generateValue: true
+      - key: ADMIN_INITIAL
+        sync: false               # code du premier administrateur, au format XXXXX-XXXXX.
+                                  # Aucun bouton public ne crée ce compte (19/09/2026) : la
+                                  # page de connexion est ouverte à tous, un tel bouton y
+                                  # offrait le rôle au premier venu tant que la base était
+                                  # vide. Poser la variable, redéployer, entrer avec ce code,
+                                  # créer ses propres codes, révoquer celui-ci, puis
+                                  # SUPPRIMER la variable. Sans administrateur actif, elle
+                                  # en recrée un au démarrage ; avec, elle est sans effet.
       - key: CONSERVATION_RAPPORTS
         value: aucune             # « pseudonyme » après validation RGPD — voir docs/RGPD.md
       - key: PROCEDURE_HABILITATION

@@ -4,6 +4,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { SCHEMA } from "./schema";
 import { fabriqueSocket, familleIp } from "./reseau";
 import { conformiteInstance } from "./instance";
+import { hacherCode } from "./codes";
 
 /**
  * Accès à la base — PostgreSQL standard via `pg`.
@@ -113,6 +114,41 @@ function refusInstance(raison: string): Error {
 }
 
 /**
+ * Amorçage du premier administrateur, par variable d'environnement.
+ *
+ * Décision du 19/09/2026 : **aucun bouton public** ne crée cet accès. La page
+ * de connexion étant ouverte à tous, un bouton d'amorçage y aurait offert le
+ * rôle d'administrateur au premier venu, entre le branchement de la base et
+ * la création du compte. La porte est donc côté hébergeur : poser
+ * `ADMIN_INITIAL` dans le tableau de bord, redéployer, se connecter avec ce
+ * code, créer ses propres codes, révoquer celui-ci, puis **supprimer la
+ * variable**.
+ *
+ * L'insertion n'a lieu que si aucun administrateur actif n'existe : laisser la
+ * variable en place ne crée pas de second compte, et l'amorçage ne se rouvre
+ * pas de lui-même. L'opération est journalisée dans la même transaction que le
+ * schéma, sous le verrou consultatif : deux instances qui démarrent ensemble
+ * n'en créent qu'un.
+ */
+async function amorcerAdministrateur(c: PoolClient): Promise<void> {
+  const code = (process.env.ADMIN_INITIAL ?? "").trim();
+  if (code.length < 8) return;
+  const deja = await c.query(
+    "SELECT 1 FROM acces WHERE role = 'admin' AND actif = TRUE LIMIT 1",
+  );
+  if ((deja.rowCount ?? 0) > 0) return;
+  const cree = await c.query<{ id: number }>(
+    "INSERT INTO acces (code_hash, role, libelle) VALUES ($1, 'admin', $2) RETURNING id",
+    [hacherCode(code), "Administrateur initial"],
+  );
+  await c.query(
+    `INSERT INTO journal (role, libelle, action, cible, details)
+     VALUES ('systeme', 'amorçage', 'creation-code', 'admin', $1::jsonb)`,
+    [JSON.stringify({ libelle: "Administrateur initial", acces: cree.rows[0].id })],
+  );
+}
+
+/**
  * Applique le schéma une fois par processus. Le verrou consultatif
  * transactionnel sérialise les instances qui démarrent ensemble.
  *
@@ -140,6 +176,7 @@ export function garantirSchema(): Promise<void> {
           [conformite.aInscrire],
         );
       }
+      await amorcerAdministrateur(c);
       await c.query("COMMIT");
     } catch (e) {
       await c.query("ROLLBACK").catch(() => undefined);
@@ -370,11 +407,6 @@ export async function codesActifs(): Promise<
 
 export async function marquerUsage(id: number): Promise<void> {
   await sql`UPDATE acces SET dernier_usage = NOW() WHERE id = ${id}`;
-}
-
-export async function existeAdmin(): Promise<boolean> {
-  const r = await sql`SELECT 1 FROM acces WHERE role = 'admin' AND actif = TRUE LIMIT 1`;
-  return r.rowCount > 0;
 }
 
 // ─────────────────────────────────────────────────────────── ordonnancement

@@ -3,11 +3,12 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { baseConfiguree, codesActifs, lireEtatAcces, marquerUsage, type Role } from "./db";
 import { etatDeSession, type EtatAcces } from "./session-etat";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
+import { genererCode, hacherCode, verifierCode } from "./codes";
 
 /**
  * Contrôle d'accès par rôle.
@@ -65,32 +66,9 @@ export function secretConfigure(): boolean {
 
 // ───────────────────────────────────────────────────────── hachage des codes
 
-export function hacherCode(code: string): string {
-  const sel = randomBytes(16);
-  const dk = scryptSync(code.normalize("NFKC"), sel, 32);
-  return `scrypt$${sel.toString("hex")}$${dk.toString("hex")}`;
-}
-
-export function verifierCode(code: string, stocke: string): boolean {
-  const [algo, selHex, dkHex] = stocke.split("$");
-  if (algo !== "scrypt" || !selHex || !dkHex) return false;
-  const attendu = Buffer.from(dkHex, "hex");
-  const calcule = scryptSync(
-    code.normalize("NFKC"),
-    Buffer.from(selHex, "hex"),
-    attendu.length,
-  );
-  return timingSafeEqual(attendu, calcule);
-}
-
-/** Code lisible, sans caractères ambigus (0/O, 1/I/l). */
-export function genererCode(longueur = 10): string {
-  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const buf = randomBytes(longueur);
-  let out = "";
-  for (let i = 0; i < longueur; i++) out += alphabet[buf[i] % alphabet.length];
-  return out.match(/.{1,5}/g)!.join("-");
-}
+// Fabrication et hachage des codes : `lib/codes.ts`, réexporté ici pour que
+// les appelants continuent de s'adresser à un seul module.
+export { genererCode, hacherCode, verifierCode };
 
 // ──────────────────────────────────────────────────────────────── sessions
 

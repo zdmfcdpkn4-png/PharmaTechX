@@ -691,6 +691,45 @@ Deux points à connaître :
   libellé ne les mentionne pas, et un rapport ancien se relit exactement comme
   il a été noté.
 
+**Plus de porte d'amorçage publique** (19/09/2026, demandé par le pharmacien
+responsable) : le bouton « Créer l'administrateur initial » de `/connexion` et
+l'action serveur qui le servait sont supprimés, ainsi que l'encart qui
+affichait le code sur l'écran d'administration.
+
+Le motif est une faille, constatée en relisant le code au moment de brancher
+la base de production. `/connexion` est une **page publique** — le filtre
+d'entrée l'exclut de la garde, puisqu'il faut bien pouvoir entrer un code — et
+le bouton s'y affichait dès qu'une base était configurée. Entre le branchement
+de la base et la création du premier compte, **quiconque atteignait cette
+adresse devenait administrateur en un clic**, avec session ouverte dans la
+foulée. Sur un dispositif destiné à devenir opposable, cette fenêtre n'était
+pas défendable, si étroite fût-elle.
+
+L'amorçage passe donc là où seul l'exploitant entre : la variable
+`ADMIN_INITIAL` du tableau de bord de l'hébergeur. Au premier accès à la base,
+et **seulement s'il n'existe aucun administrateur actif**, le code est haché
+(scrypt, sel par code) et inscrit sous le libellé « Administrateur initial » ;
+l'opération est journalisée sous le rôle `systeme`. Elle se fait dans la
+transaction du schéma, sous le verrou consultatif : deux instances qui
+démarrent ensemble n'en créent qu'un. La marche à suivre — poser la variable,
+entrer, créer ses codes, révoquer celui-ci, **supprimer la variable** — est
+dans `docs/DEPLOIEMENT.md`, « Amorçage du premier administrateur ».
+
+Deux conséquences assumées :
+
+- une base neuve n'est plus installable depuis le seul site : il faut accéder
+  au tableau de bord de l'hébergeur. C'est le prix de la fermeture, et c'est
+  cohérent avec le fait que `DATABASE_URL` et `AUTH_SECRET` y vivent déjà ;
+- si l'unique administrateur est désactivé alors que la variable est encore
+  posée, un redémarrage en recrée un. D'où la consigne de la supprimer.
+
+Au passage, la fabrication et le hachage des codes quittent `lib/auth.ts` pour
+`lib/codes.ts`, module sans cookie ni base ni Next : `lib/db.ts` en a besoin
+pour l'amorçage, et `lib/auth.ts` dépend déjà de `lib/db.ts`. Les appelants
+continuent d'importer depuis `lib/auth.ts`, qui réexporte. Le parcours de bout
+en bout vérifie désormais qu'**aucun bouton ni encart d'amorçage ne subsiste**
+sur `/connexion`, puis entre avec le code d'`ADMIN_INITIAL`.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

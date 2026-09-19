@@ -2,14 +2,13 @@ import Link from "next/link";
 import { baseConfiguree } from "@/lib/db";
 import { secretConfigure } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
-import { actionAmorcage, actionConnexion } from "@/app/actions";
+import { actionConnexion } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, string> = {
   "code-invalide": "Code non reconnu. Vérifiez la saisie, ou entrez sans code : la consultation reste ouverte.",
   "non-configure": "Le contrôle d'accès n'est pas encore actif : la base de données n'est pas branchée.",
-  "deja-amorce": "Un administrateur existe déjà : l'amorçage est fermé.",
   "session-fermee":
     "Votre session a été fermée : le code d'accès qui l'avait ouverte a été révoqué, remplacé ou supprimé. Entrez un code en cours de validité.",
 };
@@ -147,20 +146,6 @@ export default async function Connexion({
         </ul>
       </section>
 
-      {pret && (
-        <section className="carte">
-          <h2>Première mise en service</h2>
-          <p className="legende">
-            S&apos;il n&apos;existe encore aucun administrateur, ce bouton en crée un et affiche son
-            code une seule fois. Il devient inopérant dès qu&apos;un administrateur existe.
-          </p>
-          <form action={actionAmorcage}>
-            <button type="submit" className="bouton bouton--secondaire">
-              Créer l&apos;administrateur initial
-            </button>
-          </form>
-        </section>
-      )}
     </article>
   );
 }

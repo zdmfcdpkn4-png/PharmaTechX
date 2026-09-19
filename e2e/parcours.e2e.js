@@ -2,17 +2,21 @@
 /*
  * Prérequis : un serveur construit (`npm run build && npm start`) lancé avec
  * une base VIDE, `AUTH_SECRET`, `CONSERVATION_RAPPORTS=pseudonyme`,
- * `MISE_EN_SERVICE=<AAAA-MM-JJ>` (sinon les rapports portent « phase d'essai ») et
- * Chromium pour Playwright (`npx playwright install chromium`). Lancer :
+ * `MISE_EN_SERVICE=<AAAA-MM-JJ>` (sinon les rapports portent « phase d'essai »),
+ * `ADMIN_INITIAL=<code>` au format `XXXXX-XXXXX` — le serveur crée
+ * l'administrateur initial avec ce code au premier accès à la base, et le
+ * scénario s'en sert pour ouvrir sa session — et Chromium pour Playwright
+ * (`npx playwright install chromium`). Lancer :
  *
  *   BASE=http://localhost:3000 npm run e2e
  *
  * Avec `CAPTURES=<dossier>`, des captures d'écran des écrans de décision
  * (identifiants, émission, rapport, A4, information RGPD) y sont déposées.
  *
- * Le scénario crée l'administrateur initial : il ne se rejoue que sur une
- * base réinitialisée. Il termine par le blocage volontaire de l'adresse après
- * cinq échecs de connexion (quinze minutes).
+ * Le scénario part d'une base réinitialisée : il vérifie d'abord qu'aucune
+ * porte d'amorçage publique ne subsiste sur `/connexion`, puis entre avec le
+ * code d'`ADMIN_INITIAL`. Il termine par le blocage volontaire de l'adresse
+ * après cinq échecs de connexion (quinze minutes).
  *
  * Le parcours de décision (modèle métrologie) est joué avec une banque de dix
  * questions dont le scénario connaît le corrigé : score de 80 % dans la bande
@@ -139,7 +143,11 @@ Justification : cf. procédure interne.`,
   }
   ok("santé : base joignable, conservation pseudonyme, horloge et étiquette d'instance exposées");
 
-  // 1. amorçage
+  // 1. connexion de l'administrateur initial
+  //    Amorçage par la variable ADMIN_INITIAL (décision du 19/09/2026) : plus
+  //    aucun bouton public ne crée ce compte. La page de connexion étant
+  //    ouverte à tous, un tel bouton offrait le rôle d'administrateur au
+  //    premier venu tant que la base était vide.
   await page.goto(BASE + "/connexion");
   // icône d'onglet : le logo Pharmacotechnie, servi avant toute session
   // (le filtre d'entrée laisse passer les fichiers `.png`)
@@ -149,16 +157,26 @@ Justification : cf. procédure interne.`,
   assert.equal(icone.status(), 200, "icône servie sans session");
   assert.match(icone.headers()["content-type"], /image\/png/);
   ok("icône d'onglet : logo Pharmacotechnie servi sans session");
-  await page.click("button:has-text(\"Créer l'administrateur initial\")");
-  await page.waitForURL(/\/admin\?amorce=/);
-  const codeAdmin = new URL(page.url()).searchParams.get("amorce");
-  assert.match(codeAdmin, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
-  await page.waitForSelector("text=Code administrateur initial");
-  ok("amorçage : code admin affiché, session ouverte");
+  // la porte d'amorçage n'existe plus sur cette page publique
+  assert.equal(
+    await page.locator("button:has-text(\"Créer l'administrateur initial\")").count(),
+    0,
+    "aucun bouton d'amorçage sur la page de connexion",
+  );
+  assert.equal(
+    await page.locator("text=Première mise en service").count(),
+    0,
+    "aucun encart d'amorçage sur la page de connexion",
+  );
+  ok("amorçage : aucune porte publique sur /connexion");
 
-  // 1b. amorçage refusé ensuite
-  const r2 = await page.request.get(BASE + "/connexion");
-  assert.equal(r2.status(), 200);
+  const codeAdmin = process.env.ADMIN_INITIAL ?? "";
+  assert.match(codeAdmin, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/, "ADMIN_INITIAL posé pour la vérification");
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click('button:has-text("Entrer")');
+  await page.waitForURL(/\/admin/);
+  await page.waitForSelector("text=Administrateur initial");
+  ok("amorçage par ADMIN_INITIAL : session administrateur ouverte");
 
   // 2. codes tuteur et poste
   await page.selectOption("select[name=role]", "tuteur");

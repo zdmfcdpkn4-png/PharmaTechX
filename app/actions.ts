@@ -4,11 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   basculerAcces,
-  baseConfiguree,
   creerAcces,
   ecrireRang,
   enregistrerDepot,
-  existeAdmin,
   supprimerAcces,
   supprimerDepot,
   type Role,
@@ -68,26 +66,6 @@ export async function actionDeconnexion() {
   if (s) await journaliser({ role: s.role, libelle: s.libelle }, "deconnexion");
   await fermerSession();
   redirect("/connexion");
-}
-
-/**
- * Amorçage : crée le premier code admin quand la base est vide.
- * Refusé dès qu'un admin existe — la porte se referme d'elle-même.
- */
-export async function actionAmorcage(): Promise<void> {
-  if (!baseConfiguree()) return;
-  if (await existeAdmin()) redirect("/connexion?erreur=deja-amorce");
-  const code = genererCode();
-  const accesId = await creerAcces(hacherCode(code), "admin", "Administrateur initial", null, null);
-  await journaliser({ role: "systeme", libelle: "amorçage" }, "creation-code", "admin", {
-    libelle: "Administrateur initial",
-  });
-  // La session de cet administrateur est ouverte dans la foulée : sans elle,
-  // l'écran d'administration renverrait vers la connexion et le code —
-  // affiché une seule fois — serait perdu.
-  await ouvrirSession({ role: "admin", libelle: "Administrateur initial", filiere: null, niveau: null, acces: accesId });
-  // Le code n'est montré qu'ici, une seule fois, via le paramètre d'URL.
-  redirect(`/admin?amorce=${encodeURIComponent(code)}`);
 }
 
 export async function actionCreerCode(formData: FormData) {

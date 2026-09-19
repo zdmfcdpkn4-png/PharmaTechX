@@ -18,7 +18,7 @@ const MESSAGES: Record<string, string> = {
 export default async function Admin({
   searchParams,
 }: {
-  searchParams: Promise<{ amorce?: string; nouveau?: string; libelle?: string; erreur?: string }>;
+  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -42,16 +42,6 @@ export default async function Admin({
           {!estAdmin && " Les codes administrateur et tuteur ne vous sont pas accessibles."}
         </p>
       </section>
-
-      {p.amorce && (
-        <p className="encart encart--ok">
-          <strong>Code administrateur initial : </strong>
-          <code style={{ fontSize: "1.15rem" }}>{p.amorce}</code>
-          <br />
-          Notez-le maintenant : il n&apos;est affiché qu&apos;une fois et la base ne permet pas de
-          le relire. Créez ensuite vos propres codes et révoquez celui-ci.
-        </p>
-      )}
 
       {p.nouveau && (
         <p className="encart encart--ok">

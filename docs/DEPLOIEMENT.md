@@ -31,6 +31,7 @@ preuve.
 |---|---|---|
 | `DATABASE_URL` | oui (hors mode ouvert) | chaîne PostgreSQL ; avec Supabase, la chaîne « Session pooler » (port 5432, utilisateur `postgres.<ref>`, hôte `*.pooler.supabase.com`) ; `POSTGRES_URL` (Vercel) est lue en repli |
 | `DATABASE_IP` | non | famille d'adresses pour joindre la base : `4` (défaut), `6`, `auto` ; en `4`, l'hôte est résolu en IPv4 seulement, à chaque connexion, et un hôte sans adresse IPv4 échoue avec un message explicite |
+| `ADMIN_INITIAL` | non | code du premier administrateur (`XXXXX-XXXXX`). Aucun bouton public ne crée ce compte (19/09/2026) : poser la variable, entrer ce code, créer ses propres codes, révoquer celui-ci, puis **supprimer la variable**. Sans effet s'il existe déjà un administrateur actif |
 | `AUTH_SECRET` | oui | signature des sessions et des sceaux de résultats, ≥ 32 caractères (`openssl rand -base64 32`) |
 | `BASE_ATTENDUE` | non | `service` ou `essai` : étiquette d'instance attendue de la base (question 23). Absente et base sans étiquette : aucun contrôle. Une base étiquetée n'est servie qu'à l'environnement qui la réclame |
 | `DATABASE_SSL` | non | `disable` (défaut sur hôte local), `require` (défaut ailleurs : chiffre sans vérifier l'autorité), `verify` (+ `DATABASE_SSL_CA` ou `DATABASE_SSL_CA_FILE`, certificat de l'autorité de Supabase) |
@@ -145,9 +146,37 @@ réinitialisation**. Le plus sûr est un mot de passe **alphanumérique** d'au
 moins 24 caractères : aucun encodage n'est alors nécessaire, et l'entropie
 dépasse encore 140 bits (62²⁴ ≈ 2¹⁴³).
 
+## Amorçage du premier administrateur
+
+Il n'existe **aucun bouton public** pour créer le premier administrateur
+(décision du 19/09/2026). La page `/connexion` est ouverte à tous — le filtre
+d'entrée l'exclut de la garde — et un bouton d'amorçage y offrait le rôle
+d'administrateur au premier venu pendant toute la fenêtre séparant le
+branchement de la base de la création du compte. Sur un dispositif destiné à
+devenir opposable, cette porte dérobée n'était pas tenable.
+
+L'amorçage est donc côté hébergeur, où seul l'exploitant entre :
+
+1. poser `ADMIN_INITIAL` = un code au format `XXXXX-XXXXX` (dix caractères,
+   l'alphabet exclut 0/O et 1/I/l) dans le tableau de bord ;
+2. enregistrer : le service redéploie, et au premier accès à la base le code
+   est haché (scrypt, sel par code) et inscrit comme « Administrateur
+   initial ». L'opération est journalisée sous le rôle `systeme` ;
+3. entrer ce code sur `/connexion` ;
+4. créer ses propres codes de fonction, révoquer « Administrateur initial » ;
+5. **supprimer la variable** `ADMIN_INITIAL`.
+
+Deux garde-fous : l'insertion n'a lieu que s'il n'existe **aucun
+administrateur actif**, donc laisser la variable en place ne crée pas de
+second compte ; et elle se fait dans la transaction du schéma, sous le verrou
+consultatif, donc deux instances qui démarrent ensemble n'en créent qu'un.
+Conséquence à connaître : si l'unique administrateur est désactivé et que la
+variable est encore posée, un redémarrage en recrée un — raison de plus pour
+la supprimer.
+
 **Reprendre les données de la base Render** (facultatif : en phase d'essai,
 repartir d'une base vide est possible, le schéma se recrée au premier accès
-et l'administrateur initial depuis `/connexion`). Depuis un poste avec
+et l'administrateur initial naît d'`ADMIN_INITIAL`). Depuis un poste avec
 `pg_dump` et `pg_restore` (version 16 ou plus, réseau IPv4) :
 
 ```bash
@@ -204,8 +233,11 @@ et version en service » ci-dessous.
 5. `https://pharmatechx.onrender.com/api/sante` : `base: "joignable"`,
    `base_ip: "4"`, `secret: "defini"`, `conservation` attendue, `commit` =
    commit déployé.
-6. `/connexion` → **Créer l'administrateur initial** : le code n'est affiché
-   qu'une fois.
+6. **Administrateur initial** : poser `ADMIN_INITIAL` (format `XXXXX-XXXXX`,
+   dix caractères sans 0/O/1/I/l), enregistrer — Render redéploie —, puis
+   entrer ce code sur `/connexion`. Créer ensuite ses propres codes, révoquer
+   celui-ci et **supprimer la variable**. Aucun bouton public ne crée cet
+   accès : voir « Amorçage » ci-dessous.
 
 Pour recréer le service à partir du blueprint : **New → Blueprint** sur le
 dépôt ; Render lit `render.yaml` (service `pharmatechx` seul, Francfort,
@@ -348,7 +380,8 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    Ici et pas après : deux générations de rapports pour un même dispositif se
    justifient mal. L'icône d'onglet, elle, porte déjà l'emblème de ce logo
    (`public/pharmaco-icone.png`).
-6. **Comptes** : administrateur initial créé puis remplacé par des codes
+6. **Comptes** : administrateur initial créé par `ADMIN_INITIAL` — variable
+   supprimée aussitôt après — puis remplacé par des codes
    nominaux de fonction (jamais des noms), codes tuteur, signature du
    pharmacien déposée, identifiants d'agents créés et correspondance tenue hors
    du site.
@@ -374,7 +407,8 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    automatiquement.
 3. Facultatif : **Storage → Blob** → *Connect* pour les documents
    (`BLOB_READ_WRITE_TOKEN`). Sans Blob, les fichiers vont en base.
-4. Redéployer, puis `/connexion` → **Créer l'administrateur initial**.
+4. Redéployer avec `ADMIN_INITIAL` posée, puis entrer ce code sur
+   `/connexion` et supprimer la variable.
 
 Le fichier `render.yaml` est ignoré par Vercel. Aucun `vercel.json` n'est
 nécessaire.
