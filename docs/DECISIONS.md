@@ -501,6 +501,20 @@ scellé, en base ou dans le paquet d'archivage ; sans l'un ni l'autre, le
 document classé vaut par ses visas et non par une vérification. Restent
 `[à préciser]` le responsable du dépôt et le support de conservation.
 
+**Ce qui se classe au dossier** (question 33, choix b, 19/09/2026) : le
+rapport A4 **et** le paquet d'archivage — HTML autoportant, CSV, JSON scellé
+— déposé en GED ou sur le réseau à côté du dossier d'habilitation. C'est la
+suite logique de la question 32 : si la pièce de référence est le document
+classé, le dossier doit être autonome, et le paquet est ce qui rend
+l'empreinte vérifiable des années après, la base ou l'hébergeur
+disparaîtraient-ils. Le coût est d'un clic à la clôture. Écartés : a (rapport
+A4 seul, qui fait reposer la valeur du document sur les seuls visas) et c
+(HTML seul, lisible mais invérifiable). Deux conséquences consignées : le
+paquet produit depuis le formulaire d'édition porte le nom et la fonction
+dans ses fichiers, marqués hors sceau, et un paquet classé hors du site est
+un traitement de plus à déclarer, dont la conservation et l'accès suivent le
+dossier d'habilitation.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

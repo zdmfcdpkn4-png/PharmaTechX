@@ -322,7 +322,8 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    (question 32 ; voir ci-dessous).
 8. **Procédure interne** publiée, qui décrit le dispositif, le visa par clic,
    la signature incrustée, la correspondance des identifiants, la purge
-   manuelle et la conservation.
+   manuelle, la conservation, et le classement au dossier d'habilitation du
+   rapport A4 **avec son paquet d'archivage** (question 33, choix b).
 9. **Mise en service prononcée** : poser `MISE_EN_SERVICE` à sa date
    (AAAA-MM-JJ). La mention « Phase d'essai — ne vaut pas preuve » disparaît
    des écrans et des rapports, remplacée par « en service depuis le … » ;

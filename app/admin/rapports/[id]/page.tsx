@@ -103,6 +103,13 @@ export default async function Rapport({
             </a>
           )}
         </div>
+        {r.statut === "clos" && (
+          <p className="legende" style={{ marginBottom: 0 }}>
+            Le paquet se classe au dossier d&apos;habilitation avec le rapport A4 (décision du
+            19/09/2026) : il porte le résultat scellé, de sorte que l&apos;empreinte reste vérifiable
+            sans le site ni la base.
+          </p>
+        )}
       </section>
 
       {message && (
@@ -120,8 +127,9 @@ export default async function Rapport({
         <p className="legende">
           Le site ne connaît l&apos;agent que par l&apos;identifiant <code>{r.agent_identifiant}</code>. Le nom
           saisi ici est porté sur l&apos;édition demandée, avec la mention « hors sceau, non enregistré » :
-          il n&apos;est ni conservé en base, ni écrit au journal, ni transmis dans l&apos;adresse. Reportez-vous
-          à la correspondance tenue par le pharmacien responsable.
+          il n&apos;est ni conservé en base, ni écrit au journal, ni transmis dans l&apos;adresse. Le paquet
+          produit depuis ce formulaire le porte en revanche dans ses fichiers, marqué hors sceau.
+          Reportez-vous à la correspondance tenue par le pharmacien responsable.
         </p>
         <form method="post" action={`/admin/rapports/${r.id}/imprimer`} target="_blank">
           <div className="rangee">

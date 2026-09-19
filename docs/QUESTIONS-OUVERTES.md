@@ -235,8 +235,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     personnelle de moins. Ajoutable plus tard sans rien défaire.
 35. **Fichiers d'archivage** : CSV au séparateur « ; », UTF-8 avec marque
     d'ordre, dates lisibles en heure de Paris ; JSON complet ; zip sans
-    compression. `[à préciser]` si un autre outil que le tableur doit lire ces
-    fichiers (registre qualité, GED).
+    compression. Destination tranchée le 19/09/2026 (question 33, choix b) :
+    le paquet se classe au dossier d'habilitation, en GED ou sur le réseau,
+    avec le rapport A4 — le dossier devient autonome et l'empreinte reste
+    vérifiable sans la base. `[à préciser]` si la GED impose un format autre
+    que le zip, ou refuse les fichiers non indexables.
 36. **Identifiants d'agents** (question 6, choix a) : format `AG-NNN` généré
     par le site sur une séquence globale, jamais saisi ni réattribué ; clôture
     sans suppression ; créés et clos par un tuteur ou l'administrateur,
