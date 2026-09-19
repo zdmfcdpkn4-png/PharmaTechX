@@ -892,18 +892,21 @@ SCORM). Transposé dans les limites du brief :
   vérifié par des tests appariés — « tri des déchets » avant « déchet »,
   « HEPA » avant « flux d'air », « combinaison » avant « tenue »,
   « classification SGH » avant « classification ».
-- Logo d'unité de l'en-tête du site remplacé le 19/09/2026 par le mandala
-  « pharmacotechnie — unité de production des chimiothérapies », sur demande du
-  pharmacien responsable. Fichier propre (`public/pharmaco-entete.png`,
-  192 px, palette de 160 couleurs, 15 Ko) et non `pharmaco-web.png`, qui sert
-  aussi de logo **sur chaque rapport** : la demande portait sur le site, le
-  rapport n'est pas touché et garde l'ancien logo. Hauteur de rendu portée de
-  44 à 56 px — mesuré, ce dessin au trait fin n'est pas lisible en dessous ; le
-  bandeau garde sa hauteur, fixée par le titre à deux lignes. L'empreinte
-  SHA-256 d'un rapport porte sur la forme canonique du résultat et **ne couvre
-  pas les logos** (vérifié dans `lib/sceau.ts`) : aucun rapport émis n'est
-  invalidé par un changement de logo ; seule une réimpression porterait le
-  nouveau.
+- Logo d'unité remplacé le 19/09/2026 (question 41, choix a) par le mandala
+  « pharmacotechnie — unité de production des chimiothérapies », **partout** :
+  en-tête du site, en-tête du rapport A4 et icône d'onglet, servis par les
+  mêmes fichiers — `pharmaco-web.png` (192 px) et `pharmaco-icone.png`
+  (180 px), palette de 160 couleurs, 15 Ko chacun, soit le poids de l'ancien,
+  donc aucune page ni aucun rapport alourdi (le fichier est incrusté en
+  adresse `data:` dans chaque rapport). Hauteurs de rendu portées de 44 à
+  56 px à l'écran et de 36 à 48 px sur le rapport : mesuré aux trois tailles,
+  ce dessin au trait fin est une tache colorée en dessous, là où l'ancien
+  « P » restait lisible à 44. Mesuré aussi, la mise en page du rapport étant
+  validée : la hauteur du bandeau ne bouge pas — 132 px que le logo fasse 36,
+  44 ou 48 px, c'est le bloc de titre sur quatre lignes qui la fixe.
+  L'empreinte SHA-256 d'un rapport porte sur la forme canonique du résultat et
+  **ne couvre pas les logos** (vérifié dans `lib/sceau.ts`) : aucun rapport
+  émis n'est invalidé ; seule une réimpression porte le nouveau logo.
   Logos d'unité versés dans la même banque le 19/09/2026 (question 40,
   choix b) : Préparation, Bionettoyage, Validation pharmacotechnique et
   Pharmacotechnie, **trente-sept illustrations** au total (796 Ko). Ils
