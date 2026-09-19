@@ -38,6 +38,12 @@ export interface Illustration {
   libelle: string;
   /** Nom du fichier dans `public/badges/`. */
   fichier: string;
+  /**
+   * `libre` : l'image n'est pas un disque et ne doit pas être rognée en rond.
+   * C'est le cas des logos, dont le nom est écrit sous l'emblème — un rognage
+   * circulaire en couperait les extrémités.
+   */
+  forme?: "libre";
 }
 
 export const ILLUSTRATIONS: Record<string, Illustration> = {
@@ -77,6 +83,14 @@ export const ILLUSTRATIONS: Record<string, Illustration> = {
   "logistique-thermosensible": { libelle: "Logistique des produits thermosensibles", fichier: "logistique-thermosensible.webp" },
   "formation-diplome": { libelle: "Formation et diplôme", fichier: "formation-diplome.webp" },
   "procede-pharmaceutique": { libelle: "Procédé pharmaceutique", fichier: "procede-pharmaceutique.webp" },
+  // Logos d'unité, versés dans la banque le 19/09/2026 (question 40, choix b).
+  // Ils portent leur nom dans l'image : forme libre, et aucune proposition
+  // automatique — un logo désigne une unité, pas un domaine, et l'attribuer
+  // d'après un mot du titre vaudrait moins que l'illustration du procédé.
+  "logo-preparation": { libelle: "Logo — Préparation, unité de pharmacotechnie", fichier: "logo-preparation.webp", forme: "libre" },
+  "logo-bionettoyage": { libelle: "Logo — Bionettoyage", fichier: "logo-bionettoyage.webp", forme: "libre" },
+  "logo-validation-pharmacotechnique": { libelle: "Logo — Validation pharmacotechnique", fichier: "logo-validation-pharmacotechnique.webp", forme: "libre" },
+  "logo-pharmacotechnie": { libelle: "Logo — Pharmacotechnie, production des chimiothérapies", fichier: "logo-pharmacotechnie.webp", forme: "libre" },
 };
 
 export const NOMS_ILLUSTRATION = Object.keys(ILLUSTRATIONS);

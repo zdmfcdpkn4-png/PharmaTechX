@@ -892,6 +892,15 @@ SCORM). Transposé dans les limites du brief :
   vérifié par des tests appariés — « tri des déchets » avant « déchet »,
   « HEPA » avant « flux d'air », « combinaison » avant « tenue »,
   « classification SGH » avant « classification ».
+  Logos d'unité versés dans la même banque le 19/09/2026 (question 40,
+  choix b) : Préparation, Bionettoyage, Validation pharmacotechnique et
+  Pharmacotechnie, **trente-sept illustrations** au total (796 Ko). Ils
+  portent leur nom dans l'image, donc `forme: "libre"` — le rognage circulaire
+  des autres en couperait les extrémités —, et **aucune proposition
+  automatique** : un logo désigne une unité, pas un domaine ; un module
+  « Bionettoyage des ZAC » reçoit l'illustration du nettoyage, pas le logo, et
+  un test le vérifie. Réserve exprimée puis levée par le pharmacien
+  responsable : leurs sous-titres ne se lisent pas en vignette de 96 px.
   La cohérence des deux fichiers est tenue par le type — `PICTOGRAMMES` est un
   `Record<NomPictogramme, …>`, donc une entrée oubliée ou inventée est une
   erreur de compilation, vérifié.

@@ -25,6 +25,24 @@ test("chaque illustration a son fichier, et chaque fichier son entrée", () => {
   assert.equal(fichiers.length, NOMS_ILLUSTRATION.length);
 });
 
+test("les logos sont de forme libre et ne se proposent jamais tout seuls", () => {
+  const logos = NOMS_ILLUSTRATION.filter((n) => n.startsWith("logo-"));
+  assert.equal(logos.length, 4);
+  for (const n of logos) {
+    // rognés en rond, ils perdraient le nom écrit sous l'emblème
+    assert.equal(ILLUSTRATIONS[n].forme, "libre", n);
+    assert.match(ILLUSTRATIONS[n].libelle, /^Logo — /, n);
+  }
+  // Un logo désigne une unité, pas un domaine : « Bionettoyage des ZAC » doit
+  // recevoir l'illustration du nettoyage, pas le logo de l'unité.
+  assert.equal(badgeSuggere("Bionettoyage des ZAC"), "nettoyage-cip");
+  assert.equal(badgeSuggere("Maîtrise du procédé de validation"), "procede-pharmaceutique");
+  for (const t of ["Préparation", "Pharmacotechnie", "Bionettoyage", "Validation", "Unité de production"]) {
+    const b = badgeSuggere(t);
+    assert.ok(!b || !b.startsWith("logo-"), `${t} -> ${b}`);
+  }
+});
+
 test("les deux familles ne partagent aucun identifiant", () => {
   // Une collision ferait taire silencieusement l'un des deux dessins : la
   // banque complète est un seul objet, la seconde entrée écraserait la première.

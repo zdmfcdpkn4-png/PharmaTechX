@@ -1501,6 +1501,8 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 /* Illustrations de domaine : aquarelles rondes, lisibles à partir de ~72 px.
    Jamais en pastille — voir content/badges.ts. */
 .badge--illustration { border-radius: 50%; object-fit: contain; vertical-align: middle; }
+/* Un logo porte son nom sous l'emblème : le rogner en rond couperait le texte. */
+.badge--libre { border-radius: var(--rayon-sm); }
 .titre-vignette { display: flex; align-items: flex-start; gap: 1rem; }
 .titre-vignette > div { min-width: 0; }
 .titre-vignette > div > :first-child { margin-top: 0; }

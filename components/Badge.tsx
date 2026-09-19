@@ -21,6 +21,8 @@ export interface DefinitionBadge {
   trace?: ReactNode;
   /** Nom du fichier dans `public/badges/` (illustration). */
   image?: string;
+  /** Illustration qui n'est pas un disque : pas de rognage circulaire. */
+  libre?: boolean;
 }
 
 export const PICTOGRAMMES: Record<NomPictogramme, DefinitionBadge> = {
@@ -222,7 +224,10 @@ export { NOMS_PICTOGRAMME };
 export const BADGES: Record<string, DefinitionBadge> = {
   ...PICTOGRAMMES,
   ...Object.fromEntries(
-    NOMS_ILLUSTRATION.map((n) => [n, { libelle: ILLUSTRATIONS[n].libelle, image: ILLUSTRATIONS[n].fichier }]),
+    NOMS_ILLUSTRATION.map((n) => [
+      n,
+      { libelle: ILLUSTRATIONS[n].libelle, image: ILLUSTRATIONS[n].fichier, libre: ILLUSTRATIONS[n].forme === "libre" },
+    ]),
   ),
 };
 
@@ -241,13 +246,14 @@ export function Badge({
   const def = nom ? BADGES[nom] : undefined;
   if (!def) return null;
   if (def.image) {
+    const forme = def.libre ? "badge badge--illustration badge--libre" : "badge badge--illustration";
     // `alt` vide : l'illustration n'apporte rien que le texte voisin ne dise
     // déjà (titre du module, libellé dans la grille de choix). La faire lire
     // par un lecteur d'écran doublerait l'information.
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        className={className ? `badge badge--illustration ${className}` : "badge badge--illustration"}
+        className={className ? `${forme} ${className}` : forme}
         src={`/badges/${def.image}`}
         width={taille}
         height={taille}
