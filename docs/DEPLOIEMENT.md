@@ -135,6 +135,16 @@ connexion directe au lieu du pooler), `28P01` = mot de passe, `ECONNREFUSED`,
 de base, `SSL_NON_SUPPORTE` = le serveur refuse TLS (`[à vérifier]` le réglage
 SSL du pooler ; ne pas passer `DATABASE_SSL` à `disable` sur l'internet public).
 
+**Le cas `28P01`.** Il ne survient qu'après une connexion établie : l'hôte, le
+port, l'utilisateur et le nom de base sont donc justes, et seul le mot de passe
+est en cause. Trois pièges, dans cet ordre de fréquence : un **caractère
+spécial non encodé** — `#` et `?` tronquent la chaîne en silence, `@` et `/`
+la coupent, `%` mal suivi fausse le décodage ; un **espace ou un saut de ligne**
+collé au début ou à la fin de la valeur ; un mot de passe **antérieur à une
+réinitialisation**. Le plus sûr est un mot de passe **alphanumérique** d'au
+moins 24 caractères : aucun encodage n'est alors nécessaire, et l'entropie
+dépasse encore 140 bits (62²⁴ ≈ 2¹⁴³).
+
 **Reprendre les données de la base Render** (facultatif : en phase d'essai,
 repartir d'une base vide est possible, le schéma se recrée au premier accès
 et l'administrateur initial depuis `/connexion`). Depuis un poste avec
