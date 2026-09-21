@@ -359,6 +359,7 @@ Justification : cf. procédure interne.`,
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
   await page.locator(".question-ligne:has-text('Schéma') a:has-text('Modifier')").first().click();
+  await page.waitForSelector(".fil a:has-text('Banque de questions')");
   await page.waitForSelector(".schema-cadre--editeur img");
   await page.waitForLoadState("networkidle");
   assert.equal(await page.locator(".editeur-legende").count(), 3);
@@ -1519,6 +1520,54 @@ Justification : cascade de pression.`,
   assert.equal(await apiJetable(), 401, "réactiver ne rouvre pas la session d'avant");
   await entrerJetable();
   assert.equal(await apiJetable(), 404, "nouvelle session valide après réactivation");
+
+  // Le tutorat ne bascule pas un code d'administration (21/09/2026) : l'écran ne le lui
+  // propose pas, et le serveur refuse la requête forgée. `peutGererRole` manquait à
+  // l'action : la protection ne reposait jusque-là que sur ce qui était affiché.
+  const carteAdmin = page.locator("li.carte", { hasText: "Administrateur initial" });
+  const idAdmin = await carteAdmin.locator("input[name=id]").first().inputValue();
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin");
+  assert.equal(
+    await page.locator("li.carte:has-text('Administrateur initial') button").count(),
+    0,
+    "le tutorat ne se voit proposer aucune action sur un code d'administration",
+  );
+  const formeJetableT = page.locator(
+    "li.carte:has-text('Poste jetable') form:has(button:has-text('Révoquer'))",
+  );
+  await formeJetableT.locator("input[name=id]").evaluate((el, v) => {
+    el.value = v;
+  }, idAdmin);
+  await formeJetableT.locator("button:has-text('Révoquer')").click();
+  await page.waitForSelector("[role=alert]:has-text('ne permet pas')");
+  await page.goto(BASE + "/admin");
+  assert.equal(
+    await page.locator("li.carte:has-text('Administrateur initial') .etiquette--attention").count(),
+    0,
+    "requête forgée par le tutorat : le code d'administration n'est pas révoqué",
+  );
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/admin");
+  ok("bascule d'un code : le rôle de la cible est revérifié côté serveur, la requête forgée est refusée");
+
+  // Révoquer le code de sa propre session demande de le retaper (question 42) : le
+  // verrouillage est celui de la suppression, la barrière est la même.
+  await carteAdmin.locator("summary:has-text('Révoquer')").click();
+  const formeRevocation = carteAdmin.locator("form:has(button:has-text('Révoquer mon code'))");
+  await formeRevocation.locator("input[name=confirmation]").fill("ZZZZZ-ZZZZZ");
+  await formeRevocation.locator("button:has-text('Révoquer mon code')").click();
+  await page.waitForSelector("[role=alert]:has-text('Code incorrect')");
+  assert.equal(
+    await carteAdmin.locator(".etiquette--attention").count(),
+    0,
+    "code faux : le code de la session n'est pas révoqué",
+  );
+  assert.equal(
+    await page.locator("li.carte:has-text('Poste jetable') summary:has-text('Révoquer')").count(),
+    0,
+    "révoquer le code d'un autre reste d'un clic : c'est le geste d'urgence",
+  );
   // Suppression d'un code (21/09/2026) : l'administration seule, et jamais au seul clic —
   // l'administrateur retape le code qui a ouvert sa session. Un code faux ne supprime rien,
   // laisse une trace au journal, et compte au limiteur de connexion ; la reconnexion de
@@ -1530,7 +1579,7 @@ Justification : cascade de pression.`,
   await ouvrirSuppression();
   await carteJetable.locator("input[name=confirmation]").fill("ZZZZZ-ZZZZZ");
   await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
-  await page.waitForSelector("[role=alert]:has-text('administration incorrect')");
+  await page.waitForSelector("[role=alert]:has-text('Code incorrect')");
   await page.locator("li.carte:has-text('Poste jetable')").waitFor();
   assert.equal(await apiJetable(), 404, "code d'administration faux : rien n'est supprimé");
   await page.goto(BASE + "/admin/journal");
@@ -1546,15 +1595,16 @@ Justification : cascade de pression.`,
   // Son propre code ne se supprime pas (21/09/2026, question 41) : le bouton est inactif,
   // et le serveur refuse même réactivé dans la page — la protection ne repose jamais sur
   // ce qui est affiché.
-  const carteAdmin = page.locator("li.carte", { hasText: "Administrateur initial" });
   await carteAdmin.locator("summary:has-text('Supprimer')").click();
   const supprimerPropre = carteAdmin.locator("button:has-text('Supprimer définitivement')");
   await supprimerPropre.waitFor();
   assert.ok(await supprimerPropre.isDisabled(), "son propre code : la suppression est inactive");
   assert.equal(
-    await carteAdmin.locator("input[name=confirmation]").count(),
+    await carteAdmin
+      .locator("form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]")
+      .count(),
     0,
-    "son propre code : aucun champ de confirmation, l'acte n'est pas une question d'identité",
+    "son propre code : aucun champ de confirmation à la suppression — ce n'est pas une question d'identité",
   );
   await supprimerPropre.evaluate((b) => {
     b.disabled = false;
@@ -1575,6 +1625,7 @@ Justification : cascade de pression.`,
   await page.waitForURL(/\/connexion/);
   ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
   ok("suppression d'un code : réservée à l'administration, confirmée par son propre code, refus journalisé ; le code de la session en cours ne se supprime pas, écran et serveur");
+  ok("révocation de son propre code : confirmée par le code, celle d'un autre reste d'un clic");
 
   // 14d. illustrations de domaine (19/09/2026) : proposées d'après le titre pour les modules déjà
   //      en place, modifiables, et le retrait explicite ne se fait pas rattraper par la proposition

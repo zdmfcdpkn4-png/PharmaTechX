@@ -414,6 +414,12 @@ export async function lireEtatAcces(id: number): Promise<{ actif: boolean; ferme
   return r.rows[0] ?? null;
 }
 
+/** Rôle porté par un code d'accès : l'action revérifie ce que l'écran se contente de ne pas afficher. */
+export async function lireRoleAcces(id: number): Promise<Role | null> {
+  const r = await sql<{ role: Role }>`SELECT role FROM acces WHERE id = ${id}`;
+  return r.rows[0]?.role ?? null;
+}
+
 /**
  * Empreinte d'un code d'accès, pour la confirmation d'un acte irréversible
  * par son porteur. Rien n'en sort qui permette de retrouver le code : c'est

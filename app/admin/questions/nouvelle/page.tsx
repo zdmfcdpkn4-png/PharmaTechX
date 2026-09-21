@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { listerSituations } from "@/content/banque-db";
 import { EditeurQuestion } from "@/components/EditeurQuestion";
 import { actionEnregistrerQuestion } from "../actions";
@@ -14,6 +15,9 @@ export default async function NouvelleQuestion({
   const situations = (await listerSituations()).map((s) => ({ id: s.id, titre: s.titre, moduleId: s.module_id }));
   return (
     <>
+      <p className="fil">
+        <Link href="/admin/questions">Banque de questions</Link> › Nouvelle question
+      </p>
       <section className="panneau-titre">
         <h1>Nouvelle question</h1>
         <p>

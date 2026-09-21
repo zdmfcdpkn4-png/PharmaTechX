@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ImportQuestions } from "@/components/ImportQuestions";
 import { PromptDepot } from "@/components/PromptDepot";
 import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
@@ -10,6 +11,9 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
   const p = await searchParams;
   return (
     <>
+      <p className="fil">
+        <Link href="/admin/questions">Banque de questions</Link> › Dépôt
+      </p>
       <section className="panneau-titre">
         <h1>Déposer des questions</h1>
         <p>

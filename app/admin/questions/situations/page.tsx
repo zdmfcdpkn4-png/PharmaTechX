@@ -21,6 +21,9 @@ export default async function Situations({
 
   return (
     <>
+      <p className="fil">
+        <Link href="/admin/questions">Banque de questions</Link> › Mises en situation
+      </p>
       <section className="panneau-titre">
         <h1>Mises en situation</h1>
         <p>

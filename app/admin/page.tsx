@@ -13,10 +13,11 @@ export const dynamic = "force-dynamic";
 const MESSAGES: Record<string, string> = {
   "role-interdit": "Votre rôle ne permet pas de créer ce type de code.",
   "libelle-manquant": "Le libellé du profil est obligatoire.",
+  "role-interdit-bascule": "Votre rôle ne permet pas d\u2019agir sur ce code.",
   "confirmation-code-invalide":
-    "Code d\u2019administration incorrect : rien n\u2019a été supprimé. La tentative est au journal.",
+    "Code incorrect : rien n\u2019a été modifié. La tentative est au journal.",
   "confirmation-bloque":
-    "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été supprimé.",
+    "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été modifié.",
   "suppression-propre-code":
     "C\u2019est le code de votre session : il ne se supprime pas. Ouvrez une session avec un autre code d\u2019administration pour supprimer celui-ci.",
   "confirmation-indisponible":
@@ -183,13 +184,44 @@ export default async function Admin({
             </span>
             {peutGererRole(session.role, a.role) && (
               <div className="actions" style={{ marginTop: ".5rem" }}>
-                <form action={actionBasculerCode}>
-                  <input type="hidden" name="id" value={a.id} />
-                  <input type="hidden" name="actif" value={a.actif ? "false" : "true"} />
-                  <button type="submit" className="bouton bouton--compact bouton--secondaire">
-                    {a.actif ? "Révoquer" : "Réactiver"}
-                  </button>
-                </form>
+                {a.id === session.acces && a.actif ? (
+                  <details className="suppression">
+                    <summary className="bouton bouton--compact bouton--secondaire">
+                      Révoquer…
+                    </summary>
+                    <form action={actionBasculerCode} className="suppression-corps">
+                      <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="actif" value="false" />
+                      <label className="champ">
+                        <span>Révoquer le code de votre session : retapez-le pour confirmer</span>
+                        <input
+                          type="password"
+                          name="confirmation"
+                          autoComplete="off"
+                          spellCheck={false}
+                          required
+                        />
+                      </label>
+                      <div className="actions">
+                        <button type="submit" className="bouton bouton--compact">
+                          Révoquer mon code
+                        </button>
+                      </div>
+                      <span className="legende">
+                        Votre session se ferme à la requête suivante, et ce code ne permet plus de
+                        se reconnecter : seul un autre code pourra le réactiver.
+                      </span>
+                    </form>
+                  </details>
+                ) : (
+                  <form action={actionBasculerCode}>
+                    <input type="hidden" name="id" value={a.id} />
+                    <input type="hidden" name="actif" value={a.actif ? "false" : "true"} />
+                    <button type="submit" className="bouton bouton--compact bouton--secondaire">
+                      {a.actif ? "Révoquer" : "Réactiver"}
+                    </button>
+                  </form>
+                )}
                 {estAdmin && (
                   <details className="suppression">
                     <summary className="bouton bouton--compact bouton--secondaire">

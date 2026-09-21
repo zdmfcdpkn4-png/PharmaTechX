@@ -7,6 +7,7 @@ import {
   creerAcces,
   ecrireRang,
   enregistrerDepot,
+  lireRoleAcces,
   supprimerAcces,
   supprimerDepot,
   type Role,
@@ -87,10 +88,37 @@ export async function actionCreerCode(formData: FormData) {
   redirect(`/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(libelle)}`);
 }
 
+/**
+ * Révocation et réactivation d'un code.
+ *
+ * Le rôle de la cible est revérifié ici (21/09/2026) : l'écran n'affiche le
+ * bouton qu'à qui peut l'actionner, mais l'action, elle, ne le vérifiait pas —
+ * un code de tutorat pouvait donc révoquer un code d'administration par une
+ * requête forgée. C'est la règle posée en tête de ce fichier, qui n'était pas
+ * tenue ici.
+ *
+ * Révoquer le code de **sa propre** session demande de le retaper (21/09/2026,
+ * question 42) : la session se ferme à la requête suivante et le code révoqué
+ * ne permet plus de se reconnecter pour le réactiver — le verrouillage est
+ * celui de la suppression, il mérite la même barrière. Révoquer le code d'un
+ * autre reste d'un clic : c'est le geste d'urgence quand un code circule.
+ */
 export async function actionBasculerCode(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = Number(formData.get("id"));
   const actif = String(formData.get("actif")) === "true";
+  const cible = await lireRoleAcces(id);
+  if (!cible || !peutGererRole(s.role, cible)) {
+    await journaliser(s, "bascule-code-refusee", `acces:${id}`, { motif: "role-interdit" });
+    redirect("/admin?erreur=role-interdit-bascule");
+  }
+  if (!actif && s.acces && id === s.acces) {
+    const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
+    if (confirmation !== "ok") {
+      await journaliser(s, "revocation-code-refusee", `acces:${id}`, { motif: confirmation });
+      redirect(`/admin?erreur=confirmation-${confirmation}`);
+    }
+  }
   await basculerAcces(id, actif);
   await journaliser(s, actif ? "reactivation-code" : "revocation-code", `acces:${id}`);
   revalidatePath("/admin");

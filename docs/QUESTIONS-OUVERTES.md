@@ -330,11 +330,7 @@ telle. Ordre : ce qui change le déploiement en premier.
     possible dès qu'un second code admin existe mais n'est plus détenu par
     personne.
 
-42. **Révocation de son propre code** (soulevé le 21/09/2026, en posant la
-    garde de la question 41) : elle n'est pas bridée. Elle ferme la session
-    aussi sûrement que la suppression, et un code révoqué ne permet plus de
-    se reconnecter pour le réactiver — même verrouillage, en un clic et sans
-    confirmation. Faut-il refuser la révocation de son propre code, la
-    soumettre à la même confirmation que la suppression, ou la laisser libre
-    au motif qu'elle est le geste d'urgence quand un code circule ?
-    `[à préciser]`
+42. **Révocation de son propre code** — tranché le 21/09/2026 (choix a) :
+    soumise à la même confirmation par code que la suppression, sans être
+    interdite. Révoquer le code d'un autre reste d'un clic. Corrigé au
+    passage : l'action de bascule ne revérifiait pas le rôle de la cible.

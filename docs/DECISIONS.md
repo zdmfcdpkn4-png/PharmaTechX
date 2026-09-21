@@ -1161,13 +1161,27 @@ vérifie que l'action est rejetée.
 Pour supprimer ce code-là : ouvrir une session avec un autre code
 d'administration.
 
-**Ce que cette garde ne couvre pas, et qui reste ouvert.** La *révocation* de
-son propre code ferme la session tout aussi sûrement, et un code révoqué ne
-permet plus de se reconnecter pour le réactiver : le verrouillage est le même,
-en un clic et sans confirmation. La garde n'y a pas été étendue — la
-révocation est le geste d'urgence du tuteur quand un code circule, et la
-brider demande une décision distincte. Question 42 de
-`QUESTIONS-OUVERTES.md`.
+**Révocation de son propre code : même confirmation** (tranché le 21/09/2026,
+question 42, choix a). Elle ferme la session aussi sûrement que la
+suppression, et un code révoqué ne permet plus de se reconnecter pour le
+réactiver : même verrouillage, donc même barrière. Elle reste **possible** —
+on peut vouloir couper son propre accès — mais elle cesse de partir au clic.
+Révoquer le code d'un **autre** reste d'un clic, sans confirmation : c'est le
+geste d'urgence quand un code circule, et le brider coûterait des secondes au
+pire moment.
+
+**Défaut corrigé au passage : l'action de bascule ne revérifiait pas le rôle
+de la cible.** `actionBasculerCode` exigeait `sessionRequise("tuteur")` mais
+n'appelait pas `peutGererRole` ; l'écran n'affichait les boutons qu'à qui
+pouvait les actionner, et c'était la seule protection. Une requête forgée
+depuis une session de tutorat révoquait donc un code d'administration. Cela
+contredisait la règle écrite en tête de `app/actions.ts` — « la protection ne
+repose jamais sur le fait que l'écran soit affiché ou non ». Le défaut
+**précède** les travaux du 21/09/2026 ; il a été trouvé en posant la
+confirmation de révocation. Corrigé, et le parcours le mesure : une session de
+tutorat modifie l'identifiant caché d'un formulaire qui lui est offert pour
+viser un code d'administration, et l'action est refusée puis journalisée
+(`bascule-code-refusee`).
 
 **Hors périmètre, inchangé.** La *révocation* d'un code reste au tuteur et
 sans confirmation : elle est réversible, et c'est le geste d'urgence quand un

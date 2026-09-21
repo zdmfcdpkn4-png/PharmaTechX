@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lireQuestion, listerSituations } from "@/content/banque-db";
 import { EditeurQuestion } from "@/components/EditeurQuestion";
@@ -13,6 +14,9 @@ export default async function ModifierQuestion({ params }: { params: Promise<{ i
   const situations = (await listerSituations()).map((s) => ({ id: s.id, titre: s.titre, moduleId: s.module_id }));
   return (
     <>
+      <p className="fil">
+        <Link href="/admin/questions">Banque de questions</Link> › {q.id}
+      </p>
       <section className="panneau-titre">
         <h1>Modifier la question</h1>
         <p className="legende">
