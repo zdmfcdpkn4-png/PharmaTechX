@@ -1,5 +1,8 @@
 # Questions ouvertes — à trancher par le pharmacien responsable
 
+L'inventaire complet des marqueurs, avec pour chacun où il s'affiche, ce qui
+le porte et ce qu'il faut fournir pour le fermer : `docs/A-COMPLETER.md`.
+
 Chaque point est marqué `[à préciser]` dans le code ou l'interface à l'endroit
 exact où la donnée manque. Rien n'a été comblé par défaut : quand une valeur
 a dû être posée pour que le squelette fonctionne, elle est nommée ici comme
