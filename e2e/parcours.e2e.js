@@ -236,6 +236,20 @@ Justification : cf. procédure interne.`,
     return { entete, texte };
   };
 
+  /**
+   * Validation d'une évaluation (21/09/2026) : le récapitulatif s'ouvre d'abord et
+   * demande un second geste — « Valider l'évaluation » ne corrige plus au premier clic.
+   */
+  const ouvrirRecap = async () => {
+    await page.click("button:has-text(\"Valider l'évaluation\")");
+    await page.waitForSelector(".recap");
+  };
+  const validerEvaluation = async () => {
+    await ouvrirRecap();
+    await page.click(".recap button:has-text('Valider définitivement')");
+    await page.waitForSelector(".recap", { state: "detached" });
+  };
+
   // 2. codes tuteur et poste
   await page.selectOption("select[name=role]", "tuteur");
   await page.fill("input[name=libelle]", "Tuteur test");
@@ -411,7 +425,7 @@ Justification : cf. procédure interne.`,
   const fieldsets = page.locator("fieldset.question");
   const n = await fieldsets.count();
   assert.equal(n, 10);
-  for (let i = 0; i < n; i++) {
+  const repondre = async (i) => {
     const f = fieldsets.nth(i);
     const enonce = (await f.locator(".question-enonce").innerText()).trim();
     if (await f.locator(".schema").count()) {
@@ -430,8 +444,40 @@ Justification : cf. procédure interne.`,
       const [mauvaise] = q.options.find(([, v]) => !v);
       await f.locator("label.option", { hasText: q.faux ? mauvaise : bonne }).locator("input").check();
     }
-  }
-  await page.click("button:has-text(\"Valider l'évaluation\")");
+  };
+  for (let i = 0; i < n - 1; i++) await repondre(i);
+
+  // 7b. récapitulatif avant validation (21/09/2026) : il nomme les questions sans
+  //     réponse, y ramène, et demande un second geste. Échap revient aux questions.
+  await ouvrirRecap();
+  const texteRecap = await page.locator(".recap").innerText();
+  assert.match(texteRecap, new RegExp(`${n - 1} sur ${n}`), "le récapitulatif compte les renseignées");
+  assert.match(texteRecap, /sans réponse/, "le récapitulatif nomme l'omission");
+  assert.equal(
+    await page.locator(`.recap button:has-text("Question ${n}")`).count(),
+    1,
+    "la question omise est nommée et cliquable",
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".recap", { state: "detached" });
+  assert.equal(
+    await page.locator(".resultat-entete").count(),
+    0,
+    "Échap revient aux questions : rien n'est corrigé",
+  );
+  await ouvrirRecap();
+  await page.click(`.recap button:has-text("Question ${n}")`);
+  await page.waitForSelector(".recap", { state: "detached" });
+  await repondre(n - 1);
+  await ouvrirRecap();
+  assert.match(
+    await page.locator(".recap").innerText(),
+    /Toutes les questions sont renseignées/,
+    "toutes renseignées : le récapitulatif le dit",
+  );
+  await page.click(".recap button:has-text('Valider définitivement')");
+  await page.waitForSelector(".recap", { state: "detached" });
+  ok("récapitulatif avant validation : omissions nommées, retour à la question, second geste exigé");
   await page.waitForSelector(".resultat-entete");
   const score = (await page.locator(".resultat-entete .score").innerText()).replace(/\s+/g, " ");
   assert.equal(score, "80 %");
@@ -798,7 +844,7 @@ Justification : justification deux.`;
       await f.locator("label.option", { hasText: "Mauvaise" }).locator("input").check();
     }
   }
-  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await validerEvaluation();
   await page.waitForSelector(".resultat-entete");
   await page.waitForSelector("h2:has-text('Document de synthèse')");
   await page.waitForSelector("img.synthese-image");
@@ -1202,7 +1248,7 @@ Justification : cascade de pression.`,
   assert.equal(await trousQ.count(), 2, "un menu par trou");
   await trousQ.nth(0).selectOption({ label: "transfert" });
   await trousQ.nth(1).selectOption({ label: "couloir" });
-  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await validerEvaluation();
   await page.waitForSelector(".resultat-entete");
   const scoreFormats = (await page.locator(".resultat-entete .score").innerText()).replace(/\s+/g, " ");
   assert.match(scoreFormats, /^50 %$/, "séquence juste (1 pt), texte à trous à moitié faux (0 pt)");
@@ -1305,7 +1351,7 @@ Justification : cascade de pression.`,
       await f.locator("label.option", { hasText: "Bonne" }).locator("input").check();
     }
   }
-  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await validerEvaluation();
   await page.waitForSelector(".resultat-entete");
   // rechargement complet : la mémoire de session repart des évaluations conservées
   await page.goto(BASE + "/#progression");
@@ -1329,7 +1375,7 @@ Justification : cascade de pression.`,
   await page.waitForSelector("fieldset.question");
   const repris = page.locator("fieldset.question").filter({ hasText: enonceRepris });
   assert.equal(await repris.locator("label.option input").first().isChecked(), true, "réponse conservée à la reprise");
-  await page.click("button:has-text(\"Valider l'évaluation\")");
+  await validerEvaluation();
   await page.waitForSelector(".resultat-entete");
   await page.goto(BASE + "/module/comportement-zac/evaluation");
   await page.waitForSelector("button:has-text('Commencer')");

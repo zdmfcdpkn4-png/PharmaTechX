@@ -129,6 +129,133 @@ function Synthese({ docs }: { docs: SyntheseDocument[] }) {
 }
 
 /** Signalement d'une question — motif fermé, note libre, rien de nominatif. */
+/**
+ * Récapitulatif avant la validation d'une évaluation.
+ *
+ * La barre de passation dit déjà **combien** de questions sont renseignées ;
+ * elle ne dit pas **lesquelles** manquent, et « Valider l'évaluation »
+ * partait au premier clic. Avec des gants, sur une tablette, c'est le geste
+ * qu'on fait sans le vouloir, et il clôt une passation dont le résultat peut
+ * être porté au rapport.
+ *
+ * Le récapitulatif nomme les questions sans réponse, permet d'y retourner, et
+ * demande un second geste — distinct du premier par sa place et par son
+ * libellé. Échap et « Revenir aux questions » sortent toujours : la
+ * tabulation ne quitte pas le panneau, ce n'est donc pas un piège au clavier
+ * (WCAG 2.1.2).
+ */
+function RecapitulatifValidation({
+  total,
+  renseignees,
+  manquantes,
+  surQuestion,
+  surValider,
+  surFermer,
+}: {
+  total: number;
+  renseignees: number;
+  manquantes: number[];
+  surQuestion: (numero: number) => void;
+  surValider: () => void;
+  surFermer: () => void;
+}) {
+  const panneau = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    panneau.current?.focus();
+    document.body.classList.add("recap-ouvert");
+    const auClavier = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        surFermer();
+        return;
+      }
+      if (e.key !== "Tab" || !panneau.current) return;
+      const focusables = panneau.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const premier = focusables[0];
+      const dernier = focusables[focusables.length - 1];
+      const actif = document.activeElement;
+      if (e.shiftKey && (actif === premier || actif === panneau.current)) {
+        e.preventDefault();
+        dernier.focus();
+      } else if (!e.shiftKey && actif === dernier) {
+        e.preventDefault();
+        premier.focus();
+      }
+    };
+    document.addEventListener("keydown", auClavier);
+    return () => {
+      document.removeEventListener("keydown", auClavier);
+      document.body.classList.remove("recap-ouvert");
+    };
+  }, [surFermer]);
+
+  return (
+    <>
+      <div className="recap-voile" onClick={surFermer} aria-hidden />
+      <div
+        className="recap"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="t-recap"
+        tabIndex={-1}
+        ref={panneau}
+      >
+        <h2 id="t-recap" style={{ marginTop: 0 }}>
+          Avant de valider
+        </h2>
+        <p style={{ marginBottom: ".5rem" }}>
+          <strong>
+            {renseignees} sur {total}
+          </strong>{" "}
+          question{total > 1 ? "s" : ""} renseignée{renseignees > 1 ? "s" : ""}.
+        </p>
+        {manquantes.length > 0 ? (
+          <div className="encart encart--attention">
+            <p style={{ margin: "0 0 .5rem" }}>
+              {manquantes.length === 1
+                ? "Une question est sans réponse"
+                : `${manquantes.length} questions sont sans réponse`} : elle
+              {manquantes.length > 1 ? "s seront comptées" : " sera comptée"} comme telle
+              {manquantes.length > 1 ? "s" : ""} par le barème.
+            </p>
+            <div className="recap-manquantes">
+              {manquantes.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className="bouton bouton--compact bouton--secondaire"
+                  onClick={() => surQuestion(n)}
+                >
+                  Question {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="encart encart--ok" style={{ margin: 0 }}>
+            Toutes les questions sont renseignées.
+          </p>
+        )}
+        <p className="legende" style={{ margin: ".75rem 0 0" }}>
+          La correction est faite par le serveur. Le résultat entre dans la session et peut être
+          porté au rapport d&apos;habilitation (étape 2 sur 6).
+        </p>
+        <div className="actions" style={{ marginTop: ".75rem" }}>
+          <button type="button" className="bouton bouton--secondaire" onClick={surFermer}>
+            Revenir aux questions
+          </button>
+          <button type="button" className="bouton" onClick={surValider}>
+            Valider définitivement
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function Signaler({ questionId, moduleId }: { questionId: string; moduleId: string }) {
   const [motif, setMotif] = useState<string>(MOTIFS_SIGNALEMENT[0]);
   const [note, setNote] = useState("");
@@ -227,6 +354,7 @@ export function Evaluation({
   const [trous, setTrous] = useState<EtatTrous>({});
   const [resultat, setResultat] = useState<ResultatEvaluation | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [recap, setRecap] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   // Entraînement : une question à la fois, correction immédiate.
   const [indexCourant, setIndexCourant] = useState(0);
@@ -256,13 +384,27 @@ export function Evaluation({
     ? sousEnsemble.libelle
     : `${DIFFICULTES[difficulte].libelle} · ${posees.length} question${posees.length > 1 ? "s" : ""}${mode === "entrainement" ? " · entraînement" : ""}`;
 
-  /** Trace de progression envoyée au serveur ; ignorée sans rattachement. */
-  const tracer = (corps: Record<string, unknown>) =>
-    fetch("/api/progression", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moduleId, ...corps }),
-    }).catch(() => undefined);
+  /**
+   * Trace de progression envoyée au serveur ; ignorée sans rattachement.
+   *
+   * Les envois d'une même session sont mis à la file (21/09/2026). Sans cela,
+   * une sauvegarde automatique partie juste avant l'effacement de la session
+   * en cours peut être traitée après lui et la ressusciter : l'apprenant se
+   * voit alors proposer de « reprendre » une évaluation qu'il vient de
+   * valider. Deux requêtes concurrentes n'ont pas d'ordre garanti ; une file
+   * en donne un.
+   */
+  const fileTraces = useRef<Promise<unknown>>(Promise.resolve());
+  const tracer = (corps: Record<string, unknown>) => {
+    fileTraces.current = fileTraces.current.then(() =>
+      fetch("/api/progression", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId, ...corps }),
+      }).catch(() => undefined),
+    );
+    return fileTraces.current;
+  };
 
   // Sauvegarde de l'évaluation en cours, regroupée (700 ms), tant qu'elle n'est
   // ni corrigée ni terminée ; jamais pour un rejeu des ratées.
@@ -667,7 +809,7 @@ export function Evaluation({
   const rendreQuestion = (q: QuestionPublique, i: number, total: number, verrouille: boolean) => {
     const enVraiFaux = q.type === "QIM" && qimEnVraiFaux;
     return (
-      <fieldset className="question" disabled={verrouille}>
+      <fieldset className="question" id={`question-${i + 1}`} disabled={verrouille}>
         <legend>
           <span className="legende">
             Question {i + 1} / {total}
@@ -927,14 +1069,29 @@ export function Evaluation({
 
   // ───────────────────────────────────────────────────── passation complète
   const repondues = posees.filter(estRenseignee).length;
+  const manquantes = posees.map((q, i) => (estRenseignee(q) ? 0 : i + 1)).filter((n) => n > 0);
   let situationCourante: string | null = null;
+
+  // Retour à une question depuis le récapitulatif : le panneau se ferme, la
+  // question revient à l'écran et prend le focus — sans quoi le clavier reste
+  // là où le panneau était.
+  const allerALaQuestion = (numero: number) => {
+    setRecap(false);
+    const el = document.getElementById(`question-${numero}`);
+    if (!el) return;
+    const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: doux ? "smooth" : "auto", block: "start" });
+    el.querySelector<HTMLElement>("input, textarea, select, button")?.focus({
+      preventScroll: true,
+    });
+  };
 
   return (
     <div style={{ paddingBottom: "120px" }}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void soumettre();
+          setRecap(true);
         }}
       >
         {posees.map((q, i) => {
@@ -977,6 +1134,19 @@ export function Evaluation({
           </div>
         </div>
       </form>
+      {recap && (
+        <RecapitulatifValidation
+          total={posees.length}
+          renseignees={repondues}
+          manquantes={manquantes}
+          surQuestion={allerALaQuestion}
+          surValider={() => {
+            setRecap(false);
+            void soumettre();
+          }}
+          surFermer={() => setRecap(false)}
+        />
+      )}
     </div>
   );
 }

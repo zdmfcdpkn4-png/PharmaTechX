@@ -1188,6 +1188,42 @@ sans confirmation : elle est réversible, et c'est le geste d'urgence quand un
 code circule. La clôture d'un identifiant d'agent n'est pas une suppression.
 Aucun agent ne se supprime : les rapports s'y rattachent.
 
+## Récapitulatif avant la validation d'une évaluation (21/09/2026)
+
+Retenu d'une liste de propositions d'ergonomie soumise le 21/09/2026 ; c'est
+la seule des huit qui protégeait un acte plutôt qu'un confort.
+
+**Ce qui n'allait pas.** « Valider l'évaluation » était actif dès **une
+seule** question renseignée et corrigeait au premier clic. La barre de
+passation disait *combien* de questions étaient renseignées, jamais
+*lesquelles* manquaient. Avec des gants, sur une tablette, c'est le geste
+qu'on fait sans le vouloir.
+
+**Ce qui est posé.** Un panneau modal s'ouvre : le compte renseignées sur
+total, les questions sans réponse **nommées** et cliquables — chacune ramène
+à la question, qui prend le focus —, ce que la validation engage, puis deux
+actions. Le second geste est à une autre place et sous un autre libellé que le
+premier : « Valider définitivement » n'est pas « Valider l'évaluation ».
+
+Échap et « Revenir aux questions » sortent toujours, la tabulation ne quitte
+pas le panneau : ce n'est donc pas un piège au clavier (WCAG 2.1.2).
+
+**Portée, sans l'exagérer.** Le résultat n'est pas le rapport : l'émission
+reste un geste distinct. Ce n'est donc pas une pièce opposable qui partait au
+clic, c'est le score qui y sera porté.
+
+**Défaut corrigé au passage : les traces de progression n'avaient pas
+d'ordre.** La sauvegarde automatique de la session en cours (700 ms) et son
+effacement après correction étaient deux requêtes concurrentes. Quand plus de
+700 ms séparaient la dernière réponse de la validation, la sauvegarde partait
+pendant la correction et pouvait être traitée **après** l'effacement : la
+session en cours ressuscitait, et l'apprenant se voyait proposer de
+« reprendre » une évaluation qu'il venait de valider. Le récapitulatif, qui
+ajoute précisément cette seconde, a rendu le défaut systématique — la chaîne
+de bout en bout l'a fait tomber. Les envois d'une même session sont désormais
+mis à la file : ils gardent leur ordre. Le défaut **précède** ce travail ; il
+se déclenchait dès qu'un apprenant marquait une pause avant de valider.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
@@ -1195,5 +1231,7 @@ Aucun agent ne se supprime : les rapports s'y rattachent.
 - Purge automatique des rapports à l'échéance de conservation.
 - Glisser-déposer pour l'ordonnancement des modules.
 - Mode sombre (décision antérieure : plus tard).
-- Test de bout en bout navigateur (Playwright) : à ajouter après la première
-  mise en service, sur les parcours apprenant et tuteur.
+- ~~Test de bout en bout navigateur (Playwright)~~ — fait depuis :
+  `e2e/parcours.e2e.js` couvre les parcours apprenant, tutorat et
+  administration contre un serveur bâti et une base réelle. Cette ligne est
+  restée périmée jusqu'au 21/09/2026.
