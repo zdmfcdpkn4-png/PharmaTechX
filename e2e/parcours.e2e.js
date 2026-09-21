@@ -1519,8 +1519,28 @@ Justification : cascade de pression.`,
   assert.equal(await apiJetable(), 401, "réactiver ne rouvre pas la session d'avant");
   await entrerJetable();
   assert.equal(await apiJetable(), 404, "nouvelle session valide après réactivation");
-  await carteJetable.locator("button:has-text('Supprimer')").click();
+  // Suppression d'un code (21/09/2026) : l'administration seule, et jamais au seul clic —
+  // l'administrateur retape le code qui a ouvert sa session. Un code faux ne supprime rien,
+  // laisse une trace au journal, et compte au limiteur de connexion ; la reconnexion de
+  // l'étape 14d efface ce compteur, ce dont dépend le blocage volontaire de l'étape 15.
+  const ouvrirSuppression = async () => {
+    await carteJetable.locator("summary:has-text('Supprimer')").click();
+    await carteJetable.locator("input[name=confirmation]").waitFor();
+  };
+  await ouvrirSuppression();
+  await carteJetable.locator("input[name=confirmation]").fill("ZZZZZ-ZZZZZ");
+  await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
+  await page.waitForSelector("[role=alert]:has-text('administration incorrect')");
+  await page.locator("li.carte:has-text('Poste jetable')").waitFor();
+  assert.equal(await apiJetable(), 404, "code d'administration faux : rien n'est supprimé");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:has-text('suppression-code-refusee')");
+  await page.goto(BASE + "/admin");
+  await ouvrirSuppression();
+  await carteJetable.locator("input[name=confirmation]").fill(codeAdmin);
+  await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
   await page.waitForSelector("li.carte:has-text('Poste jetable')", { state: "detached" });
+  await page.waitForSelector("[role=status]:has-text('Code supprimé')");
   assert.equal(await apiJetable(), 401, "code supprimé : session fermée");
   await ctx2.close();
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -1528,6 +1548,7 @@ Justification : cascade de pression.`,
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
+  ok("suppression d'un code : réservée à l'administration, confirmée par son propre code, refus journalisé");
 
   // 14d. illustrations de domaine (19/09/2026) : proposées d'après le titre pour les modules déjà
   //      en place, modifiables, et le retrait explicite ne se fait pas rattraper par la proposition

@@ -1102,6 +1102,60 @@ SCORM). Transposé dans les limites du brief :
   contenu complète : sans `script-src`, elle ne protège pas de l'injection de
   script — non fait, à décider.
 
+## Suppression d'un code d'accès : confirmée par le code de l'administrateur (21/09/2026)
+
+Demandé le 21/09/2026 : *« Pour la suppression des utilisateurs ne l'autorise
+que par administrateur »*, puis *« Suppression avec saisi mot de passe par
+administrateur de l'utilisateur »*.
+
+**État avant.** La suppression était déjà réservée au rôle `admin`
+(`sessionRequise("admin")`, `app/actions.ts`), et le bouton n'était affiché
+qu'à lui. La première moitié de la consigne était donc déjà tenue ; c'est la
+seconde qui manquait : l'acte partait au premier clic.
+
+**Ce qui est posé.** Le formulaire est replié derrière « Supprimer… » et
+demande le **code qui a ouvert la session en cours**, comparé à son empreinte
+(`confirmerCodeDeSession`, `lib/auth.ts`). Le site n'a pas de mots de passe :
+le code d'accès en tient lieu, et c'est lui qu'on retape.
+
+**Pourquoi le code de *cette* session et non n'importe quel code
+d'administration.** Confirmer, c'est prouver qu'on est le porteur de la
+session ouverte, pas qu'on connaît un code d'administration quelconque. Si
+n'importe quel code admin valait confirmation, un second administrateur
+passant devant un écran laissé ouvert pourrait supprimer sous l'identité du
+premier — et le journal porterait le mauvais profil.
+
+**Deux barrières, deux questions.** Le rôle dit ce que la session a le droit
+de faire ; la confirmation dit qui est devant l'écran. Sur une tablette
+laissée ouverte en zone, seule la seconde tient.
+
+**Échecs comptés par le limiteur de connexion** (`lib/limiteur.ts`), et une
+confirmation juste efface le compteur, exactement comme une connexion. Sans
+cela, la même devinette serait comptée d'un côté et libre de l'autre.
+Conséquence assumée : cinq saisies fausses bloquent l'adresse un quart
+d'heure, y compris pour se reconnecter — c'est le comportement de la
+connexion, appliqué au même secret.
+
+**Une normalisation unique** (`normaliserCode`, `lib/codes.ts`), partagée par
+la connexion et la confirmation : sans elle, un code accepté à l'entrée
+pouvait être refusé à la confirmation selon les espaces et la casse.
+
+**Refus journalisé** sous `suppression-code-refusee`, avec son motif
+(`code-invalide`, `bloque`, `indisponible`) : une tentative qui échoue est
+précisément ce qu'on veut relire après coup. Vérifié de bout en bout.
+
+**Laissé ouvert, non tranché.** Rien n'empêche un administrateur de supprimer
+**son propre** code : il retape le sien, et se ferme la porte. Si c'était le
+dernier code `admin` actif, la remise en service passe par l'hébergeur
+(`ADMIN_INITIAL` reposé puis redéploiement, l'amorçage ne s'ouvrant qu'en
+l'absence d'administrateur actif). Garde non posée faute de demande —
+question 41 de `QUESTIONS-OUVERTES.md`.
+
+**Hors périmètre, inchangé.** La *révocation* d'un code reste au tuteur et
+sans confirmation : elle est réversible, et c'est le geste d'urgence quand un
+code circule. La clôture d'un identifiant d'agent n'est pas une suppression.
+Aucun agent ne se supprime : les rapports s'y rattachent.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

@@ -414,6 +414,17 @@ export async function lireEtatAcces(id: number): Promise<{ actif: boolean; ferme
   return r.rows[0] ?? null;
 }
 
+/**
+ * Empreinte d'un code d'accès, pour la confirmation d'un acte irréversible
+ * par son porteur. Rien n'en sort qui permette de retrouver le code : c'est
+ * le haché, et il ne sert qu'à `verifierCode`.
+ */
+export async function lireHachageAcces(id: number): Promise<string | null> {
+  const r = await sql<{ code_hash: string }>`
+    SELECT code_hash FROM acces WHERE id = ${id} AND actif = TRUE`;
+  return r.rows[0]?.code_hash ?? null;
+}
+
 export async function supprimerAcces(id: number): Promise<void> {
   await sql`DELETE FROM acces WHERE id = ${id}`;
 }

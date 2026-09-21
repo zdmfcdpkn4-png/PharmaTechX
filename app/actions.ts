@@ -12,6 +12,7 @@ import {
   type Role,
 } from "@/lib/db";
 import {
+  confirmerCodeDeSession,
   connecter,
   fermerSession,
   genererCode,
@@ -95,12 +96,32 @@ export async function actionBasculerCode(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/**
+ * Suppression d'un code d'accès : l'administration seule, et jamais au seul
+ * clic — l'administrateur retape le code qui a ouvert sa session.
+ *
+ * Deux barrières distinctes, parce qu'elles répondent à deux questions
+ * différentes : le rôle dit ce que la session a le droit de faire, la
+ * confirmation dit qui est devant l'écran. Sur une tablette laissée ouverte
+ * en zone, la seconde est la seule qui tienne. L'acte est irréversible — le
+ * code est haché, il ne se retrouve pas — et il ferme les sessions ouvertes
+ * avec lui.
+ *
+ * Le refus est journalisé au même titre que la suppression : une tentative
+ * qui échoue est précisément ce qu'on veut lire après coup.
+ */
 export async function actionSupprimerCode(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = Number(formData.get("id"));
+  const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
+  if (confirmation !== "ok") {
+    await journaliser(s, "suppression-code-refusee", `acces:${id}`, { motif: confirmation });
+    redirect(`/admin?erreur=confirmation-${confirmation}`);
+  }
   await supprimerAcces(id);
   await journaliser(s, "suppression-code", `acces:${id}`);
   revalidatePath("/admin");
+  redirect("/admin?ok=code-supprime");
 }
 
 export async function actionDeposer(formData: FormData) {

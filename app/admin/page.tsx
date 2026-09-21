@@ -13,12 +13,22 @@ export const dynamic = "force-dynamic";
 const MESSAGES: Record<string, string> = {
   "role-interdit": "Votre rôle ne permet pas de créer ce type de code.",
   "libelle-manquant": "Le libellé du profil est obligatoire.",
+  "confirmation-code-invalide":
+    "Code d\u2019administration incorrect : rien n\u2019a été supprimé. La tentative est au journal.",
+  "confirmation-bloque":
+    "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été supprimé.",
+  "confirmation-indisponible":
+    "La confirmation n\u2019a pas pu être vérifiée : votre session n\u2019est plus rattachée à un code en cours de validité. Reconnectez-vous.",
+};
+
+const CONFIRMATIONS: Record<string, string> = {
+  "code-supprime": "Code supprimé. Les sessions ouvertes avec lui se ferment à la requête suivante.",
 };
 
 export default async function Admin({
   searchParams,
 }: {
-  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string }>;
+  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string; ok?: string }>;
 }) {
   const p = await searchParams;
   const { filieres, niveaux } = await getReferentiel();
@@ -53,8 +63,13 @@ export default async function Admin({
         </p>
       )}
 
+      {p.ok && CONFIRMATIONS[p.ok] && (
+        <p className="encart encart--ok" role="status">
+          {CONFIRMATIONS[p.ok]}
+        </p>
+      )}
       {p.erreur && MESSAGES[p.erreur] && (
-        <p className="encart encart--attention">{MESSAGES[p.erreur]}</p>
+        <p className="encart encart--attention" role="alert">{MESSAGES[p.erreur]}</p>
       )}
 
       <div className="tuiles">
@@ -174,12 +189,36 @@ export default async function Admin({
                   </button>
                 </form>
                 {estAdmin && (
-                  <form action={actionSupprimerCode}>
-                    <input type="hidden" name="id" value={a.id} />
-                    <button type="submit" className="bouton bouton--compact bouton--secondaire">
-                      Supprimer
-                    </button>
-                  </form>
+                  <details className="suppression">
+                    <summary className="bouton bouton--compact bouton--secondaire">
+                      Supprimer…
+                    </summary>
+                    <form action={actionSupprimerCode} className="suppression-corps">
+                      <input type="hidden" name="id" value={a.id} />
+                      <label className="champ">
+                        <span>
+                          Supprimer « {a.libelle} » : entrez votre code d&apos;administration
+                        </span>
+                        <input
+                          type="password"
+                          name="confirmation"
+                          autoComplete="off"
+                          spellCheck={false}
+                          required
+                        />
+                      </label>
+                      <div className="actions">
+                        <button type="submit" className="bouton bouton--compact">
+                          Supprimer définitivement
+                        </button>
+                      </div>
+                      <span className="legende">
+                        Irréversible, et journalisé. Le code supprimé ne se retrouve pas : il est
+                        haché en base. Les sessions ouvertes avec lui se ferment à la requête
+                        suivante.
+                      </span>
+                    </form>
+                  </details>
                 )}
               </div>
             )}

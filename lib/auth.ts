@@ -4,11 +4,18 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { baseConfiguree, codesActifs, lireEtatAcces, marquerUsage, type Role } from "./db";
+import {
+  baseConfiguree,
+  codesActifs,
+  lireEtatAcces,
+  lireHachageAcces,
+  marquerUsage,
+  type Role,
+} from "./db";
 import { etatDeSession, type EtatAcces } from "./session-etat";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
-import { genererCode, hacherCode, verifierCode } from "./codes";
+import { genererCode, hacherCode, normaliserCode, verifierCode } from "./codes";
 
 /**
  * Contrôle d'accès par rôle.
@@ -68,7 +75,7 @@ export function secretConfigure(): boolean {
 
 // Fabrication et hachage des codes : `lib/codes.ts`, réexporté ici pour que
 // les appelants continuent de s'adresser à un seul module.
-export { genererCode, hacherCode, verifierCode };
+export { genererCode, hacherCode, normaliserCode, verifierCode };
 
 // ──────────────────────────────────────────────────────────────── sessions
 
@@ -173,7 +180,7 @@ export async function connecter(code: string): Promise<ResultatConnexion> {
   if (!baseConfiguree()) return { ok: false, raison: "non-configure" };
   const minutes = await minutesDeBlocage();
   if (minutes > 0) return { ok: false, raison: "bloque", minutes };
-  const propre = code.trim().toUpperCase().replace(/\s+/g, "");
+  const propre = normaliserCode(code);
   const lignes = await codesActifs();
   for (const l of lignes) {
     if (verifierCode(propre, l.code_hash)) {
@@ -193,6 +200,40 @@ export async function connecter(code: string): Promise<ResultatConnexion> {
   }
   await enregistrerEchec();
   return { ok: false, raison: "code-invalide" };
+}
+
+// ───────────────────────────────────────────── confirmation d'un acte grave
+
+export type Confirmation = "ok" | "code-invalide" | "bloque" | "indisponible";
+
+/**
+ * Ré-authentification au moment d'un acte irréversible : le porteur de la
+ * session retape le code qui l'a ouverte.
+ *
+ * Une session d'administration ouverte est, en zone, une session laissée sur
+ * une tablette : le rôle dit ce qu'on a le droit de faire, il ne dit pas qui
+ * est devant l'écran. La confirmation le demande.
+ *
+ * Le code est comparé à l'empreinte du code de la session — pas à n'importe
+ * quel code d'administration : confirmer, c'est prouver que l'on est bien le
+ * porteur de cette session-là. Les échecs passent par le limiteur de la
+ * connexion, sans quoi la même devinette serait comptée d'un côté et libre de
+ * l'autre ; une confirmation juste efface le compteur, comme une connexion.
+ */
+export async function confirmerCodeDeSession(
+  s: Session,
+  saisi: string,
+): Promise<Confirmation> {
+  if (!baseConfiguree() || !s.acces) return "indisponible";
+  if ((await minutesDeBlocage()) > 0) return "bloque";
+  const hache = await lireHachageAcces(s.acces);
+  if (!hache) return "indisponible";
+  if (!verifierCode(normaliserCode(saisi), hache)) {
+    await enregistrerEchec();
+    return "code-invalide";
+  }
+  await effacerEchecs();
+  return "ok";
 }
 
 // ──────────────────────────────────────────────────────────── habilitations

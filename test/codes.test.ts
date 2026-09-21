@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genererCode, hacherCode, verifierCode } from "../lib/codes";
+import { genererCode, hacherCode, normaliserCode, verifierCode } from "../lib/codes";
 
 test("un code se vérifie contre son empreinte, et rien d'autre", () => {
   const code = genererCode();
@@ -26,4 +26,17 @@ test("le code est lisible : ni 0, ni O, ni 1, ni I, ni l", () => {
   for (let i = 0; i < 50; i++) {
     assert.match(genererCode(), /^[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}$/);
   }
+});
+
+test("la saisie se normalise partout de la même façon : connexion et confirmation", () => {
+  const code = genererCode();
+  const stocke = hacherCode(code);
+  for (const saisie of [code, `  ${code} `, code.toLowerCase(), code.replace("-", " - ")]) {
+    assert.ok(verifierCode(normaliserCode(saisie), stocke), `acceptée : « ${saisie} »`);
+  }
+  assert.equal(
+    verifierCode(normaliserCode(code.replace("-", "")), stocke),
+    false,
+    "le tiret fait partie du code, il n'est pas une décoration",
+  );
 });

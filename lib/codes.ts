@@ -12,6 +12,15 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
  * pas de les relire. Perdu, un code se remplace, il ne se retrouve pas.
  */
 
+/**
+ * Saisie d'un code : espaces retirés, capitales. La connexion et la
+ * confirmation d'un acte irréversible passent par ici, faute de quoi un code
+ * accepté à l'entrée pourrait être refusé à la confirmation.
+ */
+export function normaliserCode(code: string): string {
+  return code.trim().toUpperCase().replace(/\s+/g, "");
+}
+
 export function hacherCode(code: string): string {
   const sel = randomBytes(16);
   const dk = scryptSync(code.normalize("NFKC"), sel, 32);
