@@ -6,14 +6,23 @@ import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
 import { MenuProvider, BoutonMenu, VoletMenu } from "@/components/Menu";
 import { Navigation, type GroupeRail } from "@/components/Navigation";
+import { AccesRapide, type ReprisePossible } from "@/components/AccesRapide";
+import { FilHabilitation } from "@/components/FilHabilitation";
+import { ModeZone } from "@/components/ModeZone";
+import { PageAnimee } from "@/components/PageAnimee";
 import { VoletConnexion } from "@/components/VoletConnexion";
 import { TutorielProvider } from "@/components/Tutoriel";
 import { etapesTutoriel } from "@/content/tutoriel";
+import { fileNonVide, itemsAFaire, AUCUN_COMPTE } from "@/content/acces-rapide";
+import { etapes as etapesHabilitation } from "@/content/habilitation";
+import { questionsRenseignees } from "@/content/en-cours";
+import { getModule } from "@/content/store";
+import { lireModuleDepose } from "@/content/modules-db";
+import { comptesAttente } from "@/lib/attente";
 import { etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
-import { emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
+import { dernierEnCours, emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
 import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
-import { compterSignalementsOuverts } from "@/content/banque-db";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import "./globals.css";
@@ -104,9 +113,39 @@ export default async function RootLayout({
     },
   ];
 
-  let signalementsOuverts = 0;
-  if (gestionnaire && baseConfiguree()) {
-    signalementsOuverts = await compterSignalementsOuverts().catch(() => 0);
+  // ─────────────────────────────────────────── file d'attente (paquet A)
+  // Les compteurs viennent des fonctions qui alimentent déjà les écrans
+  // correspondants : c'est la seule façon qu'ils ne divergent pas.
+  const comptes =
+    gestionnaire && baseConfiguree() && session
+      ? await comptesAttente(session.role, conservation).catch(() => AUCUN_COMPTE)
+      : AUCUN_COMPTE;
+  const signalementsOuverts = comptes.signalements;
+  const itemsFile = session ? itemsAFaire(session.role, comptes, conservation) : [];
+  // Les rapports portent deux actes distincts — arbitrer, viser — et un seul
+  // écran : le volet en donne la somme, l'accès rapide les sépare.
+  const actesRapports = comptes.rapportsAViser + comptes.verdictsAArbitrer;
+
+  // ─────────────────────────────────────────── « Reprendre » (paquet A)
+  // Sans rattachement, une évaluation interrompue vit dans la page et meurt à
+  // la navigation : il n'y a rien à reprendre, et rien à annoncer.
+  const reprises: ReprisePossible[] = [];
+  if (ratt) {
+    const enCours = await dernierEnCours(ratt.agentId).catch(() => null);
+    if (enCours) {
+      const titre =
+        getModule(enCours.moduleId)?.titre ??
+        (await lireModuleDepose(enCours.moduleId).catch(() => null))?.titre ??
+        enCours.moduleId;
+      const total = enCours.etat.questionIds.length;
+      const faites = questionsRenseignees(enCours.etat);
+      reprises.push({
+        nature: "evaluation",
+        libelle: titre,
+        detail: `${faites} sur ${total} questions`,
+        href: `/module/${enCours.moduleId}/evaluation`,
+      });
+    }
   }
   // Trois sous-parties par usage (19/09/2026, choix b) : ce qu'on consulte,
   // ce qu'on fabrique, ce qu'on règle. L'ordre suit la fréquence d'ouverture,
@@ -120,11 +159,13 @@ export default async function RootLayout({
             titre: "Suivi",
             liens: [
               { href: "/admin/pilotage", libelle: "Pilotage" },
-              ...(conservation ? [{ href: "/admin/rapports", libelle: "Rapports" }] : []),
+              ...(conservation
+                ? [{ href: "/admin/rapports", libelle: "Rapports", compte: actesRapports }]
+                : []),
               {
                 href: "/admin/signalements",
                 libelle: "Signalements",
-                indice: signalementsOuverts > 0 ? String(signalementsOuverts) : undefined,
+                compte: signalementsOuverts,
               },
               ...(conservation ? [{ href: "/admin/personnel", libelle: "Personnel" }] : []),
             ],
@@ -132,7 +173,11 @@ export default async function RootLayout({
           {
             titre: "Contenu",
             liens: [
-              { href: "/admin/questions", libelle: "Banque de questions" },
+              {
+                href: "/admin/questions",
+                libelle: "Banque de questions",
+                compte: comptes.questionsAVerifier,
+              },
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
               { href: "/admin/questions/situations", libelle: "Mises en situation" },
@@ -202,7 +247,7 @@ export default async function RootLayout({
           <TutorielProvider profil={profilVisite} etapes={etapesVisite}>
           <MenuProvider>
             <Chrome>
-              <BoutonMenu />
+              <BoutonMenu pastille={fileNonVide(itemsFile)} />
 
               <div className="logos">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -250,6 +295,7 @@ export default async function RootLayout({
               </div>
 
               <div className="entete-actions">
+                <ModeZone />
                 {session ? (
                   <form action={actionDeconnexion}>
                     <button type="submit" className="bouton bouton--compact">
@@ -264,6 +310,14 @@ export default async function RootLayout({
               </div>
             </Chrome>
 
+            <AccesRapide
+              groupes={avantConnexion ? [] : groupes}
+              administration={avantConnexion ? null : administration}
+              items={itemsFile}
+              reprises={reprises}
+              avant={avantConnexion ? <VoletConnexion /> : undefined}
+            />
+
             <div className="cadre">
               <VoletMenu>
                 {avantConnexion ? (
@@ -273,9 +327,18 @@ export default async function RootLayout({
                 )}
               </VoletMenu>
 
-              <main id="contenu" className="page">
+              <PageAnimee>
+                {avantConnexion ? null : (
+                  <FilHabilitation
+                    etapes={etapesHabilitation.map((e) => ({
+                      numero: e.numero,
+                      titre: e.titre,
+                      lieu: e.lieu,
+                    }))}
+                  />
+                )}
                 {children}
-              </main>
+              </PageAnimee>
             </div>
           </MenuProvider>
           </TutorielProvider>

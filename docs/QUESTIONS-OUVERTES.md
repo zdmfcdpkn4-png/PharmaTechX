@@ -307,3 +307,16 @@ telle. Ordre : ce qui change le déploiement en premier.
     évaluation, dépôt d'une question, visa d'un rapport. Tant que rien n'est
     précisé, aucune page « tuto » n'est écrite — un tutoriel inventé serait
     faux dès la première capture.
+
+40. **Accès rapide — deux points laissés ouverts à la construction** (paquet A,
+    21/09/2026 ; détail au § 9.3 de `docs/ACCES-RAPIDE.md`).
+    `[à préciser]` le raccourci `⌘K` / `Ctrl+K` entre-t-il en conflit avec un
+    usage établi des postes du CHD ? Le hamburger et la touche `/` ouvrent le
+    même panneau : le raccourci n'est pas une condition d'usage, il se retire
+    en une ligne s'il gêne.
+    `[à préciser]` **fréquence réelle des tâches.** L'ordre des quatre items de
+    la file d'attente est un classement raisonné, pas une mesure. Une semaine
+    de `/admin/journal`, qui enregistre déjà les actions par rôle, le
+    confirmerait ou le corrigerait. L'ordre reste **invariant** dans
+    l'intervalle : le réordonner au fil de l'usage détruirait la mémoire
+    spatiale qui fait tout le gain de vitesse (Mitchell & Shneiderman 1989).

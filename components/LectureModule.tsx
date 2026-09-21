@@ -13,7 +13,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   (`fp-lecture-<module>`), avec un debounce de 600 ms, dans un try/catch.
  *   C'est la seule donnée persistée par l'application ; elle est locale au
  *   poste, non nominative, et s'efface depuis le sommaire.
+ * - depuis le paquet A (21/09/2026), un second repère (`fp-lecture-dernier`)
+ *   dit **quel** module a été lu en dernier, avec son titre et le rang de la
+ *   section. Sans lui, l'accès rapide devrait balayer toutes les clés du
+ *   stockage sans savoir laquelle est la plus récente — aucune n'est datée.
  */
+/** Repère général : quel module a été lu en dernier. Lu par l'accès rapide. */
+export const DERNIER = "fp-lecture-dernier";
+
+export interface DernierModule {
+  module: string;
+  titre: string;
+  num: number;
+  total: number;
+}
+
 export interface EntreeSommaire {
   id: string;
   titre: string;
@@ -27,10 +41,12 @@ interface Repere {
 
 export function LectureModule({
   moduleId,
+  moduleTitre,
   sommaire,
   children,
 }: {
   moduleId: string;
+  moduleTitre: string;
   sommaire: EntreeSommaire[];
   children: React.ReactNode;
 }) {
@@ -100,6 +116,10 @@ export function LectureModule({
       const r: Repere = { id: courante, titre, num };
       try {
         localStorage.setItem(cle, JSON.stringify(r));
+        localStorage.setItem(
+          DERNIER,
+          JSON.stringify({ module: moduleId, titre: moduleTitre, num, total: sommaire.length }),
+        );
       } catch {
         // stockage refusé : rien à faire
       }
@@ -108,7 +128,7 @@ export function LectureModule({
     return () => {
       if (minuteur.current) window.clearTimeout(minuteur.current);
     };
-  }, [courante, cle, sommaire]);
+  }, [courante, cle, sommaire, moduleId, moduleTitre]);
 
   const reprendre = useCallback(() => {
     if (!repere) return;
@@ -122,11 +142,16 @@ export function LectureModule({
   const oublier = useCallback(() => {
     try {
       localStorage.removeItem(cle);
+      // Le repère général ne survit pas à l'oubli du module qu'il désigne.
+      const d = localStorage.getItem(DERNIER);
+      if (d && (JSON.parse(d) as { module?: string }).module === moduleId) {
+        localStorage.removeItem(DERNIER);
+      }
     } catch {
       // rien
     }
     setRepere(null);
-  }, [cle]);
+  }, [cle, moduleId]);
 
   const numCourant = sommaire.findIndex((s) => s.id === courante) + 1;
   const repriseUtile = repere && repere.num > 1 && repere.id !== courante;

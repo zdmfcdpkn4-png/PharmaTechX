@@ -1,68 +1,72 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 
 /**
- * Volet de navigation : permanent à partir de 62 rem, tiroir en deçà.
+ * État du déclencheur de l'accès rapide (paquet A, 21/09/2026).
  *
- * Question 37 (choix c) : la navigation quitte l'en-tête, où elle occupait
- * deux lignes sous 1000 px, pour un volet unique — barre latérale sur poste,
- * tiroir ouvert par le bouton « Menu » sur tablette et téléphone. Le volet
- * porte les sections de l'accueil, les repères et, pour un profil de tutorat
- * ou d'administration, les écrans d'administration.
+ * Avant ce paquet, le hamburger ouvrait le volet de navigation en tiroir sous
+ * 62 rem et disparaissait au-dessus. Il ouvre désormais **une seule surface**,
+ * l'accès rapide (`components/AccesRapide.tsx`), à toutes les tailles : tiroir
+ * à gauche sous 62 rem, panneau centré au-dessus. Le volet, lui, redevient ce
+ * qu'il n'aurait jamais dû cesser d'être — une barre latérale permanente,
+ * présente au-dessus de 62 rem et rien d'autre.
  *
- * Fermé, le volet est en `visibility: hidden` (feuille de style) : ses liens
- * sortent de l'ordre de tabulation et ne sont pas annoncés. Il se ferme à la
- * touche d'échappement, au clic sur le voile, au suivi d'un lien, et dès que
- * l'écran repasse au-dessus du seuil où il est permanent.
+ * Le déclencheur garde sa référence ici : à la fermeture, le focus lui revient
+ * (WCAG 2.4.3), sans quoi la tabulation repart du haut du document.
  */
-interface EtatMenu {
+export interface EtatMenu {
   ouvert: boolean;
+  ouvrir: () => void;
   basculer: () => void;
   fermer: () => void;
+  declencheur: React.RefObject<HTMLButtonElement | null>;
 }
 
-const ContexteMenu = createContext<EtatMenu | null>(null);
+export const ContexteMenu = createContext<EtatMenu | null>(null);
 
 export function MenuProvider({ children }: { children: React.ReactNode }) {
   const [ouvert, setOuvert] = useState(false);
-  const fermer = useCallback(() => setOuvert(false), []);
-  const basculer = useCallback(() => setOuvert((v) => !v), []);
+  const declencheur = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (!ouvert) return;
-    const auClavier = (e: KeyboardEvent) => {
-      if (e.key === "Escape") fermer();
-    };
-    const seuil = window.matchMedia("(min-width: 62rem)");
-    const auSeuil = () => {
-      if (seuil.matches) fermer();
-    };
-    document.addEventListener("keydown", auClavier);
-    seuil.addEventListener("change", auSeuil);
-    document.body.classList.add("menu-ouvert");
-    return () => {
-      document.removeEventListener("keydown", auClavier);
-      seuil.removeEventListener("change", auSeuil);
-      document.body.classList.remove("menu-ouvert");
-    };
-  }, [ouvert, fermer]);
+  const fermer = useCallback(() => {
+    setOuvert((v) => {
+      if (v) declencheur.current?.focus({ preventScroll: true });
+      return false;
+    });
+  }, []);
+  const ouvrir = useCallback(() => setOuvert(true), []);
+  const basculer = useCallback(() => {
+    setOuvert((v) => {
+      if (v) declencheur.current?.focus({ preventScroll: true });
+      return !v;
+    });
+  }, []);
 
   return (
-    <ContexteMenu.Provider value={{ ouvert, basculer, fermer }}>{children}</ContexteMenu.Provider>
+    <ContexteMenu.Provider value={{ ouvert, ouvrir, basculer, fermer, declencheur }}>
+      {children}
+    </ContexteMenu.Provider>
   );
 }
 
-/** Bouton d'ouverture, dans l'en-tête ; masqué là où le volet est permanent. */
-export function BoutonMenu() {
+/**
+ * Déclencheur, dans l'en-tête. Une **pastille, pas un nombre** : un nombre
+ * oblige à le lire et à le comparer à chaque passage, la pastille dit la seule
+ * chose utile de l'extérieur — il y a quelque chose. Aucune pastille pour un
+ * profil de poste, qui n'a pas de file d'attente.
+ */
+export function BoutonMenu({ pastille = false }: { pastille?: boolean }) {
   const menu = useContext(ContexteMenu);
   if (!menu) return null;
   return (
     <button
+      ref={menu.declencheur}
       type="button"
       className="bouton-menu"
       aria-expanded={menu.ouvert}
-      aria-controls="volet-principal"
+      aria-haspopup="dialog"
+      aria-controls="acces-rapide"
       onClick={menu.basculer}
     >
       <span className="barres" aria-hidden="true">
@@ -71,31 +75,17 @@ export function BoutonMenu() {
         <span />
       </span>
       Menu
+      {pastille ? <span className="bouton-menu-pastille" aria-hidden="true" /> : null}
+      {pastille ? <span className="lecture-seule"> — des éléments attendent</span> : null}
     </button>
   );
 }
 
-/** Le volet lui-même, et le voile qui le referme au clic. */
+/** Le volet permanent. Masqué sous 62 rem, où l'accès rapide le porte. */
 export function VoletMenu({ children }: { children: React.ReactNode }) {
-  const menu = useContext(ContexteMenu);
-  const ouvert = menu?.ouvert ?? false;
   return (
-    <>
-      <div
-        className={`voile${ouvert ? " voile--visible" : ""}`}
-        onClick={menu?.fermer}
-        aria-hidden="true"
-      />
-      <nav
-        id="volet-principal"
-        className={`rail${ouvert ? " rail--ouvert" : ""}`}
-        aria-label="Navigation principale"
-        onClick={(e) => {
-          if ((e.target as HTMLElement).closest("a")) menu?.fermer();
-        }}
-      >
-        {children}
-      </nav>
-    </>
+    <nav id="volet-principal" className="rail" aria-label="Navigation principale">
+      {children}
+    </nav>
   );
 }

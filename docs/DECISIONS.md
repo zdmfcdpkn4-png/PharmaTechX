@@ -788,6 +788,134 @@ référentiel apparaît sous une étiquette d'avertissement, au lieu de dispara�
 Le repli est en `<details>` : pas une ligne de script, et il fonctionne au
 clavier comme le reste du site.
 
+**Paquet A — navigation** (21/09/2026, demande « construis le paquet A
+complet »). Six évolutions, livrées ensemble parce qu'elles règlent le même
+défaut : les données existaient déjà en base, seul l'affichage manquait.
+
+**A1. Accès rapide** (`components/AccesRapide.tsx`, spécifié par
+`docs/ACCES-RAPIDE.md`). Le volet répond à « où puis-je aller ? » ; ce panneau
+répond à « fais ce pour quoi je suis venu », et montre **avant** le clic s'il y
+a quelque chose à y faire. Trois zones invariables — Reprendre, À faire, Aller
+à — plus un champ de filtre. Déclenché par le hamburger, par `⌘K` / `Ctrl+K` et
+par `/`.
+
+Le hamburger change de rôle : il n'ouvre plus le volet — qui redevient une
+barre latérale permanente, présente au-dessus de 62 rem et rien d'autre — mais
+l'accès rapide, **une seule surface aux deux tailles** : tiroir à gauche sous
+62 rem, panneau centré à 12 vh au-dessus. C'est la feuille de style qui décide ;
+le balisage, les intitulés et l'ordre sont les mêmes.
+
+Trois écarts assumés par rapport à la spécification du 19/09, tous mesurés ou
+raisonnés sur pièce :
+
+1. **« Identifiants d'agents » et « Codes d'accès » quittent la file.** Ce sont
+   des écrans, pas des files d'attente : le nombre qu'on leur accolerait —
+   l'effectif, le nombre de codes — n'appelle aucun acte, or c'est le compteur
+   qui informe. Ils restent dans « Aller à ».
+2. **« Verdicts à arbitrer » passe de l'administration au tutorat.** L'arbitrage
+   est l'acte du tuteur (`peutArbitrer`, `app/admin/rapports/[id]/page.tsx`) ;
+   l'administration l'exerce aussi. Les deux profils portent donc la même liste
+   dans le même ordre ; seuls les compteurs diffèrent, le visa du pharmacien
+   demandant un code d'administration.
+3. **« Aller à » figure aussi dans le panneau de poste**, là où le § 5.2
+   annonçait un panneau « qui ne répète pas la navigation ». Un lanceur dont la
+   recherche n'atteint pas les écrans n'est pas un lanceur, et la main n'a pas
+   à quitter le clavier pour rejoindre le volet.
+
+Le § 9 de la spécification annonçait par ailleurs que le décompte « verdicts à
+arbitrer » n'existait pas en base et serait à ajouter à `lib/pilotage-db.ts`.
+**C'était faux** : `rapportsEnAttente()` renvoie déjà `verdict_brut` et
+`arbitre` ; c'est un filtre, pas une requête.
+
+**A2. Compteurs d'attente** (`lib/attente.ts`, `content/acces-rapide.ts`). Tous
+viennent des fonctions qui alimentent déjà les écrans correspondants —
+`compterSignalementsOuverts()`, `comptesParModule()`, `rapportsEnAttente()` :
+c'est la seule façon qu'ils ne divergent pas, et le parcours de bout en bout
+compare le chiffre du panneau à celui de l'écran de pilotage. **Un chiffre,
+jamais une pastille de couleur seule**, et le compteur est dans le nom
+accessible (« Signalements ouverts, 3 en attente »).
+
+Distinction tenue entre les deux surfaces : **dans le panneau, un item à zéro
+reste affiché** — on l'ouvre précisément pour savoir s'il y a quelque chose, et
+« 0 » est le renseignement qui évite le déplacement ; **dans le volet, un
+compte nul n'affiche rien** — le volet est la carte, pas la file, et un « 0 »
+permanent sur chaque entrée serait du bruit. Le déclencheur, lui, ne porte
+qu'une pastille de 6 px : de l'extérieur, la seule chose utile est qu'il y a
+quelque chose.
+
+**A3. « Reprendre ».** Deux sources, deux portées : l'évaluation laissée en plan
+vient de la table `en_cours` (`dernierEnCours()`), donc seulement si la
+progression est rattachée à un identifiant d'agent — sans rattachement, une
+évaluation interrompue vit dans la page et meurt à la navigation, il n'y a rien
+à reprendre et rien à annoncer ; le repère de lecture vient de `localStorage`,
+local au poste. `LectureModule` écrit désormais un second repère
+(`fp-lecture-dernier`) disant **quel** module a été lu en dernier : sans lui, il
+faudrait balayer toutes les clés du stockage sans savoir laquelle est la plus
+récente, aucune n'étant datée. La zone disparaît entièrement s'il n'y a rien à
+reprendre : un cadre vide coûte une lecture pour un renseignement nul.
+
+**A4. Fil d'habilitation** (`components/FilHabilitation.tsx`). Les six étapes de
+`content/habilitation.ts`, les deux que le site couvre distinguées des quatre
+qui se déroulent au poste et chez le pharmacien. Il n'est pas décoratif : il
+corrige le malentendu « module validé = habilité ».
+
+**Sur les écrans de module seulement.** L'accueil porte déjà la phrase deux
+fois — en sur-titre (« étapes 1 et 2 sur 6 ») et dans l'encart « Valider un
+module à l'écran ne vaut pas habilitation » ; une troisième occurrence n'aurait
+rien ajouté qu'une bande de plus. C'est dans le module et dans l'évaluation que
+rien ne le dit. Les pastilles ne sont pas cliquables : six cibles de 20 px
+violeraient la règle de taille ; un seul lien, en fin de bande, mène aux repères.
+
+**A5. Entrée de page** (`components/PageAnimee.tsx`). Un fondu de 160 ms à
+chaque changement de chemin, coupé par `prefers-reduced-motion` comme le reste.
+
+Ce n'est **pas** l'API *View Transitions*, qui fondrait l'ancienne page dans la
+nouvelle : elle demanderait le drapeau `experimental.viewTransition` de Next —
+un drapeau expérimental sur un site qui produit des documents opposables, pour
+un fondu croisé au lieu d'un fondu simple. Le rapport n'y est pas.
+
+**Deux écritures ont été retirées après mesure**, et la leçon vaut d'être
+consignée : une animation d'entrée qui **déplace** le contenu est un défaut, pas
+un détail.
+
+1. La première posait `key={chemin}` sur `<main>` pour relancer l'animation.
+   Jeter et reconstruire tout le sous-arbre à chaque navigation rendait le
+   contenu momentanément absent : la chaîne de bout en bout est tombée trois
+   fois, à trois endroits différents.
+2. La seconde relançait l'animation depuis un effet, sans démontage, mais
+   conservait la translation de 6 px. L'effet s'exécutant **après** la peinture,
+   le contenu sautait de 6 px alors que la page était déjà cliquable — un clic
+   parti pendant ces 160 ms pouvait manquer sa cible. La chaîne est retombée, à
+   un quatrième endroit.
+
+L'écriture retenue **ne joue que sur l'opacité** : la boîte ne bouge pas,
+l'élément reste cliquable du premier au dernier millième, et la classe est
+posée par un effet de mise en page (`useLayoutEffect`) donc avant la peinture,
+sans clignotement. Deux passages complets de la chaîne, consécutifs, à
+59 étapes et zéro erreur serveur.
+
+**A6. Mode zone** (`components/ModeZone.tsx`). Interrupteur d'en-tête : cibles
+portées de 44 à 52 px, corps de texte de 16 à 18 px. Ce n'est pas un réglage
+d'accessibilité de plus, c'est le contexte d'usage réel de la tablette — zone
+d'atmosphère contrôlée, double gantage, visière — sans pénaliser le poste de
+bureau le reste du temps. Mémorisé dans `localStorage` sous une clé qui ne
+désigne personne : c'est un réglage de poste, le site ne connaît pas
+d'utilisateur.
+
+S'y ajoute une correction générale, valable hors mode zone : sous
+`@media (hover: none)`, les états de survol sont ramenés à leur aspect de repos.
+Sans pointeur, le survol « colle » après un appui et désigne une cible que le
+doigt a déjà quittée.
+
+**Défaut de contraste trouvé en chemin, antérieur au paquet A.** Un bouton rendu
+par un `<a>` héritait de `a:hover { color: var(--marque-fonce) }`, règle de
+spécificité 0-1-1 qui l'emporte sur `.bouton { color: … }` (0-1-0). Sur la
+variante pleine, dont le survol pose aussi `background: var(--marque-fonce)`, le
+libellé passait donc à #003F65 sur un fond #003F65 : **contraste 1:1, texte
+invisible au survol**. Mesuré le 21/09/2026 sur « Voir mes modules », corrigé
+par `a.bouton:hover { color: var(--marque-contraste) }`, les variantes claires
+gardant le bleu foncé, lisible sur `--marque-clair`.
+
 ## Inspiration PandaSuite (interactivité)
 
 La page pandasuite.com/fr/logiciel-elearning n'était pas accessible depuis

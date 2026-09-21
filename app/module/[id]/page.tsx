@@ -245,7 +245,7 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
       )}
 
       {sommaire.length > 0 ? (
-        <LectureModule moduleId={mod.id} sommaire={sommaire}>
+        <LectureModule moduleId={mod.id} moduleTitre={mod.titre} sommaire={sommaire}>
           {contenu}
         </LectureModule>
       ) : (

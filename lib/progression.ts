@@ -227,3 +227,26 @@ export async function lireEnCours(agentId: number, moduleId: string): Promise<Et
   const r = await sql<{ etat: unknown }>`SELECT etat FROM en_cours WHERE agent_id = ${agentId} AND module_id = ${moduleId}`;
   return r.rows[0] ? normaliserEtatEnCours(r.rows[0].etat) : null;
 }
+
+/**
+ * La dernière évaluation laissée en plan par cet agent, tous modules
+ * confondus. Sert la zone « Reprendre » de l'accès rapide (paquet A,
+ * 21/09/2026) : sans elle, il faudrait connaître le module pour savoir qu'on
+ * l'a interrompu.
+ */
+export interface EnCoursRepris {
+  moduleId: string;
+  etat: EtatEnCours;
+  majLe: string;
+}
+
+export async function dernierEnCours(agentId: number): Promise<EnCoursRepris | null> {
+  const r = await sql<{ module_id: string; etat: unknown; maj_le: string }>`
+    SELECT module_id, etat, maj_le::text
+    FROM en_cours WHERE agent_id = ${agentId}
+    ORDER BY maj_le DESC LIMIT 1`;
+  const l = r.rows[0];
+  if (!l) return null;
+  const etat = normaliserEtatEnCours(l.etat);
+  return etat ? { moduleId: l.module_id, etat, majLe: l.maj_le } : null;
+}

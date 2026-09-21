@@ -516,6 +516,15 @@ details.bloc .contenu-bloc { padding: 0 1rem 0.875rem; font-size: 0.875rem; colo
   cursor: pointer;
 }
 .bouton:hover:not(:disabled) { background: var(--marque-fonce); border-color: var(--marque-fonce); }
+/* Un bouton rendu par un `<a>` hérite de `a:hover { color: var(--marque-fonce) }`,
+   règle de spécificité 0-1-1 qui l'emporte sur `.bouton { color: … }` (0-1-0).
+   Sur la variante pleine, le libellé passait donc à #003F65 sur un fond
+   #003F65 : contraste 1:1, texte invisible au survol. Mesuré le 21/09/2026 sur
+   « Voir mes modules », défaut antérieur au paquet A. Les variantes claires,
+   elles, gardent le bleu foncé : il est lisible sur --marque-clair (8,9:1). */
+a.bouton:hover { color: var(--marque-contraste); }
+a.bouton--secondaire:hover,
+a.bouton--discret:hover { color: var(--marque-fonce); }
 .bouton:disabled { opacity: 0.45; cursor: not-allowed; }
 .bouton--secondaire { background: rgba(255, 255, 255, 0.7); color: var(--marque); }
 .bouton--secondaire:hover { background: var(--marque-clair); }
@@ -950,9 +959,12 @@ details.rail-groupe > .rail-liens {
   .visite-passer { margin-left: 0; width: 100%; text-align: center; }
 }
 
-/* Bouton d'ouverture : seulement là où le volet n'est pas permanent. */
+/* Déclencheur de l'accès rapide (paquet A, 21/09/2026). Présent à toutes les
+   tailles : sous 62 rem il ouvre le tiroir, au-dessus le panneau centré. Il
+   était masqué sur poste tant que le volet lui servait de tiroir. */
 .bouton-menu {
-  display: none;
+  position: relative;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   min-height: var(--cible);
@@ -967,14 +979,168 @@ details.rail-groupe > .rail-liens {
 }
 .bouton-menu .barres { display: inline-flex; flex-direction: column; gap: 3px; }
 .bouton-menu .barres span { display: block; width: 16px; height: 2px; background: var(--marque); border-radius: 2px; }
+/* Une pastille, pas un nombre : de l'extérieur, la seule chose utile est
+   « il y a quelque chose ». Le nombre se lit dans le panneau. */
+.bouton-menu-pastille {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--marque-accent);
+}
 
-.voile { display: none; }
+/* =============================================================================
+ * Accès rapide — tiroir sous 62 rem, panneau centré au-dessus
+ * ========================================================================== */
+
+.ar-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(16, 24, 32, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.ar-voile--visible { opacity: 1; pointer-events: auto; }
+
+.acces-rapide {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--verre-fort);
+  backdrop-filter: var(--verre-flou-fort);
+  -webkit-backdrop-filter: var(--verre-flou-fort);
+  border: 1px solid var(--verre-bord);
+  box-shadow: var(--ombre-haute);
+  /* Fermé : hors de l'ordre de tabulation et non annoncé. */
+  visibility: hidden;
+  opacity: 0;
+}
+.acces-rapide:focus { outline: none; }
+.acces-rapide:focus-visible { outline: 3px solid var(--marque-anneau); outline-offset: -3px; }
+.acces-rapide--ouvert { visibility: visible; opacity: 1; }
+
+.ar-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem 0.5rem;
+}
+.ar-entete h2 { margin: 0; }
+.ar-fermer {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+  background: var(--surface);
+  color: var(--texte-doux);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.ar-fermer:hover { background: var(--surface-douce); color: var(--texte); }
+
+.ar-recherche { position: relative; padding: 0 1rem 0.625rem; }
+.ar-recherche input {
+  font: inherit;
+  width: 100%;
+  min-height: var(--cible);
+  padding: 0.5rem 3.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--bord-fort);
+  border-radius: var(--rayon-sm);
+  background: var(--surface);
+  color: var(--texte);
+}
+.ar-raccourci {
+  position: absolute;
+  right: 1.625rem;
+  top: 50%;
+  transform: translateY(-60%);
+  font: 700 0.6875rem/1 ui-monospace, Menlo, monospace;
+  color: var(--texte-doux);
+}
+
+/* « Reprendre » et « À faire » ne défilent jamais : ce sont elles qu'on vient
+   lire. Seul le plan du site défile. */
+.ar-fixe { flex: none; padding: 0 1rem; }
+.ar-defilant { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 1rem 1rem; }
+
+.ar-zone { display: flex; flex-direction: column; gap: 0.125rem; margin-bottom: 0.875rem; }
+.ar-zone h3 { margin: 0 0 0.25rem; padding: 0 0.125rem; }
+.ar-groupe {
+  display: block;
+  margin: 0.5rem 0 0.125rem;
+  padding: 0 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.ar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 32px;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 9px;
+  border-left: 3px solid transparent;
+  color: var(--texte);
+  text-decoration: none;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+.ar-item--choisi { background: var(--marque-clair); border-left-color: var(--hdv-rose); }
+.ar-libelle { flex: 1 1 auto; min-width: 0; }
+.ar-detail { flex: none; font-size: 0.75rem; color: var(--texte-doux); }
+.ar-compte {
+  flex: none;
+  min-width: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--marque);
+  color: #ffffff;
+  font: 700 0.75rem/1.5rem ui-monospace, Menlo, monospace;
+  text-align: center;
+}
+/* Un item à zéro reste visible et cliquable : c'est le compteur qui informe,
+   et « 0 » est justement le renseignement qui évite le déplacement. Gris
+   suffisamment foncé pour rester lisible (--texte-doux, 6,1:1). */
+.ar-item--nul .ar-libelle { color: var(--texte-doux); }
+.ar-item--nul .ar-compte { background: var(--surface-douce); color: var(--texte-doux); }
+.ar-vide { margin: 0.25rem 0.125rem; font-size: 0.8125rem; color: var(--texte-doux); }
+
+@media (min-width: 62rem) {
+  .acces-rapide {
+    top: 12vh;
+    left: 50%;
+    width: min(34rem, 92vw);
+    max-height: 72vh;
+    border-radius: var(--rayon-xl);
+    /* Le regard part du haut : ancré à 12 vh, pas centré verticalement. */
+    transform: translate(-50%, 8px);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s 0.18s;
+  }
+  .acces-rapide--ouvert {
+    transform: translate(-50%, 0);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s;
+  }
+}
 
 @media (max-width: 61.9375rem) {
-  .bouton-menu { display: inline-flex; }
   .cadre { display: block; }
-  .rail {
-    position: fixed;
+  /* Le volet n'est plus le tiroir : l'accès rapide le porte. */
+  .rail { display: none; }
+  .acces-rapide {
     top: 0;
     bottom: 0;
     left: 0;
@@ -982,33 +1148,16 @@ details.rail-groupe > .rail-liens {
     max-height: none;
     border-radius: 0;
     border-left: 0;
-    padding-top: 1.25rem;
-    z-index: 70;
-    background: var(--verre-fort);
-    backdrop-filter: var(--verre-flou-fort);
-    -webkit-backdrop-filter: var(--verre-flou-fort);
-    /* Fermé : hors de l'ordre de tabulation et non annoncé. */
     transform: translateX(-102%);
-    visibility: hidden;
-    transition: transform 0.26s ease, visibility 0.26s ease;
+    transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s 0.26s;
   }
-  .rail--ouvert { transform: none; visibility: visible; }
-  /* En tiroir, le doigt remplace le pointeur : cible pleine (44 px). */
-  .rail { gap: 0.375rem; padding-left: 1rem; padding-right: 1rem; }
-  .rail a { min-height: var(--cible); padding-top: 0.375rem; padding-bottom: 0.375rem; }
-  details.rail-groupe > summary { min-height: var(--cible); }
-  .rail-bouton { min-height: var(--cible); }
-  .voile {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 65;
-    background: rgba(16, 24, 32, 0.38);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.26s ease;
+  .acces-rapide--ouvert {
+    transform: none;
+    transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s;
   }
-  .voile--visible { opacity: 1; pointer-events: auto; }
+  /* Le doigt remplace le pointeur : cible pleine. */
+  .ar-item { min-height: var(--cible); }
+  .ar-zone { gap: 0.25rem; }
   body.menu-ouvert { overflow: hidden; }
 }
 
@@ -1196,8 +1345,11 @@ details.rail-groupe > .rail-liens {
   .nav-sections,
   .sommaire,
   .rail,
-  .voile,
+  .ar-voile,
+  .acces-rapide,
   .bouton-menu,
+  .bouton-zone,
+  .fil-habilitation,
   .bouton { display: none !important; }
 
   .verre, .carte, .panneau-titre, .correction, .resultat-entete,
@@ -1648,7 +1800,8 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 }
 
 @media print {
-  .nav-admin, .signaler, .sommaire, .rail, .visite-voile { display: none !important; }
+  .nav-admin, .signaler, .sommaire, .rail, .visite-voile,
+  .acces-rapide, .ar-voile, .bouton-zone, .fil-habilitation { display: none !important; }
 }
 
 /* ── listes de cases (profils d'un module ou d'un document) ───────────────── */
@@ -1804,3 +1957,172 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .synthese-doc + .synthese-doc { margin-top: 1rem; }
 .synthese-cadre { width: 100%; height: 70vh; min-height: 24rem; border: 1px solid var(--bord); border-radius: var(--rayon-sm); background: #fff; }
 .synthese-image { display: block; max-width: 100%; height: auto; border: 1px solid var(--bord); border-radius: var(--rayon-sm); }
+
+/* =============================================================================
+ * Paquet A (21/09/2026) — compteurs d'attente, fil d'habilitation, mode zone,
+ * entrée de page. Voir `docs/ACCES-RAPIDE.md` et `docs/DECISIONS.md`.
+ * ========================================================================== */
+
+/* ── texte réservé aux lecteurs d'écran ──────────────────────────────────── */
+/* Ni `display:none` ni `visibility:hidden` : les deux retirent le texte de
+   l'arbre d'accessibilité, c'est-à-dire exactement ce qu'on veut éviter. */
+.lecture-seule {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── compteur d'attente sur une entrée du volet ──────────────────────────── */
+/* Un chiffre, jamais une pastille de couleur seule : « 7 » renseigne, « il y
+   en a » oblige à aller voir. Distinct de `.indice`, qui porte un texte
+   (l'identifiant d'agent) et non un décompte.
+   Le volet n'affiche que les comptes non nuls : il est la carte, pas la file.
+   C'est dans l'accès rapide que le zéro doit rester visible, parce qu'on y
+   vient précisément pour savoir s'il y a quelque chose. */
+.rail .compte-attente {
+  margin-left: auto;
+  flex: none;
+  min-width: 1.375rem;
+  padding: 0 0.3125rem;
+  border-radius: 999px;
+  background: var(--marque);
+  color: #ffffff;
+  font: 700 0.6875rem/1.375rem ui-monospace, Menlo, monospace;
+  text-align: center;
+}
+
+/* ── fil d'habilitation ──────────────────────────────────────────────────── */
+/* Six étapes, dont deux seulement se passent sur le site. La bande existe
+   pour dire cela sans phrase : un module validé n'habilite personne. */
+.fil-habilitation {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--rayon-sm);
+  background: var(--verre-doux);
+  backdrop-filter: var(--verre-flou);
+  -webkit-backdrop-filter: var(--verre-flou);
+  border: 1px solid var(--verre-bord);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.fil-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+  background: var(--surface);
+  color: var(--texte-doux);
+  text-decoration: none;
+}
+.fil-etape .num {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-douce);
+  color: var(--texte-doux);
+  font: 700 0.625rem/1 ui-monospace, Menlo, monospace;
+}
+/* Ce que le site couvre. La couleur ne porte rien seule : le titre du fil le
+   dit en toutes lettres, et chaque étape hors site porte la mention. */
+.fil-etape--site { border-color: var(--marque); color: var(--marque); background: var(--marque-clair); }
+.fil-etape--site .num { background: var(--marque); color: #ffffff; }
+.fil-etape--courante { box-shadow: 0 0 0 3px var(--marque-anneau); font-weight: 650; }
+.fil-hors { color: var(--texte-doux); }
+a.fil-etape:hover { border-color: var(--marque); }
+@media (max-width: 40rem) {
+  /* Sous cette largeur, six pastilles tiennent sur trois lignes et mangent
+     l'écran : seul le libellé de l'étape courante reste, le reste se résume. */
+  .fil-habilitation { font-size: 0.6875rem; }
+  .fil-etape:not(.fil-etape--courante) .libelle { display: none; }
+}
+
+/* ── mode zone : travail sous isolateur, gants, visière ──────────────────── */
+/* Ce n'est pas un réglage d'accessibilité de plus : c'est le contexte d'usage
+   réel de la tablette en zone d'atmosphère contrôlée. Les cibles passent de
+   44 à 52 px et le corps de 16 à 18 px. Mémorisé sur le poste seulement, et
+   ne désigne personne. */
+html[data-zone="1"] { --cible: 52px; --cible-large: 56px; }
+html[data-zone="1"] body { font-size: 18px; }
+html[data-zone="1"] .rail a,
+html[data-zone="1"] .ar-item,
+html[data-zone="1"] details.rail-groupe > summary { min-height: var(--cible); }
+html[data-zone="1"] .option { min-height: 60px; }
+html[data-zone="1"] .ar-raccourci { display: none; }
+.bouton-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--cible);
+  padding: 0 0.625rem;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+  background: #ffffff;
+  color: var(--texte);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bouton-zone[aria-pressed="true"] {
+  background: var(--marque);
+  border-color: var(--marque);
+  color: var(--marque-contraste);
+}
+
+/* ── entrée de page ──────────────────────────────────────────────────────── */
+/* Un fondu court à chaque changement de chemin, au lieu du saut blanc. Ce
+   n'est pas l'API View Transitions : elle demanderait le drapeau expérimental
+   `viewTransition` de Next, que ce site ne prend pas — voir DECISIONS.md.
+   Coupé par `prefers-reduced-motion` comme tout le reste. */
+/* Opacité seule, aucun déplacement : une translation, même de 6 px, décale le
+   contenu sous le pointeur après que la page est cliquable, et un clic parti
+   pendant l'animation peut manquer sa cible. Mesuré, voir PageAnimee.tsx. */
+@keyframes entree-page {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.entree-page { animation: entree-page 0.16s ease-out both; }
+
+/* ── survol sur écran tactile ────────────────────────────────────────────── */
+/* Sans pointeur, l'état de survol « colle » après un appui : il reste peint
+   et désigne une cible que le doigt a déjà quittée. On rend à ces éléments
+   leur aspect de repos. Valable partout, pas seulement en mode zone. */
+@media (hover: none) {
+  .rail a:hover { background: transparent; }
+  .rail a[aria-current="page"]:hover { background: var(--marque-clair); }
+  .sommaire a:hover { background: transparent; }
+  .sommaire a[aria-current="true"]:hover { background: var(--marque-clair); }
+  .ar-item:hover { background: transparent; }
+  .ar-item--choisi:hover { background: var(--marque-clair); }
+  .option:hover { border-color: var(--bord); background: rgba(255, 255, 255, 0.66); }
+  .proposition .jugement label:hover { border-color: var(--bord); background: var(--surface); }
+  .bouton--secondaire:hover,
+  .bouton--discret:hover { background: rgba(255, 255, 255, 0.7); }
+  .bouton--discret:hover { border-color: var(--bord); }
+  a.carte-lien:hover .carte { border-color: var(--verre-bord); box-shadow: var(--ombre); }
+}
+
+/* Le seul lien de la bande : six pastilles cliquables de 20 px violeraient la
+   règle de taille de cible. */
+.fil-lien {
+  margin-left: auto;
+  min-height: var(--cible);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

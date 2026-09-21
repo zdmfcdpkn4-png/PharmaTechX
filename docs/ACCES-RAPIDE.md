@@ -1,7 +1,13 @@
 # Accès rapide — spécifications fonctionnelles et ergonomiques
 
-Statut : **proposition**, non implémentée. Rédigée le 19/09/2026 à la demande
-du pharmacien responsable. À valider avant construction.
+Statut : **construit le 21/09/2026** (paquet A), dans `components/AccesRapide.tsx`,
+`content/acces-rapide.ts` et `lib/attente.ts`. Rédigée le 19/09/2026 à la
+demande du pharmacien responsable.
+
+Trois points de cette spécification ont été **écartés à la construction**, et
+un quatrième était faux : voir le § 9, réécrit en conséquence. Le reste est
+implémenté tel qu'écrit, et les huit critères d'acceptation du § 8 sont
+vérifiés par le parcours de bout en bout (`e2e/parcours.e2e.js`).
 
 ---
 
@@ -307,17 +313,46 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 
 ---
 
-## 9. Ce qui reste à trancher
+## 9. Écarts à la construction, et ce qui reste à trancher
+
+### 9.1 Écarts assumés (21/09/2026)
+
+1. **« Identifiants d'agents » et « Codes d'accès » ne figurent pas dans la
+   file d'attente**, contrairement au tableau du § 3.2. Ce sont des écrans, pas
+   des files : le nombre qu'on leur accolerait — l'effectif, le nombre de
+   codes — n'appelle aucun acte, or c'est le compteur qui informe. Ils restent
+   dans « Aller à ».
+2. **« Verdicts à arbitrer » est un item du tutorat**, et non de la seule
+   administration. L'arbitrage est l'acte du tuteur (`peutArbitrer`,
+   `app/admin/rapports/[id]/page.tsx`) ; l'administration l'exerce aussi. Les
+   deux profils portent la même liste dans le même ordre ; seuls les compteurs
+   diffèrent, le visa du pharmacien demandant un code d'administration.
+3. **« Aller à » figure aussi dans le panneau de poste**, là où le § 5.2
+   annonçait un panneau « qui ne répète pas la navigation ». Un lanceur dont la
+   recherche n'atteint pas les écrans n'est pas un lanceur, et la main n'a pas
+   à quitter le clavier pour rejoindre le volet.
+
+### 9.2 Une affirmation de cette note était fausse
+
+La version du 19/09 indiquait que le décompte « verdicts à arbitrer »
+n'existait pas en base et serait à ajouter à `lib/pilotage-db.ts`.
+`rapportsEnAttente()` renvoie déjà `verdict_brut` et `arbitre` : c'est un
+filtre, pas une requête. L'estimation de coût qui en découlait était donc
+surévaluée.
+
+### 9.3 Ce qui reste à trancher
 
 - `[à préciser]` **Le raccourci `⌘K` sur les postes du CHD** : à confirmer
-  qu'il n'entre pas en conflit avec un usage établi de l'établissement.
-- `[à préciser]` **Fréquence réelle des tâches.** Le tableau § 1 est mon
-  classement, pas une mesure. Une semaine de journal (`/admin/journal`
-  enregistre déjà les actions par rôle) le confirmerait ou le corrigerait —
-  et c'est cette mesure, pas mon intuition, qui doit fixer l'ordre des items.
-- `[à préciser]` **« Verdicts à arbitrer »** : l'item suppose un décompte qui
-  n'existe pas encore en base ; à ajouter à `lib/pilotage-db.ts` si l'item est
-  retenu.
+  qu'il n'entre pas en conflit avec un usage établi de l'établissement. La
+  touche `/` et le hamburger ouvrent le même panneau, le raccourci n'est donc
+  pas une condition d'usage.
+- `[à préciser]` **Fréquence réelle des tâches.** Le tableau § 1 est un
+  classement raisonné, pas une mesure. Une semaine de journal
+  (`/admin/journal` enregistre déjà les actions par rôle) le confirmerait ou
+  le corrigerait — et c'est cette mesure, pas l'intuition, qui doit fixer
+  l'ordre des items. L'ordre construit est donc provisoire, mais il est
+  **invariant** : c'est la condition de la mémoire spatiale, pas sa remise en
+  cause.
 
 ---
 

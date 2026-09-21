@@ -8,8 +8,15 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
 export interface LienRail {
   href: string;
   libelle: string;
-  /** Compteur affiché à droite du libellé (signalements ouverts, par exemple). */
+  /** Texte affiché à droite du libellé — l'identifiant d'agent, par exemple. */
   indice?: string;
+  /**
+   * Nombre d'actes en attente sur cet écran (paquet A, 21/09/2026). Le volet
+   * n'affiche que les comptes non nuls : il est la carte, pas la file. C'est
+   * l'accès rapide qui montre les zéros, parce qu'on l'ouvre justement pour
+   * savoir s'il y a quelque chose.
+   */
+  compte?: number;
 }
 
 /** Sous-partie d'un groupe : un intitulé fin, jamais repliable. */
@@ -81,6 +88,14 @@ export function Navigation({
     <Link key={l.href} href={l.href} aria-current={courant(l.href) ? "page" : undefined}>
       {l.libelle}
       {l.indice ? <span className="indice">{l.indice}</span> : null}
+      {l.compte ? (
+        <>
+          {/* Le compteur doit être dans le nom accessible, pas seulement à
+              côté (WCAG 4.1.2) : « Signalements, 3 en attente ». */}
+          <span className="compte-attente" aria-hidden="true">{l.compte}</span>
+          <span className="lecture-seule">, {l.compte} en attente</span>
+        </>
+      ) : null}
     </Link>
   );
 

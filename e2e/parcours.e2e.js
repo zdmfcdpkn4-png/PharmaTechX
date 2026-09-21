@@ -209,7 +209,10 @@ Justification : cf. procédure interne.`,
   await page.reload();
   await page.waitForTimeout(400);
   assert.equal(await page.locator(".visite").count(), 0, "la visite revient après avoir été vue");
-  await page.click('.rail-bouton:has-text("Revoir la présentation")');
+  // Sélecteur porté sur le volet : depuis le paquet A, le bouton existe en
+  // deux endroits — le volet permanent et l'accès rapide, qui le porte sous
+  // 62 rem où le volet est masqué.
+  await page.click('#volet-principal .rail-bouton:has-text("Revoir la présentation")');
   await visite.waitFor({ state: "visible", timeout: 3000 });
   assert.match(await page.locator(".visite-entete .sur-titre").innerText(), /étape 1 sur 6/i, "reprise à la première étape");
   await page.keyboard.press("Escape");
@@ -883,10 +886,18 @@ Justification : justification deux.`;
     "les explications ont quitté l'accueil",
   );
   await page.waitForSelector("main #modules");
+  // Paquet A (21/09/2026) : le hamburger ne disparaît plus au-dessus de
+  // 62 rem. Il n'ouvre plus le volet — qui est permanent — mais l'accès
+  // rapide, une surface que le volet ne porte pas.
   assert.equal(
     await page.locator("button.bouton-menu").isVisible(),
-    false,
-    "pas de bouton de menu là où le volet est permanent",
+    true,
+    "le déclencheur de l'accès rapide est présent aussi sur poste",
+  );
+  assert.equal(
+    await page.locator("button.bouton-menu").getAttribute("aria-haspopup"),
+    "dialog",
+    "le déclencheur annonce une boîte de dialogue",
   );
   const nbGroupes = await page.locator(".groupe-modules").count();
   assert.ok(nbGroupes > 1, "les critères du socle sont répartis en grands modules");
@@ -925,7 +936,8 @@ Justification : justification deux.`;
     "le repli des grands modules est gardé le temps de la session",
   );
 
-  // tiroir : sous le seuil, le volet est fermé, s'ouvre au bouton et se ferme à Échap
+  // tiroir : sous le seuil, le volet permanent n'existe pas, et c'est l'accès
+  // rapide qui le porte — ouvert au bouton, fermé à Échap (paquet A)
   await page.setViewportSize({ width: 390, height: 844 });
   // rouvert à cette taille, en haut de page : c'est l'état d'arrivée sur un
   // téléphone, sans la transition que déclenche un simple redimensionnement
@@ -934,13 +946,26 @@ Justification : justification deux.`;
   assert.equal(
     await page.locator("#volet-principal").isVisible(),
     false,
-    "volet fermé au chargement sur téléphone",
+    "pas de volet permanent sur téléphone",
+  );
+  assert.equal(
+    await page.locator(".acces-rapide").isVisible(),
+    false,
+    "accès rapide fermé au chargement",
   );
   await page.click("button.bouton-menu");
-  await page.waitForSelector("#volet-principal", { state: "visible" });
+  await page.waitForSelector(".acces-rapide--ouvert", { state: "visible" });
   assert.equal(await page.locator("button.bouton-menu").getAttribute("aria-expanded"), "true");
+  await page.waitForSelector(".acces-rapide a[href='/#modules']", { state: "visible" });
+  // Le volet permanent étant masqué à cette largeur, le panneau doit porter le
+  // bouton de la visite guidée, sans quoi il deviendrait inatteignable.
+  assert.equal(
+    await page.locator('.acces-rapide .rail-bouton:has-text("Revoir la présentation")').isVisible(),
+    true,
+    "la visite reste rouvrable depuis l'accès rapide sur téléphone",
+  );
   await page.keyboard.press("Escape");
-  await page.waitForSelector("#volet-principal", { state: "hidden" });
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // les explications sont sur leur page, avec leurs cinq ancres
@@ -950,6 +975,136 @@ Justification : justification deux.`;
   }
   await page.waitForSelector("text=ne vaut pas habilitation");
   ok("volet de navigation : barre latérale sur poste, tiroir au hamburger, repères sortis de l'accueil, grands modules repliés");
+
+  // 12h bis. accès rapide, compteurs, fil d'habilitation et mode zone
+  // (paquet A, 21/09/2026) — critères d'acceptation de docs/ACCES-RAPIDE.md § 8
+  await page.goto(BASE + "/admin/pilotage");
+  const tuile = async (libelle) =>
+    (
+      await page
+        .locator(`.cartouche:has(.cartouche-libelle:text-is("${libelle}")) .cartouche-valeur`)
+        .first()
+        .innerText()
+    ).trim();
+  const signalementsEcran = await tuile("Signalements ouverts");
+
+  await page.goto(BASE + "/");
+  await page.waitForSelector("main #modules");
+  await page.keyboard.press("Control+k");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.getAttribute("type")),
+    "search",
+    "sur poste, le focus va au champ de recherche à l'ouverture",
+  );
+
+  // critère 2 : le compteur du panneau égale celui de l'écran correspondant
+  const compteurPanneau = async (libelle) =>
+    (await page.locator(`.ar-item:has(.ar-libelle:text-is("${libelle}")) .ar-compte`).innerText()).trim();
+  assert.equal(
+    await compteurPanneau("Signalements ouverts"),
+    signalementsEcran,
+    "compteur du panneau = compteur de l'écran de pilotage",
+  );
+
+  // critère 3 : un item à zéro reste affiché, cliquable, et le dit
+  assert.equal(
+    await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-item").count(),
+    4,
+    "quatre items dans la file d'attente d'un code d'administration",
+  );
+  const nul = page.locator(".ar-item--nul").first();
+  assert.ok(await nul.count(), "au moins un item à zéro dans ce scénario");
+  assert.ok(await nul.isVisible(), "un item à zéro reste visible");
+  assert.match(await nul.getAttribute("aria-label"), /aucun$/, "le compteur est dans le nom accessible");
+
+  const aVerifierPanneau = Number(await compteurPanneau("Questions à vérifier"));
+
+  // le filtre porte sur les trois zones, sans anti-rebond
+  await page.fill(".ar-recherche input", "journ");
+  await page.waitForSelector(".ar-defilant a[href='/admin/journal']", { state: "visible" });
+  assert.equal(
+    await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-item").count(),
+    0,
+    "le filtre s'applique aussi à la file d'attente",
+  );
+  await page.fill(".ar-recherche input", "");
+
+  // critère 6 : la tabulation ne sort pas du panneau
+  for (let i = 0; i < 25; i++) await page.keyboard.press("Tab");
+  assert.equal(
+    await page.evaluate(() => Boolean(document.activeElement?.closest(".acces-rapide"))),
+    true,
+    "la tabulation reste enfermée dans le panneau",
+  );
+
+  // critère 8 : le panneau ne s'imprime pas
+  await page.emulateMedia({ media: "print" });
+  assert.equal(await page.locator(".acces-rapide").isVisible(), false, "panneau absent à l'impression");
+  await page.emulateMedia({ media: null });
+
+  // critère 5 : Échap ferme et rend le focus au déclencheur
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.className),
+    "bouton-menu",
+    "le focus revient au déclencheur",
+  );
+
+  // pastilles chiffrées du volet : présentes quand il y a quelque chose,
+  // absentes à zéro — le volet est la carte, pas la file
+  await page.goto(BASE + "/admin/questions");
+  await page.waitForSelector("#volet-principal a[href='/admin/questions']");
+  const pastilleQuestions = page.locator("#volet-principal a[href='/admin/questions'] .compte-attente");
+  if (aVerifierPanneau > 0) {
+    assert.equal(
+      (await pastilleQuestions.innerText()).trim(),
+      String(aVerifierPanneau),
+      "le volet porte le même chiffre que le panneau",
+    );
+  } else {
+    assert.equal(await pastilleQuestions.count(), 0, "rien en attente : pas de pastille au volet");
+  }
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/signalements'] .compte-attente").count(),
+    0,
+    "aucune pastille pour un écran sans rien en attente : le volet est la carte, pas la file",
+  );
+
+  // fil d'habilitation : sur le module, pas sur l'accueil où la phrase est déjà dite deux fois
+  await page.goto(BASE + "/");
+  await page.waitForSelector("main #modules");
+  assert.equal(await page.locator(".fil-habilitation").count(), 0, "pas de fil sur l'accueil");
+  await page.goto(BASE + "/module/comportement-zac");
+  await page.waitForSelector(".fil-habilitation");
+  const etapesFil = await page.locator(".fil-habilitation .fil-etape").count();
+  assert.equal(etapesFil, 6, "les six étapes de la chaîne d'habilitation");
+  assert.equal(
+    await page.locator(".fil-habilitation .fil-etape--site").count(),
+    2,
+    "deux étapes seulement se passent sur le site",
+  );
+
+  // mode zone : les cibles passent de 44 à 52 px, et le réglage tient au rechargement
+  await page.click("button.bouton-zone");
+  await page.waitForSelector("html[data-zone='1']");
+  assert.equal(
+    (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--cible"))).trim(),
+    "52px",
+    "mode zone : cible tactile portée à 52 px",
+  );
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).fontSize),
+    "18px",
+    "mode zone : corps de texte porté à 18 px",
+  );
+  await page.reload();
+  await page.waitForSelector("html[data-zone='1']");
+  await page.click("button.bouton-zone");
+  assert.equal(await page.locator("html[data-zone='1']").count(), 0, "le mode zone se coupe au même bouton");
+
+  ok("accès rapide : compteurs égaux aux écrans, item à zéro affiché, filtre, tabulation enfermée, Échap rend le focus ; fil d'habilitation et mode zone");
 
   // 12i. illustration d'un QCM déposé (19/09/2026) : la ligne « Image : … »
   // apparie le fichier déposé du même nom, et l'image suit la question.
@@ -1319,6 +1474,35 @@ Justification : cascade de pression.`,
   };
   const apiJetable = async () => (await page2.request.get(BASE + "/api/images/inconnu")).status();
   await entrerJetable();
+
+  // Critère 4 du paquet A : un profil de poste ne voit ni file d'attente ni
+  // pastille. Un apprenant n'a pas de file ; lui en montrer une vide lui
+  // apprendrait seulement qu'il est surveillé.
+  // Première connexion de ce code : sa visite guidée s'ouvre et son voile
+  // intercepterait le clic sur le hamburger.
+  await page2.waitForSelector(".visite", { timeout: 8000 });
+  await page2.keyboard.press("Escape");
+  await page2.waitForSelector(".visite-voile", { state: "detached" });
+  assert.equal(
+    await page2.locator(".bouton-menu-pastille").count(),
+    0,
+    "aucune pastille d'attente pour un profil de poste",
+  );
+  await page2.click("button.bouton-menu");
+  await page2.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(
+    await page2.locator(".ar-zone:has(h3:text-is('À faire'))").count(),
+    0,
+    "aucune file d'attente pour un profil de poste",
+  );
+  assert.equal(
+    await page2.locator(".acces-rapide a[href='/admin/pilotage']").count(),
+    0,
+    "aucun écran d'administration dans l'accès rapide d'un poste",
+  );
+  await page2.keyboard.press("Escape");
+  await page2.waitForSelector(".acces-rapide", { state: "hidden" });
+
   await page2.goto(BASE + "/module/comportement-zac");
   await page2.waitForSelector("h1");
   assert.equal(await apiJetable(), 404, "API servie avec une session valide (identifiant inconnu)");
