@@ -109,10 +109,20 @@ export async function actionBasculerCode(formData: FormData) {
  *
  * Le refus est journalisé au même titre que la suppression : une tentative
  * qui échoue est précisément ce qu'on veut lire après coup.
+ *
+ * Son propre code ne se supprime pas (21/09/2026, question 41) : supprimer le
+ * code de sa propre session, c'est se fermer la porte, et si c'était le
+ * dernier administrateur actif la remise en service passe par l'hébergeur.
+ * Le refus tombe **avant** la confirmation : la question n'est pas de savoir
+ * qui est devant l'écran, elle ne se pose plus.
  */
 export async function actionSupprimerCode(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = Number(formData.get("id"));
+  if (s.acces && id === s.acces) {
+    await journaliser(s, "suppression-code-refusee", `acces:${id}`, { motif: "propre-code" });
+    redirect("/admin?erreur=suppression-propre-code");
+  }
   const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
   if (confirmation !== "ok") {
     await journaliser(s, "suppression-code-refusee", `acces:${id}`, { motif: confirmation });

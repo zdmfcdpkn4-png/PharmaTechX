@@ -1144,12 +1144,30 @@ pouvait être refusé à la confirmation selon les espaces et la casse.
 (`code-invalide`, `bloque`, `indisponible`) : une tentative qui échoue est
 précisément ce qu'on veut relire après coup. Vérifié de bout en bout.
 
-**Laissé ouvert, non tranché.** Rien n'empêche un administrateur de supprimer
-**son propre** code : il retape le sien, et se ferme la porte. Si c'était le
-dernier code `admin` actif, la remise en service passe par l'hébergeur
-(`ADMIN_INITIAL` reposé puis redéploiement, l'amorçage ne s'ouvrant qu'en
-l'absence d'administrateur actif). Garde non posée faute de demande —
-question 41 de `QUESTIONS-OUVERTES.md`.
+**Son propre code ne se supprime pas** (tranché le 21/09/2026, question 41) :
+supprimer le code de sa propre session, c'est se fermer la porte, et si
+c'était le dernier code `admin` actif, la remise en service passerait par
+l'hébergeur (`ADMIN_INITIAL` reposé puis redéploiement, l'amorçage ne
+s'ouvrant qu'en l'absence d'administrateur actif).
+
+Le refus tombe **avant** la confirmation, et aucun champ de code n'est même
+présenté : la question n'est pas de savoir qui est devant l'écran, elle ne se
+pose plus. Le contrôle reste affiché, inactif, avec le motif écrit — un
+bouton qu'on retire sans rien dire laisse chercher ; un bouton inactif qui
+s'explique clôt la question. Le serveur refuse quand même, indépendamment de
+ce que l'écran présente : le parcours réactive le bouton dans la page et
+vérifie que l'action est rejetée.
+
+Pour supprimer ce code-là : ouvrir une session avec un autre code
+d'administration.
+
+**Ce que cette garde ne couvre pas, et qui reste ouvert.** La *révocation* de
+son propre code ferme la session tout aussi sûrement, et un code révoqué ne
+permet plus de se reconnecter pour le réactiver : le verrouillage est le même,
+en un clic et sans confirmation. La garde n'y a pas été étendue — la
+révocation est le geste d'urgence du tuteur quand un code circule, et la
+brider demande une décision distincte. Question 42 de
+`QUESTIONS-OUVERTES.md`.
 
 **Hors périmètre, inchangé.** La *révocation* d'un code reste au tuteur et
 sans confirmation : elle est réversible, et c'est le geste d'urgence quand un

@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
     "Code d\u2019administration incorrect : rien n\u2019a été supprimé. La tentative est au journal.",
   "confirmation-bloque":
     "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été supprimé.",
+  "suppression-propre-code":
+    "C\u2019est le code de votre session : il ne se supprime pas. Ouvrez une session avec un autre code d\u2019administration pour supprimer celui-ci.",
   "confirmation-indisponible":
     "La confirmation n\u2019a pas pu être vérifiée : votre session n\u2019est plus rattachée à un code en cours de validité. Reconnectez-vous.",
 };
@@ -195,28 +197,44 @@ export default async function Admin({
                     </summary>
                     <form action={actionSupprimerCode} className="suppression-corps">
                       <input type="hidden" name="id" value={a.id} />
-                      <label className="champ">
-                        <span>
-                          Supprimer « {a.libelle} » : entrez votre code d&apos;administration
-                        </span>
-                        <input
-                          type="password"
-                          name="confirmation"
-                          autoComplete="off"
-                          spellCheck={false}
-                          required
-                        />
-                      </label>
+                      {a.id === session.acces ? (
+                        <p style={{ margin: 0 }}>
+                          C&apos;est le code de votre session : il ne se supprime pas. Vous vous
+                          fermeriez la porte, et s&apos;il était le dernier code
+                          d&apos;administration actif, la remise en service passerait par
+                          l&apos;hébergeur. Ouvrez une session avec un autre code
+                          d&apos;administration pour supprimer celui-ci.
+                        </p>
+                      ) : (
+                        <>
+                          <label className="champ">
+                            <span>
+                              Supprimer « {a.libelle} » : entrez votre code d&apos;administration
+                            </span>
+                            <input
+                              type="password"
+                              name="confirmation"
+                              autoComplete="off"
+                              spellCheck={false}
+                              required
+                            />
+                          </label>
+                          <span className="legende">
+                            Irréversible, et journalisé. Le code supprimé ne se retrouve pas : il
+                            est haché en base. Les sessions ouvertes avec lui se ferment à la
+                            requête suivante.
+                          </span>
+                        </>
+                      )}
                       <div className="actions">
-                        <button type="submit" className="bouton bouton--compact">
+                        <button
+                          type="submit"
+                          className="bouton bouton--compact"
+                          disabled={a.id === session.acces}
+                        >
                           Supprimer définitivement
                         </button>
                       </div>
-                      <span className="legende">
-                        Irréversible, et journalisé. Le code supprimé ne se retrouve pas : il est
-                        haché en base. Les sessions ouvertes avec lui se ferment à la requête
-                        suivante.
-                      </span>
                     </form>
                   </details>
                 )}

@@ -1542,13 +1542,39 @@ Justification : cascade de pression.`,
   await page.waitForSelector("li.carte:has-text('Poste jetable')", { state: "detached" });
   await page.waitForSelector("[role=status]:has-text('Code supprimé')");
   assert.equal(await apiJetable(), 401, "code supprimé : session fermée");
+
+  // Son propre code ne se supprime pas (21/09/2026, question 41) : le bouton est inactif,
+  // et le serveur refuse même réactivé dans la page — la protection ne repose jamais sur
+  // ce qui est affiché.
+  const carteAdmin = page.locator("li.carte", { hasText: "Administrateur initial" });
+  await carteAdmin.locator("summary:has-text('Supprimer')").click();
+  const supprimerPropre = carteAdmin.locator("button:has-text('Supprimer définitivement')");
+  await supprimerPropre.waitFor();
+  assert.ok(await supprimerPropre.isDisabled(), "son propre code : la suppression est inactive");
+  assert.equal(
+    await carteAdmin.locator("input[name=confirmation]").count(),
+    0,
+    "son propre code : aucun champ de confirmation, l'acte n'est pas une question d'identité",
+  );
+  await supprimerPropre.evaluate((b) => {
+    b.disabled = false;
+  });
+  await supprimerPropre.click();
+  await page.waitForSelector("[role=alert]:has-text('code de votre session')");
+  await page.locator("li.carte:has-text('Administrateur initial')").waitFor();
+  await page.goto(BASE + "/admin/journal");
+  assert.ok(
+    (await page.locator("tr:has(code:text-is('suppression-code-refusee'))").count()) >= 2,
+    "les deux refus sont au journal : code faux, puis propre code",
+  );
+  await page.goto(BASE + "/admin");
   await ctx2.close();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok("session liée à son code : révocation et suppression ferment la session à la requête suivante, réactivation sans effet sur celle d'avant");
-  ok("suppression d'un code : réservée à l'administration, confirmée par son propre code, refus journalisé");
+  ok("suppression d'un code : réservée à l'administration, confirmée par son propre code, refus journalisé ; le code de la session en cours ne se supprime pas, écran et serveur");
 
   // 14d. illustrations de domaine (19/09/2026) : proposées d'après le titre pour les modules déjà
   //      en place, modifiables, et le retrait explicite ne se fait pas rattraper par la proposition

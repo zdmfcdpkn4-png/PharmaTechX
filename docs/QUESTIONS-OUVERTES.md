@@ -321,11 +321,20 @@ telle. Ordre : ce qui change le déploiement en premier.
     l'intervalle : le réordonner au fil de l'usage détruirait la mémoire
     spatiale qui fait tout le gain de vitesse (Mitchell & Shneiderman 1989).
 
-41. **Suppression de son propre code d'administration** (soulevé le
-    21/09/2026, à la pose de la confirmation par code) : rien ne l'empêche.
-    Un administrateur qui supprime le code de sa propre session se ferme la
-    porte ; si c'était le dernier `admin` actif, la remise en service passe
-    par l'hébergeur (`ADMIN_INITIAL` reposé, puis redéploiement). Faut-il
-    refuser la suppression du code de la session en cours, refuser seulement
-    la suppression du dernier administrateur actif, ou ne rien changer ?
+41. **Suppression de son propre code d'administration** — tranché le
+    21/09/2026 : le code de la session en cours ne se supprime pas. Refus
+    côté serveur avant toute confirmation, contrôle affiché mais inactif avec
+    son motif. Pour supprimer ce code-là, ouvrir une session avec un autre
+    code d'administration. La variante « refuser seulement le dernier
+    administrateur actif » a été écartée : elle laisse le verrouillage
+    possible dès qu'un second code admin existe mais n'est plus détenu par
+    personne.
+
+42. **Révocation de son propre code** (soulevé le 21/09/2026, en posant la
+    garde de la question 41) : elle n'est pas bridée. Elle ferme la session
+    aussi sûrement que la suppression, et un code révoqué ne permet plus de
+    se reconnecter pour le réactiver — même verrouillage, en un clic et sans
+    confirmation. Faut-il refuser la révocation de son propre code, la
+    soumettre à la même confirmation que la suppression, ou la laisser libre
+    au motif qu'elle est le geste d'urgence quand un code circule ?
     `[à préciser]`
