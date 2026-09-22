@@ -53,7 +53,10 @@ export function BarreBadges({ etapes, requete = "" }: { etapes: EtapeBadge[]; re
           const nom = `${i + 1}. ${e.critereId && e.critereId !== "[à préciser]" ? `${e.critereId} — ` : ""}${e.titre} : ${etat}`;
           const contenu = (
             <>
-              <span aria-hidden="true" className="barre-badge-visuel">
+              <span
+                aria-hidden="true"
+                className={e.badge ? "barre-badge-visuel" : "barre-badge-visuel barre-badge-visuel--numero"}
+              >
                 {e.badge ? <Badge nom={e.badge} taille={40} /> : <span className="barre-badge-vide">{i + 1}</span>}
               </span>
               <span className="visually-hidden">{nom}</span>

@@ -1909,19 +1909,60 @@ page en échec sur les 168 chargements ; la chaîne de bout en bout reste verte.
 | Fil d'habilitation sur quatre lignes au-dessus de chaque module | iPhone | Deux lignes : intitulé court et lien, puis les six pastilles |
 
 **Barre latérale.** Mesurée repliée comme le veut la règle du 19/09 (seul le
-groupe de la page ouvert) : 458 px au plus, pour 637 px disponibles sur un
-écran 1366 × 768 — elle tient. Elle ne déborde que tout déplié à la main
-(1 192 px pour l'administration). Le plus long bloc ouvert était « Contenu »,
-huit liens : il est coupé en deux sous-menus, **Questions** (banque, dépôt,
+groupe de la page ouvert), page par page : 564 px au plus pour
+l'administration (pages de la banque, « Contenu » ouvert sur ses huit liens),
+pour 637 px disponibles sur un écran 1366 × 768 — elle tenait, de peu. Elle ne
+déborde que tout déplié à la main (1 192 px). Le plus long bloc ouvert était
+« Contenu » : il est coupé en deux sous-menus, **Questions** (banque, dépôt,
 écriture, mises en situation) et **Modules** (modules, documents, ordre,
 programmes à la carte). L'administration compte désormais quatre
-sous-menus : Suivi, Questions, Modules, Réglages.
+sous-menus : Suivi, Questions, Modules, Réglages ; le volet replié le plus
+long passe à 544 px, onglet RGPD compris. Sur écran tactile, les lignes à
+44 px le portaient à 692 px sur iPad en paysage, pour 679 disponibles (pages
+des Réglages) : « Revoir la présentation » y quitte le volet pour le Menu,
+comme sur iPad en portrait et sur téléphone — 658 px après. **Limite** : ces
+hauteurs disponibles supposent la fenêtre entière ; les barres du navigateur
+et du système en retirent sur un vrai poste ou un vrai iPad `[à vérifier sur
+l'appareil]`. Au-delà, le volet défile en lui-même : rien n'est masqué.
+
+**Mesures après corrections** (mêmes 28 pages, mêmes six tailles).
+
+| Écran | En-tête | Pages qui débordent | Cibles < 24 px | Champs < 16 px | Erreurs |
+|---|---|---|---|---|---|
+| iPhone SE | 197 → 61 px (30 → 9 %) | 2 → 0 | 160 → 17 | 53 → 0 | 0 |
+| iPhone 15 | 197 → 61 px (30 → 9 %) | 2 → 0 | 161 → 18 | 53 → 0 | 0 |
+| iPad portrait | 137 → 77 px | 1 → 0 | 133 → 18 | 53 → 0 | 0 |
+| iPad paysage | 77 px | 1 → 0 | 133 → 18 | 53 → 0 | 0 |
+| PC 1366 × 768 | 77 px | 1 → 0 | sans objet | sans objet | 0 |
+| PC 1920 × 1080 | 77 px | 0 | sans objet | sans objet | 0 |
+
+Les cibles restées sous 24 px sont des liens isolés de 15 px de haut (fil
+d'Ariane, « voir le module ») : exception d'espacement du critère WCAG 2.2
+2.5.8. Les captures sont rendues ici en DejaVu Sans : ni Aptos ni Inter ne
+sont disponibles dans l'environnement de mesure.
+
+**Accessibilité automatique** (axe-core 4.13, règles WCAG 2.0 à 2.2, niveaux
+A et AA ; dix pages clés, PC 1366 et iPhone SE). Trois défauts de contraste,
+tous causés par une transparence posée sur du texte, corrigés par la couleur
+à intention inchangée :
+
+| Où | Mesuré | Correction |
+|---|---|---|
+| Accueil, barre de badges : numéros des modules non acquis | 2,15:1 | Numéro gris sur disque blanc cerclé, 6,15:1 |
+| Accueil, cartes des modules à rédiger (transparence 0,66, héritée du projet importé) | 2,7 à 3,5:1 | Filet gris et cadre en tirets ; titre, objectif et étiquettes à pleine couleur (5,4:1 au moins) |
+| Banque de questions : modules sans question (transparence 0,55) | 2,37 à 2,75:1 | Étiquette et titre en gris, 5,5:1 au moins |
+
+Seuil de conformité AA pour ces textes : 4,5:1 (WCAG 2.2, critère 1.4.3).
 
 **Non corrigé, signalé.** Textes de 11 px (étiquettes en capitales, pied de
 page, en-têtes de tableau) : conformes à la charte, lisibles, aucune règle ne
-fixe de minimum ; quelques liens isolés de 15 px de haut (fil d'Ariane,
-« voir le module ») relèvent de l'exception d'espacement du critère WCAG 2.2
-2.5.8.
+fixe de minimum. Tableau des rapports vide sur téléphone : il défile de côté
+sans rien qui prenne le focus, donc sans défilement au clavier (axe,
+`scrollable-region-focusable`) — dès qu'une ligne existe, son lien le rend
+atteignable. Champ de seuil des modules : 24 px de haut sur écran tactile,
+conforme AA, sous les 44 px visés par le site. Vignette du titre d'un module
+sur téléphone : 56 px depuis le 19/09, sous les 72 px fixés pour les
+illustrations (`content/badges.ts`).
 
 ## Tableau de bord de l'accueil : ce qui a été retenu du prompt de modernisation (22/09/2026)
 

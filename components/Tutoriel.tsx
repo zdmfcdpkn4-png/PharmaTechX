@@ -14,7 +14,8 @@ import { cleTutoriel, type EtapeTutoriel, type ProfilTutoriel } from "@/content/
  * un compte, et l'inscrire en base sous le code masquerait la visite à tous
  * ceux qui partagent ce code. **Conséquence assumée** : sur un poste partagé,
  * le deuxième agent ne voit pas la visite s'ouvrir seule. D'où le bouton
- * « Revoir la présentation », permanent dans le volet.
+ * « Revoir la présentation », permanent dans le volet — dans le Menu sur
+ * écran tactile, où les lignes de 44 px ne lui laissent pas de place.
  *
  * Rien de nominatif n'y est écrit : la clé porte le profil et un numéro de
  * version, comme le repère de lecture des modules (`LectureModule`).
