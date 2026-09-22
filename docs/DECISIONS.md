@@ -1263,6 +1263,41 @@ ne change la visibilité d'un dépôt : GitHub → Settings → General → Dang
 Zone → Change repository visibility. `[à vérifier]` la connexion Render
 survit-elle au changement sans réautorisation de l'accès GitHub.
 
+## Un vivier unique de critères, porté métier par métier (22/09/2026)
+
+Quatre fiches d'habilitation coexistent dans l'unité — pharmacien/interne,
+préparateur, aide en pharmacie, agent d'entretien — chacune avec sa propre
+échelle de niveaux. Le site n'en connaissait qu'une, celle du préparateur.
+
+**Tranché (question 44, choix c).** Un vivier unique de critères. Chaque
+critère porte les métiers auxquels il s'applique et, **par métier**, son
+niveau, son caractère obligatoire et le libellé de sa fiche d'origine. Un
+même texte de formation sert les quatre.
+
+**Pourquoi pas quatre référentiels séparés (choix b).** Le recouvrement est
+réel : hygiène et habillage, sens de circulation, conduite à tenir en cas
+d'incident, fonctionnement général de l'unité, décontamination des plateaux
+et des containers figurent sur au moins trois des quatre fiches. Quatre
+textes pour la même compétence, ce sont quatre révisions à tenir et quatre
+occasions de divergence sur une pièce opposable.
+
+**Pourquoi pas le préparateur seul (choix a).** D'après le portfolio interne
+fourni, l'unité compte 4 pharmaciens et des internes, 16 préparateurs
+formés, 9 aides de pharmacie et 3 agents d'entretien. Le préparateur est la
+moitié de l'effectif ; s'en tenir à lui laissait l'autre moitié sans site.
+Le portfolio du pool de remplacement donne des ETP et non des personnes
+(7,5 / 1,5 / 1) : les deux comptes ne se mélangent pas.
+
+**Le coût assumé.** Les quatre fiches sont quatre documents qualité
+distincts, avec leurs références et leurs lettres de version. Un vivier
+commun brouille cette frontière : si une fiche est révisée seule, le vivier
+doit porter une version par métier. C'est pris en compte, pas écarté.
+
+**Le libellé reste celui de la fiche.** Une même compétence ne s'écrit pas
+pareil d'une fiche à l'autre. C'est le libellé du métier concerné qui est
+rendu à l'écran et sur le rapport : autrement, la pièce produite ne
+correspondrait plus au document opposable qu'elle prétend servir.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

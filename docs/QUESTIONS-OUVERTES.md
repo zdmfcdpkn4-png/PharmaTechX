@@ -345,3 +345,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     Le geste appartient au titulaire du dépôt ; aucun outil de la session ne
     change une visibilité. `[à vérifier]` la connexion Render survit-elle au
     changement sans réautorisation de l'accès GitHub.
+
+44. **Axe métier** — tranché le 22/09/2026 (choix c) : un vivier unique de
+    critères, chacun portant les métiers auxquels il s'applique et, par
+    métier, son niveau, son caractère obligatoire et le libellé de sa fiche
+    d'origine. Un même texte de formation sert les quatre métiers. Le
+    détail et les contre-arguments sont dans `DECISIONS.md`.
