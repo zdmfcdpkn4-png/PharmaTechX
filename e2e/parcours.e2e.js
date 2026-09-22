@@ -337,6 +337,45 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=10 questions ajoutées");
   ok("import : 10 questions reconnues, image appariée, ajoutées à vérifier");
 
+  // 4b. prompt de génération (22/09/2026) : deux variantes copiables, et leur
+  //     format passe par l'analyse réelle du dépôt — aperçu seul, rien n'est
+  //     ajouté à la banque.
+  await page.goto(BASE + "/admin/questions/import");
+  const blocGeneration = page.locator("details:has(summary:has-text('Générer 10 questions'))");
+  await blocGeneration.locator("summary").click();
+  for (const libelle of ["Copier le prompt QIM", "Copier le prompt QCM"]) {
+    assert.equal(await blocGeneration.locator(`button:has-text("${libelle}")`).count(), 1, libelle);
+  }
+  const promptAffiche = await blocGeneration.locator("pre.exemple").innerText();
+  assert.ok(promptAffiche.includes("écris 10 questions de type QIM"), "variante QIM affichée par défaut");
+  assert.ok(promptAffiche.includes("Réponses : aucune"), "règle propre au site présente");
+  await page.selectOption("select[name=moduleId]", "critere-b1-02");
+  await page.fill(
+    "textarea[name=texte]",
+    [
+      "QCM 1. Parmi les propositions suivantes concernant le thème, lesquelles sont vraies ? (plusieurs réponses possibles)",
+      "A. Le test de contamination de surface est positif",
+      "Extrait A : « phrase du document »",
+      "B. Le traitement est curatif",
+      "Extrait B : « autre phrase »",
+      "Réponses : A",
+      "Pièges : B inversion",
+      "Difficulté : base",
+    ].join("\n"),
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 1 question')");
+  assert.ok(
+    (await page.locator("form:has(h2:has-text('Aperçu')) .legende").first().innerText()).includes("Aucun avertissement"),
+    "format du prompt lu sans avertissement",
+  );
+  // L'aperçu seul : la page affiche aussi le prompt, qui contient le mot « Extrait ».
+  const apercu = await page.locator("ol.apercu-import").innerText();
+  assert.ok(apercu.includes("est positif"), "« positif » n'est pas amputé de sa dernière lettre");
+  assert.ok(apercu.includes("est curatif"), "« curatif » non plus");
+  assert.equal(/Extrait [AB]/.test(apercu), false, "aucun extrait collé à une proposition");
+  ok("prompt de génération : variantes QIM et QCM, format lu par le dépôt, adjectifs en -if intacts");
+
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {
     await page.goto(BASE + "/");

@@ -396,3 +396,19 @@ telle. Ordre : ce qui change le déploiement en premier.
     et par module, et une file « Quiz de plus de 24 mois » dans le volet du
     tutorat. Il ne prononce **aucune échéance** : les deux ans courent depuis
     l'habilitation du pharmacien, étape 5, hors du site.
+
+50. **Parcours dégradé** — ouvert le 22/09/2026, en attente de réponse. Le
+    portfolio du pool de remplacement ne contient pas le préparatoire ; la
+    fiche officielle écrit « Niveau 1 : 1a+1b ou 1a+1c ». Le parcours du
+    remplaçant serait donc la seconde voie normale vers le niveau 1, et la
+    décision du 18/09 (question 36, choix b), prise avant ces documents,
+    inventerait une catégorie que la fiche porte déjà. Choix proposés :
+    abandonner le parcours dégradé (recommandé) ; le construire comme décidé ;
+    un parcours « Pool de remplacement » sans la mention « dégradé ».
+
+51. **Difficulté des questions générées** — ouvert le 22/09/2026. Le prompt de
+    génération marque chaque question « base », « intermédiaire » ou
+    « avancé ». Le site n'a pas de champ de difficulté : en attendant, la
+    mention est versée dans la justification, en fin de texte, lisible par la
+    machine. `[à préciser]` : l'y laisser, en faire un champ de la banque, ou
+    en faire un critère des tirages.

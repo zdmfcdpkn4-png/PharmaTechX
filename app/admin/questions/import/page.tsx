@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ImportQuestions } from "@/components/ImportQuestions";
 import { PromptDepot } from "@/components/PromptDepot";
+import { PromptGeneration } from "@/components/PromptGeneration";
 import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
 import { actionAnalyserImport, actionConfirmerImport } from "../actions";
 import { choixModules } from "../commun";
@@ -39,6 +40,7 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
         </div>
       </details>
       <PromptDepot />
+      <PromptGeneration />
       <ImportQuestions
         modules={await choixModules()}
         moduleInitial={p.module}

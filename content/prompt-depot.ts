@@ -90,3 +90,143 @@ TEXTE SOURCE À METTRE EN FORME
 """
 [colle ici le texte brut]
 """`;
+
+// ─────────────────────────────────────────── Génération à partir d'un document
+
+/**
+ * Prompt de **génération** — à la différence de `PROMPT_DEPOT`, qui transcrit
+ * un questionnaire existant, celui-ci fait écrire dix questions à partir d'un
+ * document joint à la conversation (procédure, chapitre des BPP…).
+ *
+ * Demandé le 22/09/2026, sur le modèle fourni par le pharmacien responsable,
+ * **adapté au site** en quatre points que le code impose :
+ *
+ * 1. Tout QCM porte « (plusieurs réponses possibles) ». Le site affiche un
+ *    QCM en boutons radio — une seule réponse cochable — si son énoncé ne
+ *    contient pas le mot « plusieurs » (`estUneSeule`, `Evaluation.tsx`).
+ *    Sans ce mot, huit QCM sur dix seraient impossibles à réussir, et les
+ *    deux autres révéleraient qu'ils n'ont qu'une réponse.
+ * 2. Le corrigé s'écrit « Réponses : A B D » ou « Réponses : aucune » : ce
+ *    sont les lettres **à cocher**. Pour un QCM « lesquelles sont fausses ? »,
+ *    ce sont donc les propositions fausses.
+ * 3. Aucun « (V) » ni « (F) » en fin de proposition : le corrigé est sur sa
+ *    ligne, et un « V » isolé en fin de phrase (« le facteur V ») resterait
+ *    ambigu pour l'analyseur.
+ * 4. Ni « Éliminatoire » ni « Réservée à l'évaluation » : ce sont des
+ *    décisions du tuteur, prises dans l'éditeur, pas celles d'une IA.
+ *
+ * Les lignes « Extrait X », « Pièges » et « Difficulté » sont lues par
+ * l'analyseur et versées dans la justification, affichée après la
+ * correction. `test/prompt-depot.test.ts` passe les deux exemples dans
+ * l'analyseur réel.
+ */
+
+export type TypeGeneration = "QIM" | "QCM";
+
+/** Répartition des propositions vraies sur dix questions, par type. */
+const REPARTITION: Record<TypeGeneration, string> = {
+  QIM: `QIM : chaque proposition est vraie ou fausse indépendamment. Sur les 10 questions : 1 sans aucune vraie, 2 à une vraie, 3 à deux, 2 à trois, 1 à quatre, 1 à cinq.`,
+  QCM: `QCM : jamais 0 vraie. Sur les 10 questions : 2 à une vraie, 3 à deux, 3 à trois, 1 à quatre, 1 à cinq ; une seule formulée « lesquelles sont fausses ? ».`,
+};
+
+/** Consigne d'énoncé, par type. */
+const CONSIGNE: Record<TypeGeneration, string> = {
+  QIM: `Consigne QIM : « Concernant X, indiquez si les propositions suivantes sont vraies ou fausses. »`,
+  QCM: `Consigne QCM : « Parmi les propositions suivantes concernant X, lesquelles sont vraies ? (plusieurs réponses possibles) », ou « … lesquelles sont fausses ? (plusieurs réponses possibles) ». La mention « (plusieurs réponses possibles) » figure sur TOUTES les questions, même celles à une seule réponse : le site en tire l'affichage en cases à cocher, et l'apprenant ne doit pas pouvoir deviner le nombre de réponses.`,
+};
+
+/** Exemples de format, lus tels quels par l'analyseur dans les tests. */
+export const EXEMPLE_GENERATION: Record<TypeGeneration, string> = {
+  QIM: `QIM 1. Concernant [thème unique de la question], indiquez si les propositions suivantes sont vraies ou fausses.
+A. [Proposition vraie, reprise fidèle d'une phrase du document.]
+Extrait A : « [phrase du document qui la confirme, mot pour mot] »
+B. [Proposition fausse : une seule erreur, ici une restriction abusive.]
+Extrait B : « [phrase du document qu'elle contredit, mot pour mot] »
+C. [Proposition vraie.]
+Extrait C : « [phrase du document, mot pour mot] »
+D. [Proposition fausse : une valeur ou une unité modifiée.]
+Extrait D : « [phrase du document qu'elle contredit, mot pour mot] »
+E. [Proposition vraie.]
+Extrait E : « [phrase du document, mot pour mot] »
+Réponses : A C E
+Pièges : B restriction, D valeur modifiée
+Difficulté : intermédiaire
+Source : [organisme] — [code et titre du document] — [date du document]
+
+QIM 2. Concernant [autre thème], indiquez si les propositions suivantes sont vraies ou fausses.
+A. [Proposition fausse : deux termes inversés.]
+Extrait A : « [phrase du document qu'elle contredit] »
+B. [Proposition fausse : une condition oubliée.]
+Extrait B : « [phrase du document qu'elle contredit] »
+C. [Proposition fausse : un terme remplacé par son voisin.]
+Extrait C : « [phrase du document qu'elle contredit] »
+D. [Proposition fausse : un énoncé juste attribué au mauvais équipement.]
+Extrait D : « [phrase du document qu'elle contredit] »
+E. [Proposition fausse : le dernier mot faux.]
+Extrait E : « [phrase du document qu'elle contredit] »
+Réponses : aucune
+Pièges : A inversion, B condition oubliée, C terme voisin, D mauvaise attribution, E dernier mot
+Difficulté : avancé
+Source : [organisme] — [code et titre du document] — [date du document]`,
+  QCM: `QCM 1. Parmi les propositions suivantes concernant [thème unique de la question], lesquelles sont vraies ? (plusieurs réponses possibles)
+A. [Proposition fausse : deux termes inversés.]
+Extrait A : « [phrase du document qu'elle contredit, mot pour mot] »
+B. [Proposition vraie, reprise fidèle d'une phrase du document.]
+Extrait B : « [phrase du document qui la confirme, mot pour mot] »
+C. [Proposition fausse : une condition oubliée.]
+Extrait C : « [phrase du document qu'elle contredit, mot pour mot] »
+D. [Proposition vraie.]
+Extrait D : « [phrase du document, mot pour mot] »
+E. [Proposition fausse : le dernier mot faux.]
+Extrait E : « [phrase du document qu'elle contredit, mot pour mot] »
+Réponses : B D
+Pièges : A inversion, C condition oubliée, E dernier mot
+Difficulté : base
+Source : [organisme] — [code et titre du document] — [date du document]
+
+QCM 2. Parmi les propositions suivantes concernant [autre thème], lesquelles sont fausses ? (plusieurs réponses possibles)
+A. [Proposition fausse : une valeur modifiée.]
+Extrait A : « [phrase du document qu'elle contredit] »
+B. [Proposition vraie.]
+Extrait B : « [phrase du document qui la confirme] »
+C. [Proposition fausse : une restriction abusive.]
+Extrait C : « [phrase du document qu'elle contredit] »
+D. [Proposition vraie.]
+Extrait D : « [phrase du document qui la confirme] »
+E. [Proposition vraie.]
+Extrait E : « [phrase du document qui la confirme] »
+Réponses : A C
+Pièges : A valeur modifiée, C restriction
+Difficulté : intermédiaire
+Source : [organisme] — [code et titre du document] — [date du document]`,
+};
+
+/** Prompt à copier, avec le document joint à la conversation. */
+export function promptGeneration(type: TypeGeneration): string {
+  return `À partir des seules sources jointes à cette conversation, écris 10 questions de type ${type}, 5 propositions A à E chacune, pour le dépôt du site de formation de l'unité de pharmacotechnie (CHD Vendée).
+
+${REPARTITION[type]}
+
+Texte brut, sans markdown, sans introduction ni commentaire. Modèle exact :
+
+${EXEMPLE_GENERATION[type]}
+
+${CONSIGNE[type]}
+
+Règles :
+- Chaque proposition doit être tranchée par une phrase des sources ; sinon ne l'écris pas. N'invente rien.
+- Extrait X : la phrase des sources qui tranche la proposition X, recopiée mot pour mot, 200 caractères au plus. Pour une proposition fausse, cite la phrase qu'elle contredit. Aucune phrase ne convient : omets la proposition, et renumérote les lettres sans trou.
+- Une question = un seul thème. Propositions déclaratives au présent, 8 à 25 mots, une idée chacune, ton neutre.
+- Difficulté : base (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège) — environ 3, 4 et 3.
+- Propositions fausses, une seule erreur chacune : inversion de deux termes (surpression/dépression, amont/aval, entrée/sortie, propre/stérile), terme remplacé par son voisin, valeur, unité ou signe modifiés, condition oubliée, énoncé juste attribué au mauvais équipement, local ou poste, dernier mot faux. Mots restrictifs (uniquement, toujours, jamais, tous) : au plus 3 propositions fausses et 1 vraie sur l'ensemble.
+- Si les sources donnent des chiffres, au moins 2 questions en contiennent, avec unités.
+- Les lettres vraies varient d'une question à l'autre.
+- Numérotation continue, une ligne vide entre deux questions.
+
+Règles propres au site :
+- Réponses : les lettres à cocher, séparées par des espaces. Pour une QIM, les propositions vraies ; pour un QCM « lesquelles sont vraies ? », les vraies ; pour un QCM « lesquelles sont fausses ? », les fausses. Aucune : « Réponses : aucune ».
+- N'écris ni « (V) » ni « (F) » en fin de proposition : le corrigé est sur la ligne Réponses.
+- Pièges : la lettre de chaque proposition fausse, suivie de son type d'erreur.
+- Source : recopie la référence que porte le document (organisme — code et titre — date), séparée par des tirets longs. Le document n'en porte pas : pas de ligne Source. Ne reconstitue ni code, ni titre, ni date.
+- N'écris ni « Éliminatoire » ni « Réservée à l'évaluation » : ces décisions reviennent au tuteur.`;
+}

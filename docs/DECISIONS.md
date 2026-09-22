@@ -1488,6 +1488,67 @@ existants gardent leur rang, donc leur place sous la main. Réordonner
 détruirait la mémoire spatiale qui fait tout le gain de vitesse (point 40 de
 `QUESTIONS-OUVERTES.md`). Le plafond de cinq items est atteint.
 
+## Prompt de génération de questions à partir d'un document (22/09/2026)
+
+Demandé le 22/09/2026 : un prompt à copier, pour faire écrire à un assistant
+dix questions QIM ou QCM à partir d'un document joint, sur un modèle fourni
+par le pharmacien responsable — trois niveaux de difficulté, un extrait du
+document recopié mot pour mot sous chaque proposition, les pièges déclarés.
+
+**Ce qui est posé.** `promptGeneration("QIM" | "QCM")`
+(`content/prompt-depot.ts`), copiable depuis l'écran de dépôt
+(`components/PromptGeneration.tsx`), à côté du prompt de mise en forme qui
+existait déjà. Deux variantes et non une : dans le modèle, chaque répartition
+des propositions vraies totalise dix questions, donc un lot est d'un seul
+type.
+
+**Adapté au site sur quatre points que le code impose :**
+
+1. **« (plusieurs réponses possibles) » sur tout QCM.** Le site affiche un QCM
+   en boutons radio si son énoncé ne contient pas le mot « plusieurs »
+   (`estUneSeule`, `components/Evaluation.tsx`). Avec la consigne du modèle,
+   huit QCM sur dix auraient été impossibles à réussir, et les deux autres
+   auraient révélé qu'ils n'avaient qu'une réponse.
+2. **« Réponses : » liste les lettres à cocher**, « Réponses : aucune » le cas
+   échéant. Pour un QCM « lesquelles sont fausses ? », ce sont donc les
+   fausses.
+3. **Ni « (V) » ni « (F) » en fin de proposition**, le corrigé étant sur sa
+   ligne.
+4. **Ni « Éliminatoire » ni « Réservée à l'évaluation »** : décisions du
+   tuteur, pas d'une IA.
+
+Adaptations de forme, réversibles : « sources jointes à cette conversation »
+au lieu de « sources sélectionnées » ; exemples d'inversion pris en
+pharmacotechnie (surpression/dépression, amont/aval, entrée/sortie,
+propre/stérile) au lieu de la physiologie ; « éponyme » retiré ; « mauvaise
+structure » devenu « mauvais équipement, local ou poste » ; une ligne
+« Source » ajoutée, qui ne recopie que la référence portée par le document.
+L'exemple de format n'utilise que des emplacements entre crochets : aucun
+contenu pharmaceutique n'y est inventé.
+
+**L'analyseur lit désormais trois lignes de plus.** « Extrait X », « Pièges »
+et « Difficulté » sont versés dans la justification, affichée à l'apprenant
+après la correction. Sans cela, un extrait placé sous sa proposition était
+**collé au texte de la proposition** : l'apprenant aurait lu la phrase du
+document qui donne la réponse. L'analyseur signale aussi un extrait sans
+proposition, et une proposition sans extrait quand les autres en ont. « Réponses
+vraies : aucune » est lu comme « Réponses : aucune ».
+
+**Défaut préexistant corrigé au passage.** Le verdict en fin de proposition
+était cherché sans exiger qu'il soit un mot séparé : la dernière lettre d'un
+mot finissant par « f » ou « v » était prise pour un verdict. « Le test est
+positif » devenait « Le test est positi », marqué Faux ; « curatif », « neuf »,
+« actif », « négatif » de même — **sans aucun avertissement**, et quand une
+ligne « Réponses » suivait, elle rétablissait le verdict mais pas la lettre
+perdue. Le marqueur doit maintenant être un jeton séparé. Reste ambigu, et
+lui seul : un « V » ou un « F » isolé qui ferait partie de la phrase
+(« le facteur V »), d'où la règle 3 ci-dessus.
+
+`[à vérifier]` : les questions déjà déposées dont une proposition finissait
+par « f » ou « v » sans marqueur entre parenthèses ont pu être tronquées. Le
+correctif ne les répare pas ; elles se retrouvent dans la banque, où la
+règle des quatre yeux les a normalement fait relire.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

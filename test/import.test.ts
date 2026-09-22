@@ -114,3 +114,68 @@ test("lireReference découpe « Source — Libellé — Date — URL »", () => 
   const r = lireReference("ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x — LD 1");
   assert.deepEqual(r, { source: "ANSM", libelle: "BPP 2023", date: "21/07/2023", url: "https://ansm.sante.fr/x", localisation: "LD 1" });
 });
+
+// ── Verdict en fin de proposition : un jeton séparé (défaut corrigé le 22/09/2026)
+
+test("un mot finissant par f ou v n'est jamais lu comme un verdict", () => {
+  const r = analyserTexte(
+    "QIM 1. Contrôle.\nA. Le test de contamination est positif\nB. Le traitement est curatif\nC. Le filtre est neuf\nD. La hotte est en surpression\nRéponses : A C",
+    { formatDefaut: "QIM" },
+  );
+  const [q] = r.questions;
+  assert.deepEqual(
+    q.options.map((o) => o.texte),
+    ["Le test de contamination est positif", "Le traitement est curatif", "Le filtre est neuf", "La hotte est en surpression"],
+    "aucune lettre finale amputée",
+  );
+  assert.deepEqual(q.options.map((o) => o.vrai), [true, false, true, false]);
+});
+
+test("sans marqueur ni ligne Réponses, une proposition reste sans verdict, et le dit", () => {
+  const [q] = analyserTexte("QIM 1. x\nA. Le test est négatif\nB. Autre proposition (V)", { formatDefaut: "QIM" }).questions;
+  assert.equal(q.options[0].texte, "Le test est négatif");
+  assert.equal(q.corrigeDetecte, false);
+  assert.match(q.avertissements.join(" "), /sans verdict/);
+});
+
+test("les marqueurs reconnus restent reconnus : (V), [F], Vrai, V isolé", () => {
+  const [q] = analyserTexte("QIM 1. x\nA. Un (V)\nB. Deux [F]\nC. Trois Vrai\nD. Quatre F", { formatDefaut: "QIM" }).questions;
+  assert.deepEqual(q.options.map((o) => [o.texte, o.vrai]), [["Un", true], ["Deux", false], ["Trois", true], ["Quatre", false]]);
+});
+
+// ── Lignes du prompt de génération
+
+test("« Extrait X » sous sa proposition va dans la justification, jamais dans la proposition", () => {
+  const [q] = analyserTexte(
+    "QIM 1. Thème.\nA. Première\nExtrait A : « phrase une »\nB. Seconde\nExtrait B : « phrase deux »\nRéponses : A",
+    { formatDefaut: "QIM" },
+  ).questions;
+  assert.deepEqual(q.options.map((o) => o.texte), ["Première", "Seconde"]);
+  assert.equal(q.justification, "A : « phrase une » ; B : « phrase deux ».");
+});
+
+test("« Réponses vraies : aucune » et « Réponses vraies : A B » se lisent comme « Réponses : »", () => {
+  const [aucune] = analyserTexte("QIM 1. x\nA. Un\nB. Deux\nRéponses vraies : aucune", { formatDefaut: "QIM" }).questions;
+  assert.ok(aucune.corrigeDetecte);
+  assert.equal(aucune.options.some((o) => o.vrai), false);
+  const [deux] = analyserTexte("QIM 1. x\nA. Un\nB. Deux\nC. Trois\nRéponses vraies : A C", { formatDefaut: "QIM" }).questions;
+  assert.deepEqual(deux.options.map((o) => o.vrai), [true, false, true]);
+});
+
+test("extrait sans proposition, proposition sans extrait : signalés au relecteur", () => {
+  const [q] = analyserTexte(
+    "QIM 1. x\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait D : « d »\nRéponses : A",
+    { formatDefaut: "QIM" },
+  ).questions;
+  const av = q.avertissements.join(" ");
+  assert.match(av, /Extrait sans proposition : D/);
+  assert.match(av, /Proposition B sans extrait/);
+});
+
+test("pièges et difficulté vont à la justification, après les extraits", () => {
+  const [q] = analyserTexte(
+    "QCM 1. x (plusieurs réponses possibles)\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait B : « b »\nRéponses : A B\nPièges : aucun\nDifficulté : Avancé",
+    { formatDefaut: "QCM" },
+  ).questions;
+  assert.equal(q.justification, "A : « a » ; B : « b ». Pièges : aucun. Difficulté : avancé.");
+});

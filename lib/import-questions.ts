@@ -109,7 +109,18 @@ function cleElement(i: number): string {
 const RE_QUESTION = /^(?:(QCM|QIM)|Q(?:uestion)?)?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]\s*(.*)$/i;
 const RE_SCHEMA = /^sch[ée]mas?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
 const RE_PROP = /^([A-Ea-e])\s*[.):–—-]\s*(.+)$/;
-const RE_VF = /[\s(\[]*(V|F|Vrai|Faux)[)\]]*\s*$/i;
+/**
+ * Verdict en fin de proposition : « (V) », « [F] », « Vrai », ou « V » isolé.
+ * Le marqueur doit être un **jeton séparé** — précédé d'une espace ou d'une
+ * parenthèse. Corrigé le 22/09/2026 : sans cette exigence, la dernière lettre
+ * d'un mot finissant par « f » ou « v » était prise pour un verdict, et
+ * « Le test est positif » devenait « Le test est positi », marqué Faux, sans
+ * aucun avertissement. Reste ambigu, et seulement lui : un « V » ou un « F »
+ * isolé qui ferait partie de la phrase (« le facteur V »). Le format du dépôt
+ * écrit « (V) » entre parenthèses, ou porte le corrigé sur une ligne
+ * « Réponses : ».
+ */
+const RE_VF = /(?:\s+|\s*[(\[]\s*)(V|F|Vrai|Faux)\s*[)\]]?\s*$/i;
 const RE_CORRIGE = /^(?:R[ée]ponses?|Corrig[ée]s?|Solutions?|Bonnes? r[ée]ponses?)\s*[:–—-]?\s*(.*)$/i;
 const RE_JUSTIF = /^(?:Justifications?|Explications?)\s*[:–—-]\s*(.*)$/i;
 const RE_SOURCE = /^(?:Sources?|R[ée]f[ée]rences?)\s*[:–—-]\s*(.+)$/i;
@@ -119,6 +130,16 @@ const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
 const RE_SEQUENCE = /^s[ée]quences?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
 const RE_TEXTE = /^textes?(?:\s*[àa]\s*trous)?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
 const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
+/**
+ * Lignes du prompt de génération (22/09/2026). Sans elles, une ligne
+ * « Extrait A : « … » » placée sous sa proposition était **collée au texte de
+ * la proposition** — l'apprenant aurait lu la phrase du document qui donne la
+ * réponse. Elles vont désormais dans la justification, affichée après la
+ * correction.
+ */
+const RE_EXTRAIT = /^Extraits?\s+([A-Ea-e])\s*[:–—-]\s*(.+)$/i;
+const RE_PIEGES = /^Pi[èe]ges?\s*[:–—-]\s*(.+)$/i;
+const RE_DIFFICULTE = /^Difficult[ée]\s*[:–—-]\s*(base|interm[ée]diaire|avanc[ée]e?)\s*\.?\s*$/i;
 /** Ligne numérotée d'une séquence ou d'un texte à trous : « 1. étape ». */
 const RE_ELEMENT = /^(\d{1,2})\s*[.):–—-]\s*(.+)$/;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
@@ -176,6 +197,10 @@ interface Brouillon {
   leurres: string[];
   imageNom?: string;
   justification: string[];
+  /** Extrait du document qui tranche chaque proposition, par lettre. */
+  extraits: { lettre: string; texte: string }[];
+  pieges: string;
+  difficulte: string;
   refs: Reference[];
   eliminatoire: boolean;
   reservee: boolean;
@@ -194,12 +219,35 @@ function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number
     items: [],
     leurres: [],
     justification: [],
+    extraits: [],
+    pieges: "",
+    difficulte: "",
     refs: [],
     eliminatoire: false,
     reservee: false,
     corrige: false,
     dernier: "enonce",
   };
+}
+
+/**
+ * Justification d'un QCM ou d'une QIM : la ligne « Justification » si elle
+ * existe, puis les extraits du document dans l'ordre des lettres, puis les
+ * pièges et la difficulté. Tout est affiché à l'apprenant après la
+ * correction — l'extrait lui montre la phrase qui tranche, le piège lui dit
+ * où était l'erreur.
+ */
+function justificationAssemblee(b: Brouillon): string {
+  const parts: string[] = [];
+  const libre = b.justification.join(" ").trim();
+  if (libre) parts.push(libre);
+  const extraits = [...b.extraits]
+    .sort((x, y) => x.lettre.localeCompare(y.lettre))
+    .map((x) => `${x.lettre} : ${x.texte}`);
+  if (extraits.length) parts.push(`${extraits.join(" ; ")}.`);
+  if (b.pieges) parts.push(`Pièges : ${b.pieges.replace(/\.$/, "")}.`);
+  if (b.difficulte) parts.push(`Difficulté : ${b.difficulte}.`);
+  return parts.join(" ");
 }
 
 function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): QuestionImportee | null {
@@ -296,6 +344,21 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     );
   }
   const options: OptionImportee[] = b.props.map((p) => ({ id: p.lettre.toLowerCase(), texte: p.texte, vrai: p.v === true }));
+  // Extraits : chaque proposition doit être tranchée par une phrase du
+  // document. Une lettre sans proposition, ou une proposition sans extrait
+  // quand les autres en ont, se signale au relecteur des quatre yeux.
+  if (b.extraits.length > 0) {
+    const lettres = new Set(b.props.map((p) => p.lettre));
+    const orphelins = b.extraits.filter((x) => !lettres.has(x.lettre)).map((x) => x.lettre);
+    if (orphelins.length) avertissements.push(`Extrait sans proposition : ${orphelins.join(", ")}.`);
+    const couvertes = new Set(b.extraits.map((x) => x.lettre));
+    const nues = b.props.filter((p) => !couvertes.has(p.lettre)).map((p) => p.lettre);
+    if (nues.length) {
+      avertissements.push(
+        `Proposition${nues.length > 1 ? "s" : ""} ${nues.join(", ")} sans extrait : vérifier qu'elle${nues.length > 1 ? "s sont tranchées" : " est tranchée"} par le document.`,
+      );
+    }
+  }
   if (format === "QCM" && !options.some((o) => o.vrai) && corrige) {
     avertissements.push("QCM sans aucune proposition vraie : vérifier le corrigé.");
   }
@@ -309,7 +372,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     legendes: [],
     imageNom: b.imageNom,
     numeroSchema: b.numero,
-    justification: b.justification.join(" ").trim(),
+    justification: justificationAssemblee(b),
     eliminatoire: b.eliminatoire,
     reservee: b.reservee,
     refs: b.refs,
@@ -320,7 +383,9 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
 
 /** Applique une ligne « Réponses : A C » ou « aucune ». */
 function appliquerCorrige(b: Brouillon, contenu: string): void {
-  const nu = contenu.trim();
+  // « Réponses vraies : aucune », « Réponses exactes : A C » : le qualificatif
+  // et son séparateur ne font pas partie du corrigé.
+  const nu = contenu.trim().replace(/^(?:vraies?|exactes?|justes?)\s*[:–—-]?\s*/i, "");
   if (/^aucune?\b/i.test(nu)) {
     b.props.forEach((p) => (p.v = false));
     b.corrige = true;
@@ -464,6 +529,24 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       continue;
     }
 
+    const ex = RE_EXTRAIT.exec(ligne);
+    if (ex) {
+      courant.extraits.push({ lettre: ex[1].toUpperCase(), texte: ex[2].trim() });
+      courant.dernier = "rien";
+      continue;
+    }
+    const pg = RE_PIEGES.exec(ligne);
+    if (pg) {
+      courant.pieges = pg[1].trim();
+      courant.dernier = "rien";
+      continue;
+    }
+    const df = RE_DIFFICULTE.exec(ligne);
+    if (df) {
+      courant.difficulte = df[1].toLowerCase();
+      courant.dernier = "rien";
+      continue;
+    }
     const p = RE_PROP.exec(ligne);
     if (p && courant.props.length < 5) {
       const lettre = p[1].toUpperCase();
