@@ -412,10 +412,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     Sans effet sur les tirages. Les questions sans niveau restent « à
     préciser », y compris les 14 des deux modules rédigés.
 
-52. **Schéma à caches corrigé par le tuteur** — ouvert le 22/09/2026. Le schéma
-    à compléter a déjà des caches posés par le créateur, mais sa correction
-    est automatique (comparaison du texte saisi). La demande est une
-    correction vrai / faux faite avec le tuteur, à la manière d'Anki.
-    `[à préciser]` : qui juge, et quand — l'apprenant seul en entraînement ;
-    le tuteur présent, qui confirme par son code ; ou le tuteur plus tard,
-    le résultat restant en attente.
+52. **Schéma à caches corrigé par le tuteur** — tranché le 22/09/2026 (choix
+    b) : troisième mode du schéma, « découvrir ». En évaluation, le tuteur
+    présent juge chaque cache et confirme par son propre code (tutorat ou
+    administration, jamais le code de la session) ; le résultat est scellé en
+    une fois avec la mention du code qui a jugé. En entraînement,
+    l'apprenant se juge seul, sans code. Un cache non jugé compte sans
+    réponse. Un résultat d'entraînement ne s'émet plus en rapport. Détail
+    dans `DECISIONS.md`.

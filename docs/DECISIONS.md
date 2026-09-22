@@ -1601,6 +1601,88 @@ celui des QIM par défaut et réglable séparément dans `/admin/bareme` : une
 étape à sa place rapporte sa part, une étape mal placée la retire. Rien n'a
 été reconstruit ; un test fixe désormais ces deux propriétés.
 
+## Schéma à découvrir, jugé par le tuteur (22/09/2026)
+
+Demandé le 22/09/2026 : « question type schéma avec des caches types Anki
+posés par le créateur de la question, correction vrai ou faux à faire avec le
+tuteur ». **Tranché (question 52, choix b)** : le tuteur, assis à côté de
+l'apprenant, juge sur le même écran et confirme par son propre code ; le
+résultat est scellé en une fois.
+
+**Ce n'est pas un nouveau format, c'est un troisième mode du schéma.** Le
+schéma à compléter avait déjà l'image, les caches posés par le créateur et le
+mot sous chaque cache ; il se répondait en écrivant ou en choisissant. Le mode
+« découvrir » (`modeReponse = 'decouvrir'`) garde tout cela et retire la
+saisie : l'apprenant dit à voix haute ce que cache chaque numéro, lève le
+cache — l'image apparaît dessous, le mot s'affiche — et la réponse est jugée
+**juste** ou **fausse**, cache par cache. Même éditeur, même barème (`schema`),
+même rapport. Le choix du mode se fait dans l'éditeur ; le dépôt texte crée,
+comme avant, un schéma « à écrire ».
+
+**Qui juge.**
+
+- En **évaluation**, le tuteur. Il coche « Juste » ou « Faux » sous chaque
+  cache levé, puis tape son code au récapitulatif qui précède la validation.
+  Le serveur accepte n'importe quel code actif de **tutorat ou
+  d'administration**, sauf celui qui a ouvert la session : il jugerait sa
+  propre évaluation. Un code de poste ne juge pas. Les codes refusés passent
+  par le limiteur de la connexion — sans quoi ce champ servirait à deviner
+  les codes de tutorat sans limite. Le code est vérifié, jamais conservé,
+  effacé de la page après chaque tentative ; refusé, il se retape sans que les
+  réponses ni les jugements soient perdus.
+- En **entraînement**, l'apprenant lui-même, à la manière d'Anki : « Je
+  savais » / « Je ne savais pas ». Aucun code.
+
+**Ce que le résultat scelle** : le jugement de chaque cache (juste, faux, non
+jugé), et **qui a jugé** — « Tutorat · libellé du code », ou
+« auto-évaluation » en entraînement. Le rapport imprimé, l'écran du rapport et
+le résultat affiché portent la mention ; l'acte est journalisé
+(`evaluation:jugement-tuteur`, nombre de caches et de questions).
+
+**Un cache non jugé compte comme une légende vide** : la part « sans réponse »
+du barème du schéma (0 par défaut). Conséquence voulue : se passer du tuteur
+ne rapporte rien, mais ne bloque pas l'apprenant. S'il n'y a aucun cache
+jugé, rien n'est à confirmer, et aucun code n'est demandé.
+
+**Le mot part avec la question.** C'est la seule exception à la règle « les
+réponses ne quittent pas le serveur avant la correction » : le cache doit se
+lever sans aller-retour. Ce n'est pas un secret de plus livré au navigateur —
+l'image servie porte déjà, sous chaque cache, le mot d'origine. Ce qui garde
+l'épreuve, c'est la présence du tuteur.
+
+**Un résultat d'entraînement ne s'émet plus en rapport** (règle ajoutée).
+Elle valait dans les faits — l'entraînement corrige une question à la fois —
+mais le serveur ne l'imposait pas : une requête forgée en mode entraînement
+produisait un résultat scellé, et donc émissible, sans les questions
+réservées. L'auto-évaluation l'aurait aggravé : un apprenant se serait jugé
+lui-même, puis aurait porté ce jugement au rapport. Le mode est désormais
+scellé dans chaque résultat, et l'émission refuse `entrainement`. Un résultat
+scellé avant le 22/09/2026 n'a pas de mode : il reste émissible, comme avant.
+
+**Limites, dites telles quelles.**
+
+- Le code prouve qu'il a été tapé, pas que le tuteur a regardé chaque
+  réponse. C'était l'argument contre le choix b ; il reste vrai.
+- En évaluation, ce schéma ne se passe plus sans tuteur présent — sinon ses
+  caches comptent sans réponse.
+- Sans base (mode ouvert), aucun code n'est vérifiable : un cache jugé ne peut
+  l'être qu'en entraînement, et le serveur le dit.
+
+**Corrigé au passage, trois défauts préexistants** :
+
+- « Nouveau tirage » et « Retravailler les questions ratées » ne remettaient
+  pas à zéro les rangs des séquences ni les vignettes des textes à trous : une
+  question retirée au tirage suivant revenait pré-remplie.
+- Le rapport imprimé classait une séquence ou un texte à trous en « QCM
+  multiple ».
+- Le panneau de récapitulatif reprenait le focus à chaque rendu de la page ;
+  sans conséquence tant que rien ne s'y tapait, bloquant pour le champ du code.
+
+Et une attente fragile du parcours de bout en bout (suppression d'un code
+refusée, étape 14c) : elle attendait une alerte déjà présente à l'écran, et
+ouvrait parfois le journal avant que le refus y soit écrit. Elle attend
+désormais la réponse de l'action.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

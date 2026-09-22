@@ -10,7 +10,7 @@ import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
 import { peutValider } from "@/content/quatre-yeux";
-import { lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
+import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
   changerStatutQuestion,
   enregistrerDepotQuestions,
@@ -183,7 +183,7 @@ export async function actionEnregistrerQuestion(
     enonce,
     options,
     legendes,
-    modeReponse: chaine(formData, "modeReponse", 8) === "choisir" ? "choisir" : "ecrire",
+    modeReponse: lireModeReponse(chaine(formData, "modeReponse", 12)),
     imageId,
     justification: chaine(formData, "justification", 3000),
     eliminatoire: formData.get("eliminatoire") === "on",

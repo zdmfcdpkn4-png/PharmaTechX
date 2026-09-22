@@ -3,6 +3,7 @@ import Link from "next/link";
 import { modeConservation } from "@/lib/config";
 import { lireBareme } from "@/lib/bareme-db";
 import {
+  libelleCaches,
   libelleOrdre,
   libelleQim,
   libelleSchema,
@@ -54,6 +55,10 @@ const formats = (b: Bareme) => [
   {
     titre: "Schéma à compléter",
     regle: libelleSchema(b),
+  },
+  {
+    titre: "Schéma à découvrir — avec le tuteur",
+    regle: `Rien à écrire : on dit ce que cache chaque numéro, puis on lève le cache. En évaluation, le tuteur assis à côté juge chaque réponse et confirme par son propre code ; en entraînement, on se juge soi-même. Barème du schéma : ${libelleCaches(b)}`,
   },
   {
     titre: "Séquence à ordonner",

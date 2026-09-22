@@ -236,6 +236,43 @@ export async function confirmerCodeDeSession(
   return "ok";
 }
 
+export type ConfirmationTutorat =
+  | { ok: true; role: "tuteur" | "admin"; libelle: string }
+  | { ok: false; raison: "code-invalide" | "bloque" | "indisponible" | "meme-code"; minutes?: number };
+
+/**
+ * Jugement d'un schéma à découvrir (décision du 22/09/2026, question 52,
+ * choix b) : le tuteur, assis à côté de l'apprenant, confirme ses jugements
+ * en tapant **son** code sur le poste de l'apprenant.
+ *
+ * À la différence de `confirmerCodeDeSession`, le code attendu n'est pas
+ * celui de la session — c'est celui de l'apprenant, ou du poste : c'est
+ * n'importe quel code actif de tutorat ou d'administration, sauf celui qui a
+ * ouvert la session, qui jugerait sa propre évaluation. Un code de poste ne
+ * juge pas. Les échecs passent par le limiteur de la connexion : sans cela,
+ * ce champ servirait à deviner les codes de tutorat sans limite. Une saisie
+ * vide n'est pas une devinette et n'est pas comptée.
+ *
+ * Le code prouve qu'il a été tapé, pas que le tuteur a regardé : c'est la
+ * limite assumée du choix b, écrite dans `docs/DECISIONS.md`.
+ */
+export async function confirmerCodeDeTutorat(s: Session | null, saisi: string): Promise<ConfirmationTutorat> {
+  if (!baseConfiguree()) return { ok: false, raison: "indisponible" };
+  const minutes = await minutesDeBlocage();
+  if (minutes > 0) return { ok: false, raison: "bloque", minutes };
+  const propre = normaliserCode(saisi);
+  if (!propre) return { ok: false, raison: "code-invalide" };
+  const lignes = (await codesActifs()).filter((l) => l.role === "tuteur" || l.role === "admin");
+  for (const l of lignes) {
+    if (!verifierCode(propre, l.code_hash)) continue;
+    if (s?.acces && s.acces === l.id) return { ok: false, raison: "meme-code" };
+    await effacerEchecs();
+    return { ok: true, role: l.role as "tuteur" | "admin", libelle: l.libelle };
+  }
+  await enregistrerEchec();
+  return { ok: false, raison: "code-invalide" };
+}
+
 // ──────────────────────────────────────────────────────────── habilitations
 
 const RANG: Record<Role, number> = { poste: 0, tuteur: 1, admin: 2 };

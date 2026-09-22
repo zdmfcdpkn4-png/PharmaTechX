@@ -403,8 +403,15 @@ export function EditeurQuestion({
             <select name="modeReponse" defaultValue={initiale?.modeReponse ?? "ecrire"}>
               <option value="ecrire">Écrire chaque légende</option>
               <option value="choisir">Choisir chaque légende dans la liste mélangée</option>
+              <option value="decouvrir">Découvrir chaque cache, jugé par le tuteur (façon Anki)</option>
             </select>
           </label>
+          <p className="legende" style={{ margin: 0 }}>
+            « Découvrir » : l&apos;apprenant dit ce que cache chaque numéro, lève le cache, et la réponse
+            est jugée juste ou fausse — par le tuteur présent en évaluation, qui confirme par son propre
+            code ; par l&apos;apprenant lui-même en entraînement. Le mot écrit sous chaque cache sert de
+            référence au jugement et au rapport.
+          </p>
           <EditeurSchema
             imageUrl={image?.url ?? null}
             largeur={image?.w ?? 0}

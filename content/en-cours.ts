@@ -20,6 +20,13 @@ export interface EtatEnCours {
   rangs: Record<string, Record<string, number>>;
   /** Texte à trous : vignette choisie par trou. */
   trous: Record<string, Record<string, string>>;
+  /**
+   * Schéma à découvrir (question 52) : jugement de chaque cache, et caches
+   * levés. Le code du tuteur, lui, n'est jamais sauvegardé : à la reprise,
+   * il se retape à la validation. Absents des états antérieurs.
+   */
+  jugements?: Record<string, Record<string, "juste" | "faux">>;
+  reveles?: Record<string, string[]>;
   /** Entraînement : question courante et corrections déjà reçues. */
   indexCourant: number;
   corrections: Record<string, unknown>;
@@ -82,6 +89,15 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
     for (const [t, val] of Object.entries(objet(v))) if (typeof val === "string" && t.length <= 8) d[t] = val.slice(0, 80);
     trous[k] = d;
   }
+  const jugements: Record<string, Record<string, "juste" | "faux">> = {};
+  for (const [k, v] of Object.entries(objet(b.jugements))) {
+    if (!questionIds.includes(k)) continue;
+    const d: Record<string, "juste" | "faux"> = {};
+    for (const [l, val] of Object.entries(objet(v))) if (l.length <= 80 && (val === "juste" || val === "faux")) d[l] = val;
+    jugements[k] = d;
+  }
+  const reveles: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(objet(b.reveles))) if (questionIds.includes(k)) reveles[k] = chaines(v, 50);
   const corrections: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(objet(b.corrections))) if (questionIds.includes(k) && v && typeof v === "object") corrections[k] = v;
   const indexCourant = typeof b.indexCourant === "number" && Number.isInteger(b.indexCourant) ? Math.min(Math.max(0, b.indexCourant), questionIds.length - 1) : 0;
@@ -96,6 +112,8 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
     legendes,
     rangs,
     trous,
+    jugements,
+    reveles,
     indexCourant,
     corrections,
     maj,
@@ -111,6 +129,7 @@ export function questionsRenseignees(e: EtatEnCours): number {
       Object.keys(e.qim[id] ?? {}).length > 0 ||
       Object.values(e.legendes[id] ?? {}).some((v) => v.trim() !== "") ||
       Object.keys(e.rangs?.[id] ?? {}).length > 0 ||
-      Object.values(e.trous?.[id] ?? {}).some((v) => v !== ""),
+      Object.values(e.trous?.[id] ?? {}).some((v) => v !== "") ||
+      Object.keys(e.jugements?.[id] ?? {}).length > 0,
   ).length;
 }

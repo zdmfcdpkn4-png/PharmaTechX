@@ -7,7 +7,16 @@ import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
 import { tirageConforme, type Difficulte } from "@/content/tirage";
-import { refusApiSansSession } from "@/lib/auth";
+import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
+import { journaliser } from "@/lib/journal";
+import {
+  estADecouvrir,
+  jugementsDuTirage,
+  lireJugements,
+  nombreDeJugements,
+  verdictDuJugement,
+  type JugementScelle,
+} from "@/content/jugement";
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
 import { referentielDuModule } from "@/content/referentiel-db";
@@ -19,9 +28,11 @@ export const dynamic = "force-dynamic";
  *
  * Ce que reçoit le serveur : un identifiant de module et, pour chaque question,
  * les identifiants des options cochées (QCM), jugées vraies et jugées (QIM),
- * le mot écrit par légende (schéma), le rang donné à chaque étape (séquence)
- * ou la vignette choisie par trou (texte à trous). Rien d'autre. Aucun nom,
- * aucun matricule, aucune adresse.
+ * le mot écrit par légende (schéma), le jugement porté sur chaque cache
+ * (schéma à découvrir), le rang donné à chaque étape (séquence) ou la vignette
+ * choisie par trou (texte à trous). Rien d'autre. Aucun nom, aucun matricule,
+ * aucune adresse — et, pour un schéma à découvrir jugé en évaluation, le code
+ * du tuteur qui confirme ses jugements, vérifié puis oublié (question 52).
  *
  * Ce que fait le serveur : il corrige, renvoie le résultat et le scelle
  * (`jeton`) pour que le rapport émis plus tard soit bien celui-ci.
@@ -52,6 +63,10 @@ interface CorpsRequete {
   mode?: unknown;
   /** Tirage choisi (`decouverte`, `habilitation`, `complet`) : la règle des questions réservées en dépend. */
   difficulte?: unknown;
+  /** Schémas à découvrir : jugement porté sur chaque cache, par question. */
+  jugements?: unknown;
+  /** Évaluation : code du tuteur qui confirme les jugements. Vérifié, jamais conservé. */
+  codeTuteur?: unknown;
 }
 
 export interface DetailLegende {
@@ -82,6 +97,8 @@ export interface DetailQuestion {
   sources: string[];
   /** Schéma à compléter : le détail par légende. */
   legendes?: DetailLegende[];
+  /** Schéma à découvrir : les verdicts des légendes sont des jugements, pas des mots écrits. */
+  decouverte?: boolean;
 }
 
 /** Filières et niveaux du module, figés au moment de l'évaluation. */
@@ -128,6 +145,18 @@ export interface ResultatEvaluation {
   tirage: string;
   /** Questions réservées à l'évaluation : posées dans ce tirage, disponibles dans la banque à cet instant (absent des résultats antérieurs). */
   reservees?: { posees: number; disponibles: number };
+  /**
+   * Évaluation ou entraînement (depuis le 22/09/2026) : un résultat
+   * d'entraînement ne s'émet pas en rapport (`refusEmissionEntrainement`).
+   * Absent des résultats antérieurs.
+   */
+  mode?: "evaluation" | "entrainement";
+  /**
+   * Qui a jugé les caches des schémas à découvrir du tirage (question 52) :
+   * le code de tutorat ou d'administration qui l'a confirmé, ou
+   * l'auto-évaluation en entraînement. Absent sans cache jugé.
+   */
+  jugement?: JugementScelle;
   /** Sceau du serveur sur ce résultat (vérifié à l'émission du rapport). */
   jeton: string;
 }
@@ -225,6 +254,41 @@ export async function POST(request: Request) {
   const conformite = tirageConforme(posees, banque, modeTirage, difficulte);
   if (!conformite.ok) return NextResponse.json({ erreur: conformite.raison }, { status: 400 });
 
+  // Schémas à découvrir (question 52, choix b) : les jugements portés sur les
+  // caches ne valent en évaluation que confirmés par le code d'un tuteur ou
+  // de l'administration, tapé à la validation. Sans cache jugé, rien n'est à
+  // confirmer : les caches comptent comme des légendes vides.
+  const maintenant = new Date();
+  const jugementsRetenus = jugementsDuTirage(lireJugements(corps.jugements), posees);
+  const nbJuges = nombreDeJugements(jugementsRetenus);
+  let jugement: JugementScelle | undefined;
+  if (nbJuges > 0 && modeTirage === "entrainement") {
+    jugement = { par: "auto-évaluation", role: "apprenant", le: maintenant.toISOString() };
+  } else if (nbJuges > 0) {
+    const session = await getSession();
+    const c = await confirmerCodeDeTutorat(session, typeof corps.codeTuteur === "string" ? corps.codeTuteur.slice(0, 40) : "");
+    if (!c.ok) {
+      const erreur =
+        c.raison === "bloque"
+          ? `Trop de codes refusés : réessayez dans ${c.minutes ?? 15} minute${(c.minutes ?? 15) > 1 ? "s" : ""}. Les réponses sont conservées à l'écran.`
+          : c.raison === "meme-code"
+            ? "Ce code est celui qui a ouvert la session : il ne peut pas juger sa propre évaluation. Le tuteur tape le sien."
+            : c.raison === "indisponible"
+              ? "Aucun code de tutorat n'est vérifiable sur ce site : les caches ne peuvent être jugés qu'en entraînement."
+              : "Code du tuteur refusé. Les réponses et les jugements sont conservés à l'écran : le tuteur retape son code.";
+      return NextResponse.json(
+        { erreur, code: "jugement" },
+        { status: c.raison === "bloque" ? 429 : 403, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    jugement = { par: `${LIBELLES_ROLE[c.role]} · ${c.libelle}`, role: c.role, le: maintenant.toISOString() };
+    await journaliser({ role: c.role, libelle: c.libelle }, "evaluation:jugement-tuteur", `module:${mod.id}`, {
+      caches: nbJuges,
+      questions: Object.keys(jugementsRetenus).length,
+      session: session ? `${session.role} · ${session.libelle}` : "sans code",
+    });
+  }
+
   const reponses = listeDeChaines(corps.reponses);
   const juges = listeDeChaines(corps.juges);
   const legendes = dictionnaireDeChaines(corps.legendes);
@@ -244,6 +308,7 @@ export async function POST(request: Request) {
       legendes: legendes[q.id] ?? {},
       rangs: rangs[q.id] ?? {},
       trous: trous[q.id] ?? {},
+      jugements: jugementsRetenus[q.id] ?? {},
     };
     const { note, discordances, nonJugees, max } = noterQuestion(q, rep, bareme);
     const libelle = (ids: string[]) =>
@@ -296,25 +361,29 @@ export async function POST(request: Request) {
     if (q.type === "SCH") {
       const liste = q.legendes ?? [];
       const ordre = ordreLecture(liste);
+      // Schéma à découvrir : rien n'est écrit, le verdict est le jugement porté sur le cache.
+      const decouverte = estADecouvrir(q);
       const detailLegendes: DetailLegende[] = ordre.map((i, k) => {
         const l = liste[i];
-        const reponse = (rep.legendes ?? {})[l.id] ?? "";
+        const reponse = decouverte ? "" : ((rep.legendes ?? {})[l.id] ?? "");
         return {
           numero: k + 1,
           reponse,
           attendu: motAttendu(l.attendu),
-          verdict: verdictLegende(reponse, l.attendu),
+          verdict: decouverte ? verdictDuJugement(rep.jugements?.[l.id]) : verdictLegende(reponse, l.attendu),
         };
       });
       base.legendes = detailLegendes;
-      base.choixApprenant = detailLegendes.map((d) => `${d.numero} → ${d.reponse || "—"}`);
+      base.choixApprenant = decouverte
+        ? detailLegendes.map((d) => `${d.numero} → ${d.verdict === "juste" ? "jugé juste" : d.verdict === "fausse" ? "jugé faux" : "non jugé"}`)
+        : detailLegendes.map((d) => `${d.numero} → ${d.reponse || "—"}`);
       base.reponsesAttendues = detailLegendes.map((d) => `${d.numero} → ${d.attendu}`);
+      if (decouverte) base.decouverte = true;
     }
     return base;
   });
 
   const decision = decider(detail, mod.seuilReussite, { minQuestions: bareme.minQuestions, bande: bareme.bande });
-  const maintenant = new Date();
 
   const sansJeton: Omit<ResultatEvaluation, "jeton"> = {
     moduleId: mod.id,
@@ -346,6 +415,8 @@ export async function POST(request: Request) {
       posees: posees.filter((q) => q.reservee).length,
       disponibles: banque.filter((q) => q.reservee).length,
     },
+    mode: modeTirage,
+    ...(jugement ? { jugement } : {}),
   };
 
   const resultat: ResultatEvaluation = { ...sansJeton, jeton: sceller(sansJeton) };

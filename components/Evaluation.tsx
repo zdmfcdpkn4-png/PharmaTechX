@@ -8,6 +8,7 @@ import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/t
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
 import { libelleBande, type Bareme } from "@/content/bareme";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
+import { estADecouvrir, type Jugement } from "@/content/jugement";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
 import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
 import { useSessionFormation } from "./SessionFormation";
@@ -35,7 +36,10 @@ import { TrousQuestion } from "./TrousQuestion";
  * mode cases à cocher reste disponible via `qimEnVraiFaux={false}`.
  *
  * Les schémas à compléter (repris du Lecteur QIM · QCM) affichent l'image avec
- * ses repères numérotés et un champ par légende.
+ * ses repères numérotés et un champ par légende. Un schéma « à découvrir »
+ * (question 52, choix b) n'a pas de champ : chaque cache se lève et se juge,
+ * par le tuteur en évaluation — qui confirme par son propre code au
+ * récapitulatif — et par l'apprenant en entraînement.
  */
 
 type Mode = "evaluation" | "entrainement";
@@ -79,18 +83,24 @@ type EtatLegendes = Record<string, Record<string, string>>;
 type EtatRangs = Record<string, Record<string, number>>;
 /** Texte à trous : vignette choisie par trou, par question. */
 type EtatTrous = Record<string, Record<string, string>>;
+/** Schéma à découvrir : jugement de chaque cache, et caches levés, par question. */
+type EtatJugements = Record<string, Record<string, Jugement>>;
+type EtatReveles = Record<string, string[]>;
 
 function nombre(n: number): string {
   return String(Math.round(n * 100) / 100).replace(".", ",");
 }
 
 function etatLisible(d: DetailQuestion): string {
-  if (d.correct) return d.type === "SCH" ? "Toutes les légendes justes" : "Réponse exacte";
+  if (d.correct) return d.type === "SCH" ? (d.decouverte ? "Tous les caches jugés justes" : "Toutes les légendes justes") : "Réponse exacte";
   if (d.type === "QIM") {
     return `${d.discordances} discordance${d.discordances > 1 ? "s" : ""}${d.nonJugees > 0 ? ` — dont ${d.nonJugees} proposition${d.nonJugees > 1 ? "s" : ""} sans réponse` : ""}`;
   }
   if (d.type === "SCH") {
     const fausses = d.discordances - d.nonJugees;
+    if (d.decouverte) {
+      return `${fausses} cache${fausses > 1 ? "s" : ""} jugé${fausses > 1 ? "s" : ""} faux${d.nonJugees > 0 ? `, ${d.nonJugees} non jugé${d.nonJugees > 1 ? "s" : ""}` : ""}`;
+    }
     return `${fausses} légende${fausses > 1 ? "s" : ""} fausse${fausses > 1 ? "s" : ""}${d.nonJugees > 0 ? `, ${d.nonJugees} sans réponse` : ""}`;
   }
   return "Réponse erronée";
@@ -151,6 +161,11 @@ function RecapitulatifValidation({
   surQuestion,
   surValider,
   surFermer,
+  jugement = null,
+  codeTuteur = "",
+  surCodeTuteur,
+  envoi = false,
+  erreur = null,
 }: {
   total: number;
   renseignees: number;
@@ -158,15 +173,32 @@ function RecapitulatifValidation({
   surQuestion: (numero: number) => void;
   surValider: () => void;
   surFermer: () => void;
+  /** Schémas à découvrir du tirage (question 52) : caches jugés, sur combien. */
+  jugement?: { questions: number; juges: number; total: number } | null;
+  codeTuteur?: string;
+  surCodeTuteur?: (v: string) => void;
+  envoi?: boolean;
+  /** Refus du serveur (code du tuteur) : dit dans le panneau, qui reste ouvert. */
+  erreur?: string | null;
 }) {
+  // Des caches jugés ne valent qu'avec le code du tuteur ; aucun cache jugé,
+  // rien à confirmer — ils comptent alors comme sans réponse.
+  const codeRequis = Boolean(jugement && jugement.juges > 0);
   const panneau = useRef<HTMLDivElement>(null);
+  // Le panneau prend le focus à l'ouverture, et à l'ouverture seulement : la
+  // saisie du code du tuteur fait rendre la page à chaque touche, et un effet
+  // relancé à chaque rendu lui reprendrait le focus au premier caractère.
+  const fermer = useRef(surFermer);
+  useEffect(() => {
+    fermer.current = surFermer;
+  }, [surFermer]);
   useEffect(() => {
     panneau.current?.focus();
     document.body.classList.add("recap-ouvert");
     const auClavier = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        surFermer();
+        fermer.current();
         return;
       }
       if (e.key !== "Tab" || !panneau.current) return;
@@ -190,7 +222,7 @@ function RecapitulatifValidation({
       document.removeEventListener("keydown", auClavier);
       document.body.classList.remove("recap-ouvert");
     };
-  }, [surFermer]);
+  }, []);
 
   return (
     <>
@@ -239,6 +271,46 @@ function RecapitulatifValidation({
             Toutes les questions sont renseignées.
           </p>
         )}
+        {jugement && (
+          <div className={`encart${codeRequis ? "" : " encart--attention"} recap-tuteur`}>
+            {codeRequis ? (
+              <>
+                <p style={{ margin: "0 0 .5rem" }}>
+                  <strong>Confirmation du tuteur.</strong> {jugement.juges} cache
+                  {jugement.juges > 1 ? "s" : ""} jugé{jugement.juges > 1 ? "s" : ""} sur {jugement.total}
+                  {jugement.questions > 1 ? `, dans ${jugement.questions} schémas à découvrir` : ""}. Le tuteur
+                  qui les a jugés tape ici son propre code : le serveur le vérifie, ne le conserve pas, et
+                  scelle le résultat avec la mention de ce code.
+                  {jugement.juges < jugement.total
+                    ? ` ${jugement.total - jugement.juges} cache${jugement.total - jugement.juges > 1 ? "s" : ""} non jugé${jugement.total - jugement.juges > 1 ? "s" : ""} compte${jugement.total - jugement.juges > 1 ? "nt" : ""} comme sans réponse.`
+                    : ""}
+                </p>
+                <label className="champ" style={{ margin: 0 }}>
+                  <span>Code du tuteur</span>
+                  <input
+                    type="password"
+                    name="codeTuteur"
+                    value={codeTuteur}
+                    onChange={(e) => surCodeTuteur?.(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    autoCapitalize="characters"
+                  />
+                </label>
+              </>
+            ) : (
+              <p style={{ margin: 0 }}>
+                Aucun cache n&apos;a été jugé : {jugement.questions > 1 ? "les schémas à découvrir comptent" : "le schéma à découvrir compte"}{" "}
+                comme sans réponse. Pour qu&apos;ils soient notés, revenez aux questions et passez-les avec votre tuteur.
+              </p>
+            )}
+          </div>
+        )}
+        {erreur && (
+          <p className="encart encart--attention" role="alert" style={{ marginTop: ".75rem" }}>
+            {erreur}
+          </p>
+        )}
         <p className="legende" style={{ margin: ".75rem 0 0" }}>
           La correction est faite par le serveur. Le résultat entre dans la session et peut être
           porté au rapport d&apos;habilitation (étape 2 sur 6).
@@ -247,8 +319,13 @@ function RecapitulatifValidation({
           <button type="button" className="bouton bouton--secondaire" onClick={surFermer}>
             Revenir aux questions
           </button>
-          <button type="button" className="bouton" onClick={surValider}>
-            Valider définitivement
+          <button
+            type="button"
+            className="bouton"
+            onClick={surValider}
+            disabled={envoi || (codeRequis && codeTuteur.trim() === "")}
+          >
+            {envoi ? "Correction…" : "Valider définitivement"}
           </button>
         </div>
       </div>
@@ -352,6 +429,12 @@ export function Evaluation({
   const [legendes, setLegendes] = useState<EtatLegendes>({});
   const [rangs, setRangs] = useState<EtatRangs>({});
   const [trous, setTrous] = useState<EtatTrous>({});
+  const [jugements, setJugements] = useState<EtatJugements>({});
+  const [reveles, setReveles] = useState<EtatReveles>({});
+  // Code du tuteur (schémas à découvrir) : en mémoire le temps de la
+  // validation, jamais sauvegardé, effacé après chaque tentative.
+  const [codeTuteur, setCodeTuteur] = useState("");
+  const [erreurRecap, setErreurRecap] = useState<string | null>(null);
   const [resultat, setResultat] = useState<ResultatEvaluation | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [recap, setRecap] = useState(false);
@@ -379,6 +462,7 @@ export function Evaluation({
     [banque, difficulte, mode, graine, sousEnsemble],
   );
   const nbReservees = banque.filter((q) => q.reservee).length;
+  const nbADecouvrir = banque.filter(estADecouvrir).length;
 
   const libelleTirage = sousEnsemble
     ? sousEnsemble.libelle
@@ -438,6 +522,8 @@ export function Evaluation({
         legendes,
         rangs,
         trous,
+        jugements,
+        reveles,
         indexCourant,
         corrections,
         maj: new Date().toISOString(),
@@ -448,7 +534,7 @@ export function Evaluation({
       if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, rangs, trous, indexCourant, corrections]);
+  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, rangs, trous, jugements, reveles, indexCourant, corrections]);
 
   const effacerEnCours = () => {
     if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
@@ -464,6 +550,8 @@ export function Evaluation({
     setLegendes(e.legendes);
     setRangs(e.rangs ?? {});
     setTrous(e.trous ?? {});
+    setJugements(e.jugements ?? {});
+    setReveles(e.reveles ?? {});
     setIndexCourant(e.indexCourant);
     setCorrections(e.corrections as Record<string, DetailQuestion>);
     setEntrainementFini(false);
@@ -512,8 +600,17 @@ export function Evaluation({
     setTrous((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [trou]: optId } }));
   };
 
+  const leverCache = (qid: string, lid: string) => {
+    setReveles((prec) => ((prec[qid] ?? []).includes(lid) ? prec : { ...prec, [qid]: [...(prec[qid] ?? []), lid] }));
+  };
+
+  const jugerCache = (qid: string, lid: string, j: Jugement) => {
+    setJugements((prec) => ({ ...prec, [qid]: { ...(prec[qid] ?? {}), [lid]: j } }));
+  };
+
   /** Une question est « renseignée » dès qu'elle a reçu au moins une réponse. */
   const estRenseignee = (q: QuestionPublique): boolean => {
+    if (estADecouvrir(q)) return Object.keys(jugements[q.id] ?? {}).length > 0;
     if (q.type === "SCH") return Object.values(legendes[q.id] ?? {}).some((v) => v.trim() !== "");
     if (q.type === "ORD") return Object.keys(rangs[q.id] ?? {}).length > 0;
     if (q.type === "TAT") return Object.values(trous[q.id] ?? {}).some((v) => v !== "");
@@ -527,8 +624,11 @@ export function Evaluation({
     const legs: EtatLegendes = {};
     const rgs: EtatRangs = {};
     const trs: EtatTrous = {};
+    const jgs: EtatJugements = {};
     for (const q of questions) {
-      if (q.type === "SCH") {
+      if (estADecouvrir(q)) {
+        jgs[q.id] = jugements[q.id] ?? {};
+      } else if (q.type === "SCH") {
         legs[q.id] = legendes[q.id] ?? {};
       } else if (q.type === "ORD") {
         rgs[q.id] = rangs[q.id] ?? {};
@@ -552,17 +652,18 @@ export function Evaluation({
       legendes: legs,
       rangs: rgs,
       trous: trs,
+      jugements: jgs,
       tirage: libelleTirage,
       mode,
       difficulte,
     };
   };
 
-  const corriger = async (questions: QuestionPublique[]): Promise<ResultatEvaluation> => {
+  const corriger = async (questions: QuestionPublique[], code = ""): Promise<ResultatEvaluation> => {
     const reponse = await fetch("/api/evaluation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(chargeUtile(questions)),
+      body: JSON.stringify({ ...chargeUtile(questions), ...(code ? { codeTuteur: code } : {}) }),
     });
     if (!reponse.ok) {
       const j = await reponse.json().catch(() => ({}));
@@ -574,6 +675,11 @@ export function Evaluation({
   const soumettre = async () => {
     setEnvoi(true);
     setErreur(null);
+    setErreurRecap(null);
+    // Le code du tuteur part avec cette tentative et quitte aussitôt la
+    // mémoire de la page : refusé, il se retape.
+    const code = codeTuteur;
+    setCodeTuteur("");
     try {
       // La correction efface `en_cours` côté serveur (`enregistrerEvaluation`,
       // `lib/progression.ts`). Une sauvegarde encore en attente ou en vol
@@ -584,13 +690,16 @@ export function Evaluation({
       // annule donc le minuteur et on vide la file avant d'envoyer.
       if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
       await fileTraces.current;
-      const r = await corriger(posees);
+      const r = await corriger(posees, code);
+      setRecap(false);
       setResultat(r);
       enregistrer(r);
       const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" });
     } catch (e) {
-      setErreur(e instanceof Error ? e.message : "Erreur inconnue.");
+      // Le refus reste dans le récapitulatif, ouvert : les réponses et les
+      // jugements sont toujours à l'écran, le tuteur n'a qu'à retaper son code.
+      setErreurRecap(e instanceof Error ? e.message : "Erreur inconnue.");
     } finally {
       setEnvoi(false);
     }
@@ -617,6 +726,12 @@ export function Evaluation({
     setReponses({});
     setQim({});
     setLegendes({});
+    setRangs({});
+    setTrous({});
+    setJugements({});
+    setReveles({});
+    setCodeTuteur("");
+    setErreurRecap(null);
     setCorrections({});
     setIndexCourant(0);
     setEntrainementFini(false);
@@ -637,6 +752,12 @@ export function Evaluation({
     setReponses({});
     setQim({});
     setLegendes({});
+    setRangs({});
+    setTrous({});
+    setJugements({});
+    setReveles({});
+    setCodeTuteur("");
+    setErreurRecap(null);
     setCorrections({});
     setIndexCourant(0);
     setEntrainementFini(false);
@@ -755,6 +876,9 @@ export function Evaluation({
                 {nbReservees > 0
                   ? ` En Habilitation et Complet, ${nbReservees} question${nbReservees > 1 ? "s" : ""} réservée${nbReservees > 1 ? "s" : ""} à l'évaluation, jamais vue${nbReservees > 1 ? "s" : ""} en entraînement, ${nbReservees > 1 ? "sont tirées" : "est tirée"} en priorité.`
                   : ""}
+                {nbADecouvrir > 0
+                  ? ` La banque compte ${nbADecouvrir > 1 ? `${nbADecouvrir} schémas` : "un schéma"} à découvrir : s'il est tiré, votre tuteur, assis à côté de vous, juge chaque cache et confirme par son propre code à la validation.`
+                  : ""}
               </span>
             </span>
           </label>
@@ -868,6 +992,11 @@ export function Evaluation({
             valeurs={legendes[q.id] ?? {}}
             onChange={(lid, v) => ecrireLegende(q.id, lid, v)}
             verrouille={verrouille}
+            reveles={reveles[q.id] ?? []}
+            onReveler={(lid) => leverCache(q.id, lid)}
+            jugements={jugements[q.id] ?? {}}
+            onJuger={(lid, j) => jugerCache(q.id, lid, j)}
+            juge={mode === "evaluation" ? "tuteur" : "apprenant"}
           />
         ) : q.type === "ORD" ? (
           <OrdreQuestion
@@ -967,6 +1096,13 @@ export function Evaluation({
         <p className={`encart${decision.verdictBrut === "acquis" ? "" : " encart--attention"}`}>
           {expliquerVerdict(decision)}
         </p>
+
+        {resultat.jugement && resultat.jugement.role !== "apprenant" && (
+          <p className="encart">
+            Caches des schémas à découvrir jugés par <strong>{resultat.jugement.par}</strong>, qui l&apos;a
+            confirmé par son propre code d&apos;accès. La mention est scellée dans le résultat.
+          </p>
+        )}
 
         {resultat.detail.map((d, i) => rendreCorrection(d, i, posees.find((q) => q.id === d.questionId)))}
 
@@ -1094,6 +1230,15 @@ export function Evaluation({
   // ───────────────────────────────────────────────────── passation complète
   const repondues = posees.filter(estRenseignee).length;
   const manquantes = posees.map((q, i) => (estRenseignee(q) ? 0 : i + 1)).filter((n) => n > 0);
+  const aDecouvrir = posees.filter(estADecouvrir);
+  const jugementRecap =
+    aDecouvrir.length > 0
+      ? {
+          questions: aDecouvrir.length,
+          juges: aDecouvrir.reduce((s, q) => s + Object.keys(jugements[q.id] ?? {}).length, 0),
+          total: aDecouvrir.reduce((s, q) => s + (q.legendes?.length ?? 0), 0),
+        }
+      : null;
   let situationCourante: string | null = null;
 
   // Retour à une question depuis le récapitulatif : le panneau se ferme, la
@@ -1164,11 +1309,16 @@ export function Evaluation({
           renseignees={repondues}
           manquantes={manquantes}
           surQuestion={allerALaQuestion}
-          surValider={() => {
+          surValider={() => void soumettre()}
+          surFermer={() => {
             setRecap(false);
-            void soumettre();
+            setErreurRecap(null);
           }}
-          surFermer={() => setRecap(false)}
+          jugement={jugementRecap}
+          codeTuteur={codeTuteur}
+          surCodeTuteur={setCodeTuteur}
+          envoi={envoi}
+          erreur={erreurRecap}
         />
       )}
     </div>

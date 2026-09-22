@@ -183,7 +183,7 @@ export default async function Questions({
                 <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
                 {q.format === "SCH" ? (
                   <p className="legende">
-                    {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : "écrire"}
+                    {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : q.mode_reponse === "decouvrir" ? "découvrir avec le tuteur" : "écrire"}
                     {q.image_id ? "" : " · image manquante"}
                   </p>
                 ) : (

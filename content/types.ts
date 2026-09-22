@@ -15,8 +15,10 @@ export const A_PRECISER = "[à préciser]" as const;
 export const A_COMPLETER = "[à compléter]" as const;
 
 import { motAttendu, normaliser, verdictLegende, type Legende, type Repere } from "./schema";
+import { verdictDuJugement, type Jugement } from "./jugement";
 import {
   BAREME_DEFAUT,
+  libelleCaches,
   libelleOrdre,
   libelleQcm,
   libelleQim,
@@ -179,7 +181,9 @@ export type Option = {
  *   (propositions cochées à tort + propositions exactes non cochées).
  * - `SCH` — schéma à compléter (repris du Lecteur QIM · QCM) : une image dont
  *   les légendes ont été masquées ; l'apprenant écrit chaque légende (mode
- *   « écrire ») ou l'attribue parmi une liste mélangée (mode « choisir »).
+ *   « écrire »), l'attribue parmi une liste mélangée (mode « choisir »), ou
+ *   la dit à voix haute avant de lever le cache, à la manière d'Anki (mode
+ *   « découvrir », question 52) : le tuteur juge alors chaque cache.
  * - `ORD` — séquence à ordonner : des étapes présentées dans le désordre,
  *   auxquelles l'apprenant donne un rang. L'ordre juste est porté par
  *   `bonnesReponses`, qui ne quitte jamais le serveur ; `options` part
@@ -219,7 +223,16 @@ export function morceauxDuTexte(enonce: string): ({ texte: string } | { trou: nu
   return out;
 }
 
-export type ModeReponse = "ecrire" | "choisir";
+/**
+ * Réponse d'un schéma : écrire la légende, la choisir dans une liste, ou la
+ * découvrir — cache levé, réponse jugée par le tuteur en évaluation, par
+ * l'apprenant en entraînement (`content/jugement.ts`).
+ */
+export type ModeReponse = "ecrire" | "choisir" | "decouvrir";
+
+export function lireModeReponse(brut: unknown): ModeReponse {
+  return brut === "choisir" || brut === "decouvrir" ? brut : "ecrire";
+}
 
 /** Image d'un schéma à compléter, servie par `/api/images/[id]`. */
 export interface ImageQuestion {
@@ -274,7 +287,7 @@ export interface Question {
   legendes?: Legende[];
   /** Schéma à compléter : l'image. */
   image?: ImageQuestion;
-  /** Schéma à compléter : écrire la légende, ou la choisir dans une liste. */
+  /** Schéma à compléter : écrire la légende, la choisir dans une liste, ou la découvrir. */
   modeReponse?: ModeReponse;
   /** `code` pour une question versionnée avec le site, `base` pour une question déposée. */
   origine?: "code" | "base";
@@ -377,10 +390,18 @@ export interface Parcours {
   blocs: Bloc[];
 }
 
-/** Légende telle qu'elle est envoyée au navigateur : sa place, jamais son mot. */
+/** Légende telle qu'elle est envoyée au navigateur : sa place, et son mot seulement à découvrir. */
 export interface LegendePublique {
   id: string;
   repere: Repere;
+  /**
+   * Mode « découvrir » seulement : le mot attendu, affiché quand le cache se
+   * lève. Il part avec la question pour que le cache se lève sans aller-retour.
+   * Ce n'est pas un secret de plus livré au navigateur : l'image servie porte
+   * déjà, sous chaque cache, le mot d'origine. Ce qui garde l'épreuve, c'est
+   * la présence du tuteur, pas le navigateur.
+   */
+  mot?: string;
 }
 
 /** Question telle qu'elle est envoyée au navigateur : sans les réponses. */
@@ -426,7 +447,12 @@ export function sanitizeQuestion(
     return { ...reste, options: melangerOptions(q.options), situation };
   }
   if (q.type !== "SCH") return { ...reste, situation };
-  const publiques = (legendes ?? []).map((l) => ({ id: l.id, repere: l.repere }));
+  const aDecouvrir = q.modeReponse === "decouvrir";
+  const publiques: LegendePublique[] = (legendes ?? []).map((l) => ({
+    id: l.id,
+    repere: l.repere,
+    ...(aDecouvrir ? { mot: motAttendu(l.attendu) } : {}),
+  }));
   const etiquettes =
     q.modeReponse === "choisir"
       ? melangerTexte((legendes ?? []).map((l) => motAttendu(l.attendu)))
@@ -462,7 +488,8 @@ export function banquePublique(m: Module): QuestionPublique[] {
  * - `juges` : QIM en Vrai/Faux, identifiants des propositions effectivement
  *   jugées — une proposition laissée sans réponse compte alors comme une
  *   discordance, ce qui ne peut pas être déduit de `choix` seul ;
- * - `legendes` : schéma à compléter, le mot écrit (ou choisi) par légende.
+ * - `legendes` : schéma à compléter, le mot écrit (ou choisi) par légende ;
+ * - `jugements` : schéma à découvrir, le jugement porté sur chaque cache.
  */
 export interface ReponseApprenant {
   choix: string[];
@@ -472,6 +499,8 @@ export interface ReponseApprenant {
   rangs?: Record<string, number>;
   /** Texte à trous : vignette choisie pour chaque trou, par numéro de trou. */
   trous?: Record<string, string>;
+  /** Schéma à découvrir : jugement de chaque cache, par légende ; absent = non jugé. */
+  jugements?: Record<string, Jugement>;
 }
 
 export interface NoteQuestion {
@@ -495,7 +524,7 @@ export interface NoteQuestion {
  * ce que lit la règle des questions éliminatoires.
  */
 export function noterQuestion(q: Question, rep: ReponseApprenant, bareme: Bareme = BAREME_DEFAUT): NoteQuestion {
-  if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {}, bareme);
+  if (q.type === "SCH") return noterSchema(q, rep.legendes ?? {}, bareme, rep.jugements ?? {});
   if (q.type === "ORD") return noterOrdre(q, rep.rangs ?? {}, bareme);
   if (q.type === "TAT") return noterTrous(q, rep.trous ?? {}, bareme);
 
@@ -524,15 +553,23 @@ export function noterQuestion(q: Question, rep: ReponseApprenant, bareme: Bareme
   return { note, discordances: faux + nonJugees, nonJugees, max: format.max };
 }
 
-function noterSchema(q: Question, reponses: Record<string, string>, bareme: Bareme): NoteQuestion {
+function noterSchema(
+  q: Question,
+  reponses: Record<string, string>,
+  bareme: Bareme,
+  jugements: Record<string, Jugement>,
+): NoteQuestion {
   const format = bareme.schema;
   const legendes = q.legendes ?? [];
   if (legendes.length === 0) return { note: 0, discordances: 0, nonJugees: 0, max: format.max };
+  // Schéma à découvrir : le jugement porté sur le cache tient lieu de
+  // comparaison ; un cache non jugé vaut une légende vide.
+  const aDecouvrir = q.modeReponse === "decouvrir";
   let justes = 0;
   let faux = 0;
   let vides = 0;
   for (const l of legendes) {
-    const v = verdictLegende(reponses[l.id], l.attendu);
+    const v = aDecouvrir ? verdictDuJugement(jugements[l.id]) : verdictLegende(reponses[l.id], l.attendu);
     if (v === "juste") justes += 1;
     else if (v === "fausse") faux += 1;
     else vides += 1;
@@ -592,6 +629,7 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
   if (q.type === "ORD") return "Séquence — étapes à ordonner";
   if (q.type === "TAT") return "Texte à trous — vignettes à placer";
   if (q.type === "SCH") {
+    if (q.modeReponse === "decouvrir") return "Schéma — caches à découvrir";
     return q.modeReponse === "choisir"
       ? "Schéma — légendes à attribuer"
       : "Schéma — légendes à écrire";
@@ -602,9 +640,9 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
 }
 
 /** Barème lisible d'un format, annoncé sous chaque énoncé, selon le barème en vigueur. */
-export function libelleBareme(q: Pick<Question, "type" | "enonce">, bareme: Bareme = BAREME_DEFAUT): string {
+export function libelleBareme(q: Pick<Question, "type" | "enonce" | "modeReponse">, bareme: Bareme = BAREME_DEFAUT): string {
   if (q.type === "QIM") return libelleQim(bareme);
-  if (q.type === "SCH") return libelleSchema(bareme);
+  if (q.type === "SCH") return q.modeReponse === "decouvrir" ? libelleCaches(bareme) : libelleSchema(bareme);
   if (q.type === "ORD") return libelleOrdre(bareme);
   if (q.type === "TAT") return libelleTrous(bareme);
   return libelleQcm(bareme);

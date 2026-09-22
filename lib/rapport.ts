@@ -116,9 +116,17 @@ function nombre(n: number): string {
 }
 
 function etatDe(d: ResultatRapport["detail"][number]): string {
-  if (d.correct) return d.type === "QIM" ? "Aucune discordance" : d.type === "SCH" ? "Toutes les légendes justes" : "Réponse exacte";
+  if (d.correct) {
+    if (d.type === "QIM") return "Aucune discordance";
+    if (d.type === "SCH") return d.decouverte ? "Tous les caches jugés justes" : "Toutes les légendes justes";
+    return "Réponse exacte";
+  }
   if (d.type === "QIM") {
     return `${d.discordances} discordance${d.discordances > 1 ? "s" : ""}${d.nonJugees > 0 ? ` — dont ${d.nonJugees} sans réponse` : ""}`;
+  }
+  if (d.type === "SCH" && d.decouverte) {
+    const faux = d.discordances - d.nonJugees;
+    return `${faux} cache${faux > 1 ? "s" : ""} jugé${faux > 1 ? "s" : ""} faux${d.nonJugees > 0 ? `, ${d.nonJugees} non jugé${d.nonJugees > 1 ? "s" : ""}` : ""}`;
   }
   if (d.type === "SCH") {
     const fausses = d.discordances - d.nonJugees;
@@ -133,7 +141,11 @@ function couleurDe(d: ResultatRapport["detail"][number]): string {
 
 function formatDe(d: ResultatRapport["detail"][number]): string {
   if (d.type === "QIM") return "QIM";
-  if (d.type === "SCH") return "Schéma";
+  if (d.type === "SCH") return d.decouverte ? "Schéma à découvrir" : "Schéma";
+  // Séquence et texte à trous (19/09/2026) sortaient jusqu'ici en « QCM
+  // multiple » : ils ont plusieurs réponses attendues, c'est tout.
+  if (d.type === "ORD") return "Séquence";
+  if (d.type === "TAT") return "Texte à trous";
   return d.reponsesAttendues.length > 1 ? "QCM multiple" : "QCM";
 }
 
@@ -237,7 +249,14 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
   const details = r.detail
     .map((d, i) => {
       const exclusion = exclues.get(d.questionId);
-      const legendes = d.legendes
+      const legendes = d.legendes && d.decouverte
+        ? `<table class="legendes"><thead><tr><th>N°</th><th>Sous le cache</th><th>Jugement</th></tr></thead><tbody>${d.legendes
+            .map(
+              (l) =>
+                `<tr><td class="mono">${l.numero}</td><td>${echapper(l.attendu)}</td><td>${l.verdict === "juste" ? "jugé juste" : l.verdict === "fausse" ? "jugé faux" : "non jugé"}</td></tr>`,
+            )
+            .join("")}</tbody></table>`
+        : d.legendes
         ? `<table class="legendes"><thead><tr><th>N°</th><th>Réponse donnée</th><th>Attendu</th><th>Verdict</th></tr></thead><tbody>${d.legendes
             .map(
               (l) =>
@@ -272,6 +291,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     <h1>${echapper(r.moduleTitre)}</h1>
     <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && r.reservees.posees > 0 ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
     <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
+    ${r.jugement && r.jugement.role !== "apprenant" ? `<p class="petit">Caches des schémas à découvrir jugés par <strong>${echapper(r.jugement.par)}</strong>, qui l'a confirmé par son propre code d'accès au moment de la correction (question 52) ; mention scellée avec le résultat.</p>` : ""}
 
     <table class="verdict">
       <tbody><tr>

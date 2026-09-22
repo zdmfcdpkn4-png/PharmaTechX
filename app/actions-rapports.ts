@@ -10,6 +10,7 @@ import { normaliserIdentifiant } from "@/lib/identifiant";
 import { rattachement } from "@/lib/progression";
 import { emettreRapport } from "@/lib/rapports";
 import { moduleExiste } from "@/content/store";
+import { refusEmissionEntrainement } from "@/content/jugement";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import type { ReponseEmission } from "./types-rapports";
 
@@ -47,6 +48,8 @@ export async function actionEmettreRapport(entree: {
     return { ok: false, erreur: "Ce résultat n'a pas été produit par le serveur : émission refusée." };
   }
   if (!(await moduleExiste(r.moduleId))) return { ok: false, erreur: "Module inconnu." };
+  const entrainement = refusEmissionEntrainement(r);
+  if (entrainement) return { ok: false, erreur: entrainement };
   if (r.verdict === "non_concluant" || r.concluant === false) {
     return {
       ok: false,

@@ -59,6 +59,12 @@ function ReglagesFormat({
   return (
     <>
       <h3 style={{ fontSize: "1rem", marginBottom: ".25rem" }}>{LIBELLES_FORMAT[cle]}</h3>
+      {cle === "schema" && (
+        <p className="legende" style={{ margin: "0 0 .5rem" }}>
+          S&apos;applique aussi aux schémas à découvrir (question 52), cache par cache : un cache jugé juste
+          compte comme une légende juste, jugé faux comme une légende fausse, non jugé comme une légende vide.
+        </p>
+      )}
       <div className="rangee">
         <label className="champ">
           <span>Mode (défaut : {defaut.mode === "tout_ou_rien" ? "tout ou rien" : "partiel"})</span>

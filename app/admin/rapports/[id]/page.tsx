@@ -351,6 +351,12 @@ export default async function Rapport({
         <h2>Synthèse</h2>
         <span className="compte">{r.resultat.detail.length} questions</span>
       </div>
+      {r.resultat.jugement && r.resultat.jugement.role !== "apprenant" && (
+        <p className="encart">
+          Caches des schémas à découvrir jugés par <strong>{r.resultat.jugement.par}</strong>, qui l&apos;a confirmé par
+          son propre code d&apos;accès au moment de la correction (question 52). La mention est scellée avec le résultat.
+        </p>
+      )}
       <table className="tableau">
         <thead><tr><th>N°</th><th>Format</th><th>Énoncé</th><th>Résultat</th><th>Points</th></tr></thead>
         <tbody>
@@ -359,10 +365,10 @@ export default async function Rapport({
             return (
               <tr key={q.questionId} style={exclue ? { opacity: 0.6 } : undefined}>
                 <td>{i + 1}</td>
-                <td>{q.type}{q.eliminatoire ? " · élim." : ""}</td>
+                <td>{q.type}{q.decouverte ? " · à découvrir" : ""}{q.eliminatoire ? " · élim." : ""}</td>
                 <td>{q.enonce}</td>
                 <td>
-                  {q.correct ? "exact" : q.type === "QIM" ? `${q.discordances} discordance(s)` : q.type === "SCH" ? `${q.discordances} légende(s) en écart` : "erroné"}
+                  {q.correct ? "exact" : q.type === "QIM" ? `${q.discordances} discordance(s)` : q.type === "SCH" ? `${q.discordances} ${q.decouverte ? "cache(s) jugé(s) faux ou non jugé(s)" : "légende(s) en écart"}` : "erroné"}
                   {exclue ? <><br /><span className="legende">exclue du calcul</span></> : null}
                 </td>
                 <td>{exclue ? "—" : String(q.note).replace(".", ",")}</td>

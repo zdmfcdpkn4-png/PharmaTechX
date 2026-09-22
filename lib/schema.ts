@@ -124,7 +124,7 @@ export const SCHEMA: string[] = [
      enonce        TEXT NOT NULL,
      options       JSONB NOT NULL DEFAULT '[]'::jsonb,
      legendes      JSONB NOT NULL DEFAULT '[]'::jsonb,
-     mode_reponse  TEXT NOT NULL DEFAULT 'ecrire' CHECK (mode_reponse IN ('ecrire','choisir')),
+     mode_reponse  TEXT NOT NULL DEFAULT 'ecrire' CHECK (mode_reponse IN ('ecrire','choisir','decouvrir')),
      image_id      TEXT REFERENCES images(id) ON DELETE SET NULL,
      justification TEXT NOT NULL DEFAULT '',
      eliminatoire  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -331,6 +331,11 @@ export const SCHEMA: string[] = [
   // format est refaite, une base en service ne l'aurait qu'aux trois anciens
   `ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_format_check`,
   `ALTER TABLE questions ADD CONSTRAINT questions_format_check CHECK (format IN ('QCM','QIM','SCH','ORD','TAT'))`,
+  // schéma à découvrir, jugé par le tuteur (22/09/2026, question 52, choix b) :
+  // troisième mode de réponse du schéma ; la contrainte est refaite, comme
+  // celle du format, pour une base qui ne connaît que les deux premiers
+  `ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_mode_reponse_check`,
+  `ALTER TABLE questions ADD CONSTRAINT questions_mode_reponse_check CHECK (mode_reponse IN ('ecrire','choisir','decouvrir'))`,
   // code personnel de l'agent (haché, scrypt) pour rattacher sa progression — question 11
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_hash TEXT`,
   `ALTER TABLE agents ADD COLUMN IF NOT EXISTS code_maj_le TIMESTAMPTZ`,

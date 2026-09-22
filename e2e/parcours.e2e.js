@@ -1381,6 +1381,115 @@ Justification : cascade de pression.`,
   await capture("formats-correction");
   ok("séquence à ordonner et texte à trous : déposés, validés à quatre yeux, passés au menu déroulant, notés par éléments");
 
+  // 12j bis. schéma à découvrir (question 52, choix b) : caches posés par le créateur,
+  //          levés à l'écran, jugés par le tuteur présent qui confirme par son propre
+  //          code ; en entraînement, l'apprenant se juge seul, sans code
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module caches test");
+  await page.fill("input[name=objectif]", "Schéma à découvrir.");
+  await page.fill("textarea[name=presentation]", "Un schéma jugé par le tuteur.");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1c]");
+  await page.fill("input[name=seuil]", "60");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idCaches = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+  await page.goto(BASE + "/admin/questions/import?module=" + idCaches);
+  await page.selectOption("select[name=moduleId]", idCaches);
+  await page.fill(
+    "textarea[name=texte]",
+    `SCHÉMA 1. Nommez ce que cache chaque numéro.
+Image : isolateur-coupe.png
+1. sas de transfert (8, 12, 33, 25)
+2. filtre terminal (54, 12, 37, 25)
+3. plan de travail (8, 56, 83, 31)
+Justification : cf. procédure interne.`,
+  );
+  await page.setInputFiles("input[name=images]", PNG);
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 1 question reconnue')");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=1 question ajoutée");
+  // le créateur choisit le mode « découvrir » dans l'éditeur ; les caches sont ceux qu'il a posés
+  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.locator(".question-ligne:has-text('Nommez ce que cache') a:has-text('Modifier')").click();
+  await page.waitForSelector(".schema-cadre--editeur img");
+  await page.selectOption("select[name=modeReponse]", "decouvrir");
+  await page.click("button:has-text('Enregistrer les modifications')");
+  await page.waitForURL(/ok=modifiee/);
+  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.locator(".question-ligne", { hasText: "réponse à découvrir avec le tuteur" }).waitFor();
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.locator("form button:has-text('Valider')").first().click();
+  await page.waitForLoadState("networkidle");
+  await rebrancher(codeAdmin);
+
+  await page.goto(BASE + "/module/" + idCaches + "/evaluation");
+  await page.waitForSelector("text=Régler l'évaluation");
+  await page.waitForSelector("text=un schéma à découvrir");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector(".schema-legendes--decouvrir");
+  assert.equal(await page.locator(".schema-legendes--decouvrir button:has-text('Lever le cache')").count(), 3);
+  assert.equal(await page.locator(".schema-legendes--decouvrir input").count(), 0, "rien à écrire, rien à juger avant de lever");
+  assert.equal(await page.locator(".schema-cache--leve").count(), 0);
+  await page.click("button:has-text('Lever le cache 1')");
+  await page.waitForSelector(".mot-decouvert:has-text('sas de transfert')");
+  assert.equal(await page.locator(".schema-cache--leve").count(), 1, "le cache levé laisse voir l'image");
+  const cacheN = (i) => page.locator(".schema-legendes--decouvrir li").nth(i);
+  await cacheN(0).locator("label:has-text('Juste') input").check();
+  await page.click("button:has-text('Lever le cache 2')");
+  await cacheN(1).locator("label:has-text('Faux') input").check();
+  await cacheN(1).locator("label:has-text('Juste') input").check(); // le tuteur se reprend
+  // le cache 3 n'est ni levé ni jugé : il comptera comme sans réponse
+  await ouvrirRecap();
+  const texteRecapCaches = await page.locator(".recap").innerText();
+  assert.match(texteRecapCaches, /Confirmation du tuteur/);
+  assert.match(texteRecapCaches, /2 caches jugés sur 3/);
+  assert.match(texteRecapCaches, /1 cache non jugé compte comme sans réponse/);
+  assert.equal(await page.locator(".recap button:has-text('Valider définitivement')").isDisabled(), true, "sans code du tuteur, pas de validation");
+  // le code qui a ouvert la session ne juge pas sa propre évaluation
+  await page.fill(".recap input[name=codeTuteur]", codeAdmin);
+  await page.click(".recap button:has-text('Valider définitivement')");
+  await page.waitForSelector(".recap [role=alert]:has-text('ouvert la session')");
+  assert.equal(await page.locator(".resultat-entete").count(), 0, "code refusé : rien n'est corrigé");
+  assert.equal(await page.locator(".recap input[name=codeTuteur]").inputValue(), "", "le code refusé quitte la page");
+  // un code inconnu est refusé (et compté par le limiteur)
+  await page.fill(".recap input[name=codeTuteur]", "AAAAA-BBBBB");
+  await page.click(".recap button:has-text('Valider définitivement')");
+  await page.waitForSelector(".recap [role=alert]:has-text('Code du tuteur refusé')");
+  // le code du tuteur est accepté : résultat scellé avec la mention de ce code
+  await page.fill(".recap input[name=codeTuteur]", codeTuteur);
+  await page.click(".recap button:has-text('Valider définitivement')");
+  await page.waitForSelector(".recap", { state: "detached" });
+  await page.waitForSelector(".resultat-entete");
+  assert.equal(
+    (await page.locator(".resultat-entete .score").innerText()).replace(/\s+/g, " "),
+    "67 %",
+    "deux caches jugés justes sur trois, le troisième non jugé",
+  );
+  await page.waitForSelector("text=jugés par Tutorat · Tuteur test");
+  assert.equal(await page.locator(".schema-legendes--revele li:has-text('jugé juste')").count(), 2);
+  assert.equal(await page.locator(".schema-legendes--revele li:has-text('non jugé')").count(), 1);
+  await capture("schema-decouvrir-correction");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:has-text('evaluation:jugement-tuteur')");
+  // entraînement : l'apprenant se juge seul, aucun code n'est demandé
+  await page.goto(BASE + "/module/" + idCaches + "/evaluation");
+  await page.check("input[name=mode] >> nth=1");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector(".schema-legendes--decouvrir");
+  await page.click("button:has-text('Lever le cache 1')");
+  assert.equal(await cacheN(0).locator("label:has-text('Juste')").count(), 0, "en entraînement, pas de jugement de tuteur");
+  await cacheN(0).locator("label:has-text('Je savais') input").check();
+  await page.click("button:has-text('Vérifier')");
+  await page.waitForSelector(".schema-legendes--revele");
+  assert.equal(await page.locator(".schema-legendes--revele li:has-text('jugé juste')").count(), 1);
+  assert.equal(await page.locator("input[name=codeTuteur]").count(), 0, "aucun code demandé en entraînement");
+  ok("schéma à découvrir : caches levés et jugés, code de session et code inconnu refusés, code du tuteur accepté, mention scellée (67 %), journalisé ; entraînement en auto-évaluation, sans code");
+
   // 12k. référentiel déposé (question 38, choix b) et arborescence de la banque
   //      Une filière et un niveau ajoutés en base doivent apparaître dans les
   //      listes de rattachement d'un module, sans livraison de code.
@@ -1747,7 +1856,14 @@ Justification : cascade de pression.`,
   };
   await ouvrirSuppression();
   await carteJetable.locator("input[name=confirmation]").fill("ZZZZZ-ZZZZZ");
-  await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
+  // L'alerte « Code incorrect » de la révocation ci-dessus est encore à
+  // l'écran, et la suppression refusée redirige vers la même adresse : attendre
+  // l'alerte ne prouvait pas que l'action avait abouti. On attend sa réponse
+  // (redirection 303), sans quoi le journal s'ouvre parfois avant l'écriture.
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    carteJetable.locator("button:has-text('Supprimer définitivement')").click(),
+  ]);
   await page.waitForSelector("[role=alert]:has-text('Code incorrect')");
   await page.locator("li.carte:has-text('Poste jetable')").waitFor();
   assert.equal(await apiJetable(), 404, "code d'administration faux : rien n'est supprimé");

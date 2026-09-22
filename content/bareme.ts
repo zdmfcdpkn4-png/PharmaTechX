@@ -237,6 +237,14 @@ export function libelleSchema(b: Bareme = BAREME_DEFAUT): string {
   return libelleFormatBareme(b.schema, "légende", "légende vide");
 }
 
+/**
+ * Schéma à découvrir (question 52) : le barème du schéma, dit avec ses mots —
+ * un cache jugé juste ou faux, un cache non jugé à la place d'une légende vide.
+ */
+export function libelleCaches(b: Bareme = BAREME_DEFAUT): string {
+  return libelleFormatBareme(b.schema, "cache", "cache non jugé");
+}
+
 export function libelleQcm(b: Bareme = BAREME_DEFAUT): string {
   return libelleFormatBareme(b.qcm, "proposition", "proposition non tranchée");
 }
