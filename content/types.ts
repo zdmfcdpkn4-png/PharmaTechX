@@ -59,6 +59,44 @@ export type NiveauHabilitation =
 
 export type TypeParcours = "integration" | "maintien";
 
+/**
+ * Niveau d'une question (demande du 22/09/2026) : trois paliers, les mêmes
+ * que ceux du prompt de génération. Nommé `niveauQuestion` dans le code pour
+ * ne pas le confondre avec les niveaux d'habilitation (N1a à N3).
+ *
+ * `null` = non renseigné : une question déposée sans niveau le reste, et la
+ * banque l'affiche « à préciser » plutôt que de lui en attribuer un.
+ * Le niveau ne change pas les tirages (question 51) : il sert à équilibrer
+ * la banque, pas à composer l'évaluation.
+ */
+export const NIVEAUX_QUESTION = ["initial", "intermediaire", "avance"] as const;
+export type NiveauQuestion = (typeof NIVEAUX_QUESTION)[number];
+export const LIBELLES_NIVEAU_QUESTION: Record<NiveauQuestion, string> = {
+  initial: "Initial",
+  intermediaire: "Intermédiaire",
+  avance: "Avancé",
+};
+/** Ce que chaque palier évalue — repris du prompt de génération. */
+export const DEFINITIONS_NIVEAU_QUESTION: Record<NiveauQuestion, string> = {
+  initial: "restitution",
+  intermediaire: "reformulation, comparaison",
+  avance: "raisonnement, piège",
+};
+
+/** « Initial », « intermédiaire », « base » (ancien libellé) → valeur rangée ; sinon `null`. */
+export function lireNiveauQuestion(brut: unknown): NiveauQuestion | null {
+  if (typeof brut !== "string") return null;
+  const nu = brut
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (nu === "initial" || nu === "base") return "initial";
+  if (nu === "intermediaire") return "intermediaire";
+  if (nu === "avance" || nu === "avancee") return "avance";
+  return null;
+}
+
 export interface Reference {
   /** Intitulé exact de la source. */
   libelle: string;
@@ -229,6 +267,8 @@ export interface Question {
    * priorité dans les tirages qui peuvent conclure (Habilitation, Complet).
    */
   reservee?: boolean;
+  /** Initial, intermédiaire ou avancé ; `null` tant qu'il n'est pas renseigné. */
+  niveauQuestion?: NiveauQuestion | null;
   references?: Reference[];
   /** Schéma à compléter : les légendes à écrire, avec leur place sur l'image. */
   legendes?: Legende[];

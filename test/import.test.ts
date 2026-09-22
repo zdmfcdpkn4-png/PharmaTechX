@@ -172,10 +172,49 @@ test("extrait sans proposition, proposition sans extrait : signalés au relecteu
   assert.match(av, /Proposition B sans extrait/);
 });
 
-test("pièges et difficulté vont à la justification, après les extraits", () => {
+test("les pièges vont à la justification ; le niveau devient un champ de la question", () => {
   const [q] = analyserTexte(
-    "QCM 1. x (plusieurs réponses possibles)\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait B : « b »\nRéponses : A B\nPièges : aucun\nDifficulté : Avancé",
+    "QCM 1. x (plusieurs réponses possibles)\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait B : « b »\nRéponses : A B\nPièges : aucun\nNiveau : Avancé",
     { formatDefaut: "QCM" },
   ).questions;
-  assert.equal(q.justification, "A : « a » ; B : « b ». Pièges : aucun. Difficulté : avancé.");
+  assert.equal(q.justification, "A : « a » ; B : « b ». Pièges : aucun.");
+  assert.equal(q.niveauQuestion, "avance");
+});
+
+test("« Niveau » et « Difficulté » se lisent tous deux ; « base » vaut « initial »", () => {
+  const lire = (ligne: string) =>
+    analyserTexte(`QIM 1. x\nA. Un\nB. Deux\nRéponses : A\n${ligne}`, { formatDefaut: "QIM" }).questions[0].niveauQuestion;
+  assert.equal(lire("Niveau : initial"), "initial");
+  assert.equal(lire("Difficulté : base"), "initial");
+  assert.equal(lire("Niveau : Intermédiaire"), "intermediaire");
+  assert.equal(lire("Difficulté : avancée"), "avance");
+  assert.equal(lire("Réponses : A"), null, "sans ligne de niveau : non renseigné, jamais deviné");
+});
+
+test("le niveau se lit aussi sur une séquence, un texte à trous et un schéma", () => {
+  const r = analyserTexte(
+    "SÉQUENCE 1. Ordre.\n1. Un\n2. Deux\nNiveau : avancé\n\nTEXTE 2. Le {1} est ici.\n1. mot\nNiveau : initial",
+    { formatDefaut: "QCM" },
+  );
+  assert.deepEqual(r.questions.map((q) => [q.format, q.niveauQuestion]), [["ORD", "avance"], ["TAT", "initial"]]);
+});
+
+test("dépôt JSON : le niveau se lit sous « niveau », « niveauQuestion » ou « difficulte »", () => {
+  const r = analyserTexte(
+    JSON.stringify({ questions: [
+      { format: "QIM", enonce: "x", options: [{ id: "a", texte: "Un", vrai: true }, { id: "b", texte: "Deux", vrai: false }], niveau: "avancé" },
+      { format: "QIM", enonce: "y", options: [{ id: "a", texte: "Un", vrai: true }, { id: "b", texte: "Deux", vrai: false }], difficulte: "base" },
+      { format: "QIM", enonce: "z", options: [{ id: "a", texte: "Un", vrai: true }, { id: "b", texte: "Deux", vrai: false }] },
+    ] }),
+    { formatDefaut: "QIM" },
+  );
+  assert.deepEqual(r.questions.map((q) => q.niveauQuestion), ["avance", "initial", null]);
+});
+
+
+test("le niveau se lit sur un schéma à compléter", () => {
+  const [q] = analyserTexte("SCHÉMA 1. Légendez.\nImage : coupe.png\n1. sas (10, 10)\n2. filtre (20, 20)\nNiveau : intermédiaire", { formatDefaut: "QCM" }).questions;
+  assert.equal(q.format, "SCH");
+  assert.equal(q.niveauQuestion, "intermediaire");
+  assert.equal(q.legendes.length, 2, "la ligne de niveau n'est pas prise pour une légende");
 });

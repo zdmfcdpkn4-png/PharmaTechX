@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import type { EtatFormulaireQuestion } from "@/app/admin/questions/import-etat";
 import type { Legende } from "@/content/schema";
-import { trousDuTexte, type ModeReponse, type TypeQuestion } from "@/content/types";
+import {
+  DEFINITIONS_NIVEAU_QUESTION,
+  LIBELLES_NIVEAU_QUESTION,
+  NIVEAUX_QUESTION,
+  trousDuTexte,
+  type ModeReponse,
+  type NiveauQuestion,
+  type TypeQuestion,
+} from "@/content/types";
 import { EditeurSchema } from "./EditeurSchema";
 
 /**
@@ -51,6 +59,8 @@ export interface QuestionInitiale {
   justification: string;
   eliminatoire: boolean;
   reservee: boolean;
+  /** Initial, intermédiaire, avancé ; `null` = à préciser. */
+  niveauQuestion: NiveauQuestion | null;
   /** Une référence par ligne : « Source — Libellé — Date — URL ». */
   references: string;
   statut: "a_verifier" | "valide" | "retire";
@@ -489,6 +499,18 @@ export function EditeurQuestion({
           ? "Cette question est validée : enregistrer une modification la remet « à vérifier », et un autre code que le vôtre la validera (règle des quatre yeux)."
           : "Une question créée ou modifiée part « à vérifier » : un autre code que son auteur la valide depuis la banque (règle des quatre yeux)."}
       </p>
+
+      <label className="champ" style={{ maxWidth: "26rem" }}>
+        <span>Niveau de la question</span>
+        <select name="niveauQuestion" defaultValue={initiale?.niveauQuestion ?? ""}>
+          <option value="">À préciser</option>
+          {NIVEAUX_QUESTION.map((n) => (
+            <option key={n} value={n}>
+              {LIBELLES_NIVEAU_QUESTION[n]} — {DEFINITIONS_NIVEAU_QUESTION[n]}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="option option--compact" style={{ display: "inline-flex" }}>
         <input type="checkbox" name="eliminatoire" defaultChecked={initiale?.eliminatoire ?? false} />

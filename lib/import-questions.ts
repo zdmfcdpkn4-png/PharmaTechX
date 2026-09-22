@@ -1,6 +1,6 @@
 import { poser, type Legende } from "@/content/schema";
-import { trousDuTexte } from "@/content/types";
-import type { Reference, TypeQuestion } from "@/content/types";
+import { lireNiveauQuestion, trousDuTexte } from "@/content/types";
+import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
 
 /**
  * Import de questions depuis un texte — reprise, adaptée, de l'extraction
@@ -82,6 +82,8 @@ export interface QuestionImportee {
   eliminatoire: boolean;
   /** Réservée à l'évaluation (question 18) : ligne « Réservée : oui ». */
   reservee: boolean;
+  /** Ligne « Niveau : initial » (ou « Difficulté : … ») ; `null` si absente ou illisible. */
+  niveauQuestion: NiveauQuestion | null;
   refs: Reference[];
   /** Un corrigé complet a-t-il été lu ? */
   corrigeDetecte: boolean;
@@ -139,7 +141,8 @@ const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
  */
 const RE_EXTRAIT = /^Extraits?\s+([A-Ea-e])\s*[:–—-]\s*(.+)$/i;
 const RE_PIEGES = /^Pi[èe]ges?\s*[:–—-]\s*(.+)$/i;
-const RE_DIFFICULTE = /^Difficult[ée]\s*[:–—-]\s*(base|interm[ée]diaire|avanc[ée]e?)\s*\.?\s*$/i;
+/** « Niveau : initial » — ou « Difficulté : … », le libellé du premier modèle ; « base » vaut « initial ». */
+const RE_DIFFICULTE = /^(?:Niveau|Difficult[ée])\s*[:–—-]\s*(initial|base|interm[ée]diaire|avanc[ée]e?)\s*\.?\s*$/i;
 /** Ligne numérotée d'une séquence ou d'un texte à trous : « 1. étape ». */
 const RE_ELEMENT = /^(\d{1,2})\s*[.):–—-]\s*(.+)$/;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
@@ -233,9 +236,9 @@ function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number
 /**
  * Justification d'un QCM ou d'une QIM : la ligne « Justification » si elle
  * existe, puis les extraits du document dans l'ordre des lettres, puis les
- * pièges et la difficulté. Tout est affiché à l'apprenant après la
- * correction — l'extrait lui montre la phrase qui tranche, le piège lui dit
- * où était l'erreur.
+ * pièges. Tout est affiché à l'apprenant après la correction — l'extrait lui
+ * montre la phrase qui tranche, le piège lui dit où était l'erreur. Le niveau,
+ * lui, est un champ de la question depuis le 22/09/2026.
  */
 function justificationAssemblee(b: Brouillon): string {
   const parts: string[] = [];
@@ -246,7 +249,6 @@ function justificationAssemblee(b: Brouillon): string {
     .map((x) => `${x.lettre} : ${x.texte}`);
   if (extraits.length) parts.push(`${extraits.join(" ; ")}.`);
   if (b.pieges) parts.push(`Pièges : ${b.pieges.replace(/\.$/, "")}.`);
-  if (b.difficulte) parts.push(`Difficulté : ${b.difficulte}.`);
   return parts.join(" ");
 }
 
@@ -265,6 +267,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
       avertissements,
@@ -296,6 +299,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: attendues.length === numeros.length,
       avertissements,
@@ -326,6 +330,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
       avertissements,
@@ -375,6 +380,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     justification: justificationAssemblee(b),
     eliminatoire: b.eliminatoire,
     reservee: b.reservee,
+    niveauQuestion: lireNiveauQuestion(b.difficulte),
     refs: b.refs,
     corrigeDetecte: corrige,
     avertissements,
@@ -456,6 +462,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     if (!courant) continue;
 
     if (courant.genre === "sequence" || courant.genre === "trous") {
+      const niv = RE_DIFFICULTE.exec(ligne);
+      if (niv) {
+        courant.difficulte = niv[1];
+        courant.dernier = "rien";
+        continue;
+      }
       const el = RE_ELEMENT.exec(ligne);
       if (el) {
         courant.items.push(el[2].trim());
@@ -501,6 +513,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     }
 
     if (courant.genre === "schema") {
+      const niv = RE_DIFFICULTE.exec(ligne);
+      if (niv) {
+        courant.difficulte = niv[1];
+        courant.dernier = "rien";
+        continue;
+      }
       const im = RE_IMAGE.exec(ligne);
       if (im) {
         courant.imageNom = im[1];
@@ -543,7 +561,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     }
     const df = RE_DIFFICULTE.exec(ligne);
     if (df) {
-      courant.difficulte = df[1].toLowerCase();
+      courant.difficulte = df[1];
       courant.dernier = "rien";
       continue;
     }
@@ -628,6 +646,10 @@ interface QuestionJson {
   justification?: unknown;
   eliminatoire?: unknown;
   reservee?: unknown;
+  /** « initial », « intermédiaire », « avancé » — sous l'un de ces trois noms. */
+  niveau?: unknown;
+  niveauQuestion?: unknown;
+  difficulte?: unknown;
   references?: unknown;
   refs?: unknown;
   legendes?: unknown;
@@ -701,7 +723,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
         avertissements.push(`Schéma « ${enonce.slice(0, 50)} » ignoré : aucune légende.`);
         continue;
       }
-      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: ["Image à choisir dans l'éditeur."] });
+      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, avertissements: ["Image à choisir dans l'éditeur."] });
       continue;
     }
     const opts = optionsDe(q);
@@ -710,7 +732,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
       continue;
     }
     if (!opts.some((o) => o.vrai) && format === "QCM") avert.push("QCM sans proposition vraie : vérifier le corrigé.");
-    questions.push({ format, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, refs: referencesDe(q), corrigeDetecte: true, avertissements: avert });
+    questions.push({ format, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, avertissements: avert });
   }
   if (questions.length === 0) avertissements.push("Aucune question reconnue dans le JSON.");
   return { questions, avertissements };

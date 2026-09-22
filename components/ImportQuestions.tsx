@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { ETAT_IMPORT_INITIAL, type EtatImport } from "@/app/admin/questions/import-etat";
 import type { ModuleChoix } from "./EditeurQuestion";
+import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
 
 type ActionImport = (prec: EtatImport, fd: FormData) => Promise<EtatImport>;
 
@@ -88,6 +89,11 @@ export function ImportQuestions({
                         ? "Texte à trous"
                         : q.format}
                 </span>
+                {q.niveauQuestion ? (
+                  <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveauQuestion]}</span>
+                ) : (
+                  <span className="etiquette etiquette--attention">Niveau à préciser</span>
+                )}
                 {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                 {!q.corrigeDetecte && <span className="etiquette etiquette--attention">Sans corrigé</span>}
                 {(q.format === "SCH" || q.imageNom) && (

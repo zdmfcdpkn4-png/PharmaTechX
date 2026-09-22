@@ -103,7 +103,7 @@ test("sanitizeQuestion retire réponses, justification et mots des légendes", (
 });
 
 // ── barème harmonisé (décision du 19/09/2026, question 34) ──────────────────
-import { BAREME_DEFAUT, estBaremeDefaut, largeurBande, libelleBaremeCourt, libelleQim, normaliserBareme, noterElements, resumeBareme } from "../content/bareme";
+import { BAREME_DEFAUT, CLES_FORMAT, estBaremeDefaut, largeurBande, libelleBaremeCourt, libelleQim, normaliserBareme, noterElements, resumeBareme } from "../content/bareme";
 import { libelleBareme } from "../content/types";
 
 test("normaliserBareme : défauts, bornes, cohérence tirage / minimum", () => {
@@ -181,4 +181,13 @@ test("libellés du barème : dynamiques", () => {
   // cinq formats, puis seuil, bande de garde et tirages
   assert.equal(resumeBareme().length, 8);
   assert.match(resumeBareme(normaliserBareme({ bande: { mode: "fixe", points: 5 } }))[6], /5 points de pourcentage/);
+});
+
+// Demande du 22/09/2026 — « format où l'apprenant remet dans l'ordre, barème
+// spécifique, identique aux QIM » : c'est la séquence à ordonner, en place
+// depuis le 19/09/2026. Ce test fixe les deux propriétés demandées.
+test("séquence à ordonner : barème propre, identique à celui des QIM par défaut", () => {
+  assert.deepEqual(BAREME_DEFAUT.ordre, BAREME_DEFAUT.qim, "mêmes valeurs que la QIM");
+  assert.notEqual(BAREME_DEFAUT.ordre, BAREME_DEFAUT.qim, "objet distinct : réglable séparément");
+  assert.ok(CLES_FORMAT.includes("ordre"), "réglable dans /admin/bareme");
 });

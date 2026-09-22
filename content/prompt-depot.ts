@@ -28,6 +28,7 @@ Justification : texte affiché à l'apprenant après la correction.
 Source : ANSM — Bonnes pratiques de préparation 2023 — 21/07/2023 — https://ansm.sante.fr/
 Éliminatoire : oui
 Réservée à l'évaluation : oui
+Niveau : intermédiaire
 
 QIM 2. Concernant la zone à atmosphère contrôlée, chaque proposition se juge séparément.
 A. Proposition vraie (V)
@@ -80,6 +81,7 @@ PRÉCISIONS
 - Le corrigé s'écrit « (V) » / « (F) » en fin de proposition, ou en ligne « Réponses : A C ». Si le texte source porte les deux, ils doivent coïncider ; sinon, applique la règle 3.
 - « Éliminatoire : oui » — une erreur rend le critère non acquis, quel que soit le score. À ne mettre que si le texte source le dit.
 - « Réservée à l'évaluation : oui » — la question n'est jamais posée en entraînement. Même règle.
+- « Niveau : initial », « Niveau : intermédiaire » ou « Niveau : avancé » — le niveau de la question (restitution ; reformulation, comparaison ; raisonnement, piège). Même règle : à ne mettre que si le texte source le dit. Sinon, pas de ligne : le tuteur le renseignera dans l'éditeur.
 - « Image : nom-du-fichier.png » — illustration d'une question, ou image d'un schéma à compléter. Le fichier se dépose avec le texte, sur le même écran ; le nom doit être exactement celui du fichier.
 - Schéma à compléter : « SCHÉMA n. », puis « Image : … », puis une légende par ligne, numérotée. Entre parenthèses, la place du mot sur l'image en pourcentage de l'image (x, y, largeur, hauteur) ; deux nombres posent un repère sans rien masquer. Si le texte source ne donne pas ces positions, écris les légendes sans parenthèses : elles seront placées à la main dans l'éditeur.
 - Une légende accepte des variantes, séparées par « | » : « filtre HEPA | filtre terminal ».
@@ -115,10 +117,11 @@ TEXTE SOURCE À METTRE EN FORME
  * 4. Ni « Éliminatoire » ni « Réservée à l'évaluation » : ce sont des
  *    décisions du tuteur, prises dans l'éditeur, pas celles d'une IA.
  *
- * Les lignes « Extrait X », « Pièges » et « Difficulté » sont lues par
- * l'analyseur et versées dans la justification, affichée après la
- * correction. `test/prompt-depot.test.ts` passe les deux exemples dans
- * l'analyseur réel.
+ * Les lignes « Extrait X » et « Pièges » sont lues par l'analyseur et
+ * versées dans la justification, affichée après la correction ; la ligne
+ * « Niveau » renseigne le niveau de la question — initial, intermédiaire ou
+ * avancé, les trois paliers du site. `test/prompt-depot.test.ts` passe les
+ * deux exemples dans l'analyseur réel.
  */
 
 export type TypeGeneration = "QIM" | "QCM";
@@ -150,7 +153,7 @@ E. [Proposition vraie.]
 Extrait E : « [phrase du document, mot pour mot] »
 Réponses : A C E
 Pièges : B restriction, D valeur modifiée
-Difficulté : intermédiaire
+Niveau : intermédiaire
 Source : [organisme] — [code et titre du document] — [date du document]
 
 QIM 2. Concernant [autre thème], indiquez si les propositions suivantes sont vraies ou fausses.
@@ -166,7 +169,7 @@ E. [Proposition fausse : le dernier mot faux.]
 Extrait E : « [phrase du document qu'elle contredit] »
 Réponses : aucune
 Pièges : A inversion, B condition oubliée, C terme voisin, D mauvaise attribution, E dernier mot
-Difficulté : avancé
+Niveau : avancé
 Source : [organisme] — [code et titre du document] — [date du document]`,
   QCM: `QCM 1. Parmi les propositions suivantes concernant [thème unique de la question], lesquelles sont vraies ? (plusieurs réponses possibles)
 A. [Proposition fausse : deux termes inversés.]
@@ -181,7 +184,7 @@ E. [Proposition fausse : le dernier mot faux.]
 Extrait E : « [phrase du document qu'elle contredit, mot pour mot] »
 Réponses : B D
 Pièges : A inversion, C condition oubliée, E dernier mot
-Difficulté : base
+Niveau : initial
 Source : [organisme] — [code et titre du document] — [date du document]
 
 QCM 2. Parmi les propositions suivantes concernant [autre thème], lesquelles sont fausses ? (plusieurs réponses possibles)
@@ -197,7 +200,7 @@ E. [Proposition vraie.]
 Extrait E : « [phrase du document qui la confirme] »
 Réponses : A C
 Pièges : A valeur modifiée, C restriction
-Difficulté : intermédiaire
+Niveau : intermédiaire
 Source : [organisme] — [code et titre du document] — [date du document]`,
 };
 
@@ -217,7 +220,7 @@ Règles :
 - Chaque proposition doit être tranchée par une phrase des sources ; sinon ne l'écris pas. N'invente rien.
 - Extrait X : la phrase des sources qui tranche la proposition X, recopiée mot pour mot, 200 caractères au plus. Pour une proposition fausse, cite la phrase qu'elle contredit. Aucune phrase ne convient : omets la proposition, et renumérote les lettres sans trou.
 - Une question = un seul thème. Propositions déclaratives au présent, 8 à 25 mots, une idée chacune, ton neutre.
-- Difficulté : base (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège) — environ 3, 4 et 3.
+- Niveau : initial (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège) — environ 3, 4 et 3. Ce sont les trois niveaux des questions du site.
 - Propositions fausses, une seule erreur chacune : inversion de deux termes (surpression/dépression, amont/aval, entrée/sortie, propre/stérile), terme remplacé par son voisin, valeur, unité ou signe modifiés, condition oubliée, énoncé juste attribué au mauvais équipement, local ou poste, dernier mot faux. Mots restrictifs (uniquement, toujours, jamais, tous) : au plus 3 propositions fausses et 1 vraie sur l'ensemble.
 - Si les sources donnent des chiffres, au moins 2 questions en contiennent, avec unités.
 - Les lettres vraies varient d'une question à l'autre.

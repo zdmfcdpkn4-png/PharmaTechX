@@ -823,6 +823,39 @@ details.rail-groupe > .rail-liens {
   color: var(--texte-doux);
   padding: 0.25rem 0.625rem 0.125rem;
 }
+/* Sous-menu repliable (22/09/2026) : l'intitulé devient la poignée, avec son
+   chevron — plus petit que celui du bandeau, pour garder la hiérarchie. */
+details.rail-sous > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.75rem;
+  border-radius: 6px;
+}
+details.rail-sous > summary::-webkit-details-marker { display: none; }
+details.rail-sous > summary:hover { background: var(--marque-clair); }
+details.rail-sous > summary::after {
+  content: "";
+  margin-left: auto;
+  margin-right: 0.625rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-right: 2px solid var(--texte-doux);
+  border-bottom: 2px solid var(--texte-doux);
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+details.rail-sous[open] > summary::after { transform: rotate(45deg); }
+details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
+/* Dans le tiroir de tablette et de téléphone, la poignée garde la cible pleine. */
+@media (max-width: 62rem) {
+  details.rail-sous > summary { min-height: var(--cible); }
+}
+@media (prefers-reduced-motion: reduce) {
+  details.rail-sous > summary::after { transition: none; }
+}
 
 /* Texte d'information du volet, avant connexion : pas un lien, pas cliquable. */
 .rail-info {

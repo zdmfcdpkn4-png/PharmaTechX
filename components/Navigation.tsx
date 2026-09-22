@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
+import { relevePage } from "@/lib/rail";
 
 export interface LienRail {
   href: string;
@@ -19,11 +20,18 @@ export interface LienRail {
   compte?: number;
 }
 
-/** Sous-partie d'un groupe : un intitulé fin, jamais repliable. */
+/**
+ * Sous-partie d'un groupe — un **sous-menu** depuis le 22/09/2026 : il se
+ * replie comme un groupe. Groupe d'administration ouvert, la barre montrait
+ * ses seize liens d'un bloc ; elle n'en montre plus que trois intitulés, plus
+ * les liens du sous-menu qui porte la page courante.
+ */
 export interface SousGroupeRail {
   titre: string;
   liens: LienRail[];
 }
+
+
 
 export interface GroupeRail {
   /** Sert à décider quel groupe s'ouvre selon la page courante. */
@@ -77,8 +85,14 @@ export function Navigation({
 
   const [choisis, setChoisis] = useState<Record<string, boolean>>({});
   const estOuvert = (id: GroupeRail["id"]) => choisis[id] ?? porteLaPage(id);
-  const basculer = (id: GroupeRail["id"], ouvert: boolean) =>
+  const basculer = (id: string, ouvert: boolean) =>
     setChoisis((c) => (c[id] === ouvert ? c : { ...c, [id]: ouvert }));
+
+  // Même règle pour un sous-menu : ouvert de lui-même s'il porte la page
+  // courante, et un choix fait à la main l'emporte ensuite.
+  const cleSous = (g: GroupeRail, s: SousGroupeRail) => `${g.id}/${s.titre}`;
+  const sousOuvert = (g: GroupeRail, s: SousGroupeRail) =>
+    choisis[cleSous(g, s)] ?? s.liens.some((l) => relevePage(chemin, l.href));
 
   // Repérage : seuls les liens de page entière sont marqués. Les ancres d'une
   // même page ne le sont pas — c'est le défilement qui y répond, pas le volet.
@@ -109,12 +123,31 @@ export function Navigation({
       <summary>{g.titre}</summary>
       <div className="rail-liens">
         {g.liens?.map(lien)}
-        {g.sous?.map((s) => (
-          <div key={s.titre} className="rail-sous">
-            <span className="rail-sous-titre">{s.titre}</span>
-            {s.liens.map(lien)}
-          </div>
-        ))}
+        {g.sous?.map((s) => {
+          const ouvert = sousOuvert(g, s);
+          // Replié, un sous-menu montre la somme de ses comptes non nuls : sans
+          // quoi « Rapports 3 » disparaîtrait avec lui.
+          const enAttente = s.liens.reduce((n, l) => n + (l.compte ?? 0), 0);
+          return (
+            <details
+              key={s.titre}
+              className="rail-sous"
+              open={ouvert}
+              onToggle={(e) => basculer(cleSous(g, s), e.currentTarget.open)}
+            >
+              <summary>
+                <span className="rail-sous-titre">{s.titre}</span>
+                {!ouvert && enAttente > 0 ? (
+                  <>
+                    <span className="compte-attente" aria-hidden="true">{enAttente}</span>
+                    <span className="lecture-seule">, {enAttente} en attente</span>
+                  </>
+                ) : null}
+              </summary>
+              <div className="rail-sous-liens">{s.liens.map(lien)}</div>
+            </details>
+          );
+        })}
       </div>
     </details>
   );

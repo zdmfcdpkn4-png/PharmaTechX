@@ -50,6 +50,7 @@ export function versInitiale(l: LigneQuestion): QuestionInitiale {
     justification: l.justification,
     eliminatoire: l.eliminatoire,
     reservee: l.reservee,
+    niveauQuestion: l.niveau_question ?? null,
     references: l.refs
       .map((r) => [r.source, r.libelle, r.date, r.url, r.localisation].filter(Boolean).join(" — "))
       .join("\n"),

@@ -10,7 +10,7 @@ import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
 import { peutValider } from "@/content/quatre-yeux";
-import { trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
+import { lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
   changerStatutQuestion,
   enregistrerDepotQuestions,
@@ -188,6 +188,7 @@ export async function actionEnregistrerQuestion(
     justification: chaine(formData, "justification", 3000),
     eliminatoire: formData.get("eliminatoire") === "on",
     reservee: formData.get("reservee") === "on",
+    niveauQuestion: lireNiveauQuestion(formData.get("niveauQuestion")),
     refs: lireReferences(chaine(formData, "references", 3000)),
     statut,
   };
@@ -393,6 +394,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     justification: q.justification.slice(0, 3000),
     eliminatoire: q.eliminatoire,
     reservee: q.reservee,
+    niveauQuestion: lireNiveauQuestion(q.niveauQuestion),
     refs: q.refs,
     statut: "a_verifier",
     depotId,

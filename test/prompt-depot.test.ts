@@ -27,6 +27,8 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.ok(qcm.corrigeDetecte, "corrigé complet");
   assert.ok(qcm.eliminatoire, "« Éliminatoire : oui » est lu");
   assert.ok(qcm.reservee, "« Réservée à l'évaluation : oui » est lu");
+  assert.equal(qcm.niveauQuestion, "intermediaire", "« Niveau : intermédiaire » est lu");
+  assert.equal(qim.niveauQuestion, null, "sans ligne de niveau : à préciser");
   assert.equal(qcm.refs.length, 1, "une source lue");
   assert.match(qcm.justification, /après la correction/);
 
@@ -89,7 +91,9 @@ for (const type of ["QIM", "QCM"] as const) {
         "aucun extrait n'est collé au texte d'une proposition",
       );
       assert.match(q.justification, /^A : « .+ » ; B : « .+ » ; C : « .+ » ; D : « .+ » ; E : « .+ »\./, "extraits dans l'ordre des lettres");
-      assert.match(q.justification, /Pièges : .+\. Difficulté : (base|intermédiaire|avancé)\.$/);
+      assert.match(q.justification, /Pièges : .+\.$/, "les pièges ferment la justification");
+      assert.equal(/Niveau|Difficulté/.test(q.justification), false, "le niveau n'est plus dans la justification");
+      assert.ok(q.niveauQuestion && ["initial", "intermediaire", "avance"].includes(q.niveauQuestion), "le niveau est un champ");
       assert.equal(q.refs.length, 1, "source lue");
     }
   });
@@ -124,4 +128,12 @@ test("génération QCM : « lesquelles sont fausses ? » — les lettres à coch
   assert.match(fausses.enonce, /lesquelles sont fausses/);
   assert.deepEqual(fausses.options.filter((o) => o.vrai).map((o) => o.id), ["a", "c"]);
   assert.match(fausses.justification, /Pièges : A valeur modifiée, C restriction\./);
+});
+
+test("génération : le prompt emploie les trois niveaux du site, et eux seuls", () => {
+  for (const type of ["QIM", "QCM"] as const) {
+    const p = promptGeneration(type);
+    assert.ok(p.includes("Niveau : initial (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège)"));
+    assert.equal(/Difficulté|\bbase\b/.test(p), false, `${type} : plus de « Difficulté » ni de « base »`);
+  }
 });

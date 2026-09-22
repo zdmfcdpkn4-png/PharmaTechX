@@ -7,6 +7,7 @@ import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./comm
 import { peutValider } from "@/content/quatre-yeux";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
+import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ const MESSAGES: Record<string, string> = {
 export default async function Questions({
   searchParams,
 }: {
-  searchParams: Promise<{ module?: string; statut?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{ module?: string; statut?: string; niveau?: string; ok?: string; erreur?: string }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -27,11 +28,21 @@ export default async function Questions({
     ? (p.statut as StatutQuestion)
     : undefined;
   const moduleId = modules.some((m) => m.id === p.module) ? p.module : undefined;
-  const [questions, comptes, referentiel] = await Promise.all([
+  // Filtre par niveau : « a_preciser » retient les questions sans niveau.
+  const filtreNiveau: NiveauQuestion | "a_preciser" | undefined =
+    p.niveau === "a_preciser"
+      ? "a_preciser"
+      : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
+        ? (p.niveau as NiveauQuestion)
+        : undefined;
+  const [toutes, comptes, referentiel] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
   ]);
+  const questions = filtreNiveau
+    ? toutes.filter((q) => (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau))
+    : toutes;
   const parModule = new Map<string, typeof questions>();
   for (const q of questions) {
     const liste = parModule.get(q.module_id) ?? [];
@@ -116,6 +127,16 @@ export default async function Questions({
               <option value="retire">Retirées</option>
             </select>
           </label>
+          <label className="champ">
+            <span>Niveau</span>
+            <select name="niveau" defaultValue={filtreNiveau ?? ""}>
+              <option value="">Tous</option>
+              {NIVEAUX_QUESTION.map((n) => (
+                <option key={n} value={n}>{LIBELLES_NIVEAU_QUESTION[n]}</option>
+              ))}
+              <option value="a_preciser">À préciser</option>
+            </select>
+          </label>
         </div>
         <div className="actions">
           <button type="submit" className="bouton bouton--compact bouton--secondaire">
@@ -145,6 +166,11 @@ export default async function Questions({
                   <span className={`etiquette ${q.statut === "valide" ? "etiquette--ok" : q.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
                     {LIBELLES_STATUT[q.statut]}
                   </span>
+                  {q.niveau_question ? (
+                    <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveau_question]}</span>
+                  ) : (
+                    <span className="etiquette etiquette--attention">Niveau à préciser</span>
+                  )}
                   {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                   {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
                   {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}

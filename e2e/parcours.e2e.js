@@ -290,13 +290,29 @@ Justification : cf. procédure interne.`,
   await page.fill("textarea[name=justification]", "Parce que c'est la bonne.");
   await page.fill("textarea[name=references]", "ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x");
   assert.equal(await page.locator("select[name=statut] option[value=valide]").count(), 0, "pas de validation à l'enregistrement");
+  // Niveau de la question (22/09/2026) : trois paliers et « à préciser », sans valeur par défaut.
+  assert.deepEqual(
+    await page.locator("select[name=niveauQuestion] option").evaluateAll((o) => o.map((x) => x.value)),
+    ["", "initial", "intermediaire", "avance"],
+  );
+  assert.equal(await page.locator("select[name=niveauQuestion]").inputValue(), "", "aucun niveau deviné");
+  await page.selectOption("select[name=niveauQuestion]", "intermediaire");
   await page.click("button:has-text('Créer la question')");
   await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
   await page.waitForSelector("text=Question de test créée dans le formulaire");
   const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
   assert.equal(await ligneCreee.locator("button:has-text('Valider')").count(), 0, "l'auteur ne valide pas");
   await ligneCreee.locator("text=à valider par un autre code").waitFor();
-  ok("question QCM créée à vérifier ; validation refusée à son auteur (quatre yeux)");
+  assert.equal(await ligneCreee.locator(".etiquette", { hasText: /^Intermédiaire$/i }).count(), 1, "niveau affiché dans la banque");
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&niveau=intermediaire");
+  await page.waitForSelector("text=Question de test créée dans le formulaire");
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&niveau=avance");
+  assert.equal(
+    await page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" }).count(),
+    0,
+    "le filtre de niveau écarte les autres paliers",
+  );
+  ok("question QCM créée à vérifier, niveau intermédiaire enregistré et filtrable ; validation refusée à son auteur (quatre yeux)");
 
   // 3c. question réservée à l'évaluation (question 18, choix c) : créée par l'administrateur, validée à l'étape 5 par le tuteur
   const ENONCE_RESERVEE = "Question réservée à l'évaluation ?";
@@ -1012,6 +1028,20 @@ Justification : justification deux.`;
     "sous-parties de l'administration",
   );
   ok("volet : l'administration rangée en Suivi, Contenu et Réglages");
+  // Sous-menus repliables (22/09/2026) : sur l'accueil, aucun ne porte la
+  // page — les trois restent repliés, leurs liens hors de vue.
+  const sousMenu = (titre) => page.locator(`#volet-principal details.rail-sous:has(.rail-sous-titre:text-is("${titre}"))`);
+  for (const titre of ["Suivi", "Contenu", "Réglages"]) {
+    assert.equal(await sousMenu(titre).getAttribute("open"), null, `sous-menu ${titre} replié sur l'accueil`);
+  }
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/bareme']").isVisible(),
+    false,
+    "le lien Barème est caché tant que Réglages est replié",
+  );
+  await sousMenu("Réglages").locator("summary").click();
+  await page.waitForSelector("#volet-principal a[href='/admin/bareme']", { state: "visible" });
+  ok("volet : sous-menus repliés hors de leur section, dépliés au clic");
   assert.equal(
     await page.locator("main section#dispositif").count(),
     0,

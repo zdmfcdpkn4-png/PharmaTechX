@@ -406,9 +406,16 @@ telle. Ordre : ce qui change le déploiement en premier.
     abandonner le parcours dégradé (recommandé) ; le construire comme décidé ;
     un parcours « Pool de remplacement » sans la mention « dégradé ».
 
-51. **Difficulté des questions générées** — ouvert le 22/09/2026. Le prompt de
-    génération marque chaque question « base », « intermédiaire » ou
-    « avancé ». Le site n'a pas de champ de difficulté : en attendant, la
-    mention est versée dans la justification, en fin de texte, lisible par la
-    machine. `[à préciser]` : l'y laisser, en faire un champ de la banque, ou
-    en faire un critère des tirages.
+51. **Niveau des questions** — tranché le 22/09/2026 : trois niveaux, initial,
+    intermédiaire et avancé, pour toutes les questions, en champ de la banque
+    (étiquette, filtre, éditeur, dépôt), dans le vocabulaire des prompts.
+    Sans effet sur les tirages. Les questions sans niveau restent « à
+    préciser », y compris les 14 des deux modules rédigés.
+
+52. **Schéma à caches corrigé par le tuteur** — ouvert le 22/09/2026. Le schéma
+    à compléter a déjà des caches posés par le créateur, mais sa correction
+    est automatique (comparaison du texte saisi). La demande est une
+    correction vrai / faux faite avec le tuteur, à la manière d'Anki.
+    `[à préciser]` : qui juge, et quand — l'apprenant seul en entraînement ;
+    le tuteur présent, qui confirme par son code ; ou le tuteur plus tard,
+    le résultat restant en attente.

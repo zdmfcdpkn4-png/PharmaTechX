@@ -295,6 +295,10 @@ export const SCHEMA: string[] = [
   // décision du 18/09/2026 (question 18, choix c) : question réservée à
   // l'évaluation, jamais posée en entraînement ni en Découverte
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS reservee BOOLEAN NOT NULL DEFAULT FALSE`,
+  // niveau d'une question (22/09/2026) : initial, intermédiaire, avancé ;
+  // NULL = non renseigné, affiché « à préciser », jamais deviné
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS niveau_question TEXT
+     CHECK (niveau_question IN ('initial','intermediaire','avance'))`,
   // réglage des modules du code (décision du 19/09/2026, question 36, choix a) :
   // filières, niveaux et parcours d'un critère se règlent en administration,
   // en écart assumé à la fiche d'habilitation. NULL = ce que dit la fiche.

@@ -1549,6 +1549,58 @@ par « f » ou « v » sans marqueur entre parenthèses ont pu être tronquées.
 correctif ne les répare pas ; elles se retrouvent dans la banque, où la
 règle des quatre yeux les a normalement fait relire.
 
+## Trois niveaux de question, sous-menus de la barre (22/09/2026)
+
+Demandé le 22/09/2026, avec deux autres points traités à part (schéma à caches
+corrigé par le tuteur : question 52 ; format à remettre dans l'ordre : voir
+plus bas).
+
+**Niveau de question : initial, intermédiaire, avancé** — « pour toutes les
+questions, en corrélation avec le prompt ». C'est la réponse à la question 51 :
+le niveau devient un **champ** de la question, et non plus une mention dans la
+justification.
+
+- Colonne `questions.niveau_question`, contrainte aux trois valeurs ; `NULL`
+  vaut « à préciser ». Nommé `niveauQuestion` dans le code, pour ne pas le
+  confondre avec les niveaux d'habilitation N1a à N3.
+- Éditeur : une liste « Niveau de la question », **sans valeur par défaut** —
+  « À préciser » tant que personne n'a tranché.
+- Banque : une étiquette par question (« Niveau à préciser » en orange quand il
+  manque) et un filtre par niveau.
+- Dépôt texte : ligne « Niveau : initial | intermédiaire | avancé », lue dans
+  tous les formats (QCM, QIM, schéma, séquence, texte à trous). « Difficulté : »
+  et « base » restent lus, pour les réponses produites avec le premier modèle.
+  Dépôt JSON : champ `niveau` (ou `niveauQuestion`, ou `difficulte`).
+- Les deux prompts emploient le même vocabulaire que le site. Celui de
+  génération écrit « Niveau : initial » au lieu de « Difficulté : base » ;
+  celui de mise en forme ne transcrit le niveau que si le texte source le
+  donne.
+
+Le niveau **ne change pas les tirages**. L'argument de la question 51 tient :
+un tirage « Habilitation » qui écarterait les questions « avancé » retirerait
+de l'évaluation opposable les questions de raisonnement, sur la foi d'une
+étiquette. Le niveau sert à équilibrer la banque.
+
+Les **14 questions des deux modules rédigés** (versionnées avec le code) n'ont
+pas de niveau et restent « à préciser » : leur niveau est un jugement
+pédagogique qui revient à leur auteur.
+
+**Sous-menus de la barre principale** — « pour dédensifier la longueur de la
+barre ». Les trois sous-parties de l'administration (Suivi, Contenu, Réglages)
+existaient depuis le 19/09 mais ne se repliaient pas : groupe ouvert, les
+seize liens s'affichaient d'un bloc. Elles deviennent des sous-menus
+repliables, selon la règle des groupes : ouvert de lui-même s'il porte la page
+courante, un choix fait à la main l'emporte ensuite. Replié, un sous-menu
+montre la somme de ses comptes en attente — sans quoi « Rapports 3 »
+disparaîtrait avec lui. La règle d'ouverture (`lib/rail.ts`) ne laisse pas la
+page « Accès » (`/admin`) englober toute l'administration.
+
+**Format « remettre dans l'ordre » : déjà en place.** La séquence à ordonner
+existe depuis le 19/09/2026, avec un barème propre (`ordre`), identique à
+celui des QIM par défaut et réglable séparément dans `/admin/bareme` : une
+étape à sa place rapporte sa part, une étape mal placée la retire. Rien n'a
+été reconstruit ; un test fixe désormais ces deux propriétés.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
