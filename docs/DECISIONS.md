@@ -1224,6 +1224,45 @@ de bout en bout l'a fait tomber. Les envois d'une même session sont désormais
 mis à la file : ils gardent leur ordre. Le défaut **précède** ce travail ; il
 se déclenchait dès qu'un apprenant marquait une pause avant de valider.
 
+## Le dépôt passe en privé avant d'accueillir le contenu des portfolios (22/09/2026)
+
+Huit documents de l'unité ont été fournis le 22/09/2026 : les quatre fiches
+d'habilitation (pharmacien/interne, préparateur, aide en pharmacie, agent
+d'entretien), la version de travail de la fiche pharmacien, et trois
+portfolios (préparateur, pool de remplacement, interne).
+
+**Ce qu'ils portent, au-delà des compétences.** Quatre-vingt-cinq références
+de documents qualité internes distinctes, des numéros de poste téléphonique,
+deux boîtes aux lettres fonctionnelles du service, les initiales des
+intervenants, l'itinéraire d'accès badgé à la zone de production, les
+effectifs et les horaires.
+
+**L'état du dépôt à ce moment-là.** `zdmfcdpkn4-png/PharmaTechX` était
+**public** depuis sa création le 18/09/2026 : aucun fork, aucune étoile, cinq
+références internes réelles déjà poussées. Intégrer les portfolios et pousser
+les aurait publiés sur github.com, et l'historique Git les aurait conservés
+après suppression.
+
+**Tranché (question 43, choix a).** Le dépôt passe en privé ; le contenu est
+ensuite intégré sans contrainte de forme.
+
+Les deux autres voies ont été écartées. Garder le dépôt public en n'y mettant
+que les libellés de compétence aurait fait de la rédaction des 56 modules un
+exercice de contournement permanent — ces textes citeront des références
+internes — et contredit la décision du 19/09 (question 10, choix a : les
+textes vivent dans le code). Tout intégrer en restant public revenait à
+publier des adresses fonctionnelles et la description des accès d'une zone de
+production de cytotoxiques.
+
+**Ce que la bascule ne fait pas.** Elle n'efface pas ce qui a déjà été
+public. Avec cinq références, trois jours d'existence et aucun fork,
+l'exposition passée est faible — elle n'est pas nulle.
+
+**Le geste appartient au titulaire du dépôt.** Aucun outil de cette session
+ne change la visibilité d'un dépôt : GitHub → Settings → General → Danger
+Zone → Change repository visibility. `[à vérifier]` la connexion Render
+survit-elle au changement sans réautorisation de l'accès GitHub.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

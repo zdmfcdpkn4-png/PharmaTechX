@@ -337,3 +337,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     soumise à la même confirmation par code que la suppression, sans être
     interdite. Révoquer le code d'un autre reste d'un clic. Corrigé au
     passage : l'action de bascule ne revérifiait pas le rôle de la cible.
+
+43. **Visibilité du dépôt** — tranché le 22/09/2026 (choix a) : le dépôt passe
+    en privé avant d'accueillir le contenu des portfolios de l'unité (85
+    références de documents qualité, numéros de poste, boîtes aux lettres du
+    service, itinéraire d'accès à la zone de production, effectifs, horaires).
+    Le geste appartient au titulaire du dépôt ; aucun outil de la session ne
+    change une visibilité. `[à vérifier]` la connexion Render survit-elle au
+    changement sans réautorisation de l'accès GitHub.
