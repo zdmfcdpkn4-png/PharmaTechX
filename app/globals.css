@@ -652,8 +652,6 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   border-top: 1px solid rgba(216, 221, 226, 0.9);
   box-shadow: 0 -6px 24px rgba(16, 24, 32, 0.1);
 }
-.avancement { height: 6px; border-radius: 999px; background: #dfe4e8; overflow: hidden; }
-.avancement > span { display: block; height: 100%; background: var(--marque); border-radius: 999px; transition: width 0.2s ease; }
 
 /* =============================================================================
  * Correction
@@ -1750,6 +1748,28 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
 .schema-legendes--revele .legende-juste { background: var(--succes-fond); }
 .schema-legendes--revele .legende-fausse { background: var(--echec-fond); }
 .schema-legendes--revele .legende-vide { background: var(--alerte-fond); }
+/* Barres de progression (22/09/2026). Parcours : les badges des modules, en
+   couleur quand le critère est acquis, grisés sinon ; chaque badge évaluable
+   mène à son module (cible de 44 px). Test : une pastille par question,
+   grisée, puis en couleur une fois renseignée (corrigée en entraînement). */
+.barre-badges { margin: 0.75rem 0 1.25rem; }
+.barre-badges-titre { margin: 0 0 0.375rem; }
+.barre-badges-liste { list-style: none; margin: 0 0 0.375rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.barre-badge { display: inline-flex; align-items: center; justify-content: center; width: var(--cible); height: var(--cible); border-radius: 999px; color: var(--marque); text-decoration: none; }
+.barre-badge-visuel { display: inline-flex; transition: filter var(--transition), opacity var(--transition); }
+.barre-badge-visuel .badge { width: 40px; height: 40px; }
+.barre-badge-vide { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 999px; background: var(--marque-clair); color: var(--marque-fonce); font: 700 0.8125rem/1 ui-monospace, Menlo, Consolas, monospace; }
+.barre-badges-liste .est-grise .barre-badge-visuel { filter: grayscale(1); opacity: 0.4; }
+.barre-badges-liste .est-acquis .barre-badge { box-shadow: 0 0 0 2px var(--succes); }
+a.barre-badge:hover .barre-badge-visuel { opacity: 1; filter: none; }
+.pastilles-questions { margin: 0.125rem 0; }
+.pastilles-questions ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.pastilles-questions li { min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px; background: var(--surface-douce); border: 1px solid var(--bord); color: var(--texte-doux); font: 700 0.6875rem/20px ui-monospace, Menlo, Consolas, monospace; text-align: center; }
+.pastilles-questions li.est-faite { background: var(--marque); border-color: var(--marque); color: #ffffff; }
+.pastilles-questions li.est-courante { box-shadow: 0 0 0 2px var(--marque-fonce); }
+.pastilles-questions--compactes li { min-width: 10px; height: 10px; padding: 0; border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) { .barre-badge-visuel { transition: none; } }
+
 /* Données personnelles (22/09/2026) : une ligne par élément de l'article 13. */
 dl.rgpd { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: 0.5rem 1rem; margin: 0 0 0.75rem; }
 dl.rgpd dt { font-weight: 650; }

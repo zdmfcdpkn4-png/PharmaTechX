@@ -7,6 +7,7 @@ import { rattachement } from "@/lib/progression";
 import { Progression } from "@/components/Progression";
 import { blocsCompetence, criteres } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
+import { badgeEffectif } from "@/content/badges";
 import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
 import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
@@ -35,6 +36,7 @@ function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
         ? `${m.periodiciteMois}`
         : m.periodiciteMois,
     origine: m.origine ?? "code",
+    badge: badgeEffectif(m.badge, m.titre, m.objectif),
   };
 }
 

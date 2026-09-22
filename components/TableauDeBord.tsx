@@ -9,6 +9,7 @@ import { normaliserIdentifiant } from "@/lib/identifiant";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
+import { BarreBadges } from "./BarreBadges";
 
 export interface ModuleResume {
   id: string;
@@ -26,6 +27,8 @@ export interface ModuleResume {
   periodiciteMois: string;
   /** `base` pour un module déposé depuis l'administration. */
   origine?: "code" | "base";
+  /** Illustration effective du module (barre de progression du parcours). */
+  badge?: string;
 }
 
 /** Document général, proposé par profil (filières et niveaux ; vides = tous). */
@@ -344,12 +347,7 @@ export function TableauDeBord({
   );
 
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
-  const evalues = new Set(resultats.map((r) => r.moduleId));
   const acquis = resultats.filter((r) => r.reussi).length;
-  const avancement =
-    evaluables.length === 0
-      ? 0
-      : Math.round((evaluables.filter((m) => evalues.has(m.id)).length / evaluables.length) * 100);
 
   // Porté sur le rapport téléchargé : un programme à la carte y paraît avec
   // sa mention de parcours dégradé et sa validation.
@@ -475,13 +473,18 @@ export function TableauDeBord({
         </div>
       </div>
 
-      <div className="avancement" aria-hidden="true">
-        <span style={{ width: `${avancement}%` }} />
-      </div>
-      <p className="legende">
-        {avancement}&nbsp;% des évaluations disponibles ont été passées dans cette session —{" "}
-        {parcoursTitre.toLowerCase()}. Ce n&apos;est pas un avancement d&apos;habilitation.
-      </p>
+      {/* Barre de progression du parcours (22/09/2026) : les badges des
+          modules, en couleur quand le critère est acquis, grisés sinon. */}
+      <BarreBadges
+        etapes={programme.map((m) => ({
+          id: m.id,
+          titre: m.titre,
+          critereId: m.critereId,
+          badge: m.badge,
+          evaluable: m.nbQuestions > 0,
+        }))}
+        requete={aLaCarte ? `?programme=${aLaCarte.id}` : ""}
+      />
 
       {aLaCarte ? (
         <>

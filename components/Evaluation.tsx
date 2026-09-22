@@ -15,6 +15,7 @@ import { useSessionFormation } from "./SessionFormation";
 import { SchemaQuestion } from "./SchemaQuestion";
 import { OrdreQuestion } from "./OrdreQuestion";
 import { TrousQuestion } from "./TrousQuestion";
+import { PastillesQuestions } from "./PastillesQuestions";
 
 /**
  * Moteur d'évaluation.
@@ -1187,16 +1188,11 @@ export function Evaluation({
               <p className="legende" style={{ margin: "0 0 .25rem" }}>
                 Question {indexCourant + 1} / {posees.length} — {moduleTitre} — entraînement
               </p>
-              <div
-                className="avancement"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={posees.length}
-                aria-valuenow={indexCourant + (correction ? 1 : 0)}
-                aria-label="Questions corrigées"
-              >
-                <span style={{ width: `${((indexCourant + (correction ? 1 : 0)) / posees.length) * 100}%` }} />
-              </div>
+              <PastillesQuestions
+                faites={posees.map((x) => Boolean(corrections[x.id]))}
+                courante={indexCourant}
+                libelle="Questions corrigées"
+              />
               <p className="legende" style={{ margin: ".25rem 0 0" }}>
                 Avancement de cet entraînement — rien n&apos;est enregistré.
               </p>
@@ -1286,16 +1282,7 @@ export function Evaluation({
               <p className="legende" style={{ margin: "0 0 .25rem" }}>
                 {repondues} / {posees.length} questions renseignées — {moduleTitre}
               </p>
-              <div
-                className="avancement"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={posees.length}
-                aria-valuenow={repondues}
-                aria-label="Questions renseignées"
-              >
-                <span style={{ width: `${(repondues / posees.length) * 100}%` }} />
-              </div>
+              <PastillesQuestions faites={posees.map(estRenseignee)} libelle="Questions renseignées" />
               <p className="legende" style={{ margin: ".25rem 0 0" }}>
                 Avancement de cette session — ce n&apos;est pas un avancement d&apos;habilitation.
               </p>

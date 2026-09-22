@@ -1799,6 +1799,38 @@ Corrigé au passage : la réponse « Les entraînements ne sont jamais
 enregistrés » était fausse pour un agent rattaché (la fin d'un entraînement
 est notée) ; la nouvelle réponse ne l'affirme plus.
 
+## Barres de progression : badges du parcours, pastilles du test (22/09/2026)
+
+Demandé le 22/09/2026 : « une signalétique de barre de progression dans le
+parcours et dans le test », puis « pour la barre de progression du parcours,
+utiliser les badges des modules validés ou grisés ».
+
+**Parcours (accueil).** La barre fine — « n % des évaluations disponibles
+passées » — est remplacée par une rangée de badges : un par module du
+programme affiché (socle et filière choisie, ou programme à la carte), dans
+son ordre, **en couleur quand le critère est acquis, grisé sinon**. Chaque
+badge d'un module évaluable mène à ce module ; au-dessus, « x / N critères
+acquis — M évaluables aujourd'hui ».
+
+- « Acquis » : le verdict brut de la dernière évaluation du module dans la
+  mémoire de session — l'onglet, ou l'historique d'un agent rattaché. Un
+  verdict indéterminé en attente d'arbitrage reste grisé, et un arbitrage
+  « acquis » porté au visa n'y paraît pas : le poste ne le connaît pas.
+- Ce n'est pas un avancement d'habilitation, et la barre le dit.
+- **Écart assumé à une règle du 19/09** : les illustrations ne se lisent pas
+  sous ~72 px et ne devaient jamais servir de pastille (`content/badges.ts`).
+  À 40 px, elles servent ici de repère de couleur ; le titre du module est
+  dans l'infobulle et dans le nom lu par les lecteurs d'écran.
+
+**Test.** Une pastille numérotée par question dans la barre de passation,
+**grisée, puis en couleur une fois la question renseignée** — corrigée, en
+entraînement, où la question en cours est cerclée. Au-delà de vingt
+questions, les pastilles perdent leur numéro et rétrécissent, pour que la
+barre garde sa hauteur sur une tablette. Les lecteurs d'écran lisent la
+barre de progression et le décompte, pas les pastilles. C'est la consigne du
+parcours étendue au test, que la demande ne précisait pas : à dire si vous
+voulez autre chose.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

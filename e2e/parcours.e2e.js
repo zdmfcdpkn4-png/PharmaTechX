@@ -1584,6 +1584,52 @@ Justification : cf. procédure interne.`,
   await rebrancher(codeAdmin);
   ok("programme à la carte : brouillon invisible, validé par le tuteur, proposé marqué « dégradé », ordre du programme et module suivant tenus, code de poste ouvert d'office, modifié il repasse en brouillon");
 
+  // 12j quater. barres de progression (22/09/2026) : dans le test, une pastille par
+  //             question, grisée puis en couleur une fois renseignée ; dans le parcours,
+  //             les badges des modules, en couleur quand le critère est acquis, grisés
+  //             sinon. Pour qu'un tirage de deux questions puisse conclure, le barème est
+  //             réglé le temps de l'étape (deux questions, bande fixe de 5 points), puis rétabli.
+  await page.goto(BASE + "/admin/bareme");
+  await page.fill("input[name=minQuestions]", "2");
+  await page.selectOption("select[name=bandeMode]", "fixe");
+  await page.fill("input[name=bandePoints]", "5");
+  await page.click("button:has-text('Enregistrer le barème')");
+  await page.waitForURL(/ok=enregistre/);
+  await page.goto(BASE + "/module/" + idFormats + "/evaluation");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question .sequence");
+  const pastilles = page.locator(".barre-passation .pastilles-questions li");
+  assert.equal(await pastilles.count(), 2, "une pastille par question");
+  assert.equal(await page.locator(".barre-passation .pastilles-questions li.est-grisee").count(), 2, "rien de renseigné : tout est grisé");
+  const etapesSeq = page.locator("fieldset.question .sequence .etape-sequence");
+  for (let i = 0; i < 3; i++) {
+    const libelle = (await etapesSeq.nth(i).locator(".libelle").innerText()).trim();
+    await etapesSeq.nth(i).locator("select").selectOption(String(ORDRE_JUSTE[libelle]));
+  }
+  await page.waitForSelector(".barre-passation .pastilles-questions li.est-faite");
+  assert.equal(await page.locator(".barre-passation .pastilles-questions li.est-faite").count(), 1, "une question renseignée : une pastille en couleur");
+  const trousJustes = page.locator("fieldset.question .texte-a-trous .trou select");
+  await trousJustes.nth(0).selectOption({ label: "transfert" });
+  await trousJustes.nth(1).selectOption({ label: "zone à atmosphère contrôlée" });
+  await page.waitForFunction(() => document.querySelectorAll(".barre-passation .pastilles-questions li.est-faite").length === 2);
+  assert.equal(await page.getAttribute(".barre-passation .pastilles-questions", "aria-valuenow"), "2");
+  await validerEvaluation();
+  await page.waitForSelector(".resultat-entete--acquis");
+  // retour à l'accueil sans recharger : la mémoire de session est celle de l'onglet
+  await page.click("a:has-text('Rapport de session')");
+  await page.waitForSelector("#rapport");
+  await page.locator("#composer select").first().selectOption("chimiotherapie");
+  const badgeFormats = page.locator(`.barre-badges li:has(a[href='/module/${idFormats}'])`);
+  await badgeFormats.waitFor();
+  assert.equal(await badgeFormats.getAttribute("class"), "est-acquis", "le critère acquis prend sa couleur");
+  assert.ok((await page.locator(".barre-badges li.est-grise").count()) > 0, "les autres restent grisés");
+  assert.match(await page.locator(".barre-badges-titre").innerText(), /^1 \/ \d+ critères? acquis/);
+  await capture("barre-badges");
+  await page.goto(BASE + "/admin/bareme");
+  await page.click("button:has-text('Rétablir les valeurs par défaut')");
+  await page.waitForURL(/ok=defaut/);
+  ok("barres de progression : pastilles du test grisées puis en couleur à chaque réponse ; badges du parcours en couleur pour le critère acquis, grisés sinon");
+
   // 12k. référentiel déposé (question 38, choix b) et arborescence de la banque
   //      Une filière et un niveau ajoutés en base doivent apparaître dans les
   //      listes de rattachement d'un module, sans livraison de code.
