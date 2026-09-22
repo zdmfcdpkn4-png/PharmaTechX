@@ -8,6 +8,7 @@ import {
   ecrireRang,
   enregistrerDepot,
   lireRoleAcces,
+  reinitialiserAcces,
   supprimerAcces,
   supprimerDepot,
   type Role,
@@ -174,6 +175,41 @@ export async function actionSupprimerCode(formData: FormData) {
   await journaliser(s, "suppression-code", `acces:${id}`);
   revalidatePath("/admin");
   redirect("/admin?ok=code-supprime");
+}
+
+/**
+ * Réinitialisation d'un code d'accès perdu ou corrompu (demande du
+ * 22/09/2026) : l'administration seule, et jamais au seul clic — comme la
+ * suppression, l'administrateur retape le code de sa session. Le code est
+ * haché : perdu, il ne se retrouve pas, il se remplace. La réinitialisation
+ * le remplace **sans changer de profil** ; supprimer puis recréer perdrait la
+ * signature déposée et l'identité du code pour les quatre yeux.
+ *
+ * L'ancien code cesse de valoir à l'instant, et les sessions ouvertes avec
+ * lui se ferment à la requête suivante. Le nouveau code s'affiche une fois.
+ *
+ * Son propre code ne se réinitialise pas d'ici : la session se fermerait
+ * avant d'afficher le nouveau code, et la porte avec elle.
+ */
+export async function actionReinitialiserCode(formData: FormData) {
+  const s = await sessionRequise("admin");
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id < 1 || !(await lireRoleAcces(id))) redirect("/admin");
+  if (s.acces && id === s.acces) {
+    await journaliser(s, "reinitialisation-code-refusee", `acces:${id}`, { motif: "propre-code" });
+    redirect("/admin?erreur=reinitialisation-propre-code");
+  }
+  const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
+  if (confirmation !== "ok") {
+    await journaliser(s, "reinitialisation-code-refusee", `acces:${id}`, { motif: confirmation });
+    redirect(`/admin?erreur=confirmation-${confirmation}`);
+  }
+  const code = genererCode();
+  const cible = await reinitialiserAcces(id, hacherCode(code));
+  if (!cible) redirect("/admin");
+  await journaliser(s, "reinitialisation-code", `acces:${id}`, { role: cible.role, libelle: cible.libelle });
+  revalidatePath("/admin");
+  redirect(`/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(cible.libelle)}&reinitialise=1`);
 }
 
 export async function actionDeposer(formData: FormData) {

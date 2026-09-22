@@ -417,6 +417,19 @@ export async function lireEtatAcces(id: number): Promise<{ actif: boolean; ferme
   return r.rows[0] ?? null;
 }
 
+/**
+ * Réinitialisation d'un code perdu ou corrompu (22/09/2026) : une nouvelle
+ * empreinte pour le **même** profil — même identifiant, donc même signature
+ * déposée, même identité pour la règle des quatre yeux, même programme à la
+ * carte. `ferme_le` ferme, comme une révocation, les sessions ouvertes avec
+ * l'ancien code ; l'état actif ou révoqué, lui, ne change pas.
+ */
+export async function reinitialiserAcces(id: number, codeHash: string): Promise<{ role: Role; libelle: string } | null> {
+  const r = await sql<{ role: Role; libelle: string }>`
+    UPDATE acces SET code_hash = ${codeHash}, ferme_le = NOW() WHERE id = ${id} RETURNING role, libelle`;
+  return r.rows[0] ?? null;
+}
+
 /** Rôle porté par un code d'accès : l'action revérifie ce que l'écran se contente de ne pas afficher. */
 export async function lireRoleAcces(id: number): Promise<Role | null> {
   const r = await sql<{ role: Role }>`SELECT role FROM acces WHERE id = ${id}`;

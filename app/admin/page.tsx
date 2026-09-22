@@ -6,7 +6,7 @@ import { modeConservation } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
 import { comptesRapports } from "@/lib/rapports";
-import { actionBasculerCode, actionCreerCode, actionSupprimerCode } from "@/app/actions";
+import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
 
@@ -22,6 +22,8 @@ const MESSAGES: Record<string, string> = {
     "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été modifié.",
   "suppression-propre-code":
     "C\u2019est le code de votre session : il ne se supprime pas. Ouvrez une session avec un autre code d\u2019administration pour supprimer celui-ci.",
+  "reinitialisation-propre-code":
+    "C\u2019est le code de votre session : il ne se réinitialise pas d\u2019ici, la session se fermerait avant d\u2019afficher le nouveau code. Ouvrez une session avec un autre code d\u2019administration.",
   "programme-non-valide":
     "Ce programme à la carte n\u2019est pas validé : un code de poste ne s\u2019ouvre que sur un programme validé. Rien n\u2019a été créé.",
   "confirmation-indisponible":
@@ -35,7 +37,7 @@ const CONFIRMATIONS: Record<string, string> = {
 export default async function Admin({
   searchParams,
 }: {
-  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string; ok?: string }>;
+  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string; ok?: string; reinitialise?: string }>;
 }) {
   const p = await searchParams;
   const { filieres, niveaux } = await getReferentiel();
@@ -65,10 +67,13 @@ export default async function Admin({
 
       {p.nouveau && (
         <p className="encart encart--ok">
-          <strong>Code créé pour « {p.libelle} » : </strong>
+          <strong>
+            {p.reinitialise ? `Code réinitialisé pour « ${p.libelle} » : ` : `Code créé pour « ${p.libelle} » : `}
+          </strong>
           <code style={{ fontSize: "1.15rem" }}>{p.nouveau}</code>
           <br />
           Transmettez-le à l&apos;intéressé maintenant : il n&apos;est affiché qu&apos;une fois.
+          {p.reinitialise ? " L'ancien code ne vaut plus, et les sessions ouvertes avec lui se ferment." : ""}
         </p>
       )}
 
@@ -247,6 +252,39 @@ export default async function Admin({
                       {a.actif ? "Révoquer" : "Réactiver"}
                     </button>
                   </form>
+                )}
+                {estAdmin && a.id !== session.acces && (
+                  <details className="suppression">
+                    <summary className="bouton bouton--compact bouton--secondaire">
+                      Réinitialiser…
+                    </summary>
+                    <form action={actionReinitialiserCode} className="suppression-corps">
+                      <input type="hidden" name="id" value={a.id} />
+                      <label className="champ">
+                        <span>
+                          Code perdu ou corrompu : nouveau code pour « {a.libelle} ». Entrez votre code
+                          d&apos;administration
+                        </span>
+                        <input
+                          type="password"
+                          name="confirmation"
+                          autoComplete="off"
+                          spellCheck={false}
+                          required
+                        />
+                      </label>
+                      <span className="legende">
+                        Le profil reste le même — signature, programme, identité pour les quatre yeux.
+                        L&apos;ancien code cesse de valoir, les sessions ouvertes avec lui se ferment, et
+                        le nouveau code s&apos;affiche une fois. Journalisé.
+                      </span>
+                      <div className="actions">
+                        <button type="submit" className="bouton bouton--compact">
+                          Réinitialiser le code
+                        </button>
+                      </div>
+                    </form>
+                  </details>
                 )}
                 {estAdmin && (
                   <details className="suppression">

@@ -1836,7 +1836,7 @@ Justification : cf. procédure interne.`,
   await page.fill("input[name=libelle]", "Poste jetable");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
-  const codeJetable = new URL(page.url()).searchParams.get("nouveau");
+  let codeJetable = new URL(page.url()).searchParams.get("nouveau");
   const ctx2 = await browser.newContext();
   const page2 = await ctx2.newPage();
   const entrerJetable = async () => {
@@ -1893,6 +1893,42 @@ Justification : cf. procédure interne.`,
   await entrerJetable();
   assert.equal(await apiJetable(), 404, "nouvelle session valide après réactivation");
 
+  // Code perdu ou corrompu (22/09/2026) : l'administration le réinitialise, confirmé par
+  // son propre code. Même profil, nouveau code affiché une fois, ancien code mort,
+  // sessions ouvertes avec lui fermées. Son propre code ne se réinitialise pas d'ici.
+  const idJetable = await carteJetable.locator("input[name=id]").first().inputValue();
+  assert.equal(
+    await page.locator("li.carte", { hasText: "Administrateur initial" }).locator("summary:has-text('Réinitialiser')").count(),
+    0,
+    "son propre code ne se réinitialise pas depuis sa session",
+  );
+  await carteJetable.locator("summary:has-text('Réinitialiser')").click();
+  const formeReinit = carteJetable.locator("form:has(button:has-text('Réinitialiser le code'))");
+  await formeReinit.locator("input[name=confirmation]").fill(codeAdmin);
+  await formeReinit.locator("button:has-text('Réinitialiser le code')").click();
+  await page.waitForURL(/reinitialise=1/);
+  const ancienJetable = codeJetable;
+  codeJetable = new URL(page.url()).searchParams.get("nouveau");
+  assert.match(codeJetable, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
+  assert.notEqual(codeJetable, ancienJetable);
+  await page.waitForSelector("text=Code réinitialisé pour « Poste jetable »");
+  assert.equal(
+    await page.locator("li.carte", { hasText: "Poste jetable" }).locator("input[name=id]").first().inputValue(),
+    idJetable,
+    "même profil : l'identifiant du code ne change pas",
+  );
+  assert.equal(await apiJetable(), 401, "la session ouverte avec l'ancien code est fermée");
+  await page2.goto(BASE + "/connexion");
+  await page2.fill("input[name=code]", ancienJetable);
+  await page2.click("button:has-text('Entrer')");
+  await page2.waitForURL(/erreur=code-invalide/);
+  await entrerJetable();
+  assert.equal(await apiJetable(), 404, "le nouveau code ouvre une session");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:has-text('reinitialisation-code')");
+  await page.goto(BASE + "/admin");
+  ok("code perdu ou corrompu : réinitialisé par l'administration, même profil, ancien code refusé, ses sessions fermées, nouveau code valide ; journalisé");
+
   // Le tutorat ne bascule pas un code d'administration (21/09/2026) : l'écran ne le lui
   // propose pas, et le serveur refuse la requête forgée. `peutGererRole` manquait à
   // l'action : la protection ne reposait jusque-là que sur ce qui était affiché.
@@ -1944,12 +1980,17 @@ Justification : cf. procédure interne.`,
   // l'administrateur retape le code qui a ouvert sa session. Un code faux ne supprime rien,
   // laisse une trace au journal, et compte au limiteur de connexion ; la reconnexion de
   // l'étape 14d efface ce compteur, ce dont dépend le blocage volontaire de l'étape 15.
+  // Deux formulaires confirmés par code dans la carte depuis le 22/09/2026
+  // (réinitialiser, supprimer) : le champ se cherche dans celui de la suppression.
+  const confirmationSuppression = carteJetable.locator(
+    "form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]",
+  );
   const ouvrirSuppression = async () => {
     await carteJetable.locator("summary:has-text('Supprimer')").click();
-    await carteJetable.locator("input[name=confirmation]").waitFor();
+    await confirmationSuppression.waitFor();
   };
   await ouvrirSuppression();
-  await carteJetable.locator("input[name=confirmation]").fill("ZZZZZ-ZZZZZ");
+  await confirmationSuppression.fill("ZZZZZ-ZZZZZ");
   // L'alerte « Code incorrect » de la révocation ci-dessus est encore à
   // l'écran, et la suppression refusée redirige vers la même adresse : attendre
   // l'alerte ne prouvait pas que l'action avait abouti. On attend sa réponse
@@ -1965,7 +2006,7 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("code:has-text('suppression-code-refusee')");
   await page.goto(BASE + "/admin");
   await ouvrirSuppression();
-  await carteJetable.locator("input[name=confirmation]").fill(codeAdmin);
+  await confirmationSuppression.fill(codeAdmin);
   await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
   await page.waitForSelector("li.carte:has-text('Poste jetable')", { state: "detached" });
   await page.waitForSelector("[role=status]:has-text('Code supprimé')");

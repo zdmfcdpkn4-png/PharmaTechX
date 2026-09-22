@@ -1733,6 +1733,37 @@ un programme par identifiant d'agent, c'est une autre construction : à dire.
 compose peut valider lui-même — « validé par le tuteur ou l'admin » ne
 demandait pas deux codes. C'est une ligne à ajouter.
 
+## Réinitialiser un code perdu ou corrompu (22/09/2026)
+
+Demandé le 22/09/2026 : « la possibilité de réinitialiser les codes des
+utilisateurs pour l'admin si perdu ou corrompu ».
+
+Les codes sont hachés : perdu, un code ne se retrouve pas. Jusqu'ici, on en
+créait un autre et on supprimait l'ancien — ce qui changeait de profil :
+signature déposée du pharmacien, identité du code pour les quatre yeux,
+programme à la carte d'un code de poste, tout était perdu avec lui.
+
+**Construit** : « Réinitialiser… » sur chaque code, écran Accès,
+**administration seule**. Même profil, nouvelle empreinte : l'ancien code
+cesse de valoir à l'instant, les sessions ouvertes avec lui se ferment à la
+requête suivante (comme une révocation), et le nouveau code s'affiche **une
+fois**. L'état actif ou révoqué ne change pas.
+
+**Deux barrières reprises de la suppression** :
+
+- l'administrateur **retape son propre code** : l'acte ne part pas au clic,
+  et les codes refusés comptent au limiteur de connexion ;
+- **son propre code ne se réinitialise pas d'ici** : la session se fermerait
+  avant d'afficher le nouveau code, et la porte avec elle. On passe par une
+  session ouverte avec un autre code d'administration.
+
+Journal : `reinitialisation-code`, ou `reinitialisation-code-refusee` avec
+son motif.
+
+Le **code personnel d'un agent** (rattachement de la progression, 4 à 8
+chiffres) se réinitialisait déjà, depuis la fiche de l'agent, en tutorat et en
+administration (question 11) : rien n'a changé de ce côté.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
