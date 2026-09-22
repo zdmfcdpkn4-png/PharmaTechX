@@ -383,3 +383,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     couvert par un module se rattachent depuis `/admin/documents`.
     `[à préciser]` la part des 85 références concernée, tant que le
     rattachement n'est pas fait.
+
+48. **Mention de preuve pour la colonne « Outils / Preuve de compétence »** —
+    tranché le 22/09/2026 (choix b) : mention composée de six segments
+    (outil, numéro, date, module, score, verdict), bouton de copie sur la
+    page du rapport et dans la liste. Seul un rapport clos en donne une ;
+    l'empreinte n'y figure pas, elle se lit sur le rapport. Sans mise en
+    service, la mention porte d'abord « Phase d'essai — ne vaut pas preuve ».

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { conservationActive } from "@/lib/config";
+import { conservationActive, miseEnService } from "@/lib/config";
+import { CopierMention } from "@/components/CopierMention";
+import { LIBELLES_REFUS_MENTION, mentionDePreuve } from "@/lib/mention";
 import { LIBELLES_COURTS_VERDICT, LIBELLES_VERDICT, expliquerVerdict } from "@/lib/decision";
 import { LIBELLES_STATUT_RAPPORT, contexteDecision, lireRapport } from "@/lib/rapports";
 import { QUALITES_VISA } from "@/lib/rapport";
@@ -77,6 +79,18 @@ export default async function Rapport({
   const exclues = new Map(ctx.exclusions.map((e) => [e.questionId, e.motif]));
   const numeroDe = (questionId: string) => r.resultat.detail.findIndex((q) => q.questionId === questionId) + 1;
 
+  const mention = mentionDePreuve(
+    {
+      numero: r.numero,
+      moduleTitre: r.module_titre,
+      emisLe: r.emis_le,
+      statut: r.statut,
+      score: d.score,
+      verdict: LIBELLES_COURTS_VERDICT[ctx.verdictFinal],
+    },
+    { miseEnService: miseEnService() },
+  );
+
   return (
     <>
       <p className="fil">
@@ -110,6 +124,15 @@ export default async function Rapport({
             sans le site ni la base.
           </p>
         )}
+        <div className="carte" style={{ marginTop: "1rem" }}>
+          <p className="legende" style={{ marginTop: 0 }}>
+            <strong>Colonne « Outils / Preuve de compétence » de la fiche d&apos;habilitation.</strong>{" "}
+            {"texte" in mention
+              ? "À recopier dans la cellule du critère concerné. L'empreinte n'y figure pas : elle se lit sur le rapport, retrouvé par son numéro."
+              : LIBELLES_REFUS_MENTION[mention.refus]}
+          </p>
+          {"texte" in mention && <CopierMention texte={mention.texte} />}
+        </div>
       </section>
 
       {message && (

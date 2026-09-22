@@ -395,12 +395,27 @@ export function Evaluation({
    * en donne un.
    */
   const fileTraces = useRef<Promise<unknown>>(Promise.resolve());
-  const tracer = (corps: Record<string, unknown>) => {
+  /**
+   * Écritures de progression sérialisées : sans cette file, la sauvegarde
+   * regroupée (700 ms) et son effacement après correction partaient en
+   * parallèle, et l'effacement pouvait être traité le premier — l'apprenant
+   * se voyait alors proposer de « reprendre » l'évaluation qu'il venait de
+   * valider.
+   *
+   * `persistant` (`keepalive`) fait survivre une requête **déjà émise** au
+   * déchargement de la page : utile pour l'effacement déclenché par
+   * « Recommencer », seul chemin où le client est le seul à effacer. Il ne
+   * protège pas une requête encore en file d'attente, qui n'est jamais
+   * émise. Réservé aux corps courts : la limite est de 64 Kio, et un état
+   * d'évaluation complet la dépasserait.
+   */
+  const tracer = (corps: Record<string, unknown>, persistant = false) => {
     fileTraces.current = fileTraces.current.then(() =>
       fetch("/api/progression", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moduleId, ...corps }),
+        keepalive: persistant,
       }).catch(() => undefined),
     );
     return fileTraces.current;
@@ -438,7 +453,7 @@ export function Evaluation({
   const effacerEnCours = () => {
     if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
     setEnCours(null);
-    if (rattache) void tracer({ nature: "en_cours", etat: null });
+    if (rattache) void tracer({ nature: "en_cours", etat: null }, true);
   };
 
   const reprendre = (e: EtatEnCours) => {
@@ -560,6 +575,15 @@ export function Evaluation({
     setEnvoi(true);
     setErreur(null);
     try {
+      // La correction efface `en_cours` côté serveur (`enregistrerEvaluation`,
+      // `lib/progression.ts`). Une sauvegarde encore en attente ou en vol
+      // arriverait après elle et ressusciterait la ligne : l'apprenant se
+      // verrait proposer de reprendre l'évaluation qu'il vient de valider.
+      // La file de traces n'ordonne que les écritures du client entre elles,
+      // pas vis-à-vis de la correction, qui passe par une autre route : on
+      // annule donc le minuteur et on vide la file avant d'envoyer.
+      if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
+      await fileTraces.current;
       const r = await corriger(posees);
       setResultat(r);
       enregistrer(r);

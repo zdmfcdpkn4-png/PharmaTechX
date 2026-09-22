@@ -623,6 +623,23 @@ Justification : cf. procédure interne.`,
   await captureHtml("04-a4-pseudonyme", html);
   await captureHtml("05-a4-nom-porte", htmlNom);
   ok("rapport A4 : pseudonyme en GET, nom porté à l'édition en POST, verdict arbitré, signature incrustée");
+
+  // 10e. mention de preuve pour la colonne « Outils / Preuve de compétence »
+  //      (question 48, choix b) : composée sur un rapport clos, sans empreinte.
+  await page.goto(urlRapport);
+  const mention = page.locator(".mention-texte").first();
+  await mention.waitFor();
+  const texteMention = (await mention.innerText()).trim();
+  assert.ok(texteMention.startsWith(`PharmaTechX — ${numero} — `), "mention : outil puis numéro");
+  assert.equal(texteMention.split(" — ").length, 6, "mention : six segments, pas un de plus");
+  assert.equal(/[0-9a-f]{12,}/.test(texteMention), false, "l'empreinte ne part pas dans la cellule");
+  assert.equal(await page.locator(".mention-preuve button:has-text('Copier la mention')").count(), 1);
+  await page.goto(BASE + "/admin/rapports");
+  assert.ok(
+    (await page.locator("table .mention-preuve button").count()) >= 1,
+    "la liste propose la mention des rapports clos",
+  );
+  ok("mention de preuve : composée sur le rapport clos, sans empreinte, proposée aussi dans la liste");
   const paquet = await page.request.get(urlRapport + "/paquet");
   assert.equal(paquet.status(), 200);
   assert.equal(paquet.headers()["content-type"], "application/zip");

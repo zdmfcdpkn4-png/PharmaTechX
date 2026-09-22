@@ -2169,3 +2169,16 @@ html[data-zone="1"] .ar-raccourci { display: none; }
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Mention de preuve à recopier dans la fiche d'habilitation (question 48). */
+.mention-preuve { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.mention-texte {
+  display: block;
+  width: 100%;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+  background: rgba(255, 255, 255, 0.7);
+}

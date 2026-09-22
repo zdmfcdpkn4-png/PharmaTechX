@@ -1392,6 +1392,71 @@ donnait un emploi immédiat aux références, mais au prix de deux systèmes à
 tenir — le programme à l'écran, la notation sur le papier — qui divergent à
 la première révision du portfolio.
 
+## Mention de preuve pour la fiche d'habilitation (22/09/2026)
+
+Depuis la décision 47, la colonne « Outils / Preuve de compétence » de la
+fiche est la **seule** interface entre le site et le dossier d'habilitation.
+Elle se remplissait à la main, en recopiant depuis l'écran.
+
+**Tranché (question 48, choix b).** Le site compose la mention et la donne à
+copier :
+
+    PharmaTechX — RAP-2026-0001 — 22/09/2026 — Comportement en ZAC — 92 % — acquis
+
+Six segments : l'outil, le numéro, la date de passation, le module, le score,
+le verdict. Un bouton « Copier la mention » sur la page du rapport et une
+colonne dans la liste (`lib/mention.ts`, `components/CopierMention.tsx`).
+
+**Deux règles font la valeur de la mention.**
+
+*Seul un rapport clos en donne une.* Avant la clôture, l'arbitrage du tuteur
+peut encore changer le verdict. Une cellule recopiée trop tôt dans un
+document Word deviendrait fausse en silence, le Word ne se mettant pas à
+jour. Un rapport annulé se refuse sur son propre motif.
+
+*L'empreinte n'y figure pas.* Elle a sa place sur le rapport, pas sur le
+renvoi : douze caractères hexadécimaux recopiés à la main sont une source
+d'erreur de transcription, et une empreinte mal recopiée ferait passer un
+rapport correct pour falsifié. Le chemin de vérification reste : retrouver le
+rapport par son numéro, y lire l'empreinte. Un test l'impose — six segments,
+aucune suite hexadécimale.
+
+**Sans mise en service prononcée**, la mention est préfixée de « Phase
+d'essai — ne vaut pas preuve » : elle ne peut pas dire le contraire du
+rapport qu'elle cite.
+
+Écarté : le numéro seul (`RAP-2026-0001` ne dit ni ce qui a été évalué, ni
+quand, ni avec quel résultat, à qui n'a pas le site ouvert).
+
+## La correction et la sauvegarde en cours, deuxième passe (22/09/2026)
+
+Le 21/09/2026, la file `fileTraces` a été posée pour ordonner les écritures
+de progression. **Elle ne suffisait pas**, et la chaîne de bout en bout l'a
+montré : une passe sur quatre échouait encore sur « session en cours effacée
+après correction ».
+
+**Ce que la file ne couvrait pas.** Elle ordonne les écritures du client
+entre elles. Or l'effacement réel n'est pas fait par le client :
+`enregistrerEvaluation` (`lib/progression.ts`) supprime `en_cours` **côté
+serveur**, dans la requête de correction, qui passe par une autre route et
+n'entre donc pas dans la file. Une sauvegarde `en_cours` encore en attente ou
+en vol arrivait après la correction et ressuscitait la ligne : l'apprenant se
+voyait proposer de reprendre l'évaluation qu'il venait de valider.
+
+**Corrigé** en annulant le minuteur de sauvegarde et en vidant la file avant
+d'envoyer la correction.
+
+**Une fausse piste, consignée parce qu'elle a coûté une passe.** J'ai d'abord
+cru à une requête annulée par la navigation et posé `keepalive` sur
+l'effacement. `keepalive` fait survivre une requête **déjà émise** au
+déchargement de la page ; il ne fait rien pour une requête encore en file, qui
+n'est jamais émise. La chaîne a continué d'échouer. L'option est conservée là
+où elle sert vraiment — « Recommencer », seul chemin où le client est le seul
+à effacer — avec un commentaire qui dit ce qu'elle ne couvre pas.
+
+**Mesuré** : trois passes consécutives de la chaîne complète, 64 étapes
+chacune, sans échec.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

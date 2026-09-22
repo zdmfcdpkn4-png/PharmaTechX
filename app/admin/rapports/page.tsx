@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { conservationActive } from "@/lib/config";
+import { conservationActive, miseEnService } from "@/lib/config";
+import { CopierMention } from "@/components/CopierMention";
+import { mentionDePreuve } from "@/lib/mention";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import {
   LIBELLES_STATUT_RAPPORT,
@@ -45,6 +47,7 @@ export default async function Rapports({
   }
   const statut = STATUTS.includes(p.statut as StatutRapport) ? (p.statut as StatutRapport) : undefined;
   const [rapports, comptes, session] = await Promise.all([listerRapports({ statut }), comptesRapports(), getSession()]);
+  const enService = miseEnService();
   const avant = p.avant && /^\d{4}-\d{2}-\d{2}$/.test(p.avant) ? p.avant : "";
   const purgeables = avant ? await compterPurgeables(new Date(`${avant}T00:00:00+02:00`)) : null;
   const message = p.ok === "purge"
@@ -93,6 +96,7 @@ export default async function Rapports({
             <th>Critère</th>
             <th>Résultat</th>
             <th>Statut</th>
+            <th>Mention</th>
           </tr>
         </thead>
         <tbody>
@@ -110,11 +114,27 @@ export default async function Rapports({
                   {decision.verdictBrut === "indetermine" && !r.arbitrage && r.statut === "emis" ? <span className="legende"> — arbitrage attendu</span> : null}
                 </td>
                 <td><span className={`etiquette ${r.statut === "clos" ? "etiquette--ok" : r.statut === "annule" ? "etiquette--neutre" : "etiquette--attention"}`}>{LIBELLES_STATUT_RAPPORT[r.statut].split(" — ")[0]}</span></td>
+                <td>
+                  {(() => {
+                    const m = mentionDePreuve(
+                      {
+                        numero: r.numero,
+                        moduleTitre: r.module_titre,
+                        emisLe: r.emis_le,
+                        statut: r.statut,
+                        score: decision.score,
+                        verdict: LIBELLES_COURTS_VERDICT[verdictFinal],
+                      },
+                      { miseEnService: enService },
+                    );
+                    return "texte" in m ? <CopierMention texte={m.texte} compact /> : <span className="legende">—</span>;
+                  })()}
+                </td>
               </tr>
             );
           })}
           {rapports.length === 0 && (
-            <tr><td colSpan={6} className="legende">Aucun rapport.</td></tr>
+            <tr><td colSpan={7} className="legende">Aucun rapport.</td></tr>
           )}
         </tbody>
       </table>
