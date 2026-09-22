@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansParcours } from "@/content/store";
+import { getModuleComplet, positionDansParcours, positionDansProgramme } from "@/content/store";
+import { lireIdProgramme } from "@/content/programmes";
 import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER, libelleNature } from "@/content/types";
 import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db";
@@ -13,8 +14,14 @@ import { LectureModule } from "@/components/LectureModule";
 
 export const dynamic = "force-dynamic";
 
-export default async function PageModule({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function PageModule({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ programme?: string }>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   // Un module déposé non publié n'est lisible qu'en tutorat ou en administration.
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
@@ -30,7 +37,12 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
   // Documents déposés réservés aux sessions ouvertes par un code (question 13, choix b).
   const depots = baseConfiguree() && session ? await depotsDuModule(mod.id).catch(() => []) : [];
   const reserves = baseConfiguree() && !session ? await compterDepotsDuModule(mod.id).catch(() => 0) : 0;
-  const position = await positionDansParcours("integration", mod.id);
+  // Entré par un programme à la carte (question 50) : on enchaîne dans son
+  // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
+  const idProgramme = lireIdProgramme(sp.programme);
+  const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id) : null;
+  const position = dansProgramme ?? (await positionDansParcours("integration", mod.id));
+  const requete = dansProgramme ? `?programme=${idProgramme}` : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
   const contenu = (
@@ -133,22 +145,22 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
         {position && (
           <p className="legende" style={{ marginBottom: ".75rem" }}>
             Parcours : {position.libelle}, module {position.rang} sur {position.total}
-            {position.precedent ? <> · précédent : <Link href={`/module/${position.precedent.id}`}>{position.precedent.titre}</Link></> : null}
-            {position.suivant ? <> · suivant : <Link href={`/module/${position.suivant.id}`}>{position.suivant.titre}</Link></> : " · dernier de la liste"}
+            {position.precedent ? <> · précédent : <Link href={`/module/${position.precedent.id}${requete}`}>{position.precedent.titre}</Link></> : null}
+            {position.suivant ? <> · suivant : <Link href={`/module/${position.suivant.id}${requete}`}>{position.suivant.titre}</Link></> : " · dernier de la liste"}
           </p>
         )}
         <div className="actions" style={{ marginTop: 0 }}>
           {nbQuestions > 0 && (
-            <Link href={`/module/${mod.id}/evaluation`} className="bouton">
+            <Link href={`/module/${mod.id}/evaluation${requete}`} className="bouton">
               Passer l&apos;évaluation
             </Link>
           )}
           {position?.suivant && (
-            <Link href={`/module/${position.suivant.id}`} className="bouton bouton--secondaire">
+            <Link href={`/module/${position.suivant.id}${requete}`} className="bouton bouton--secondaire">
               Module suivant
             </Link>
           )}
-          <Link href="/" className="bouton bouton--secondaire">
+          <Link href={dansProgramme ? `/?programme=${idProgramme}` : "/"} className="bouton bouton--secondaire">
             Retour au programme
           </Link>
         </div>
@@ -180,7 +192,7 @@ export default async function PageModule({ params }: { params: Promise<{ id: str
   return (
     <article>
       <p className="fil">
-        <Link href="/">Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
+        <Link href={dansProgramme ? `/?programme=${idProgramme}` : "/"}>Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
       </p>
 
       <section className="panneau-titre">

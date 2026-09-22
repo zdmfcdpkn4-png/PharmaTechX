@@ -397,6 +397,7 @@ export function Evaluation({
   suivant = null,
   rattache = false,
   enCoursInitial = null,
+  requete = "",
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -414,6 +415,8 @@ export function Evaluation({
   rattache?: boolean;
   /** Évaluation interrompue, conservée sous l'identifiant, proposée à la reprise. */
   enCoursInitial?: EtatEnCours | null;
+  /** Programme à la carte (`?programme=…`) : gardé sur les liens vers les modules. */
+  requete?: string;
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -787,7 +790,7 @@ export function Evaluation({
   };
 
   const lienSuivant = suivant ? (
-    <Link href={`/module/${suivant.id}`} className="bouton bouton--secondaire">
+    <Link href={`/module/${suivant.id}${requete}`} className="bouton bouton--secondaire">
       Module suivant : {suivant.titre.length > 48 ? `${suivant.titre.slice(0, 48)}…` : suivant.titre}
     </Link>
   ) : null;
@@ -898,7 +901,7 @@ export function Evaluation({
           <button type="button" className="bouton" onClick={() => setDemarre(true)}>
             Commencer
           </button>
-          <Link href={`/module/${moduleId}`} className="bouton bouton--secondaire">
+          <Link href={`/module/${moduleId}${requete}`} className="bouton bouton--secondaire">
             Revoir le module
           </Link>
         </div>
@@ -1123,7 +1126,7 @@ export function Evaluation({
           <Link href="/#rapport" className="bouton bouton--secondaire">
             Rapport de session
           </Link>
-          <Link href={`/module/${moduleId}`} className="bouton bouton--secondaire">
+          <Link href={`/module/${moduleId}${requete}`} className="bouton bouton--secondaire">
             Revoir le module
           </Link>
         </div>
@@ -1156,7 +1159,7 @@ export function Evaluation({
             </button>
             {boutonRatees(posees.filter((q) => corrections[q.id] && !corrections[q.id].correct).map((q) => q.id))}
             {lienSuivant}
-            <Link href={`/module/${moduleId}`} className="bouton bouton--secondaire">
+            <Link href={`/module/${moduleId}${requete}`} className="bouton bouton--secondaire">
               Revoir le module
             </Link>
           </div>

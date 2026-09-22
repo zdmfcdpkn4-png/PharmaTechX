@@ -1683,6 +1683,56 @@ refusée, étape 14c) : elle attendait une alerte déjà présente à l'écran, 
 ouvrait parfois le journal avant que le refus y soit écrit. Elle attend
 désormais la réponse de l'action.
 
+## Programme à la carte : le parcours dégradé (22/09/2026)
+
+**Tranché (question 50).** Réponse du pharmacien responsable : « pour un profil
+dégradé, pouvoir faire un programme de modules à la carte validé par le tuteur
+ou l'admin », puis « b » : le construire, comme décidé le 18/09/2026
+(question 36, choix b — un parcours nommé, composé à la main, marqué
+« dégradé » partout). Ma recommandation était de l'abandonner, la fiche
+officielle portant déjà « Niveau 1 : 1a+1b ou 1a+1c » ; elle n'a pas été
+retenue, et c'est consigné ici.
+
+**Lecture retenue.** Un programme **nommé**, et non un programme par agent :
+c'est ce que disait la décision du 18/09, et un profil, dans ce site, est un
+code de poste. Le programme se rattache donc à un **code de poste** — le
+« profil dégradé » — ou se choisit à l'accueil. Si « à la carte » voulait dire
+un programme par identifiant d'agent, c'est une autre construction : à dire.
+
+**Ce qui est construit.**
+
+- `/admin/programmes` (tutorat et administration) : nom, destinataire, **motif
+  de l'écart à la fiche**, et les modules cochés un à un, avec un rang pour
+  l'ordre (sans rang : l'ordre de la fiche). Modules du code et modules
+  déposés publiés.
+- Un programme naît **brouillon**, invisible des postes. Il est **validé** par
+  un code de tutorat ou d'administration, nommé sur le programme ; il faut un
+  nom, un motif et un module. **Toute modification le renvoie en brouillon** :
+  un programme validé ne change pas en silence. **Retiré**, il quitte les
+  postes et reste lisible ; il ne se supprime pas.
+- Accueil : chaque programme validé s'ajoute aux deux parcours de la fiche,
+  étiqueté « dégradé ». Ouvert, il remplace la composition par filière et
+  niveau par ses modules, **dans son ordre**, avec un bandeau : composé hors
+  de la fiche, validé par qui et quand, « ne conduit pas, à lui seul, à un
+  niveau de la fiche ».
+- Un code de poste peut **s'ouvrir d'office** sur un programme validé (choix
+  à la création du code). Si le programme n'est plus validé, le poste suit la
+  fiche et l'écran le dit.
+- Page de module et d'évaluation : entré par le programme, on enchaîne dans
+  son ordre — « module suivant » est celui du programme, et chaque lien garde
+  le programme.
+- Rapport téléchargé : la ligne « Parcours » porte « Programme à la carte
+  « … » — parcours dégradé, validé par … le … ». Le résultat scellé, lui, ne
+  change pas : un critère évalué vaut ce qu'il vaut, quel que soit le chemin
+  qui y mène. Le rapport enregistré n'imprime pas de parcours, comme avant.
+- Journal : `programme:creation`, `programme:modification`,
+  `programme:validation`, `programme:retrait` ; le code de poste créé sur un
+  programme le porte dans ses détails.
+
+**Non imposé, à dire si vous le voulez** : les quatre yeux. Le code qui
+compose peut valider lui-même — « validé par le tuteur ou l'admin » ne
+demandait pas deux codes. C'est une ligne à ajouter.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

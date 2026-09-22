@@ -184,6 +184,7 @@ export default async function RootLayout({
               { href: "/admin/modules", libelle: "Modules" },
               { href: "/admin/documents", libelle: "Documents" },
               { href: "/admin/ordonnancement", libelle: "Ordre" },
+              { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],
           },
           {

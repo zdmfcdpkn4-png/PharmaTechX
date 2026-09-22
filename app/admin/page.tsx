@@ -7,6 +7,8 @@ import { getReferentiel } from "@/content/referentiel-db";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
 import { comptesRapports } from "@/lib/rapports";
 import { actionBasculerCode, actionCreerCode, actionSupprimerCode } from "@/app/actions";
+import { listerProgrammes } from "@/content/programmes-db";
+import { MENTION_DEGRADE } from "@/content/programmes";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,8 @@ const MESSAGES: Record<string, string> = {
     "Trop de saisies fausses depuis ce poste : la confirmation est bloquée le temps du palier, comme la connexion. Rien n\u2019a été modifié.",
   "suppression-propre-code":
     "C\u2019est le code de votre session : il ne se supprime pas. Ouvrez une session avec un autre code d\u2019administration pour supprimer celui-ci.",
+  "programme-non-valide":
+    "Ce programme à la carte n\u2019est pas validé : un code de poste ne s\u2019ouvre que sur un programme validé. Rien n\u2019a été créé.",
   "confirmation-indisponible":
     "La confirmation n\u2019a pas pu être vérifiée : votre session n\u2019est plus rattachée à un code en cours de validité. Reconnectez-vous.",
 };
@@ -37,11 +41,13 @@ export default async function Admin({
   const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [acces, comptes, ouverts] = await Promise.all([
+  const [acces, comptes, ouverts, programmes] = await Promise.all([
     listerAcces(),
     comptesParModule(),
     compterSignalementsOuverts(),
+    listerProgrammes().catch(() => []),
   ]);
+  const programmesValides = programmes.filter((x) => x.statut === "valide");
   const aVerifier = Object.values(comptes).reduce((s, c) => s + c.aVerifier, 0);
   const validees = Object.values(comptes).reduce((s, c) => s + c.valides, 0);
   const conservation = modeConservation();
@@ -157,6 +163,23 @@ export default async function Admin({
               </select>
             </label>
           </div>
+          <div className="rangee">
+            <label className="champ">
+              <span>Profil dégradé : programme à la carte (codes de poste)</span>
+              <select name="programme" defaultValue="">
+                <option value="">Aucun — le programme suit la fiche</option>
+                {programmesValides.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.nom} — {MENTION_DEGRADE}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="legende" style={{ alignSelf: "end", margin: 0 }}>
+              Le poste s&apos;ouvre alors sur ce programme, marqué « {MENTION_DEGRADE} ».{" "}
+              <Link href="/admin/programmes">Composer ou valider un programme</Link>.
+            </p>
+          </div>
           <div className="actions">
             <button type="submit" className="bouton">
               Générer le code
@@ -176,6 +199,9 @@ export default async function Admin({
             {!a.actif && <span className="etiquette etiquette--attention">révoqué</span>}
             <br />
             <span className="legende">
+              {a.programme_id
+                ? `programme à la carte « ${programmes.find((x) => x.id === a.programme_id)?.nom ?? a.programme_id} » — ${MENTION_DEGRADE}${programmes.find((x) => x.id === a.programme_id)?.statut === "valide" ? "" : " (non validé : le poste suit la fiche)"} · `
+                : ""}
               {a.filiere ?? "toutes filières"} · {a.niveau ?? "tous niveaux"} · créé le{" "}
               {new Date(a.cree_le).toLocaleDateString("fr-FR")} ·{" "}
               {a.dernier_usage

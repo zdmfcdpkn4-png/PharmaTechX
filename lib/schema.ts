@@ -45,6 +45,7 @@ export const TABLES = [
   "en_cours",
   "filieres_deposees",
   "niveaux_deposes",
+  "programmes",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -375,6 +376,25 @@ export const SCHEMA: string[] = [
      modifie_par TEXT NOT NULL DEFAULT ''
    )`,
   `CREATE INDEX IF NOT EXISTS niveaux_deposes_filiere ON niveaux_deposes (filiere_id)`,
+
+  // ── programmes à la carte : le parcours dégradé (question 50, 22/09/2026) ─
+  // Composés à la main, validés par un code de tutorat ou d'administration,
+  // jamais supprimés : retirés. Un code de poste peut ouvrir sur l'un d'eux.
+  `CREATE TABLE IF NOT EXISTS programmes (
+     id           SERIAL PRIMARY KEY,
+     nom          TEXT NOT NULL,
+     destinataire TEXT NOT NULL DEFAULT '',
+     motif        TEXT NOT NULL DEFAULT '',
+     modules      JSONB NOT NULL DEFAULT '[]'::jsonb,
+     statut       TEXT NOT NULL DEFAULT 'brouillon' CHECK (statut IN ('brouillon','valide','retire')),
+     cree_par     TEXT NOT NULL,
+     cree_le      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     modifie_par  TEXT,
+     modifie_le   TIMESTAMPTZ,
+     valide_par   TEXT,
+     valide_le    TIMESTAMPTZ
+   )`,
+  `ALTER TABLE acces ADD COLUMN IF NOT EXISTS programme_id INTEGER REFERENCES programmes(id) ON DELETE SET NULL`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

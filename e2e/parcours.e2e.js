@@ -1490,6 +1490,100 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("input[name=codeTuteur]").count(), 0, "aucun code demandé en entraînement");
   ok("schéma à découvrir : caches levés et jugés, code de session et code inconnu refusés, code du tuteur accepté, mention scellée (67 %), journalisé ; entraînement en auto-évaluation, sans code");
 
+  // 12j ter. programme à la carte, parcours dégradé (question 50) : composé et validé
+  //          par le tuteur, proposé à l'accueil marqué « dégradé », enchaîné dans son
+  //          ordre, ouvert d'office par un code de poste ; modifié, il repasse en brouillon
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/programmes");
+  await page.waitForSelector("text=Aucun programme à la carte");
+  await page.click("a:has-text('Composer un programme')");
+  await page.waitForSelector("input[name=nom]");
+  await page.fill("input[name=nom]", "Intérimaire test");
+  await page.fill("input[name=destinataire]", "Préparateur intérimaire, trois mois");
+  await page.check("input[name=modules][value=comportement-zac]");
+  await page.fill("input[name='rang-comportement-zac']", "2");
+  await page.check("input[name=modules][value=protection-operateur-cytotoxiques]");
+  await page.fill("input[name='rang-protection-operateur-cytotoxiques']", "1");
+  await page.check("input[name=modules][value=critere-b1-02]");
+  await page.click("button:has-text('Enregistrer le brouillon')");
+  await page.waitForURL(/\/admin\/programmes\/\d+\?ok=cree/);
+  const idProgramme = page.url().match(/\/admin\/programmes\/(\d+)/)[1];
+  assert.deepEqual(
+    await page.locator("ol.programme-ordre li strong").evaluateAll((l) => l.map((x) => x.textContent.trim())),
+    ["B1-04", "B1-01", "B1-02"],
+    "le rang saisi d'abord, puis l'ordre de la fiche",
+  );
+  assert.equal(await page.locator("button:has-text('Valider le programme')").isDisabled(), true, "sans motif, pas de validation");
+  await page.waitForSelector("text=il manque : le motif de l'écart à la fiche");
+  await page.goto(BASE + "/");
+  assert.equal(await page.locator(".nav-sections a", { hasText: "Intérimaire test" }).count(), 0, "un brouillon n'est pas proposé");
+  await page.goto(BASE + "/admin/programmes/" + idProgramme);
+  await page.fill("textarea[name=motif]", "Remplacement limité à la chimiothérapie : le préparatoire n'est pas exercé.");
+  await page.click("button:has-text('Enregistrer les modifications')");
+  await page.waitForURL(/ok=modifie/);
+  await page.click("button:has-text('Valider le programme')");
+  await page.waitForURL(/ok=valide/);
+  await page.waitForSelector("text=validé par Tutorat · Tuteur test");
+  // l'accueil le propose, marqué dégradé ; ouvert, il montre ses modules dans son ordre
+  await page.goto(BASE + "/");
+  const lienProgramme = page.locator(".nav-sections a", { hasText: "Intérimaire test" });
+  await lienProgramme.locator(".etiquette", { hasText: "dégradé" }).waitFor();
+  await lienProgramme.click();
+  await page.waitForURL(/\?programme=\d+/);
+  await page.waitForSelector("h2:has-text('Programme à la carte « Intérimaire test »')");
+  await page.waitForSelector("text=Remplacement limité à la chimiothérapie");
+  assert.equal(await page.locator("#t-filtres").count(), 0, "ni filière ni niveau à composer : le programme est à la carte");
+  assert.deepEqual(
+    await page.locator("#modules .grille a.carte-lien").evaluateAll((l) => l.map((x) => x.getAttribute("href"))),
+    [
+      `/module/protection-operateur-cytotoxiques?programme=${idProgramme}`,
+      `/module/comportement-zac?programme=${idProgramme}`,
+      `/module/critere-b1-02?programme=${idProgramme}`,
+    ],
+  );
+  // le module suivant est celui du programme, pas celui de la fiche
+  await page.goto(BASE + "/module/protection-operateur-cytotoxiques?programme=" + idProgramme);
+  await page.waitForSelector("text=Programme à la carte « Intérimaire test » — parcours dégradé, module 1 sur 3");
+  assert.equal(
+    await page.locator("a.bouton:has-text('Module suivant')").getAttribute("href"),
+    `/module/comportement-zac?programme=${idProgramme}`,
+  );
+  // profil dégradé : un code de poste s'ouvre d'office sur le programme
+  await page.goto(BASE + "/admin");
+  await page.selectOption("select[name=role]", "poste");
+  await page.fill("input[name=libelle]", "Intérimaire bloc");
+  await page.selectOption("select[name=programme]", { label: "Intérimaire test — parcours dégradé" });
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=/);
+  const codeInterimaire = new URL(page.url()).searchParams.get("nouveau");
+  await page.waitForSelector("text=programme à la carte « Intérimaire test » — parcours dégradé");
+  await page.goto(BASE + "/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  await page.fill("input[name=code]", codeInterimaire);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL((u) => new URL(u).pathname === "/");
+  await fermerVisite();
+  await page.waitForSelector("h2:has-text('Programme à la carte « Intérimaire test »')");
+  assert.match(
+    await page.locator(".panneau-titre .sur-titre").first().innerText(),
+    /programme à la carte « Intérimaire test » · parcours dégradé/i,
+  );
+  // modifié, le programme repasse en brouillon et quitte les postes
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/programmes/" + idProgramme);
+  await page.uncheck("input[name=modules][value=critere-b1-02]");
+  await page.click("button:has-text('Enregistrer les modifications')");
+  await page.waitForURL(/ok=modifie-a-revalider/);
+  await page.waitForSelector("text=il repasse en brouillon");
+  await page.goto(BASE + "/?programme=" + idProgramme);
+  await page.waitForSelector("[role=status]:has-text('pas validé')");
+  assert.equal(await page.locator(".nav-sections a", { hasText: "Intérimaire test" }).count(), 0);
+  await rebrancher(codeAdmin);
+  ok("programme à la carte : brouillon invisible, validé par le tuteur, proposé marqué « dégradé », ordre du programme et module suivant tenus, code de poste ouvert d'office, modifié il repasse en brouillon");
+
   // 12k. référentiel déposé (question 38, choix b) et arborescence de la banque
   //      Une filière et un niveau ajoutés en base doivent apparaître dans les
   //      listes de rattachement d'un module, sans livraison de code.

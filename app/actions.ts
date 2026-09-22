@@ -25,6 +25,8 @@ import {
 } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
 import { moduleExiste } from "@/content/store";
+import { lireIdProgramme } from "@/content/programmes";
+import { lireProgramme } from "@/content/programmes-db";
 import { filtrerProfils } from "@/content/modules-db";
 import { estNatureDocument } from "@/content/types";
 import {
@@ -80,10 +82,22 @@ export async function actionCreerCode(formData: FormData) {
 
   const filiere = String(formData.get("filiere") ?? "") || null;
   const niveau = String(formData.get("niveau") ?? "") || null;
+  // Profil dégradé (question 50) : un code de poste peut ouvrir sur un
+  // programme à la carte validé — jamais sur un brouillon, jamais un code de
+  // tutorat ou d'administration.
+  const idProgramme = role === "poste" ? lireIdProgramme(formData.get("programme")) : null;
+  const programme = idProgramme ? await lireProgramme(idProgramme) : null;
+  if (idProgramme && programme?.statut !== "valide") redirect("/admin?erreur=programme-non-valide");
 
   const code = genererCode();
-  const id = await creerAcces(hacherCode(code), role, libelle, filiere, niveau);
-  await journaliser(s, "creation-code", `acces:${id}`, { role, libelle, filiere, niveau });
+  const id = await creerAcces(hacherCode(code), role, libelle, filiere, niveau, programme?.id ?? null);
+  await journaliser(s, "creation-code", `acces:${id}`, {
+    role,
+    libelle,
+    filiere,
+    niveau,
+    ...(programme ? { programme: programme.id } : {}),
+  });
   revalidatePath("/admin");
   redirect(`/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(libelle)}`);
 }

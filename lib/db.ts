@@ -346,6 +346,8 @@ export interface LigneAcces {
   libelle: string;
   filiere: string | null;
   niveau: string | null;
+  /** Code de poste d'un profil dégradé : programme à la carte sur lequel il ouvre (question 50). */
+  programme_id: number | null;
   actif: boolean;
   cree_le: string;
   dernier_usage: string | null;
@@ -378,7 +380,7 @@ export async function initSchema(): Promise<void> {
 
 export async function listerAcces(): Promise<LigneAcces[]> {
   const r = await sql<LigneAcces>`
-    SELECT id, role, libelle, filiere, niveau, actif,
+    SELECT id, role, libelle, filiere, niveau, programme_id, actif,
            cree_le::text, dernier_usage::text
     FROM acces ORDER BY role, libelle`;
   return r.rows;
@@ -390,10 +392,11 @@ export async function creerAcces(
   libelle: string,
   filiere: string | null,
   niveau: string | null,
+  programmeId: number | null = null,
 ): Promise<number> {
   const r = await sql<{ id: number }>`
-    INSERT INTO acces (code_hash, role, libelle, filiere, niveau)
-    VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}) RETURNING id`;
+    INSERT INTO acces (code_hash, role, libelle, filiere, niveau, programme_id)
+    VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}, ${programmeId}) RETURNING id`;
   return r.rows[0].id;
 }
 

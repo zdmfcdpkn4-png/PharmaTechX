@@ -199,10 +199,8 @@ arbitrage. Ils sont tenus dans `docs/QUESTIONS-OUVERTES.md`, avec leur numéro.
 - **39** — tutoriel d'usage du site.
 - **40** — accès rapide : conflit éventuel de `⌘K`, ordre des items de la file.
 
-Hors de cette liste, un chantier tranché sur le principe et non construit :
-le **parcours dégradé** pour intérimaire et remplaçant, composé à la main et
-marqué « dégradé » partout (question 36, choix b, du 18/09/2026 ; consigné
-dans `DECISIONS.md`, pas dans `QUESTIONS-OUVERTES.md`).
+Le **parcours dégradé** (question 36, choix b, puis question 50) est
+construit depuis le 22/09/2026 : programmes à la carte, `/admin/programmes`.
 
 Et deux points d'exploitation :
 

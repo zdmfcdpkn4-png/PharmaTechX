@@ -10,6 +10,8 @@ import { lireBareme } from "@/lib/bareme-db";
 import { comptesParModule, questionsValideesDuModule } from "./banque-db";
 import { lireModuleDepose, lireReglagesModules, listerModulesDeposes, versModule } from "./modules-db";
 import { appliquerReglage } from "./reglages";
+import { lireProgramme } from "./programmes-db";
+import { libelleProgramme, modulesDuProgramme } from "./programmes";
 
 /**
  * Accès au contenu — serveur uniquement.
@@ -202,4 +204,19 @@ export async function positionDansParcours(parcoursId: TypeParcours, moduleId: s
     if (v) return { liste, libelle, ...v };
   }
   return null;
+}
+
+/**
+ * Place d'un module dans un programme à la carte validé (question 50) : le
+ * précédent et le suivant dans l'ordre du programme, qui ne suit pas la
+ * fiche. `null` si le programme n'est pas validé ou ne contient pas ce module
+ * — la page retombe alors sur le parcours d'intégration.
+ */
+export async function positionDansProgramme(programmeId: number, moduleId: string): Promise<PositionParcours | null> {
+  if (!baseConfiguree()) return null;
+  const p = await lireProgramme(programmeId).catch(() => null);
+  if (!p || p.statut !== "valide") return null;
+  const { presents } = modulesDuProgramme(p, await getTousModulesAvecDeposes({ publiesSeulement: true }));
+  const v = voisins(presents, moduleId);
+  return v ? { liste: `programme-${p.id}`, libelle: libelleProgramme(p), ...v } : null;
 }

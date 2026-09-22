@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansParcours } from "@/content/store";
+import { getModuleComplet, positionDansParcours, positionDansProgramme } from "@/content/store";
+import { lireIdProgramme } from "@/content/programmes";
 import { syntheseDuModule } from "@/lib/synthese";
 import { lireEnCours, rattachement } from "@/lib/progression";
 import { A_PRECISER, banquePublique } from "@/content/types";
@@ -11,18 +12,28 @@ import { Evaluation } from "@/components/Evaluation";
 
 export const dynamic = "force-dynamic";
 
-export default async function PageEvaluation({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function PageEvaluation({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ programme?: string }>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   // Un module déposé non publié ne s'évalue qu'en tutorat ou en administration.
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
-  const [bareme, syntheses, position, ratt] = await Promise.all([
+  const idProgramme = lireIdProgramme(sp.programme);
+  const [bareme, syntheses, dansProgramme, ratt] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
-    positionDansParcours("integration", mod.id),
+    idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
     rattachement(),
   ]);
+  // Programme à la carte (question 50) : le module suivant est celui du programme.
+  const position = dansProgramme ?? (await positionDansParcours("integration", mod.id));
+  const requete = dansProgramme ? `?programme=${idProgramme}` : "";
   const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
   // Un document de synthèse déposé est réservé aux sessions ouvertes par un code (question 13, choix b).
   const synthesesVisibles = session ? syntheses : syntheses.filter((d) => !d.url.startsWith("/api/fichiers/"));
@@ -35,8 +46,8 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
   return (
     <article>
       <p className="fil">
-        <Link href="/">Programme</Link> ›{" "}
-        <Link href={`/module/${mod.id}`}>{typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}</Link> › Évaluation
+        <Link href={requete ? `/${requete}` : "/"}>Programme</Link> ›{" "}
+        <Link href={`/module/${mod.id}${requete}`}>{typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}</Link> › Évaluation
       </p>
 
       <section className="panneau-titre">
@@ -57,6 +68,7 @@ export default async function PageEvaluation({ params }: { params: Promise<{ id:
         signalementPossible={baseConfiguree()}
         syntheses={synthesesVisibles}
         suivant={position?.suivant ? { id: position.suivant.id, titre: position.suivant.titre } : null}
+        requete={requete}
         rattache={Boolean(ratt)}
         enCoursInitial={enCours}
       />

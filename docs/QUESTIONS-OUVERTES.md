@@ -397,14 +397,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     tutorat. Il ne prononce **aucune échéance** : les deux ans courent depuis
     l'habilitation du pharmacien, étape 5, hors du site.
 
-50. **Parcours dégradé** — ouvert le 22/09/2026, en attente de réponse. Le
-    portfolio du pool de remplacement ne contient pas le préparatoire ; la
-    fiche officielle écrit « Niveau 1 : 1a+1b ou 1a+1c ». Le parcours du
-    remplaçant serait donc la seconde voie normale vers le niveau 1, et la
-    décision du 18/09 (question 36, choix b), prise avant ces documents,
-    inventerait une catégorie que la fiche porte déjà. Choix proposés :
-    abandonner le parcours dégradé (recommandé) ; le construire comme décidé ;
-    un parcours « Pool de remplacement » sans la mention « dégradé ».
+50. **Parcours dégradé** — tranché le 22/09/2026 : le construire (choix b),
+    sous la forme demandée — « pour un profil dégradé, un programme de modules
+    à la carte validé par le tuteur ou l'admin ». Programmes nommés,
+    composés module par module dans l'ordre voulu, avec un motif, validés par
+    un code de tutorat ou d'administration, marqués « parcours dégradé »
+    partout ; un code de poste peut s'ouvrir dessus. Modifié, un programme
+    repasse en brouillon. Ma recommandation (abandonner, la fiche portant déjà
+    « 1a+1b ou 1a+1c ») n'a pas été retenue. Détail dans `DECISIONS.md`.
 
 51. **Niveau des questions** — tranché le 22/09/2026 : trois niveaux, initial,
     intermédiaire et avancé, pour toutes les questions, en champ de la banque

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { composerProgramme, comptesQuestionsBase, getParcours } from "@/content/store";
+import { composerProgramme, comptesQuestionsBase, getParcours, getTousModulesAvecDeposes } from "@/content/store";
 import { miseEnService, modeConservation, procedureReference } from "@/lib/config";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -8,7 +8,9 @@ import { Progression } from "@/components/Progression";
 import { blocsCompetence, criteres } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
 import type { Module, TypeParcours } from "@/content/types";
-import { TableauDeBord, type DocumentResume, type ModuleResume } from "@/components/TableauDeBord";
+import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
+import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
+import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -39,7 +41,7 @@ function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
 export default async function Accueil({
   searchParams,
 }: {
-  searchParams: Promise<{ parcours?: string; progression?: string; premiere?: string; minutes?: string }>;
+  searchParams: Promise<{ parcours?: string; programme?: string; progression?: string; premiere?: string; minutes?: string }>;
 }) {
   const params = await searchParams;
   const parcoursId: TypeParcours =
@@ -47,12 +49,42 @@ export default async function Accueil({
   const parcours = getParcours(parcoursId)!;
   const conservation = modeConservation();
   const { filieres, niveaux } = await getReferentiel();
-  const [enBase, programme, session, ratt] = await Promise.all([
+  const [enBase, programme, session, ratt, programmesValides] = await Promise.all([
     comptesQuestionsBase(),
     composerProgramme(parcoursId),
     getSession(),
     conservation === "pseudonyme" ? rattachement() : Promise.resolve(null),
+    baseConfiguree() ? listerProgrammes("valide").catch((): Programme[] => []) : Promise.resolve<Programme[]>([]),
   ]);
+
+  // Programme à la carte (question 50) : demandé dans l'adresse, ou porté par
+  // le code de poste de la session quand aucun parcours n'est demandé. Seul un
+  // programme validé s'ouvre ; sinon le poste suit la fiche, et l'écran le dit.
+  const idDemande = lireIdProgramme(params.programme);
+  const idDuCode =
+    !idDemande && !params.parcours && session?.acces && baseConfiguree()
+      ? await programmeDuCode(session.acces).catch(() => null)
+      : null;
+  const idVise = idDemande ?? idDuCode;
+  const programmeOuvert = idVise ? (programmesValides.find((x) => x.id === idVise) ?? null) : null;
+  const programmeIndisponible = Boolean(idVise && !programmeOuvert);
+  let aLaCarte: ProgrammeALaCarte | null = null;
+  if (programmeOuvert) {
+    const catalogue = await getTousModulesAvecDeposes({ publiesSeulement: true });
+    const { presents, absents } = modulesDuProgramme(programmeOuvert, catalogue);
+    aLaCarte = {
+      id: programmeOuvert.id,
+      nom: programmeOuvert.nom,
+      destinataire: programmeOuvert.destinataire,
+      motif: programmeOuvert.motif,
+      validePar: programmeOuvert.validePar,
+      valideLe: programmeOuvert.valideLe
+        ? new Date(programmeOuvert.valideLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })
+        : null,
+      modules: presents.map((m) => resumer(m, enBase)),
+      absents: absents.length,
+    };
+  }
   // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
   const filiereInitiale = filieres.some((f) => f.id !== "socle" && f.id === session?.filiere) ? session!.filiere! : "";
   const niveauInitial = niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "";
@@ -87,11 +119,16 @@ export default async function Accueil({
       {/* ───────────────────────────────────────────────────────── héros */}
       <section className="panneau-titre">
         <p className="sur-titre">
-          Étapes 1 et 2 sur 6 — {parcours.titre.toLowerCase()}
+          Étapes 1 et 2 sur 6 —{" "}
+          {programmeOuvert
+            ? `programme à la carte « ${programmeOuvert.nom} » · ${MENTION_DEGRADE}`
+            : parcours.titre.toLowerCase()}
         </p>
         <h1>Se former, puis prouver ce qu&apos;on sait faire</h1>
         <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>
-          {parcours.description}
+          {programmeOuvert
+            ? `Programme composé à la main pour un profil qui ne suit pas la fiche${programmeOuvert.destinataire ? ` : ${programmeOuvert.destinataire}` : ""}.`
+            : parcours.description}
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <a href="#modules" className="bouton">
@@ -116,22 +153,39 @@ export default async function Accueil({
       <nav className="nav-sections" aria-label="Choix du parcours">
         <Link
           href="/?parcours=integration"
-          className={`bouton bouton--compact ${parcoursId === "integration" ? "" : "bouton--discret"}`}
+          className={`bouton bouton--compact ${!programmeOuvert && parcoursId === "integration" ? "" : "bouton--discret"}`}
         >
           Intégration
         </Link>
         <Link
           href="/?parcours=maintien"
-          className={`bouton bouton--compact ${parcoursId === "maintien" ? "" : "bouton--discret"}`}
+          className={`bouton bouton--compact ${!programmeOuvert && parcoursId === "maintien" ? "" : "bouton--discret"}`}
         >
           Maintien d&apos;habilitation
         </Link>
+        {programmesValides.map((x) => (
+          <Link
+            key={x.id}
+            href={`/?programme=${x.id}`}
+            className={`bouton bouton--compact ${programmeOuvert?.id === x.id ? "" : "bouton--discret"}`}
+            aria-label={`${x.nom}, programme à la carte, ${MENTION_DEGRADE}`}
+          >
+            {x.nom} <span className="etiquette etiquette--attention">dégradé</span>
+          </Link>
+        ))}
       </nav>
+      {programmeIndisponible && (
+        <p className="encart encart--attention" role="status">
+          {idDemande
+            ? "Ce programme à la carte n'est pas validé, ou a été retiré : le parcours de la fiche est affiché."
+            : "Le programme à la carte de ce code de poste n'est plus validé : le parcours de la fiche est affiché. Signalez-le à votre tuteur."}
+        </p>
+      )}
 
       {/* ──────────────────────────────────────────────────── mes modules */}
       <section id="modules" className="section">
         <h2>Mes modules</h2>
-        <p className="section-intro">{parcours.destinataire}.</p>
+        <p className="section-intro">{programmeOuvert ? `Programme à la carte — ${MENTION_DEGRADE}.` : `${parcours.destinataire}.`}</p>
         <TableauDeBord
           troncCommun={troncCommun}
           parPoste={parPoste}
@@ -151,7 +205,8 @@ export default async function Accueil({
             numero: String(b.numero),
             titre: b.titre,
           }))}
-          parcoursTitre={parcours.titre}
+          parcoursTitre={programmeOuvert ? `Programme à la carte « ${programmeOuvert.nom} »` : parcours.titre}
+          aLaCarte={aLaCarte}
           conservation={conservation}
           procedure={procedureReference()}
           miseEnService={miseEnService()}

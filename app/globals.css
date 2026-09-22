@@ -1747,6 +1747,18 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
 .schema-legendes--revele .legende-juste { background: var(--succes-fond); }
 .schema-legendes--revele .legende-fausse { background: var(--echec-fond); }
 .schema-legendes--revele .legende-vide { background: var(--alerte-fond); }
+/* Programme à la carte (question 50) : la liste des modules du formulaire,
+   une case et un rang par ligne ; repliée par bloc de la fiche. */
+details.programme-groupe { border: 1px solid var(--bord); border-radius: var(--rayon-sm); margin-top: 0.5rem; background: var(--surface); }
+details.programme-groupe > summary { cursor: pointer; padding: 0.625rem 0.875rem; font-weight: 600; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; min-height: var(--cible); }
+.programme-modules { padding: 0 0.875rem 0.625rem; display: grid; gap: 0.375rem; }
+.programme-modules li { display: flex; align-items: center; gap: 0.75rem; }
+.programme-module { flex: 1 1 auto; min-width: 0; display: flex; gap: 0.5rem; align-items: flex-start; }
+.programme-module input { margin-top: 0.2rem; width: 20px; height: 20px; flex: none; }
+.programme-rang input { width: 5.5rem; min-height: var(--cible); padding: 0 0.5rem; border: 1px solid var(--bord-fort); border-radius: var(--rayon-sm); font: inherit; }
+.programme-ordre li { margin: 0.25rem 0; }
+.bandeau-degrade { border-left: 4px solid var(--alerte); }
+
 /* Schéma à découvrir (question 52) : le cache levé laisse voir l'image, son
    contour reste pour qu'on sache où il était ; le jugement reprend les
    boutons de la QIM, à la taille du doigt ganté. */

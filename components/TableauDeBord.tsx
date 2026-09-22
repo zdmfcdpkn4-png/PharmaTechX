@@ -8,6 +8,7 @@ import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { normaliserIdentifiant } from "@/lib/identifiant";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
+import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
 
 export interface ModuleResume {
   id: string;
@@ -59,7 +60,24 @@ function Marqueur({ valeur }: { valeur: string }) {
   return <>{valeur}</>;
 }
 
-function CarteModule({ m }: { m: ModuleResume }) {
+/**
+ * Programme à la carte ouvert à l'accueil (question 50) : ses modules, dans
+ * son ordre, et ce qui le distingue des parcours de la fiche.
+ */
+export interface ProgrammeALaCarte {
+  id: number;
+  nom: string;
+  destinataire: string;
+  motif: string;
+  validePar: string | null;
+  /** Date de validation, déjà lisible. */
+  valideLe: string | null;
+  modules: ModuleResume[];
+  /** Modules du programme introuvables ou dépubliés : comptés, pas devinés. */
+  absents: number;
+}
+
+function CarteModule({ m, rang, requete = "" }: { m: ModuleResume; rang?: number; requete?: string }) {
   const { dernierPourModule } = useSessionFormation();
   const resultat = dernierPourModule(m.id);
   const evaluable = m.nbQuestions > 0;
@@ -67,6 +85,7 @@ function CarteModule({ m }: { m: ModuleResume }) {
   const corps = (
     <article className={`carte carte--module${m.redige ? "" : " est-vide"}`}>
       <ul className="meta-module">
+        {rang ? <li className="etiquette">n° {rang}</li> : null}
         {m.origine === "base" && <li className="etiquette etiquette--site">Module déposé</li>}
         {m.origine === "base" && m.critereId === A_PRECISER ? null : (
           <>
@@ -109,7 +128,7 @@ function CarteModule({ m }: { m: ModuleResume }) {
   );
 
   return m.redige || evaluable ? (
-    <Link href={`/module/${m.id}`} className="carte-lien">
+    <Link href={`/module/${m.id}${requete}`} className="carte-lien">
       {corps}
     </Link>
   ) : (
@@ -218,6 +237,7 @@ export function TableauDeBord({
   niveauInitial = "",
   identifiantRattache = null,
   documentsReserves = 0,
+  aLaCarte = null,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -240,6 +260,8 @@ export function TableauDeBord({
   identifiantRattache?: string | null;
   /** Documents généraux existants mais réservés aux sessions par code (question 13) : leur nombre, sans session. */
   documentsReserves?: number;
+  /** Programme à la carte ouvert (question 50) : il remplace la composition par filière et niveau. */
+  aLaCarte?: ProgrammeALaCarte | null;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -305,7 +327,10 @@ export function TableauDeBord({
   const socle = parNiveau(troncCommun);
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
-  const programme = useMemo(() => [...socle, ...modulesPoste], [socle, modulesPoste]);
+  const programme = useMemo(
+    () => (aLaCarte ? aLaCarte.modules : [...socle, ...modulesPoste]),
+    [aLaCarte, socle, modulesPoste],
+  );
   const groupesSocle = useMemo(() => grouperParBloc(socle, blocs, "socle"), [socle, blocs]);
   const groupesPoste = useMemo(
     () => grouperParBloc(modulesPoste, blocs, "poste"),
@@ -326,9 +351,11 @@ export function TableauDeBord({
       ? 0
       : Math.round((evaluables.filter((m) => evalues.has(m.id)).length / evaluables.length) * 100);
 
-  const parcoursLibelle = `${parcoursTitre}${
-    posteId ? ` — ${postes.find((p) => p.id === posteId)?.libelle}` : " — tronc commun"
-  }`;
+  // Porté sur le rapport téléchargé : un programme à la carte y paraît avec
+  // sa mention de parcours dégradé et sa validation.
+  const parcoursLibelle = aLaCarte
+    ? `${libelleProgramme(aLaCarte)}${aLaCarte.validePar ? `, validé par ${aLaCarte.validePar}${aLaCarte.valideLe ? ` le ${aLaCarte.valideLe}` : ""}` : ""}`
+    : `${parcoursTitre}${posteId ? ` — ${postes.find((p) => p.id === posteId)?.libelle}` : " — tronc commun"}`;
 
   const entete = (): EnTeteRapport =>
     pseudonyme
@@ -373,6 +400,26 @@ export function TableauDeBord({
 
   return (
     <>
+      {aLaCarte ? (
+        <section className="carte bandeau-degrade" id="composer" aria-labelledby="t-carte">
+          <p className="sur-titre" style={{ marginTop: 0 }}>
+            <span className="etiquette etiquette--attention">{MENTION_DEGRADE}</span>
+          </p>
+          <h2 id="t-carte">Programme à la carte « {aLaCarte.nom} »</h2>
+          {aLaCarte.destinataire && <p style={{ margin: "0 0 .5rem" }}>Pour : {aLaCarte.destinataire}.</p>}
+          {aLaCarte.motif && (
+            <p className="legende" style={{ margin: "0 0 .5rem", maxWidth: "66ch" }}>
+              Écart à la fiche : {aLaCarte.motif}
+            </p>
+          )}
+          <p className="encart encart--attention" style={{ margin: 0 }}>
+            Programme composé à la main, hors des deux parcours de la fiche d&apos;habilitation
+            {aLaCarte.validePar ? `, validé par ${aLaCarte.validePar}${aLaCarte.valideLe ? ` le ${aLaCarte.valideLe}` : ""}` : ""}. Il ne
+            conduit pas, à lui seul, à un niveau de la fiche : le pharmacien responsable en tient compte au
+            dossier d&apos;habilitation.
+          </p>
+        </section>
+      ) : (
       <section className="carte" id="composer" aria-labelledby="t-filtres">
         <h2 id="t-filtres">Composer le programme</h2>
         <p className="legende">
@@ -407,6 +454,7 @@ export function TableauDeBord({
           </label>
         </div>
       </section>
+      )}
 
       <div className="tuiles">
         <div className="tuile">
@@ -435,6 +483,28 @@ export function TableauDeBord({
         {parcoursTitre.toLowerCase()}. Ce n&apos;est pas un avancement d&apos;habilitation.
       </p>
 
+      {aLaCarte ? (
+        <>
+          <div className="section-titre">
+            <h2>Modules du programme</h2>
+            <span className="compte">
+              {aLaCarte.modules.length} module{aLaCarte.modules.length > 1 ? "s" : ""}, dans l&apos;ordre du programme
+            </span>
+          </div>
+          {aLaCarte.absents > 0 && (
+            <p className="encart">
+              {aLaCarte.absents} module{aLaCarte.absents > 1 ? "s" : ""} de ce programme {aLaCarte.absents > 1 ? "ne sont" : "n'est"} plus
+              publié{aLaCarte.absents > 1 ? "s" : ""} : signalez-le à votre tuteur.
+            </p>
+          )}
+          <div className="grille">
+            {aLaCarte.modules.map((m, i) => (
+              <CarteModule key={m.id} m={m} rang={i + 1} requete={`?programme=${aLaCarte.id}`} />
+            ))}
+          </div>
+        </>
+      ) : (
+      <>
       <div className="section-titre">
         <h2>Socle transversal</h2>
         <span className="compte">
@@ -459,6 +529,8 @@ export function TableauDeBord({
           Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
           afficher les critères qui s&apos;y rattachent.
         </p>
+      )}
+      </>
       )}
 
       {documentsReserves > 0 && documents.length === 0 && (
