@@ -14,6 +14,7 @@ const PLEIN: ComptesAttente = {
   questionsAVerifier: 12,
   rapportsAViser: 2,
   verdictsAArbitrer: 1,
+  quizAnciens: 4,
 };
 
 test("un profil de poste n'a pas de file d'attente", () => {
@@ -23,11 +24,13 @@ test("un profil de poste n'a pas de file d'attente", () => {
 
 test("l'ordre des items ne dépend d'aucun compteur (critère 7)", () => {
   const ordre = (c: ComptesAttente) => itemsAFaire("tuteur", c, true).map((i) => i.cle);
-  const attendu = ["rapportsAViser", "verdictsAArbitrer", "signalements", "questionsAVerifier"];
+  // « Quiz de plus de 24 mois » a été ajouté en **fin** de file le 22/09/2026 :
+  // les quatre premiers gardent leur rang, donc leur place sous la main.
+  const attendu = ["rapportsAViser", "verdictsAArbitrer", "signalements", "questionsAVerifier", "quizAnciens"];
   assert.deepEqual(ordre(PLEIN), attendu);
   assert.deepEqual(ordre(AUCUN_COMPTE), attendu, "tous les compteurs à zéro : même ordre");
   assert.deepEqual(
-    ordre({ signalements: 99, questionsAVerifier: 0, rapportsAViser: 0, verdictsAArbitrer: 0 }),
+    ordre({ signalements: 99, questionsAVerifier: 0, rapportsAViser: 0, verdictsAArbitrer: 0, quizAnciens: 0 }),
     attendu,
     "un compteur élevé ne remonte pas son item",
   );
@@ -42,7 +45,7 @@ test("tutorat et administration portent la même liste, dans le même ordre", ()
 
 test("un item à zéro reste dans la liste (critère 3)", () => {
   const items = itemsAFaire("admin", AUCUN_COMPTE, true);
-  assert.equal(items.length, 4);
+  assert.equal(items.length, 5);
   assert.ok(items.every((i) => i.nombre === 0));
   assert.ok(items.some((i) => i.cle === "signalements"), "l'item existe même à zéro");
 });

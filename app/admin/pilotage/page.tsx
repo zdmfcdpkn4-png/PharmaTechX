@@ -3,10 +3,11 @@ import { getSession } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { blocsCompetence, criteres } from "@/content/habilitation";
+import { blocsCompetence, criteres, maintien } from "@/content/habilitation";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
-import { LIBELLES_ATTENTE, attenteDe, classerCriteres, moisContinus, part, questionsDifficiles, tranchesScores } from "@/lib/pilotage";
+import { LIBELLES_ATTENTE, attenteDe, classerCriteres, libelleAnciennete, moisContinus, part, questionsDifficiles, quizAnciens, tranchesScores } from "@/lib/pilotage";
 import {
+  anciennetesQuiz,
   bilanParCritere,
   comptesPilotage,
   effectifAgents,
@@ -86,7 +87,7 @@ export default async function Pilotage({
   };
 
   const conservation = conservationActive();
-  const [comptes, parCritere, serie, scores, manquees, attentes, effectif] = conservation
+  const [comptes, parCritere, serie, scores, manquees, attentes, effectif, anciennetes] = conservation
     ? await Promise.all([
         comptesPilotage(filtre),
         bilanParCritere(filtre),
@@ -95,8 +96,11 @@ export default async function Pilotage({
         questionsManquees(filtre),
         rapportsEnAttente(filtre),
         effectifAgents(),
+        anciennetesQuiz(filtre),
       ])
-    : [null, [], [], [], [], [], { actifs: 0, total: 0 }];
+    : [null, [], [], [], [], [], { actifs: 0, total: 0 }, []];
+  // Question 49, choix b : l'ancienneté du dernier quiz validé, jamais une échéance.
+  const depasses = quizAnciens(anciennetes, maintien.periodiciteMois);
 
   const publies = modules.filter((m) => m.origine !== "base" || m.statut === "publie");
   const totalBanque = Object.values(comptesBanque).reduce(
@@ -361,6 +365,47 @@ export default async function Pilotage({
                     </li>
                   );
                 })}
+              </ul>
+            )}
+          </section>
+
+          <section className="carte" id="anciennete">
+            <div className="section-titre">
+              <h2>Ancienneté des quiz validés</h2>
+              <span className="compte">
+                {depasses.length} de plus de {maintien.periodiciteMois} mois
+              </span>
+            </div>
+            <p className="legende">
+              Dernier rapport <strong>clos</strong> de chaque agent sur chaque module, et le temps
+              écoulé depuis. {maintien.activiteMinimale} Réévaluation de l&apos;habilitation tous les{" "}
+              {maintien.periodiciteMois / 12} ans.
+            </p>
+            <p className="legende">
+              <strong>Aucune échéance n&apos;est prononcée ici</strong> : les deux ans courent depuis
+              l&apos;habilitation prononcée par le pharmacien — étape 5, hors du site. Ce tableau dit
+              depuis combien de temps le quiz a été validé, rien de plus.
+            </p>
+            {anciennetes.length === 0 ? (
+              <p className="legende">Aucun quiz validé sur ce périmètre.</p>
+            ) : (
+              <ul className="liste-nue">
+                {[...anciennetes]
+                  .sort((a, b) => b.mois - a.mois)
+                  .map((l) => (
+                    <li key={`${l.agent_identifiant}-${l.module_id}`} className="ligne-attente">
+                      <span
+                        className={`etiquette ${l.mois >= maintien.periodiciteMois ? "etiquette--attention" : "etiquette--ok"}`}
+                      >
+                        {libelleAnciennete(l.mois)}
+                      </span>
+                      <code>{l.agent_identifiant}</code>
+                      <span className="legende">{l.module_titre}</span>
+                      <span className="legende" style={{ marginLeft: "auto" }}>
+                        {l.critere_id ?? "—"} · validé le {l.dernier_le.slice(0, 10)}
+                      </span>
+                    </li>
+                  ))}
               </ul>
             )}
           </section>

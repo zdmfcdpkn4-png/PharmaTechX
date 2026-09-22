@@ -1457,6 +1457,37 @@ où elle sert vraiment — « Recommencer », seul chemin où le client est le s
 **Mesuré** : trois passes consécutives de la chaîne complète, 64 étapes
 chacune, sans échec.
 
+## Ancienneté des quiz validés, sans échéance prononcée (22/09/2026)
+
+Les quatre fiches d'habilitation demandent une réévaluation tous les deux
+ans, et la fiche pharmacien fait de « Validation ou réalisation des **quiz de
+formation** » un critère **obligatoire** de son bloc Réhabilitation : c'est
+la seule ligne des documents de l'unité qui désigne nommément ce que ce site
+produit. Or le site affichait « revalidation 24 mois » sur la page d'un
+module, et rien de plus : aucune échéance n'était calculée pour personne.
+
+**Tranché (question 49, choix b).** Le site dit **l'ancienneté**, jamais
+l'échéance. `/admin/pilotage#anciennete` liste, pour chaque agent et chaque
+module, la date du dernier rapport **clos** et le temps écoulé depuis. Un
+cinquième item entre dans la file d'attente du tutorat : « Quiz de plus de
+24 mois ».
+
+**Pourquoi pas l'échéance (choix c).** Les deux ans courent depuis
+l'habilitation prononcée par le pharmacien — étape 5, hors du site. Une date
+calculée à partir du dernier quiz serait un approchant, pas la date
+réglementaire. L'afficher sur un outil adossé à un dossier qualité créerait
+une assurance fausse, pire que pas de date du tout. La page le dit en toutes
+lettres, et un test de bout en bout vérifie qu'aucune échéance n'y figure.
+
+**Seuls les rapports clos comptent** : un rapport émis mais non visé n'est pas
+une validation. L'âge se calcule avec `AGE()`, donc en mois de calendrier et
+non en tranches de trente jours.
+
+**L'item est ajouté en fin de file**, et c'est délibéré : les quatre
+existants gardent leur rang, donc leur place sous la main. Réordonner
+détruirait la mémoire spatiale qui fait tout le gain de vitesse (point 40 de
+`QUESTIONS-OUVERTES.md`). Le plafond de cinq items est atteint.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

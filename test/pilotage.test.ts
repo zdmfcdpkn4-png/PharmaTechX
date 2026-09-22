@@ -9,8 +9,11 @@ import {
   part,
   pointsCourbe,
   questionsDifficiles,
+  libelleAnciennete,
+  quizAnciens,
   segments,
   tranchesScores,
+  type AncienneteQuiz,
   type BilanCritere,
 } from "../lib/pilotage";
 
@@ -123,4 +126,30 @@ test("arcs : les longueurs couvrent la circonférence, sans trou ni chevauchemen
   assert.deepEqual(a.map((x) => Math.round(x.longueur)), [25, 25, 50]);
   assert.deepEqual(a.map((x) => Math.round(x.debut)), [0, 25, 50]);
   assert.deepEqual(arcs([0, 0], 100), [{ longueur: 0, debut: 0 }, { longueur: 0, debut: 0 }]);
+});
+
+// ── Ancienneté des quiz (question 49, choix b) : un fait, pas une échéance
+
+const ANCIENNETES: AncienneteQuiz[] = [
+  { agent_identifiant: "AG-001", module_id: "m1", module_titre: "Un", critere_id: "B1-01", dernier_le: "2024-01-10T09:00:00Z", mois: 32 },
+  { agent_identifiant: "AG-002", module_id: "m1", module_titre: "Un", critere_id: "B1-01", dernier_le: "2024-09-22T09:00:00Z", mois: 24 },
+  { agent_identifiant: "AG-003", module_id: "m2", module_titre: "Deux", critere_id: null, dernier_le: "2026-06-01T09:00:00Z", mois: 3 },
+];
+
+test("le seuil est inclusif : vingt-quatre mois pile, c'est dépassé", () => {
+  const anciens = quizAnciens(ANCIENNETES, 24).map((l) => l.agent_identifiant);
+  assert.deepEqual(anciens, ["AG-001", "AG-002"]);
+});
+
+test("aucun quiz ancien si le seuil est plus haut que la plus vieille ligne", () => {
+  assert.deepEqual(quizAnciens(ANCIENNETES, 36), []);
+});
+
+test("l'ancienneté se dit en mois, jamais en date d'échéance", () => {
+  assert.equal(libelleAnciennete(0), "ce mois-ci");
+  assert.equal(libelleAnciennete(1), "il y a 1 mois");
+  assert.equal(libelleAnciennete(32), "il y a 32 mois");
+  for (const m of [0, 1, 24, 32]) {
+    assert.equal(/\d{2}\/\d{2}\/\d{4}/.test(libelleAnciennete(m)), false, "aucune date prononcée");
+  }
 });

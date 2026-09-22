@@ -640,6 +640,32 @@ Justification : cf. procédure interne.`,
     "la liste propose la mention des rapports clos",
   );
   ok("mention de preuve : composée sur le rapport clos, sans empreinte, proposée aussi dans la liste");
+
+  // 10f. ancienneté des quiz validés (question 49, choix b) : un fait daté,
+  //      jamais une échéance.
+  await page.goto(BASE + "/admin/pilotage#anciennete");
+  const anciennete = page.locator("#anciennete");
+  await anciennete.waitFor();
+  // `innerText` rend le texte **après** CSS : la classe `etiquette` le met en
+  // capitales, donc on compare sans casse.
+  const texteAnciennete = (await anciennete.innerText()).toLowerCase();
+  assert.ok(texteAnciennete.includes("ag-001"), "l'agent figure au tableau d'ancienneté");
+  assert.ok(texteAnciennete.includes("ce mois-ci"), "rapport clos du jour : ancienneté nulle");
+  assert.ok(
+    texteAnciennete.includes("aucune échéance n'est prononcée ici"),
+    "la page dit qu'elle ne prononce pas d'échéance",
+  );
+  assert.equal(
+    /revalidation due le|échéance le/i.test(texteAnciennete),
+    false,
+    "aucune date d'échéance calculée",
+  );
+  assert.equal(
+    (await anciennete.locator(".section-titre .compte").innerText()).trim().toLowerCase(),
+    "0 de plus de 24 mois",
+    "aucun quiz dépassé dans ce scénario",
+  );
+  ok("ancienneté des quiz : dernier rapport clos daté, aucune échéance prononcée");
   const paquet = await page.request.get(urlRapport + "/paquet");
   assert.equal(paquet.status(), 200);
   assert.equal(paquet.headers()["content-type"], "application/zip");
@@ -1077,8 +1103,16 @@ Justification : justification deux.`;
   // critère 3 : un item à zéro reste affiché, cliquable, et le dit
   assert.equal(
     await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-item").count(),
-    4,
-    "quatre items dans la file d'attente d'un code d'administration",
+    5,
+    "cinq items dans la file d'attente d'un code d'administration",
+  );
+  // Question 49 (choix b) : le cinquième item est en **fin** de file, les
+  // quatre premiers gardent leur rang, donc leur place sous la main.
+  assert.equal(
+    (await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-libelle").allInnerTexts())
+      .map((s) => s.trim())
+      .pop(),
+    "Quiz de plus de 24 mois",
   );
   const nul = page.locator(".ar-item--nul").first();
   assert.ok(await nul.count(), "au moins un item à zéro dans ce scénario");

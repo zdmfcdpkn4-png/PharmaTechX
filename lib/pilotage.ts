@@ -199,3 +199,43 @@ export function arcs(valeurs: number[], circonference: number): { longueur: numb
     return a;
   });
 }
+
+/**
+ * Ancienneté du dernier quiz **validé** (rapport clos) d'un agent sur un
+ * module.
+ *
+ * Tranché le 22/09/2026 (question 49, choix b). Les quatre fiches
+ * d'habilitation demandent une réévaluation tous les 2 ans, et la fiche
+ * pharmacien fait de « Validation ou réalisation des quiz de formation » un
+ * critère obligatoire de son bloc Réhabilitation. Le site sait dire depuis
+ * combien de mois le dernier quiz a été validé.
+ *
+ * Ce qu'il ne dit **pas**, et c'est délibéré : la date d'échéance. Les deux
+ * ans courent depuis l'habilitation prononcée par le pharmacien — étape 5,
+ * hors du site. Une échéance calculée depuis le dernier quiz serait un
+ * approchant, pas la date réglementaire ; l'afficher sur un outil adossé à un
+ * dossier qualité créerait une assurance fausse. On énonce un fait
+ * vérifiable, on ne prononce rien.
+ */
+export interface AncienneteQuiz {
+  agent_identifiant: string;
+  module_id: string;
+  module_titre: string;
+  critere_id: string | null;
+  /** Émission du dernier rapport clos, en ISO. */
+  dernier_le: string;
+  /** Mois calendaires écoulés depuis. */
+  mois: number;
+}
+
+/** Ceux dont le dernier passage validé atteint ou dépasse la périodicité. */
+export function quizAnciens(lignes: AncienneteQuiz[], seuilMois: number): AncienneteQuiz[] {
+  return lignes.filter((l) => l.mois >= seuilMois);
+}
+
+/** « il y a 3 mois », « ce mois-ci » — jamais une date d'échéance. */
+export function libelleAnciennete(mois: number): string {
+  if (mois <= 0) return "ce mois-ci";
+  if (mois === 1) return "il y a 1 mois";
+  return `il y a ${mois} mois`;
+}

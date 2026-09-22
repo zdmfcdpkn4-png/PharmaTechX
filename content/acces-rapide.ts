@@ -30,6 +30,8 @@ export interface ComptesAttente {
   questionsAVerifier: number;
   rapportsAViser: number;
   verdictsAArbitrer: number;
+  /** Quiz validés depuis plus longtemps que la périodicité de réévaluation. */
+  quizAnciens: number;
 }
 
 export const AUCUN_COMPTE: ComptesAttente = {
@@ -37,6 +39,7 @@ export const AUCUN_COMPTE: ComptesAttente = {
   questionsAVerifier: 0,
   rapportsAViser: 0,
   verdictsAArbitrer: 0,
+  quizAnciens: 0,
 };
 
 export interface ItemAttente {
@@ -71,12 +74,14 @@ const ORDRE: Record<ProfilAcces, DefinitionItem[]> = {
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
     { cle: "questionsAVerifier", libelle: "Questions à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
   admin: [
     { cle: "rapportsAViser", libelle: "Rapports à viser", href: "/admin/rapports", conservation: true },
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
     { cle: "questionsAVerifier", libelle: "Questions à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
 };
 

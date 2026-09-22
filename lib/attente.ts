@@ -1,7 +1,9 @@
 import "server-only";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
 import { AUCUN_COMPTE, type ComptesAttente, type ProfilAcces } from "@/content/acces-rapide";
-import { rapportsEnAttente, SANS_FILTRE, type RapportEnAttente } from "./pilotage-db";
+import { anciennetesQuiz, rapportsEnAttente, SANS_FILTRE, type RapportEnAttente } from "./pilotage-db";
+import { quizAnciens } from "./pilotage";
+import { maintien } from "@/content/habilitation";
 
 /**
  * Compteurs de la file d'attente (paquet A, 21/09/2026).
@@ -32,7 +34,7 @@ export async function comptesAttente(
 ): Promise<ComptesAttente> {
   if (profil === "poste") return AUCUN_COMPTE;
 
-  const [signalements, parModule, rapports] = await Promise.all([
+  const [signalements, parModule, rapports, anciennetes] = await Promise.all([
     compterSignalementsOuverts().catch(() => 0),
     comptesParModule().catch(
       () => ({}) as Record<string, { valides: number; aVerifier: number; reservees: number }>,
@@ -40,6 +42,9 @@ export async function comptesAttente(
     conservation
       ? rapportsEnAttente(SANS_FILTRE).catch((): RapportEnAttente[] => [])
       : Promise.resolve<RapportEnAttente[]>([]),
+    conservation
+      ? anciennetesQuiz(SANS_FILTRE).catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   const questionsAVerifier = Object.values(parModule).reduce((s, c) => s + c.aVerifier, 0);
@@ -57,5 +62,15 @@ export async function comptesAttente(
     (r) => r.statut === "emis" || (profil === "admin" && r.statut === "vise_tuteur"),
   ).length;
 
-  return { signalements, questionsAVerifier, rapportsAViser, verdictsAArbitrer };
+  // Question 49, choix b : un fait, pas une échéance. La périodicité est
+  // celle de la fiche d'habilitation, identique sur les quatre métiers.
+  const quizDepasses = quizAnciens(anciennetes, maintien.periodiciteMois).length;
+
+  return {
+    signalements,
+    questionsAVerifier,
+    rapportsAViser,
+    verdictsAArbitrer,
+    quizAnciens: quizDepasses,
+  };
 }

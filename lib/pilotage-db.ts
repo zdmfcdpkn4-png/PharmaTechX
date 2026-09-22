@@ -2,7 +2,7 @@ import "server-only";
 import { requete } from "./db";
 import type { StatutRapport } from "./rapports";
 import type { Verdict } from "./decision";
-import type { BilanCritere, ComptageQuestion, PointMois } from "./pilotage";
+import type { AncienneteQuiz, BilanCritere, ComptageQuestion, PointMois } from "./pilotage";
 
 /**
  * Requêtes du tableau de bord de pilotage. Chacune agrège **dans la base** :
@@ -205,4 +205,30 @@ export async function effectifAgents(): Promise<{ actifs: number; total: number 
     `SELECT COUNT(*) FILTER (WHERE actif)::int AS actifs, COUNT(*)::int AS total FROM agents`,
   );
   return r.rows[0] ?? { actifs: 0, total: 0 };
+}
+
+/**
+ * Dernier quiz **validé** (rapport clos) de chaque agent sur chaque module,
+ * et son ancienneté en mois calendaires.
+ *
+ * Seuls les rapports clos comptent : un rapport émis mais non visé n'est pas
+ * une validation. L'âge se calcule avec `AGE()`, donc en mois de calendrier
+ * et non en tranches de trente jours.
+ */
+export async function anciennetesQuiz(f: FiltrePilotage): Promise<AncienneteQuiz[]> {
+  const r = await requete<AncienneteQuiz>(
+    `SELECT r.agent_identifiant, r.module_id, r.module_titre, r.critere_id,
+       MAX(r.emis_le)::text AS dernier_le,
+       (EXTRACT(YEAR FROM AGE(NOW(), MAX(r.emis_le))) * 12
+        + EXTRACT(MONTH FROM AGE(NOW(), MAX(r.emis_le))))::int AS mois
+     FROM rapports r
+     WHERE r.statut = 'clos'
+       AND ($1::text[] IS NULL OR r.module_id = ANY($1))
+       AND ($2::text[] IS NULL OR r.critere_id = ANY($2))
+       AND ($3::timestamptz IS NULL OR r.emis_le >= $3)
+     GROUP BY r.agent_identifiant, r.module_id, r.module_titre, r.critere_id
+     ORDER BY MAX(r.emis_le)`,
+    valeurs(f),
+  );
+  return r.rows;
 }

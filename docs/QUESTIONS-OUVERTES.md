@@ -390,3 +390,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     page du rapport et dans la liste. Seul un rapport clos en donne une ;
     l'empreinte n'y figure pas, elle se lit sur le rapport. Sans mise en
     service, la mention porte d'abord « Phase d'essai — ne vaut pas preuve ».
+
+49. **Réévaluation à 24 mois** — tranché le 22/09/2026 (choix b) : le site
+    affiche l'**ancienneté** du dernier quiz validé (rapport clos) par agent
+    et par module, et une file « Quiz de plus de 24 mois » dans le volet du
+    tutorat. Il ne prononce **aucune échéance** : les deux ans courent depuis
+    l'habilitation du pharmacien, étape 5, hors du site.
