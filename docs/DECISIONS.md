@@ -1357,6 +1357,41 @@ l'affiche en tête. Rien n'est supprimé sur ce constat : effacer en silence un
 rattachement que quelqu'un a posé sciemment, sans qu'il l'apprenne, serait
 pire que l'orphelin.
 
+## Le site reste aux étapes 1 et 2 ; le portfolio reste papier (22/09/2026)
+
+Les portfolios fournis le 22/09/2026 couvrent les **étapes 3 et 4** de la
+chaîne d'habilitation — compagnonnage au poste et évaluation pratique — avec
+trois états (Vu / En cours / Acquis), une double colonne « en doublon / en
+autonomie », le formateur, la date, et une colonne « Documents supports »
+portant 85 références de documents qualité internes.
+
+**Tranché (question 47, choix a).** Le site ne les porte pas. Il reste aux
+étapes 1 et 2 — formation théorique, évaluation des connaissances — et
+continue de le dire sur chaque rapport. Ce qu'il produit, le rapport
+numéroté, scellé et visé, alimente la colonne « Outils / Preuve de
+compétence » ajoutée à la fiche pharmacien.
+
+**Ce que cela ferme.** Porter le portfolio dans le site (choix b) aurait été
+un module entier : une centaine de lignes, trois états, deux colonnes, par
+agent. Cela aurait surtout changé la nature du site — il serait devenu le
+dossier d'habilitation lui-même, et non la preuve d'une de ses étapes. La
+frontière reste nette, et c'est elle qui rend le rapport lisible : il dit ce
+qu'il prouve et ce qu'il ne prouve pas.
+
+**Ce que cela coûte, et il faut le dire.** C'était l'argument contre ce
+choix, et il tient : les 85 références n'entrent pas toutes dans le site.
+Celles qui documentent un critère couvert par un module gardent leur place —
+`/admin/documents` rattache un document à un module ou à un critère, et c'est
+exactement l'étape 1. Celles qui ne documentent qu'une ligne de portfolio (un
+geste, une mise en situation, une séquence de l'agenda) restent sur le
+papier. La part exacte reste `[à préciser]` tant que le rattachement n'est
+pas fait.
+
+**Écarté aussi (choix c) :** afficher le portfolio sans l'enregistrer. Cela
+donnait un emploi immédiat aux références, mais au prix de deux systèmes à
+tenir — le programme à l'écran, la notation sur le papier — qui divergent à
+la première révision du portfolio.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

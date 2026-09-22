@@ -372,3 +372,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     préparateur gardant les siens, ce qui est asymétrique mais n'invalide
     rien. Tant que les trois autres échelles ne sont pas versées, leur liste
     reste vide et le conflit ne se pose pas.
+
+47. **Périmètre du site dans la chaîne d'habilitation** — tranché le
+    22/09/2026 (choix a) : le site reste aux étapes 1 et 2. Le portfolio —
+    étapes 3 et 4, trois états Vu / En cours / Acquis, double colonne
+    doublon / autonomie — reste sur le papier. Le rapport du site alimente la
+    colonne « Outils / Preuve de compétence » de la fiche. Conséquence
+    assumée : les références de documents qui ne servent qu'une ligne de
+    portfolio n'entrent pas dans le site ; celles qui documentent un critère
+    couvert par un module se rattachent depuis `/admin/documents`.
+    `[à préciser]` la part des 85 références concernée, tant que le
+    rattachement n'est pas fait.

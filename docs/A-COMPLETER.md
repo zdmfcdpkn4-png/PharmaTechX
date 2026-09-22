@@ -135,6 +135,15 @@ ou par vous, puis rattachés au module ou au critère concerné. Aucun marqueur
 ne s'affiche tant qu'ils manquent : c'est un manque silencieux, et c'est
 justement pourquoi il est listé ici.
 
+**Ce que les portfolios du 22/09/2026 changent.** Ils portent **85
+références** de documents qualité internes, rattachées ligne à ligne. Mais le
+site reste aux étapes 1 et 2 (question 47, choix a) : seules entrent ici
+celles qui documentent un **critère couvert par un module**. Celles qui ne
+servent qu'une ligne de portfolio — un geste, une mise en situation, une
+séquence de l'agenda de formation — restent sur le papier. La part concernée
+est `[à préciser]` tant que le rattachement n'est pas fait, et le versement
+des portfolios attend que le dépôt soit privé (question 43, choix a).
+
 ### B4. Postes de travail
 
 | | |
