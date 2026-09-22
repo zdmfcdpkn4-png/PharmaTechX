@@ -74,7 +74,8 @@ export function BoutonMenu({ pastille = false }: { pastille?: boolean }) {
         <span />
         <span />
       </span>
-      Menu
+      {/* Sur téléphone, le libellé quitte l'écran mais reste le nom du bouton. */}
+      <span className="bouton-menu-libelle">Menu</span>
       {pastille ? <span className="bouton-menu-pastille" aria-hidden="true" /> : null}
       {pastille ? <span className="lecture-seule"> — des éléments attendent</span> : null}
     </button>

@@ -53,7 +53,7 @@ const POSTE: EtapeTutoriel[] = [
   {
     titre: "Vous êtes entré avec un code de poste",
     texte:
-      "Ce code ouvre un profil, pas un compte : il ne désigne personne et rien de ce que vous ferez ici ne portera votre nom. La visite qui suit montre les quatre écrans que vous utiliserez.",
+      "Ce code ouvre un profil, pas un compte. La visite qui suit montre les quatre écrans que vous utiliserez.",
   },
   {
     titre: "Vos modules",
@@ -79,7 +79,7 @@ const POSTE: EtapeTutoriel[] = [
   {
     titre: "Votre progression",
     texte:
-      "Rattachez votre progression à l'identifiant d'agent remis par votre tuteur, avec un code personnel que vous choisissez. Elle est alors conservée sous cet identifiant, sans nom, et vous la retrouvez d'un poste à l'autre.",
+      "Rattachez votre progression à l'identifiant d'agent remis par votre tuteur, avec un code personnel que vous choisissez. Elle est alors conservée sous cet identifiant, et vous la retrouvez d'un poste à l'autre.",
     href: "/#progression",
     lien: "Ma progression",
     conservation: true,
@@ -116,7 +116,7 @@ const TUTEUR: EtapeTutoriel[] = [
   {
     titre: "Le personnel et les visas",
     texte:
-      "Créez ici les identifiants d'agents (AG-001…) à remettre aux apprenants — aucun nom n'entre en base. C'est aussi d'ici que vous posez le visa du tutorat sur un rapport émis.",
+      "Créez ici les identifiants d'agents (AG-001…) à remettre aux apprenants. C'est aussi d'ici que vous posez le visa du tutorat sur un rapport émis.",
     href: "/admin/personnel",
     lien: "Ouvrir le personnel",
     conservation: true,
@@ -168,7 +168,7 @@ const ADMIN: EtapeTutoriel[] = [
   {
     titre: "La signature et le journal",
     texte:
-      "Déposez l'image de signature incrustée à la clôture des rapports. Le journal garde toute action d'administration, par rôle et libellé de profil, jamais par nom.",
+      "Déposez l'image de signature incrustée à la clôture des rapports. Le journal garde toute action d'administration, par rôle et libellé de profil.",
     href: "/admin/journal",
     lien: "Ouvrir le journal",
   },

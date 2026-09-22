@@ -11,8 +11,8 @@ export default async function Signalements() {
       <section className="panneau-titre">
         <h1>Signalements</h1>
         <p>
-          Remarques déposées par les apprenants depuis la correction — motif fermé, note libre,
-          rien de nominatif. Le tutorat tranche : corriger la question, puis clore le signalement.
+          Remarques déposées par les apprenants depuis la correction — motif fermé, note libre.
+          Le tutorat tranche : corriger la question, puis clore le signalement.
           Une question de la banque versionnée avec le site se corrige dans le code.
         </p>
       </section>

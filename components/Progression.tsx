@@ -146,8 +146,7 @@ export async function Progression({
       <section className="carte">
         <p>
           Rattachez vos évaluations à votre identifiant pour les retrouver d&apos;une session à l&apos;autre. Première
-          fois : saisissez-le, puis choisissez un code personnel.{" "}
-          <Link href="/donnees-personnelles" className="lien-discret">Vos données</Link>
+          fois : saisissez-le, puis choisissez un code personnel.
         </p>
         <form action={actionRattacher}>
           <div className="rangee">

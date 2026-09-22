@@ -9,9 +9,9 @@ import Link from "next/link";
  * ramenait à l'écran de connexion. Un menu dont tous les liens reviennent au
  * point de départ n'informe pas, il égare.
  *
- * Le volet ne garde donc que le seul écran réellement ouvert sans code — la
- * page d'information sur les données personnelles — et porte à la place ce
- * qu'il est utile de savoir avant d'entrer.
+ * Le volet ne garde donc que le seul écran réellement ouvert sans code —
+ * l'onglet RGPD — et porte à la place ce qu'il est utile de savoir avant
+ * d'entrer.
  */
 export function VoletConnexion() {
   return (
@@ -32,12 +32,11 @@ export function VoletConnexion() {
         </p>
       </div>
 
-      {/* Le détail de ce qui est enregistré est sur la page elle-même : le
-          répéter ici faisait lire deux fois la même chose. Le lien reste. */}
-      <div className="rail-groupe">
-        <span className="rail-titre">En savoir plus</span>
-        <Link href="/donnees-personnelles">Vos données et vos droits</Link>
-      </div>
+      {/* L'onglet RGPD, comme une fois connecté : seul écran ouvert sans code. */}
+      <Link href="/donnees-personnelles" className="rail-onglet">
+        RGPD
+        <span className="rail-onglet-detail">Vos données et vos droits</span>
+      </Link>
     </>
   );
 }

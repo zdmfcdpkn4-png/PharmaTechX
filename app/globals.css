@@ -855,6 +855,46 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
   details.rail-sous > summary::after { transition: none; }
 }
 
+/* Onglet RGPD (22/09/2026) : en fin de volet, un intitulé de groupe qui est
+   un lien — ni chevron, ni repli. Toute l'information sur les données y tient ;
+   aucun autre écran n'en porte de ligne. Même tenue avant connexion, dans le
+   volet sur poste comme dans l'accès rapide sur tablette et téléphone. */
+.rail a.rail-onglet,
+.acces-rapide a.rail-onglet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.0625rem;
+  min-height: 2.125rem;
+  margin-top: 0.5rem;
+  padding: 0.3125rem 0.625rem;
+  border-left: 0;
+  border-radius: 8px;
+  background: var(--surface-douce);
+  color: var(--marque);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.acces-rapide a.rail-onglet { min-height: var(--cible); margin: 0 0 0.875rem; }
+.rail a.rail-onglet:hover,
+.acces-rapide a.rail-onglet:hover { background: var(--marque-clair); }
+.rail a.rail-onglet[aria-current="page"] {
+  background: var(--marque-clair);
+  box-shadow: inset 3px 0 0 var(--hdv-rose);
+}
+.rail-onglet-detail {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte-doux);
+}
+
 /* Texte d'information du volet, avant connexion : pas un lien, pas cliquable. */
 .rail-info {
   margin: 0 0 0.5rem;
@@ -1544,10 +1584,6 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
 .tuile .libelle { display: block; font-size: 0.75rem; color: var(--texte-doux); margin-top: 0.125rem; }
 
 .legende { font-size: 0.8125rem; color: var(--texte-doux); }
-/* Lien vers « Vos données » laissé là où l'identifiant se saisit (22/09/2026) :
-   présent, pas en avant. */
-.lien-discret { font-size: 0.8125rem; color: var(--texte-doux); }
-
 .encart {
   border-left: 4px solid var(--marque);
   background: var(--marque-clair);
@@ -2278,3 +2314,107 @@ html[data-zone="1"] .ar-raccourci { display: none; }
   border-radius: var(--rayon-sm);
   background: rgba(255, 255, 255, 0.7);
 }
+
+/* =============================================================================
+ * Audit d'affichage du 22/09/2026 — PC, iPad, iPhone
+ * Mesuré sur six tailles d'écran (1920 × 1080, 1366 × 768, iPad 7ᵉ génération
+ * en paysage et en portrait, iPhone 15, iPhone SE), trois profils, 28 pages.
+ * Chaque règle ci-dessous répond à un défaut relevé ; le détail et les
+ * mesures avant/après sont dans DECISIONS.md.
+ * ========================================================================== */
+
+/* En-tête — tablette : une seule ligne. Le monogramme P, décoratif (alt vide),
+   cède sa place, et le bouton de sortie ne dit plus que « Quitter » ; le
+   profil reste dans son nom accessible. Mesuré : deux lignes, 137 px, sur
+   iPad en portrait. */
+@media (max-width: 61.9375rem) {
+  .logo-fin { display: none; }
+  .entete-actions { margin-left: auto; }
+  .entete-interne { gap: 0.75rem; }
+  .bouton-quitter-profil { display: none; }
+  .bouton-quitter-verbe { text-transform: capitalize; }
+}
+
+/* En-tête — téléphone : une ligne au lieu de trois (193 à 197 px mesurés,
+   29 % de la hauteur d'un iPhone). Le bouton Menu passe en icône, son
+   libellé restant son nom ; le titre du site quitte l'en-tête, la page porte
+   le sien. Sous 24 rem (iPhone SE), le mandala cède aussi sa place : les deux
+   logos et les deux boutons n'y tiennent pas ensemble. */
+@media (max-width: 40rem) {
+  .entete-interne { flex-wrap: nowrap; gap: 0.5rem; }
+  .bandeau { display: none; }
+  .bouton-menu { min-width: var(--cible); padding: 0; justify-content: center; }
+  .bouton-menu-libelle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .logos { gap: 0.5rem; min-width: 0; }
+  .logos img.hdv { height: 26px; }
+  .logos img.pharmaco { height: 40px; }
+  .entete-actions { flex: none; gap: 0.375rem; }
+  .bouton-zone { padding: 0 0.5rem; }
+  .bouton-quitter { padding: 0 0.75rem; }
+}
+@media (max-width: 24rem) {
+  .logos img.pharmaco,
+  .separateur-logo { display: none; }
+}
+
+/* Fil d'habilitation — téléphone : deux lignes au lieu de quatre (intitulé
+   de deux lignes, pastilles sur deux autres, mesurés sur iPhone SE). En haut,
+   l'intitulé court et le lien ; en dessous, les six pastilles sur une ligne,
+   la courante gardant son libellé, tronqué au besoin. Sur poste, les deux
+   enveloppes s'effacent (`display: contents`) : rien ne change. */
+.fil-etapes { display: contents; }
+.fil-titre-court { display: none; }
+@media (max-width: 40rem) {
+  .fil-habilitation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "titre lien" "etapes etapes";
+    align-items: center;
+    gap: 0.125rem 0.5rem;
+  }
+  .fil-habilitation > .sur-titre { grid-area: titre; }
+  .fil-titre-long { display: none; }
+  .fil-titre-court { display: inline; }
+  .fil-etapes { grid-area: etapes; display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+  .fil-etape { flex: none; padding: 0.1875rem 0.375rem; }
+  .fil-etape--courante { flex: 0 1 auto; min-width: 0; }
+  .fil-etape--courante .libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fil-habilitation .fil-lien { grid-area: lien; margin-left: 0; }
+}
+
+/* Écran tactile, quelle que soit la largeur. Sur iPad en paysage (1080 px),
+   le volet permanent s'affiche avec ses lignes de 32 px, réglées pour un
+   pointeur précis : 210 liens et 52 intitulés sous 44 px mesurés. La cible
+   pleine revient dès que le pointeur est un doigt. */
+@media (pointer: coarse) {
+  .rail a,
+  details.rail-groupe > summary,
+  details.rail-sous > summary { min-height: var(--cible); }
+  summary { min-height: var(--cible); }
+  /* Safari iOS agrandit la page au focus d'un champ écrit sous 16 px (champ de
+     seuil des modules : 13,3 px mesurés). */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea { font-size: max(16px, 1rem) !important; }
+}
+
+/* Débordements mesurés. */
+/* Journal : la colonne « Détails » porte du JSON sans espace ; le tableau
+   atteignait 1 553 px et faisait défiler toute la page de côté, sur poste
+   1366 comme sur iPad. */
+table.tableau td { overflow-wrap: anywhere; }
+/* Programme à la carte : un fieldset prend par défaut la largeur minimale de
+   son contenu et débordait de 6 à 24 px sur iPhone. */
+fieldset { min-width: 0; }
+/* Repères, « Programme complet » : niveau, « Obligatoire » et « À rédiger »
+   ne se replient pas et la ligne dépassait de 112 px sur iPhone. */
+.ligne-critere { flex-wrap: wrap; }
+.contenu-bloc > .legende { overflow-wrap: anywhere; }

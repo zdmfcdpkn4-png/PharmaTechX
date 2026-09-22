@@ -137,12 +137,6 @@ export default async function Connexion({
         </section>
       </div>
 
-      {/* Une ligne au lieu d'un encadré (22/09/2026, « moins visible ») : le
-          détail vit sur « Vos données et vos droits », qui est sa place. */}
-      <p className="legende">
-        {conservation ? "Aucun nom n'est enregistré." : "Rien de nominatif n'est enregistré."}{" "}
-        <Link href="/donnees-personnelles">Vos données et vos droits</Link>
-      </p>
 
     </article>
   );

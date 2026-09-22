@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { modeConservation } from "@/lib/config";
 import { lireBareme } from "@/lib/bareme-db";
 import {
   libelleCaches,
@@ -20,8 +19,9 @@ import {
   niveaux,
 } from "@/content/habilitation";
 
-// Le barème et le mode de conservation sont lus à chaque requête : la page
-// annonce les règles en vigueur, jamais celles figées à la construction.
+// Le barème est lu à chaque requête : la page annonce les règles en vigueur,
+// jamais celles figées à la construction. Les deux questions sur les données
+// ont rejoint l'onglet RGPD le 22/09/2026.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -85,28 +85,14 @@ const formats = (b: Bareme) => [
   },
 ];
 
-const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
+const questionsFrequentes = [
   {
     q: "Si je valide le module, suis-je habilité ?",
     r: "Non. Ce site couvre les étapes 1 et 2 sur 6. L'habilitation est prononcée par le pharmacien responsable après le compagnonnage et l'évaluation pratique au poste, au vu des preuves réunies.",
   },
   {
-    q: "Mes résultats sont-ils enregistrés quelque part ?",
-    r:
-      conservation === "pseudonyme"
-        ? "Seulement ce que vous choisissez : le rapport que vous émettez, et votre progression si vous la rattachez — sous votre identifiant, jamais sous votre nom."
-        : "Non : seul le rapport que vous téléchargez en garde trace.",
-  },
-  {
     q: "Quelle différence entre évaluation et entraînement ?",
     r: "L'entraînement corrige chaque question dès la réponse, avec sa justification et sa source, et n'est ni enregistré ni comptabilisé. L'évaluation corrige à la fin et produit le résultat porté au rapport.",
-  },
-  {
-    q: "Le site sait-il qui je suis ?",
-    r:
-      conservation === "pseudonyme"
-        ? "Non : un code ouvre un profil, pas un compte nominatif, et un rapport se rattache à votre identifiant d'agent."
-        : "Non : un code ouvre un profil, pas un compte nominatif.",
   },
   {
     q: "Que se passe-t-il si je rate une question éliminatoire ?",
@@ -123,7 +109,6 @@ const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
 ];
 
 export default async function Reperes() {
-  const conservation = modeConservation();
   const bareme = await lireBareme();
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
 
@@ -273,7 +258,7 @@ export default async function Reperes() {
       <section id="questions" className="section">
         <h2>Questions</h2>
         <div style={{ display: "grid", gap: ".5rem" }}>
-          {questionsFrequentes(conservation).map((x) => (
+          {questionsFrequentes.map((x) => (
             <details key={x.q} className="bloc">
               <summary>{x.q}</summary>
               <div className="contenu-bloc">

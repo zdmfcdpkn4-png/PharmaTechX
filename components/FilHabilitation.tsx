@@ -44,9 +44,17 @@ export function FilHabilitation({ etapes }: { etapes: EtapeFil[] }) {
 
   return (
     <nav className="fil-habilitation" aria-label="Chaîne d'habilitation">
+      {/* Deux intitulés, un seul affiché : le court sur téléphone, où le fil
+          tient sur deux lignes au lieu de quatre (audit du 22/09/2026). */}
       <span className="sur-titre">
-        Habilitation — {etapes.length} étapes, dont {surLeSite} sur ce site
+        <span className="fil-titre-long">
+          Habilitation — {etapes.length} étapes, dont {surLeSite} sur ce site
+        </span>
+        <span className="fil-titre-court">
+          Habilitation · {surLeSite} étapes sur {etapes.length} ici
+        </span>
       </span>
+      <span className="fil-etapes">
       {etapes.map((e) => (
         <span
           key={e.numero}
@@ -66,6 +74,7 @@ export function FilHabilitation({ etapes }: { etapes: EtapeFil[] }) {
           </span>
         </span>
       ))}
+      </span>
       <Link href="/reperes#dispositif" className="fil-lien">
         Le dispositif
       </Link>

@@ -5,7 +5,10 @@ export const dynamic = "force-dynamic";
 
 /**
  * Information des agents (RGPD, art. 13), resserrée le 22/09/2026 à la
- * demande du pharmacien responsable : « synthétiser drastiquement ». Chaque
+ * demande du pharmacien responsable : « synthétiser drastiquement », puis
+ * « circonscrire tout le RGPD dans un onglet spécifique » — cette page est
+ * cet onglet, en fin de volet, et aucun autre écran ne parle plus des
+ * données (ce qu'ils en disaient est repris ici). Chaque
  * élément exigé par l'article 13 reste — responsable, DPO, finalité, base
  * légale, destinataires, durée, droits, réclamation — en une ligne chacun.
  * Le détail vit dans la fiche de registre (`docs/RGPD.md`). Les éléments
@@ -21,7 +24,7 @@ export default function DonneesPersonnelles() {
   return (
     <article>
       <p className="fil">
-        <Link href="/">Programme</Link> › Données personnelles
+        <Link href="/">Programme</Link> › RGPD
       </p>
       <section className="panneau-titre">
         <p className="sur-titre">RGPD, article 13</p>
@@ -29,7 +32,7 @@ export default function DonneesPersonnelles() {
         <p>
           {active
             ? "Aucun nom : le site ne connaît que votre identifiant d'agent (AG-001…)."
-            : "Rien de nominatif : aucun résultat n'est conservé, seul le rapport téléchargé en garde trace."}
+            : "Rien de nominatif : aucun résultat n'est conservé ; le nom saisi pour un rapport reste sur ce poste, dans le fichier téléchargé."}
         </p>
       </section>
 

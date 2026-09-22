@@ -35,10 +35,16 @@ export interface SousGroupeRail {
 
 export interface GroupeRail {
   /** Sert à décider quel groupe s'ouvre selon la page courante. */
-  id: "formation" | "reperes" | "administration";
+  id: "formation" | "reperes" | "administration" | "rgpd";
   titre: string;
   liens?: LienRail[];
   sous?: SousGroupeRail[];
+  /**
+   * Onglet (22/09/2026) : un groupe d'un seul lien, rendu comme un intitulé
+   * cliquable, sans repli, et placé en fin de volet. C'est la forme de
+   * l'onglet RGPD, qui porte seul toute l'information sur les données.
+   */
+  onglet?: boolean;
 }
 
 /**
@@ -54,8 +60,9 @@ export interface GroupeRail {
  *      ensuite sur cette règle, et tiennent jusqu'à la fin de la session de
  *      navigation.
  *   b. **L'administration se range en sous-parties.** Seize liens à plat ne
- *      se lisent pas. Trois sous-parties — Suivi, Contenu, Réglages — les
- *      rangent par usage et non par ordre d'écriture.
+ *      se lisent pas. Des sous-parties — Suivi, Questions, Modules, Réglages
+ *      depuis le 22/09/2026, où « Contenu » et ses huit liens a été coupé en
+ *      deux — les rangent par usage et non par ordre d'écriture.
  *   c. **Le rythme se resserre**, mais au-dessus de 62 rem seulement : dans
  *      le tiroir de tablette et de téléphone, la cible tactile reste pleine
  *      (`--cible`).
@@ -79,7 +86,8 @@ export function Navigation({
    */
   const porteLaPage = (id: GroupeRail["id"]) => {
     if (id === "administration") return chemin.startsWith("/admin");
-    if (id === "reperes") return chemin.startsWith("/reperes") || chemin.startsWith("/donnees-personnelles");
+    if (id === "reperes") return chemin.startsWith("/reperes");
+    if (id === "rgpd") return chemin.startsWith("/donnees-personnelles");
     return chemin === "/" || chemin.startsWith("/module");
   };
 
@@ -113,7 +121,23 @@ export function Navigation({
     </Link>
   );
 
-  const groupe = (g: GroupeRail) => (
+  const onglet = (g: GroupeRail) => {
+    const l = g.liens?.[0];
+    if (!l) return null;
+    return (
+      <Link
+        key={g.id}
+        href={l.href}
+        className="rail-onglet"
+        aria-current={courant(l.href) ? "page" : undefined}
+      >
+        {g.titre}
+        <span className="rail-onglet-detail">{l.libelle}</span>
+      </Link>
+    );
+  };
+
+  const groupe = (g: GroupeRail) => g.onglet ? onglet(g) : (
     <details
       key={g.id}
       className="rail-groupe"
@@ -154,8 +178,9 @@ export function Navigation({
 
   return (
     <>
-      {groupes.map(groupe)}
+      {groupes.filter((g) => !g.onglet).map(groupe)}
       {administration && groupe(administration)}
+      {groupes.filter((g) => g.onglet).map(groupe)}
 
       {/* Rend `null` hors session : le volet de la connexion n'en porte pas. */}
       <BoutonRevoirTutoriel />

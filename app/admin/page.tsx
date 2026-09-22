@@ -109,7 +109,7 @@ export default async function Admin({
 
       <p className="legende">
         Stockage des documents : {modeStockage() === "blob" ? "Vercel Blob" : modeStockage() === "base" ? "base de données" : "aucun"} ·
-        conservation des rapports : {conservation === "pseudonyme" ? "pseudonyme (rapports enregistrés sous identifiant d'agent, sans nom, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
+        conservation des rapports : {conservation === "pseudonyme" ? "pseudonyme (rapports enregistrés sous identifiant d'agent, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
       </p>
 
       {/* ─────────────────────────────────────────────── codes d'accès */}

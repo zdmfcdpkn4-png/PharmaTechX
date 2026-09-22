@@ -1831,6 +1831,98 @@ barre de progression et le décompte, pas les pastilles. C'est la consigne du
 parcours étendue au test, que la demande ne précisait pas : à dire si vous
 voulez autre chose.
 
+## Tout le RGPD dans son onglet (22/09/2026)
+
+Demandé le 22/09/2026 : « circonscrire tout le RGPD dans un onglet
+spécifique ».
+
+**L'onglet.** Une entrée « RGPD — Vos données et vos droits » ferme le volet,
+après l'administration : un intitulé de groupe qui est un lien, sans repli.
+Elle quitte le groupe « Repères ». Même entrée dans l'accès rapide (tablette,
+téléphone, ⌘K) et, avant connexion, dans le volet d'accueil. La page
+`/donnees-personnelles` est cet onglet ; son fil d'Ariane dit « RGPD ».
+
+**Ce qui a quitté les autres écrans**, et où c'est repris :
+
+- pied de page : la ligne « Aucun nom enregistré… » et son lien ;
+- écran de connexion : la ligne « Aucun nom n'est enregistré » et son lien ;
+- rapport de session et progression : les liens « Vos données », et la
+  précision « le nom saisi ne quitte pas ce poste » (mode sans conservation),
+  reprise dans l'onglet ;
+- questions fréquentes (Repères) : « Mes résultats sont-ils enregistrés ? » et
+  « Le site sait-il qui je suis ? » — leurs réponses sont les lignes
+  « Enregistré » et l'introduction de l'onglet ;
+- visite guidée : « il ne désigne personne et rien… ne portera votre nom »,
+  « sans nom », « aucun nom n'entre en base », « jamais par nom » ;
+- administration : « aucun nom en base » (Rapports), « rien de nominatif »
+  (Signalements), « ni nom, ni fonction, ni champ libre » (Personnel), « sans
+  nom » (état de la conservation, Accès).
+
+**Ce qui reste hors de l'onglet**, parce que ce n'est pas de l'information des
+agents : les libellés fonctionnels « rapport A4 sans nom » et « paquet
+d'archivage sans nom » (ce qu'on ouvre), et, seulement quand la conservation
+est coupée, le renvoi de l'administrateur à `docs/RGPD.md` avant de
+l'activer (Rapports, Pilotage) — une précaution de mise en service, pas un
+texte pour l'agent. À retirer aussi si vous le voulez.
+
+**Réserve à valider avec le DPO.** La ligne du 22/09 qui restait « là où
+l'identifiant se saisit » disparaît : l'information n'est plus au point de
+collecte, mais à un geste de chaque écran. Les lignes directrices sur la
+transparence (WP260 rév. 01, § 11) demandent que l'information soit
+« facilement accessible » — un lien visible depuis chaque page, sous un
+intitulé usuel ; l'onglet du volet y répond sur poste, l'accès rapide sur
+tablette et téléphone (un geste de plus). L'information au moment de la
+collecte (art. 13 § 1) repose alors sur la note de service à la remise de
+l'identifiant, `[à compléter]` dans la fiche de registre.
+
+## Audit d'affichage : PC, iPad, iPhone (22/09/2026)
+
+Demandé le 22/09/2026 : « audit de fonctionnement du site et du design pour
+optimisation ; regroupement en sous-menus pour réduire la barre latérale si
+problème d'affichage ; amélioration des affichages PC, iPad et iPhone ».
+
+**Méthode.** 28 pages (connexion, onglet RGPD, accueil, module, évaluation,
+repères, 18 écrans d'administration), trois profils (poste, tuteur, admin),
+six tailles : 1920 × 1080, 1366 × 768, iPad 7ᵉ génération en paysage
+(1080 × 810) et en portrait (810 × 1080), iPhone 15 (393 × 659 utiles),
+iPhone SE (375 × 667). Mesures prises dans la page : défilement horizontal,
+cibles tactiles sous 24 et 44 px, champs écrits sous 16 px, hauteur de
+l'en-tête, hauteur du volet replié et tout déplié. **Limite** : seul Chromium
+est installé ici — l'iPhone et l'iPad sont émulés (taille, densité, tactile),
+pas rendus par Safari ; le flou des surfaces de verre, la barre d'adresse
+mobile et le clavier virtuel ne se vérifient que sur l'appareil.
+
+**Fonctionnement.** Aucune erreur de console, aucune réponse en erreur, aucune
+page en échec sur les 168 chargements ; la chaîne de bout en bout reste verte.
+
+**Défauts relevés, et ce qui a été fait.**
+
+| Défaut mesuré | Où | Correction |
+|---|---|---|
+| En-tête sur trois lignes : 193–197 px, **29 % de la hauteur** | iPhone | Une ligne : Menu en icône (libellé gardé pour les lecteurs d'écran), titre et monogramme P retirés de l'en-tête, « Quitter » seul ; sous 24 rem (iPhone SE), le mandala cède aussi sa place |
+| En-tête sur deux lignes : 137 px | iPad portrait | Une ligne : monogramme P retiré, « Quitter » seul (le profil reste dans le nom accessible du bouton) |
+| Liens du volet à 32 px, intitulés à 34 px : 210 + 52 cibles sous 44 px | iPad paysage | Sur écran tactile (`pointer: coarse`), quelle que soit la largeur, cibles de 44 px |
+| Champ de seuil des modules écrit à 13,3 px : Safari iOS agrandit la page au focus | iPhone, iPad | Sur écran tactile, champs à 16 px au moins |
+| Journal : tableau de 1 553 px, toute la page défile de côté | PC 1366, iPad | Les cellules se coupent n'importe où (JSON sans espace) |
+| Repères, programme complet : lignes de critère coupées à droite (+112 px) | iPhone | Les étiquettes passent à la ligne |
+| Programme à la carte : formulaire plus large que l'écran (+6 à +24 px) | iPhone | `fieldset` sans largeur minimale imposée |
+| Fil d'habilitation sur quatre lignes au-dessus de chaque module | iPhone | Deux lignes : intitulé court et lien, puis les six pastilles |
+
+**Barre latérale.** Mesurée repliée comme le veut la règle du 19/09 (seul le
+groupe de la page ouvert) : 458 px au plus, pour 637 px disponibles sur un
+écran 1366 × 768 — elle tient. Elle ne déborde que tout déplié à la main
+(1 192 px pour l'administration). Le plus long bloc ouvert était « Contenu »,
+huit liens : il est coupé en deux sous-menus, **Questions** (banque, dépôt,
+écriture, mises en situation) et **Modules** (modules, documents, ordre,
+programmes à la carte). L'administration compte désormais quatre
+sous-menus : Suivi, Questions, Modules, Réglages.
+
+**Non corrigé, signalé.** Textes de 11 px (étiquettes en capitales, pied de
+page, en-têtes de tableau) : conformes à la charte, lisibles, aucune règle ne
+fixe de minimum ; quelques liens isolés de 15 px de haut (fil d'Ariane,
+« voir le module ») relèvent de l'exception d'espacement du critère WCAG 2.2
+2.5.8.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

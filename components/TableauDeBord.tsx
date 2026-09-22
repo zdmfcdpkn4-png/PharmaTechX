@@ -596,13 +596,12 @@ export function TableauDeBord({
           <p>
             <strong>Télécharger</strong> le rapport sur ce poste, ou <strong>l&apos;émettre</strong> : il est
             alors enregistré sous votre identifiant, numéroté et soumis aux visas du tuteur puis du
-            pharmacien. Les entraînements n&apos;apparaissent pas ici.{" "}
-            <Link href="/donnees-personnelles" className="lien-discret">Vos données</Link>
+            pharmacien. Les entraînements n&apos;apparaissent pas ici.
           </p>
         ) : (
           <p>
-            Le rapport reprend chaque critère évalué et le détail des questions ; le nom saisi ne quitte
-            pas ce poste. Les entraînements n&apos;apparaissent pas ici.
+            Le rapport reprend chaque critère évalué et le détail des questions. Les entraînements
+            n&apos;apparaissent pas ici.
           </p>
         )}
 

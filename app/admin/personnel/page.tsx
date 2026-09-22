@@ -75,8 +75,7 @@ export default async function Personnel({
       </div>
       <section className="carte">
         <p className="legende">
-          Le site génère l&apos;identifiant (AG-001, AG-002…) et n&apos;enregistre rien d&apos;autre sur
-          l&apos;agent : ni nom, ni fonction, ni champ libre. Un identifiant se clôt au départ de
+          Le site génère l&apos;identifiant (AG-001, AG-002…). Un identifiant se clôt au départ de
           l&apos;agent ; il ne se supprime pas tant que des rapports s&apos;y rattachent. L&apos;agent
           rattache sa progression avec un code personnel qu&apos;il choisit (question 11) ; oublié,
           il se réinitialise ici.

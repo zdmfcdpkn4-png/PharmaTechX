@@ -182,6 +182,8 @@ Justification : cf. procédure interne.`,
   assert.equal(await volet.locator("text=Votre code").count(), 1, "volet de connexion : bloc « Votre code »");
   assert.equal(await volet.locator('a[href="/donnees-personnelles"]').count(), 1, "volet de connexion : lien public conservé");
   assert.equal(await volet.locator("a").count(), 1, "volet de connexion : un seul lien, le public");
+  assert.equal(await volet.locator("a.rail-onglet").count(), 1, "volet de connexion : ce lien est l'onglet RGPD");
+  assert.equal(await page.locator("main a[href='/donnees-personnelles']").count(), 0, "connexion : plus de ligne RGPD dans la page");
   ok("volet de connexion : aucun raccourci gardé, trois blocs d'information");
 
   // La mention « phase d'essai » a quitté les écrans (19/09/2026).
@@ -1013,25 +1015,46 @@ Justification : justification deux.`;
   await page.click("#volet-principal summary:has-text('Repères')");
   await page.waitForSelector("#volet-principal a[href='/reperes#dispositif']", { state: "visible" });
   ok("volet : un seul groupe ouvert sur l'accueil, les autres se déplient au clic");
+  // Onglet RGPD (22/09/2026, « circonscrire tout le RGPD dans un onglet
+  // spécifique ») : une entrée à part en fin de volet ; plus aucune ligne sur
+  // les données ailleurs — ni dans Repères, ni au pied, ni dans la page.
+  assert.equal(
+    await page.locator("#volet-principal > a.rail-onglet[href='/donnees-personnelles']").count(),
+    1,
+    "onglet RGPD en fin de volet",
+  );
+  assert.equal(await page.locator("#volet-principal details a[href='/donnees-personnelles']").count(), 0, "le lien a quitté Repères");
+  assert.equal(await page.locator(".pied a[href='/donnees-personnelles']").count(), 0, "plus de ligne RGPD au pied");
+  assert.equal(await page.locator("main a[href='/donnees-personnelles']").count(), 0, "plus de lien RGPD dans l'accueil");
+  await page.click("#volet-principal > a.rail-onglet");
+  await page.waitForSelector("h1:has-text('Vos données et vos droits')");
+  assert.equal(
+    await page.locator("#volet-principal > a.rail-onglet").getAttribute("aria-current"),
+    "page",
+    "l'onglet RGPD se marque page courante",
+  );
+  await page.goto(BASE + "/");
+  ok("RGPD circonscrit à son onglet, en fin de volet");
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/journal']").count(),
     1,
     "les écrans d'administration sont portés par le volet",
   );
-  // Sous-parties de l'administration (choix b) : Suivi, Contenu, Réglages.
+  // Sous-parties de l'administration (choix b) : Suivi, Questions, Modules, Réglages
+  // (« Contenu » coupé en deux le 22/09/2026).
   await page.click("#volet-principal summary:has-text('Administration')");
   await page.waitForSelector("#volet-principal .rail-sous-titre", { state: "visible" });
   const sousParties = await page.locator("#volet-principal .rail-sous-titre").allInnerTexts();
   assert.deepEqual(
     sousParties.map((t) => t.toLowerCase()),
-    ["suivi", "contenu", "réglages"],
+    ["suivi", "questions", "modules", "réglages"],
     "sous-parties de l'administration",
   );
-  ok("volet : l'administration rangée en Suivi, Contenu et Réglages");
+  ok("volet : l'administration rangée en Suivi, Questions, Modules et Réglages");
   // Sous-menus repliables (22/09/2026) : sur l'accueil, aucun ne porte la
   // page — les trois restent repliés, leurs liens hors de vue.
   const sousMenu = (titre) => page.locator(`#volet-principal details.rail-sous:has(.rail-sous-titre:text-is("${titre}"))`);
-  for (const titre of ["Suivi", "Contenu", "Réglages"]) {
+  for (const titre of ["Suivi", "Questions", "Modules", "Réglages"]) {
     assert.equal(await sousMenu(titre).getAttribute("open"), null, `sous-menu ${titre} replié sur l'accueil`);
   }
   assert.equal(

@@ -61,8 +61,8 @@ export default async function Rapports({
       <section className="panneau-titre">
         <h1>Rapports d&apos;évaluation</h1>
         <p>
-          Rapports émis par les apprenants sous leur identifiant d&apos;agent, numérotés et scellés —
-          aucun nom en base. Circuit : arbitrage du tuteur si le verdict est indéterminé, visa du
+          Rapports émis par les apprenants sous leur identifiant d&apos;agent, numérotés et scellés.
+          Circuit : arbitrage du tuteur si le verdict est indéterminé, visa du
           tuteur, puis visa du pharmacien responsable, qui clôt le rapport avec sa signature. Un
           rapport ne se modifie pas : il s&apos;annule avec un motif, et l&apos;apprenant en émet un nouveau.
         </p>

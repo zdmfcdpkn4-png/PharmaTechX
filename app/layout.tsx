@@ -108,8 +108,18 @@ export default async function RootLayout({
         { href: "/reperes#programme", libelle: "Programme complet" },
         { href: "/reperes#niveaux", libelle: "Conditions des niveaux" },
         { href: "/reperes#questions", libelle: "Questions fréquentes" },
-        { href: "/donnees-personnelles", libelle: "Vos données et vos droits" },
       ],
+    },
+    // Onglet RGPD (22/09/2026, « circonscrire tout le RGPD dans un onglet
+    // spécifique ») : toute l'information sur les données tient dans cette
+    // page, et plus aucun écran n'en porte de ligne. Le volet et l'accès
+    // rapide sont présents sur chaque page : l'information reste à un geste
+    // (lignes directrices WP260 sur la transparence, § 11).
+    {
+      id: "rgpd",
+      titre: "RGPD",
+      onglet: true,
+      liens: [{ href: "/donnees-personnelles", libelle: "Vos données et vos droits" }],
     },
   ];
 
@@ -147,8 +157,8 @@ export default async function RootLayout({
       });
     }
   }
-  // Trois sous-parties par usage (19/09/2026, choix b) : ce qu'on consulte,
-  // ce qu'on fabrique, ce qu'on règle. L'ordre suit la fréquence d'ouverture,
+  // Sous-parties par usage (19/09/2026, choix b) : ce qu'on consulte, ce
+  // qu'on fabrique — questions, puis modules —, ce qu'on règle. L'ordre suit la fréquence d'ouverture,
   // pas l'ordre d'écriture des écrans.
   const administration: GroupeRail | null = gestionnaire
     ? {
@@ -170,8 +180,10 @@ export default async function RootLayout({
               ...(conservation ? [{ href: "/admin/personnel", libelle: "Personnel" }] : []),
             ],
           },
+          // « Contenu » portait huit liens, le plus long bloc du volet ouvert :
+          // coupé en deux sous-menus de quatre (audit du 22/09/2026).
           {
-            titre: "Contenu",
+            titre: "Questions",
             liens: [
               {
                 href: "/admin/questions",
@@ -181,6 +193,11 @@ export default async function RootLayout({
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
               { href: "/admin/questions/situations", libelle: "Mises en situation" },
+            ],
+          },
+          {
+            titre: "Modules",
+            liens: [
               { href: "/admin/modules", libelle: "Modules" },
               { href: "/admin/documents", libelle: "Documents" },
               { href: "/admin/ordonnancement", libelle: "Ordre" },
@@ -270,7 +287,7 @@ export default async function RootLayout({
                 />
               </div>
 
-              <div>
+              <div className="bandeau">
                 <Link href="/" className="bandeau-titre">
                   Formation &amp; habilitation
                 </Link>
@@ -299,8 +316,15 @@ export default async function RootLayout({
                 <ModeZone />
                 {session ? (
                   <form action={actionDeconnexion}>
-                    <button type="submit" className="bouton bouton--compact">
-                      {session.libelle} — quitter
+                    {/* Sous 62 rem, le bouton ne dit plus que « Quitter » : le
+                        profil reste dans son nom accessible. */}
+                    <button
+                      type="submit"
+                      className="bouton bouton--compact bouton-quitter"
+                      aria-label={`${session.libelle} — quitter`}
+                    >
+                      <span className="bouton-quitter-profil">{session.libelle} — </span>
+                      <span className="bouton-quitter-verbe">quitter</span>
                     </button>
                   </form>
                 ) : (
@@ -346,13 +370,8 @@ export default async function RootLayout({
 
           <footer className="pied">
             <div className="pied-interne">
-              {/* Resserré le 22/09/2026 (« moins visible, synthétiser
-                  drastiquement ») : une ligne, et le lien vers la page qui porte
-                  l'information complète de l'article 13. */}
-              <p className="legende">
-                {conservation ? "Aucun nom enregistré : tout se rattache à un identifiant d'agent." : "Rien de nominatif n'est enregistré."}{" "}
-                <Link href="/donnees-personnelles">Vos données</Link>
-              </p>
+              {/* La ligne sur les données a quitté le pied le 22/09/2026 : tout
+                  le RGPD tient dans son onglet, en fin de volet. */}
               {/* La mention « phase d'essai » a quitté les écrans le 19/09/2026 :
                   elle ne disait rien d'utile à un apprenant et occupait le pied de
                   chaque page. Tant que la mise en service n'est pas prononcée, le
