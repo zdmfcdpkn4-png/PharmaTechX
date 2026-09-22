@@ -11,6 +11,7 @@ import { Corps } from "@/components/Corps";
 import { Badge } from "@/components/Badge";
 import { badgeEffectif } from "@/content/badges";
 import { LectureModule } from "@/components/LectureModule";
+import { NoterConsultation } from "@/components/NoterConsultation";
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +192,7 @@ export default async function PageModule({
 
   return (
     <article>
+      <NoterConsultation module={mod.id} titre={mod.titre} />
       <p className="fil">
         <Link href={dansProgramme ? `/?programme=${idProgramme}` : "/"}>Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
       </p>

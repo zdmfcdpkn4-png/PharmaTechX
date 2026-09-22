@@ -6,6 +6,7 @@ import { normaliserIdentifiant } from "@/lib/identifiant";
 import { LIBELLES_STATUT_RAPPORT, repertoirePersonnel } from "@/lib/rapports";
 import { decisionEnregistree } from "@/lib/registre";
 import { actionBasculerAgent, actionCreerAgent, actionReinitialiserCode } from "./actions";
+import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ export default async function Personnel({
         </p>
         <form action={actionCreerAgent}>
           <div className="actions" style={{ marginTop: 0 }}>
-            <button type="submit" className="bouton">Créer un identifiant</button>
+            <BoutonEnvoi>Créer un identifiant</BoutonEnvoi>
           </div>
         </form>
         {agents.length > 0 && (

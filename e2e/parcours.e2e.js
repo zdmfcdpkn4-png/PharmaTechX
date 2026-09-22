@@ -1648,6 +1648,42 @@ Justification : cf. procédure interne.`,
   assert.ok((await page.locator(".barre-badges li.est-grise").count()) > 0, "les autres restent grisés");
   assert.match(await page.locator(".barre-badges-titre").innerText(), /^1 \/ \d+ critères? acquis/);
   await capture("barre-badges");
+  // Tableau de bord (22/09/2026), sur la même mémoire de session : la
+  // recherche trouve le module, sa carte porte son état ; le filtre
+  // d'avancement, le filtre de bloc et « Effacer » fonctionnent vraiment.
+  const recherche = page.locator(".recherche-modules input[type=search]");
+  await recherche.fill("formats test");
+  await page.waitForSelector("#modules .section-titre:has(h2:text-is('Résultats'))");
+  const carteTrouvee = page.locator(`#modules .grille a.carte-lien[href='/module/${idFormats}']`);
+  await carteTrouvee.waitFor();
+  assert.equal((await carteTrouvee.locator(".etat-module").innerText()).trim(), "Acquis", "la carte dit l'état acquis");
+  assert.equal(await page.locator("#modules .grille a.carte-lien").count(), 1, "un seul module répond à « formats test »");
+  assert.equal(await page.locator(".groupe-modules").count(), 0, "pendant la recherche, les grands modules s'effacent au profit des résultats");
+  await recherche.fill("");
+  await page.selectOption(".recherche-modules label:has-text('Avancement') select", "termine");
+  await carteTrouvee.waitFor();
+  assert.equal(await page.locator("#modules .grille a.carte-lien").count(), 1, "terminés : le seul module acquis");
+  await page.selectOption(".recherche-modules label:has-text('Avancement') select", "a-venir");
+  await page.waitForFunction((id) => !document.querySelector(`#modules .grille a.carte-lien[href='/module/${id}']`), idFormats);
+  assert.ok((await page.locator("#modules .grille a.carte-lien").count()) > 0, "à venir : les modules non commencés");
+  await page.click("#modules button:has-text('Effacer la recherche')");
+  await page.waitForSelector(".groupe-modules");
+  assert.equal(await recherche.inputValue(), "", "la recherche est effacée");
+  assert.ok(
+    (await page.locator(".groupe-modules summary .etiquette", { hasText: /\d+ \/ \d+ acquis/ }).count()) > 0,
+    "chaque grand module dit son avancement",
+  );
+  // Reprendre : le module acquis n'est pas proposé, un module consulté l'est.
+  const reprendre = page.locator(".reprendre-principal");
+  await reprendre.waitFor();
+  // `innerText` rend la casse affichée : l'intitulé est en capitales à l'écran.
+  assert.match(await reprendre.innerText(), /(reprendre|commencer) ma formation/i);
+  assert.notEqual(await reprendre.getAttribute("href"), `/module/${idFormats}`, "un module acquis n'est pas à reprendre");
+  assert.ok(
+    (await page.locator(`.consultes a.consulte[href='/module/${idFormats}']`).count()) === 1,
+    "le module ouvert juste avant figure parmi les modules consultés",
+  );
+  ok("tableau de bord : état des cartes, avancement par bloc, recherche et filtres, Reprendre et modules consultés");
   await page.goto(BASE + "/admin/bareme");
   await page.click("button:has-text('Rétablir les valeurs par défaut')");
   await page.waitForURL(/ok=defaut/);

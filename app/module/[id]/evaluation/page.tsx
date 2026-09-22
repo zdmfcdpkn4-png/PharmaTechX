@@ -9,6 +9,7 @@ import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
 import { Evaluation } from "@/components/Evaluation";
+import { NoterConsultation } from "@/components/NoterConsultation";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function PageEvaluation({
 
   return (
     <article>
+      <NoterConsultation module={mod.id} titre={mod.titre} />
       <p className="fil">
         <Link href={requete ? `/${requete}` : "/"}>Programme</Link> ›{" "}
         <Link href={`/module/${mod.id}${requete}`}>{typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}</Link> › Évaluation

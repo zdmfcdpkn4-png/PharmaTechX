@@ -1923,6 +1923,75 @@ fixe de minimum ; quelques liens isolés de 15 px de haut (fil d'Ariane,
 « voir le module ») relèvent de l'exception d'espacement du critère WCAG 2.2
 2.5.8.
 
+## Tableau de bord de l'accueil : ce qui a été retenu du prompt de modernisation (22/09/2026)
+
+Demandé le 22/09/2026 : « évalue la faisabilité de ces actions, si
+pertinentes les mettre en place ; utilise les badges créés si besoin pour
+améliorer les visuels », sur un prompt de modernisation générique (design,
+accès aux modules, dynamisme, ergonomie, contraintes techniques).
+
+**Ce qui existait déjà**, et n'a donc pas été refait : tableau de bord à
+l'accueil (compteurs, barre de badges, grands modules repliables), accès
+rapide avec recherche d'écrans (⌘K) et « Reprendre » dans le menu, compteurs
+d'attente non intrusifs, fondu d'entrée de page, mouvement réduit respecté
+partout, cibles tactiles, contrastes mesurés, mode zone.
+
+**Ce qui a été mis en place.**
+
+- **« Reprendre ma formation »** en tête de l'accueil, un seul bouton
+  illustré du badge du module : l'évaluation laissée en plan (agent
+  rattaché), sinon la lecture en cours sur ce poste si son module n'est pas
+  acquis, sinon le premier module du programme, dans l'ordre de la fiche,
+  qui se lit ou s'évalue et n'est pas acquis. Le programme de référence est
+  celui qui s'affiche à l'arrivée (programme à la carte, ou socle et filière
+  du code de poste). « Commencer ma formation » tant que rien n'est fait.
+- **Modules consultés récemment** : trois au plus, sous le bouton. Trace
+  locale au poste (`fp-consultes`), même statut que les repères de lecture :
+  jamais transmise, effacée avec les données du navigateur.
+- **État de chaque module** sur sa carte — Acquis, Arbitrage en attente, À
+  revoir, Non concluant, Lecture en cours, À faire, À rédiger, Lecture seule
+  (texte sans questions) — et filet de couleur : vert terminé, jaune en cours. « Acquis » est le verdict brut,
+  comme sur la barre de badges.
+- **Badges en vignette** de 72 px sur chaque carte et sur « Reprendre », sur
+  tous les écrans, téléphone compris : la taille à partir de laquelle les
+  illustrations se lisent (`content/badges.ts`). Sans illustration, le numéro
+  du critère. Les modules consultés récemment n'ont que leur titre : une
+  illustration ne se réduit pas en pastille.
+- **Avancement par grand module** : « x / y acquis » et une jauge dans
+  l'intitulé de chaque bloc.
+- **Recherche et filtres** dans le programme affiché : texte (titre,
+  objectif, critère, bloc, niveau ; sans accents ni casse, chaque mot
+  exigé), bloc, avancement (en cours, à venir, terminés). Filière et niveau
+  restaient dans « Composer le programme ». Les résultats remplacent les
+  grands modules le temps de la recherche ; « Effacer la recherche » les
+  rend.
+- **Retours visuels** : une barre fine en haut de l'écran entre le clic sur
+  un lien et l'arrivée de la page ; les boutons d'envoi des quatre
+  formulaires les plus fréquents (connexion, génération d'un code, création
+  d'un identifiant, rattachement) se désactivent et tournent pendant le
+  traitement — un second appui n'envoie rien.
+- Le bouton « Comment fonctionne l'habilitation » quitte l'accueil : le lien
+  « le dispositif en détail » de l'avertissement, juste en dessous, mène au
+  même endroit.
+
+**Ce qui n'a pas été fait, et pourquoi.**
+
+- **Filtre par durée** : deux modules sur cinquante et un portent une durée
+  (40 et 35 minutes), les autres `[à préciser]`. Filtrer sur ces données
+  reviendrait à en inventer. À fournir, module par module, pour l'ouvrir.
+- **Refonte graphique d'ensemble** (typographie, palette) : la charte des
+  Hôpitaux de Vendée et la passation de design sont en place ; une refonte
+  demande une maquette validée, pas un prompt générique.
+- **Animations supplémentaires** : aucune translation ajoutée — un
+  déplacement sous le pointeur a déjà fait tomber la chaîne de bout en bout
+  quatre fois (`components/PageAnimee.tsx`). Ombres et bordures seulement.
+- **Notifications** : pas de notification poussée ; les compteurs d'attente
+  et les messages de statut existants suffisent, et rien n'est à notifier
+  hors session.
+- **`loading.tsx`** (squelettes de page) : il validerait la navigation avant
+  que la page soit prête ; la barre de navigation donne le retour sans
+  changer le rendu.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

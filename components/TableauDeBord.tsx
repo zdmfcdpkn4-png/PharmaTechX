@@ -10,6 +10,19 @@ import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
 import { BarreBadges } from "./BarreBadges";
+import { Badge } from "./Badge";
+import {
+  AUCUN_FILTRE,
+  LIBELLES_AVANCEMENT,
+  LIBELLES_ETAT,
+  avancementDe,
+  etatModule,
+  filtrerModules,
+  filtresActifs,
+  type Avancement,
+  type EtatModule,
+  type FiltresModules,
+} from "@/content/tableau";
 
 export interface ModuleResume {
   id: string;
@@ -80,13 +93,34 @@ export interface ProgrammeALaCarte {
   absents: number;
 }
 
-function CarteModule({ m, rang, requete = "" }: { m: ModuleResume; rang?: number; requete?: string }) {
+/**
+ * Carte d'un module (22/09/2026) : son illustration en vignette, là où elle
+ * se lit (72 px, `content/badges.ts`), et son état en tête — terminé, en
+ * cours, à venir — pour qu'un coup d'œil sur la grille suffise.
+ */
+function CarteModule({
+  m,
+  etat,
+  rang,
+  requete = "",
+}: {
+  m: ModuleResume;
+  etat: EtatModule;
+  rang?: number;
+  requete?: string;
+}) {
   const { dernierPourModule } = useSessionFormation();
   const resultat = dernierPourModule(m.id);
   const evaluable = m.nbQuestions > 0;
 
   const corps = (
-    <article className={`carte carte--module${m.redige ? "" : " est-vide"}`}>
+    <article className={`carte carte--module carte--${avancementDe(etat)}${m.redige ? "" : " est-vide"}`}>
+      <div className="carte-module-tete">
+        <span className="carte-module-vignette" aria-hidden="true">
+          {m.badge ? <Badge nom={m.badge} taille={72} /> : <span className="vignette-vide">{m.critereId === A_PRECISER ? "·" : m.critereId}</span>}
+        </span>
+        <span className={`etat-module etat-module--${etat}`}>{LIBELLES_ETAT[etat]}</span>
+      </div>
       <ul className="meta-module">
         {rang ? <li className="etiquette">n° {rang}</li> : null}
         {m.origine === "base" && <li className="etiquette etiquette--site">Module déposé</li>}
@@ -106,7 +140,7 @@ function CarteModule({ m, rang, requete = "" }: { m: ModuleResume; rang?: number
             {m.nbSituations > 0 ? ` · ${m.nbSituations} mise${m.nbSituations > 1 ? "s" : ""} en situation` : ""}
           </li>
         ) : null}
-        {!m.redige && <li className="etiquette etiquette--attention">Module à rédiger</li>}
+        {!m.redige && etat !== "a-rediger" && <li className="etiquette etiquette--attention">Texte à rédiger</li>}
       </ul>
 
       <h3>{m.titre}</h3>
@@ -184,36 +218,49 @@ function GroupesModules({
   groupes,
   estOuvert,
   basculer,
+  etatDe,
 }: {
   groupes: GroupeModules[];
   estOuvert: (cle: string, parDefaut: boolean) => boolean;
   basculer: (cle: string, ouvert: boolean) => void;
+  etatDe: (m: ModuleResume) => EtatModule;
 }) {
   return (
     <div className="groupes-modules">
-      {groupes.map((g, i) => (
-        <details
-          key={g.cle}
-          className="bloc groupe-modules"
-          open={estOuvert(g.cle, i === 0)}
-          onToggle={(e) => basculer(g.cle, e.currentTarget.open)}
-        >
-          <summary>
-            Bloc <Marqueur valeur={g.numero} />
-            {g.titre ? ` — ${g.titre}` : ""}
-            <span className="etiquette etiquette--neutre">
-              {g.modules.length} critère{g.modules.length > 1 ? "s" : ""}
-            </span>
-          </summary>
-          <div className="contenu-bloc">
-            <div className="grille">
-              {g.modules.map((m) => (
-                <CarteModule key={m.id} m={m} />
-              ))}
+      {groupes.map((g, i) => {
+        // Avancement du grand module : ses critères acquis sur son total.
+        const acquis = g.modules.filter((m) => etatDe(m) === "acquis").length;
+        return (
+          <details
+            key={g.cle}
+            className="bloc groupe-modules"
+            open={estOuvert(g.cle, i === 0)}
+            onToggle={(e) => basculer(g.cle, e.currentTarget.open)}
+          >
+            <summary>
+              <span className="groupe-titre">
+                Bloc <Marqueur valeur={g.numero} />
+                {g.titre ? ` — ${g.titre}` : ""}
+              </span>
+              <span className="groupe-avancement">
+                <span className="groupe-jauge" aria-hidden="true">
+                  <span style={{ width: `${Math.round((acquis / g.modules.length) * 100)}%` }} />
+                </span>
+                <span className="etiquette etiquette--neutre">
+                  {acquis} / {g.modules.length} acquis
+                </span>
+              </span>
+            </summary>
+            <div className="contenu-bloc">
+              <div className="grille">
+                {g.modules.map((m) => (
+                  <CarteModule key={m.id} m={m} etat={etatDe(m)} />
+                ))}
+              </div>
             </div>
-          </div>
-        </details>
-      ))}
+          </details>
+        );
+      })}
     </div>
   );
 }
@@ -268,7 +315,7 @@ export function TableauDeBord({
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
-  const { resultats, emissions, marquerEmis, cleEmission } = useSessionFormation();
+  const { resultats, emissions, marquerEmis, cleEmission, dernierPourModule } = useSessionFormation();
   const pseudonyme = conservation === "pseudonyme";
   // Mode « aucune » : nom et qualité restent sur le poste, pour l'en-tête du
   // fichier téléchargé. Mode pseudonyme : seul l'identifiant d'agent est saisi
@@ -301,6 +348,27 @@ export function TableauDeBord({
       /* stockage refusé : le repli reste valable pour la page en cours */
     }
   }, [ouverts, replisLus]);
+
+  // Repères de lecture posés sur ce poste (`LectureModule`) : un module dont
+  // la lecture est entamée est « en cours ». Lus après le montage seulement.
+  const [lectures, setLectures] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    try {
+      const ids = new Set<string>();
+      for (let i = 0; i < localStorage.length; i++) {
+        const cle = localStorage.key(i) ?? "";
+        if (cle.startsWith("fp-lecture-") && cle !== "fp-lecture-dernier") ids.add(cle.slice("fp-lecture-".length));
+      }
+      setLectures(ids);
+    } catch {
+      /* stockage refusé : l'état se lit sur les seules évaluations */
+    }
+  }, []);
+  const etatDe = (m: ModuleResume): EtatModule => etatModule(m, dernierPourModule(m.id), lectures.has(m.id));
+
+  // Recherche et filtres (22/09/2026) : dans le programme affiché.
+  const [filtres, setFiltres] = useState<FiltresModules>(AUCUN_FILTRE);
+  const actifs = filtresActifs(filtres);
 
   const estOuvert = (cle: string, parDefaut: boolean) => ouverts[cle] ?? parDefaut;
   const basculer = (cle: string, ouvert: boolean) =>
@@ -345,6 +413,11 @@ export function TableauDeBord({
       (d.filieres.length === 0 || (posteId !== "" && d.filieres.includes(posteId))) &&
       (d.niveaux.length === 0 || niveauCode === "" || d.niveaux.includes(niveauCode)),
   );
+
+  const titreBloc = (numero: string) => blocs.find((b) => b.numero === numero)?.titre ?? "";
+  const blocsPresents = blocs.filter((b) => programme.some((m) => m.bloc === b.numero));
+  const trouves = actifs ? filtrerModules(programme, filtres, etatDe, titreBloc) : [];
+  const requeteCarte = aLaCarte ? `?programme=${aLaCarte.id}` : "";
 
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
   const acquis = resultats.filter((r) => r.reussi).length;
@@ -486,7 +559,77 @@ export function TableauDeBord({
         requete={aLaCarte ? `?programme=${aLaCarte.id}` : ""}
       />
 
-      {aLaCarte ? (
+      {/* Recherche et filtres (22/09/2026) : texte, bloc, avancement, dans le
+          programme affiché. Aucun filtre de durée : deux modules sur
+          cinquante et un en portent une, les autres sont [à préciser]. */}
+      <section className="carte recherche-modules" aria-labelledby="t-recherche">
+        <h2 id="t-recherche" className="lecture-seule">Rechercher un module</h2>
+        <div className="recherche-rangee">
+          <label className="champ recherche-texte">
+            <span>Rechercher un module</span>
+            <input
+              type="search"
+              value={filtres.texte}
+              onChange={(e) => setFiltres((f) => ({ ...f, texte: e.target.value }))}
+              placeholder="Titre, critère (B1-02), mot-clé…"
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+          </label>
+          <label className="champ">
+            <span>Bloc</span>
+            <select value={filtres.bloc} onChange={(e) => setFiltres((f) => ({ ...f, bloc: e.target.value }))}>
+              <option value="">Tous</option>
+              {blocsPresents.map((b) => (
+                <option key={b.numero} value={b.numero}>
+                  Bloc {b.numero}
+                  {b.titre ? ` — ${b.titre}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="champ">
+            <span>Avancement</span>
+            <select
+              value={filtres.avancement}
+              onChange={(e) => setFiltres((f) => ({ ...f, avancement: e.target.value as "" | Avancement }))}
+            >
+              <option value="">Tous</option>
+              {(["en-cours", "a-venir", "termine"] as const).map((a) => (
+                <option key={a} value={a}>
+                  {LIBELLES_AVANCEMENT[a]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      {actifs ? (
+        <>
+          <div className="section-titre">
+            <h2>Résultats</h2>
+            <span className="compte" role="status">
+              {trouves.length} module{trouves.length > 1 ? "s" : ""} sur {programme.length}
+            </span>
+            <button type="button" className="bouton bouton--compact bouton--discret" onClick={() => setFiltres(AUCUN_FILTRE)}>
+              Effacer la recherche
+            </button>
+          </div>
+          {trouves.length > 0 ? (
+            <div className="grille">
+              {trouves.map((m) => (
+                <CarteModule key={m.id} m={m} etat={etatDe(m)} requete={requeteCarte} />
+              ))}
+            </div>
+          ) : (
+            <p className="encart">
+              Aucun module du programme affiché ne correspond.
+              {aLaCarte ? "" : " Changez la filière ou le niveau ci-dessus pour chercher ailleurs."}
+            </p>
+          )}
+        </>
+      ) : aLaCarte ? (
         <>
           <div className="section-titre">
             <h2>Modules du programme</h2>
@@ -502,7 +645,7 @@ export function TableauDeBord({
           )}
           <div className="grille">
             {aLaCarte.modules.map((m, i) => (
-              <CarteModule key={m.id} m={m} rang={i + 1} requete={`?programme=${aLaCarte.id}`} />
+              <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={`?programme=${aLaCarte.id}`} />
             ))}
           </div>
         </>
@@ -516,7 +659,7 @@ export function TableauDeBord({
         </span>
         <BoutonReplis groupes={groupesSocle} />
       </div>
-      <GroupesModules groupes={groupesSocle} estOuvert={estOuvert} basculer={basculer} />
+      <GroupesModules groupes={groupesSocle} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
 
       <div className="section-titre">
         <h2>Critères de la filière</h2>
@@ -526,7 +669,7 @@ export function TableauDeBord({
         {posteId ? <BoutonReplis groupes={groupesPoste} /> : null}
       </div>
       {posteId ? (
-        <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} />
+        <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
       ) : (
         <p className="encart">
           Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour

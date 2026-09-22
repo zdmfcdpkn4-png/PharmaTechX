@@ -3,6 +3,7 @@ import { actionDefinirCode, actionDetacher, actionRattacher } from "@/app/action
 import { LIBELLES_COURTS_VERDICT, type Verdict } from "@/lib/decision";
 import { historique, statistiquesAgent, type LigneProgression, type Rattachement, type ResumeEntrainement } from "@/lib/progression";
 import { getTousModulesAvecDeposes } from "@/content/store";
+import { BoutonEnvoi } from "./BoutonEnvoi";
 
 /**
  * « Ma progression » (décision du 18/09/2026, question 11, choix c) :
@@ -160,7 +161,7 @@ export async function Progression({
             </label>
           </div>
           <div className="actions">
-            <button type="submit" className="bouton">Reprendre ma progression</button>
+            <BoutonEnvoi>Reprendre ma progression</BoutonEnvoi>
           </div>
         </form>
       </section>

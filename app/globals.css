@@ -2418,3 +2418,193 @@ fieldset { min-width: 0; }
    ne se replient pas et la ligne dépassait de 112 px sur iPhone. */
 .ligne-critere { flex-wrap: wrap; }
 .contenu-bloc > .legende { overflow-wrap: anywhere; }
+
+/* =============================================================================
+ * Tableau de bord de l'accueil (22/09/2026)
+ * Reprendre, modules consultés, état de chaque module, avancement par bloc,
+ * recherche. Aucune animation de déplacement : ombre et bordure seulement
+ * (voir PageAnimee.tsx pour la raison).
+ * ========================================================================== */
+
+/* « Reprendre ma formation » : l'action principale de l'accueil. */
+.reprendre { display: flex; flex-direction: column; gap: 0.75rem; max-width: 44rem; }
+.reprendre-principal {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: var(--rayon);
+  border: 1px solid var(--marque);
+  background: var(--marque);
+  color: var(--marque-contraste);
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0, 85, 134, 0.22);
+  transition: background var(--transition), box-shadow var(--transition);
+}
+.reprendre-principal:hover { background: var(--marque-fonce); color: var(--marque-contraste); box-shadow: 0 8px 24px rgba(0, 63, 101, 0.3); }
+.reprendre-vignette {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+.reprendre-fleche { font-size: 1.5rem; font-weight: 700; color: var(--marque); }
+.reprendre-texte { display: flex; flex-direction: column; min-width: 0; gap: 0.0625rem; }
+.reprendre-action {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.reprendre-titre { font-size: 1.0625rem; line-height: 1.3; }
+.reprendre-detail { font-size: 0.8125rem; opacity: 0.9; }
+.reprendre-fini {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--rayon-sm);
+  background: var(--succes-fond);
+  color: var(--succes);
+  font-weight: 600;
+}
+
+.consultes { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.5rem; }
+.consultes-titre { font-size: 0.8125rem; color: var(--texte-doux); font-weight: 600; margin-right: 0.25rem; }
+/* Une vraie liste, pas `display: contents`, qui la ferait disparaître pour
+   certains lecteurs d'écran. */
+.consultes-liste { display: flex; flex-wrap: wrap; gap: 0.375rem 0.5rem; min-width: 0; list-style: none; margin: 0; padding: 0; }
+.consulte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--cible);
+  max-width: 100%;
+  padding: 0.25rem 0.875rem;
+  border-radius: 999px;
+  border: 1px solid var(--bord);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--marque);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.consulte:hover { border-color: var(--marque); background: var(--marque-clair); }
+.consulte > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Carte de module : vignette et état en tête. */
+.carte-module-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.carte-module-vignette { flex: none; display: grid; place-items: center; width: 72px; height: 72px; }
+.vignette-vide {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--surface-douce);
+  color: var(--texte-doux);
+  font: 700 0.6875rem/1 ui-monospace, Menlo, monospace;
+  text-align: center;
+}
+.etat-module {
+  flex: none;
+  padding: 0.1875rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+.etat-module--acquis { background: var(--succes-fond); color: var(--succes); border-color: rgba(31, 107, 69, 0.3); }
+.etat-module--arbitrage { background: var(--alerte-fond); color: var(--alerte); border-color: rgba(138, 90, 0, 0.3); }
+.etat-module--non-acquis { background: var(--echec-fond); color: var(--echec); border-color: rgba(153, 39, 31, 0.3); }
+.etat-module--non-concluant { background: var(--surface-douce); color: var(--texte); border-color: var(--bord-fort); }
+.etat-module--en-lecture { background: var(--marque-clair); color: var(--marque); border-color: rgba(0, 85, 134, 0.3); }
+.etat-module--a-faire { background: #ffffff; color: var(--marque); border-color: var(--marque); }
+.etat-module--a-rediger,
+.etat-module--lecture-seule { background: var(--surface-douce); color: var(--texte-doux); border-color: var(--bord); }
+/* Le filet gauche de la carte suit l'avancement ; le texte de l'état le dit aussi. */
+.carte--module.carte--termine { border-left-color: var(--succes); }
+.carte--module.carte--en-cours { border-left-color: var(--hdv-jaune); }
+.carte--module { transition: border-color var(--transition), box-shadow var(--transition); }
+.carte--module h3 { margin-top: 0.25rem; }
+/* 72 px sur tous les écrans, téléphone compris : une illustration ne se lit
+   pas en dessous (`content/badges.ts`). */
+
+/* Avancement d'un grand module, dans son intitulé. */
+.groupe-titre { min-width: 0; }
+.groupe-avancement { margin-left: auto; display: inline-flex; align-items: center; gap: 0.5rem; flex: none; }
+.groupe-jauge {
+  display: block;
+  width: 4.5rem;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-douce);
+  box-shadow: inset 0 0 0 1px var(--bord);
+  overflow: hidden;
+}
+.groupe-jauge > span { display: block; height: 100%; background: var(--succes); border-radius: 999px; }
+details.groupe-modules > summary::after { margin-left: 0.25rem; }
+@media (max-width: 40rem) {
+  details.groupe-modules > summary { flex-wrap: wrap; }
+  .groupe-jauge { width: 3rem; }
+}
+
+/* Recherche et filtres des modules. */
+.recherche-modules { padding: 0.875rem 1.125rem; }
+.recherche-rangee {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+.recherche-rangee .champ input,
+.recherche-rangee .champ select { min-height: var(--cible); width: 100%; max-width: none; }
+@media (max-width: 48rem) {
+  .recherche-rangee { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .recherche-texte { grid-column: 1 / -1; }
+}
+
+/* Retour visuel de navigation et d'envoi (22/09/2026). */
+.indicateur-navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  height: 3px;
+  width: 0;
+  background: var(--marque);
+  opacity: 0;
+  pointer-events: none;
+}
+.indicateur-navigation--en-cours {
+  opacity: 1;
+  width: 85%;
+  transition: width 6s cubic-bezier(0.08, 0.8, 0.2, 1), opacity 0.1s ease;
+}
+.indicateur-navigation--fin {
+  opacity: 0;
+  width: 100%;
+  transition: width 0.15s ease-out, opacity 0.25s ease 0.15s;
+}
+.bouton.est-en-cours { cursor: progress; }
+/* En attente, pas indisponible : le bouton ne s'éteint pas comme un bouton désactivé. */
+.bouton.est-en-cours:disabled { opacity: 0.85; }
+.rond-attente {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: rond-attente 0.7s linear infinite;
+}
+@keyframes rond-attente { to { transform: rotate(360deg); } }

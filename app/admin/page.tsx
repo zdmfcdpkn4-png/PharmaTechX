@@ -9,6 +9,7 @@ import { comptesRapports } from "@/lib/rapports";
 import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
+import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 
 export const dynamic = "force-dynamic";
 
@@ -186,9 +187,7 @@ export default async function Admin({
             </p>
           </div>
           <div className="actions">
-            <button type="submit" className="bouton">
-              Générer le code
-            </button>
+            <BoutonEnvoi>Générer le code</BoutonEnvoi>
           </div>
         </form>
       </section>

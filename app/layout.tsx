@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SessionFormation } from "@/components/SessionFormation";
@@ -11,6 +12,7 @@ import { FilHabilitation } from "@/components/FilHabilitation";
 import { ModeZone } from "@/components/ModeZone";
 import { PageAnimee } from "@/components/PageAnimee";
 import { VoletConnexion } from "@/components/VoletConnexion";
+import { IndicateurNavigation } from "@/components/IndicateurNavigation";
 import { TutorielProvider } from "@/components/Tutoriel";
 import { etapesTutoriel } from "@/content/tutoriel";
 import { fileNonVide, itemsAFaire, AUCUN_COMPTE } from "@/content/acces-rapide";
@@ -249,6 +251,10 @@ export default async function RootLayout({
           <span className="forme-3" />
           <span className="forme-4" />
         </div>
+        {/* `useSearchParams` exige sa frontière d'attente. */}
+        <Suspense fallback={null}>
+          <IndicateurNavigation />
+        </Suspense>
 
         <SessionFormation
           initialResultats={evaluations}
@@ -323,8 +329,13 @@ export default async function RootLayout({
                       className="bouton bouton--compact bouton-quitter"
                       aria-label={`${session.libelle} — quitter`}
                     >
-                      <span className="bouton-quitter-profil">{session.libelle} — </span>
-                      <span className="bouton-quitter-verbe">quitter</span>
+                      {/* Une seule boîte dans le bouton, dont les enfants
+                          sont espacés par `gap` : sans elle, l'espace
+                          s'ajoutait au blanc du texte. */}
+                      <span>
+                        <span className="bouton-quitter-profil">{session.libelle} — </span>
+                        <span className="bouton-quitter-verbe">quitter</span>
+                      </span>
                     </button>
                   </form>
                 ) : (

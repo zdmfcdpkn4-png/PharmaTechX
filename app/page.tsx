@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { composerProgramme, comptesQuestionsBase, getParcours, getTousModulesAvecDeposes } from "@/content/store";
+import { composerProgramme, comptesQuestionsBase, getModule, getParcours, getTousModulesAvecDeposes } from "@/content/store";
 import { miseEnService, modeConservation, procedureReference } from "@/lib/config";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { rattachement } from "@/lib/progression";
+import { dernierEnCours, rattachement } from "@/lib/progression";
+import { questionsRenseignees } from "@/content/en-cours";
+import { lireModuleDepose } from "@/content/modules-db";
+import { Reprendre, type EtapeReprise } from "@/components/Reprendre";
 import { Progression } from "@/components/Progression";
 import { blocsCompetence, criteres } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
@@ -116,6 +119,35 @@ export default async function Accueil({
     (m) => m.redige || m.nbQuestions > 0,
   );
 
+  // « Reprendre ma formation » (22/09/2026) : le programme de référence est
+  // celui qui s'affiche à l'arrivée — le programme à la carte, ou le socle et
+  // la filière du code de poste, au niveau du code — dans l'ordre de la fiche.
+  const auNiveau = (liste: ModuleResume[]) =>
+    niveauInitial ? liste.filter((m) => m.niveaux.includes(niveauInitial)) : liste;
+  const etape = (m: ModuleResume): EtapeReprise => ({
+    id: m.id,
+    titre: m.titre,
+    evaluable: m.nbQuestions > 0,
+    redige: m.redige,
+    badge: m.badge,
+  });
+  const programmeArrivee: EtapeReprise[] = (
+    aLaCarte ? aLaCarte.modules : [...auNiveau(troncCommun), ...auNiveau(filiereInitiale ? (parPoste[filiereInitiale] ?? []) : [])]
+  ).map(etape);
+  const catalogue: EtapeReprise[] = [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
+  // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base.
+  const enCours = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
+  const evaluationEnCours = enCours
+    ? {
+        moduleId: enCours.moduleId,
+        titre:
+          getModule(enCours.moduleId)?.titre ??
+          (await lireModuleDepose(enCours.moduleId).catch(() => null))?.titre ??
+          enCours.moduleId,
+        detail: `${questionsRenseignees(enCours.etat)} sur ${enCours.etat.questionIds.length} questions`,
+      }
+    : null;
+
   return (
     <>
       {/* ───────────────────────────────────────────────────────── héros */}
@@ -132,13 +164,20 @@ export default async function Accueil({
             ? `Programme composé à la main pour un profil qui ne suit pas la fiche${programmeOuvert.destinataire ? ` : ${programmeOuvert.destinataire}` : ""}.`
             : parcours.description}
         </p>
+        {/* Tableau de bord (22/09/2026) : reprendre là où l'on s'est arrêté,
+            et les modules consultés sur ce poste. « Comment fonctionne
+            l'habilitation » a quitté cette rangée : l'avertissement juste
+            en dessous mène au même endroit. */}
+        <Reprendre
+          evaluation={evaluationEnCours}
+          programme={programmeArrivee}
+          catalogue={catalogue}
+          requete={aLaCarte ? `?programme=${aLaCarte.id}` : ""}
+        />
         <div className="actions" style={{ marginTop: 0 }}>
-          <a href="#modules" className="bouton">
+          <a href="#modules" className="bouton bouton--secondaire">
             Voir mes modules
           </a>
-          <Link href="/reperes#dispositif" className="bouton bouton--secondaire">
-            Comment fonctionne l&apos;habilitation
-          </Link>
         </div>
         <p className="avertissement-hero">
           <strong>Valider un module à l&apos;écran ne vaut pas habilitation.</strong> Ce site

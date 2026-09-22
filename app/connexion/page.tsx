@@ -4,6 +4,7 @@ import { secretConfigure } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { actionConnexion } from "@/app/actions";
 import { Badge } from "@/components/Badge";
+import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 
 export const dynamic = "force-dynamic";
 
@@ -89,9 +90,7 @@ export default async function Connexion({
               </span>
             </label>
             <div className="actions">
-              <button type="submit" className="bouton" disabled={!pret}>
-                Entrer
-              </button>
+              <BoutonEnvoi disabled={!pret}>Entrer</BoutonEnvoi>
               {!pret && (
                 <Link href="/" className="bouton bouton--secondaire">
                   Consulter sans code
