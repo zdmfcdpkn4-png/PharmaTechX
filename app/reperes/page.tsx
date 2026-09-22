@@ -94,8 +94,8 @@ const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
     q: "Mes résultats sont-ils enregistrés quelque part ?",
     r:
       conservation === "pseudonyme"
-        ? "Pas tant que vous ne l'avez pas décidé. Ils vivent en mémoire de l'onglet le temps de la session. Si vous émettez un rapport, il est enregistré sous votre identifiant d'agent, sans votre nom, numéroté et scellé, pour être visé par le tuteur puis le pharmacien responsable. Les entraînements ne sont jamais enregistrés."
-        : "Non. Ils vivent en mémoire de l'onglet le temps de la session et disparaissent à sa fermeture. La seule trace durable est le rapport que vous téléchargez sur votre poste et remettez pour votre dossier.",
+        ? "Seulement ce que vous choisissez : le rapport que vous émettez, et votre progression si vous la rattachez — sous votre identifiant, jamais sous votre nom."
+        : "Non : seul le rapport que vous téléchargez en garde trace.",
   },
   {
     q: "Quelle différence entre évaluation et entraînement ?",
@@ -105,8 +105,8 @@ const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
     q: "Le site sait-il qui je suis ?",
     r:
       conservation === "pseudonyme"
-        ? "Non. Un code d'accès ouvre un profil — poste, tutorat, administration — jamais un compte nominatif. Un rapport émis est rattaché à votre identifiant d'agent (AG-001…) ; la correspondance avec votre nom est tenue par le pharmacien responsable, hors du site."
-        : "Non. Un code d'accès ouvre un profil — poste, tutorat, administration — jamais un compte nominatif. Le serveur ne reçoit que des identifiants de questions et d'options.",
+        ? "Non : un code ouvre un profil, pas un compte nominatif, et un rapport se rattache à votre identifiant d'agent."
+        : "Non : un code ouvre un profil, pas un compte nominatif.",
   },
   {
     q: "Que se passe-t-il si je rate une question éliminatoire ?",

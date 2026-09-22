@@ -591,21 +591,15 @@ export function TableauDeBord({
         ) : null}
         {pseudonyme ? (
           <p>
-            Deux issues pour chaque évaluation : <strong>télécharger</strong> le rapport sur ce
-            poste, ou <strong>l&apos;émettre</strong> — il est alors enregistré sous votre
-            identifiant d&apos;agent, numéroté, scellé et soumis au visa du tuteur puis du
-            pharmacien responsable. <strong>Aucun nom n&apos;est enregistré</strong> : la
-            correspondance entre l&apos;identifiant et vous est tenue par le pharmacien
-            responsable, hors du site, et votre nom n&apos;est porté qu&apos;à l&apos;impression du
-            rapport. <Link href="/donnees-personnelles">Vos données et vos droits</Link>. Les
-            entraînements n&apos;apparaissent pas ici.
+            <strong>Télécharger</strong> le rapport sur ce poste, ou <strong>l&apos;émettre</strong> : il est
+            alors enregistré sous votre identifiant, numéroté et soumis aux visas du tuteur puis du
+            pharmacien. Les entraînements n&apos;apparaissent pas ici.{" "}
+            <Link href="/donnees-personnelles" className="lien-discret">Vos données</Link>
           </p>
         ) : (
           <p>
-            Le rapport reprend chaque critère évalué, sa note et le détail question par question.
-            Il est écrit sur le poste de l&apos;apprenant : le nom saisi ci-dessous n&apos;est
-            envoyé nulle part, il ne sert qu&apos;à renseigner l&apos;en-tête du fichier. Les
-            entraînements n&apos;apparaissent pas ici.
+            Le rapport reprend chaque critère évalué et le détail des questions ; le nom saisi ne quitte
+            pas ce poste. Les entraînements n&apos;apparaissent pas ici.
           </p>
         )}
 

@@ -61,9 +61,8 @@ export async function Progression({
         {texte && <p className={classe} role="status">{texte}</p>}
         <section className="carte">
           <p>
-            Progression rattachée à l&apos;identifiant <code>{rattache.identifiant}</code>. Vos évaluations, la fin de vos
-            entraînements et vos lectures sont conservées sous cet identifiant, sans nom ; une évaluation interrompue vous est
-            proposée à la reprise. <Link href="/donnees-personnelles">Vos données et vos droits</Link>.
+            Progression rattachée à <code>{rattache.identifiant}</code> : évaluations, entraînements et lectures y sont
+            conservés ; une évaluation interrompue se reprend.
           </p>
           <div className="tuiles">
             <div className="tuile"><span className="valeur">{stats.evaluations}</span><span className="libelle">évaluations conservées</span></div>
@@ -146,10 +145,9 @@ export async function Progression({
       {texte && <p className={classe} role="status">{texte}</p>}
       <section className="carte">
         <p>
-          Rattachez vos évaluations, vos entraînements et vos lectures à votre identifiant d&apos;agent pour les retrouver
-          d&apos;une session à l&apos;autre et reprendre une évaluation interrompue. Rien n&apos;est conservé sans ce
-          rattachement, et rien ne porte votre nom. Première fois : saisissez votre identifiant, le site vous demandera de
-          choisir un code personnel. <Link href="/donnees-personnelles">Vos données et vos droits</Link>.
+          Rattachez vos évaluations à votre identifiant pour les retrouver d&apos;une session à l&apos;autre. Première
+          fois : saisissez-le, puis choisissez un code personnel.{" "}
+          <Link href="/donnees-personnelles" className="lien-discret">Vos données</Link>
         </p>
         <form action={actionRattacher}>
           <div className="rangee">

@@ -35,7 +35,7 @@ export default async function Connexion({
         <p className="sur-titre">Accès à l&apos;outil</p>
         <h1>Un code ouvre un profil, pas un compte</h1>
         <p style={{ fontSize: "1.0625rem", maxWidth: "52ch" }}>
-          Réservé au personnel de l&apos;unité. Un code ouvre un profil — il ne désigne personne.
+          Réservé au personnel de l&apos;unité.
         </p>
       </section>
 
@@ -137,26 +137,12 @@ export default async function Connexion({
         </section>
       </div>
 
-      {/* Trois lignes au lieu de cinq paragraphes (19/09/2026) : le détail
-          complet vit sur « Vos données et vos droits », qui est sa place. Le
-          répéter ici faisait de l'écran d'entrée un texte à lire. */}
-      <section className="encart bandeau-donnees" aria-labelledby="titre-donnees">
-        <h2 id="titre-donnees">
-          {conservation ? "Aucun nom n'est enregistré" : "Rien de nominatif n'est enregistré"}
-        </h2>
-        <ul>
-          <li>Ni nom, ni matricule, ni adresse dans ce qui est transmis pour correction.</li>
-          <li>Les codes d&apos;accès sont hachés : la base ne permet pas de les relire.</li>
-          <li>
-            {conservation
-              ? "Un rapport émis est enregistré sous un identifiant d'agent (AG-001…) ; la correspondance avec la personne est tenue hors du site."
-              : "Aucun résultat n'est conservé : le rapport téléchargé est le seul support."}
-          </li>
-        </ul>
-        <p>
-          <Link href="/donnees-personnelles">Vos données et vos droits</Link>
-        </p>
-      </section>
+      {/* Une ligne au lieu d'un encadré (22/09/2026, « moins visible ») : le
+          détail vit sur « Vos données et vos droits », qui est sa place. */}
+      <p className="legende">
+        {conservation ? "Aucun nom n'est enregistré." : "Rien de nominatif n'est enregistré."}{" "}
+        <Link href="/donnees-personnelles">Vos données et vos droits</Link>
+      </p>
 
     </article>
   );

@@ -27,13 +27,8 @@ export function VoletConnexion() {
       <div className="rail-groupe">
         <span className="rail-titre">Votre code</span>
         <p className="rail-info">
-          Dix caractères séparés d&apos;un tiret, remis par le tutorat ou
-          l&apos;administration. Il ouvre un profil — poste de travail, tutorat ou
-          administration — et ne désigne personne.
-        </p>
-        <p className="rail-info">
-          Un code perdu ne se retrouve pas : la base ne le conserve que haché. Le tutorat en
-          délivre un nouveau.
+          Dix caractères, remis par le tutorat ou l&apos;administration. Perdu, il se
+          remplace : demandez-en un nouveau.
         </p>
       </div>
 

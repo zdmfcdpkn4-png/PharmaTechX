@@ -346,29 +346,13 @@ export default async function RootLayout({
 
           <footer className="pied">
             <div className="pied-interne">
-              {conservation ? (
-                <p>
-                  <strong>Aucun nom n&apos;est enregistré.</strong> Les réponses transmises au
-                  serveur ne comportent ni nom, ni matricule. Les résultats vivent en mémoire de
-                  l&apos;onglet le temps de la session, sauf si l&apos;apprenant rattache sa
-                  progression à son identifiant d&apos;agent avec son code personnel : elle est
-                  alors conservée sous cet identifiant, sans nom. Le rapport qu&apos;il choisit
-                  d&apos;émettre est enregistré sous le même identifiant, pour le circuit de visas
-                  du tuteur et du pharmacien responsable ; le nom n&apos;est porté qu&apos;à
-                  l&apos;édition. <Link href="/donnees-personnelles">Vos données et vos droits</Link>.
-                  Un repère de lecture reste sur le poste, et il ne désigne personne.
-                </p>
-              ) : (
-                <p>
-                  <strong>Rien de nominatif n&apos;est enregistré.</strong> Les
-                  réponses transmises au serveur ne comportent ni nom, ni
-                  matricule, ni identifiant. Les résultats vivent en mémoire de
-                  l&apos;onglet le temps de la session, puis dans le rapport que
-                  l&apos;apprenant télécharge sur son poste. Seul un repère de
-                  lecture est conservé localement, sur le poste, et il ne désigne
-                  personne.
-                </p>
-              )}
+              {/* Resserré le 22/09/2026 (« moins visible, synthétiser
+                  drastiquement ») : une ligne, et le lien vers la page qui porte
+                  l'information complète de l'article 13. */}
+              <p className="legende">
+                {conservation ? "Aucun nom enregistré : tout se rattache à un identifiant d'agent." : "Rien de nominatif n'est enregistré."}{" "}
+                <Link href="/donnees-personnelles">Vos données</Link>
+              </p>
               {/* La mention « phase d'essai » a quitté les écrans le 19/09/2026 :
                   elle ne disait rien d'utile à un apprenant et occupait le pied de
                   chaque page. Tant que la mise en service n'est pas prononcée, le

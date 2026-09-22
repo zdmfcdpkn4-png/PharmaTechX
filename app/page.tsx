@@ -145,8 +145,7 @@ export default async function Accueil({
           <Link href="/reperes#dispositif">le dispositif en détail</Link>.
         </p>
         <p className="mentions-hero">
-          Aucun compte nominatif · {conservation === "pseudonyme" ? "rapports enregistrés sur émission, sous identifiant" : "résultats non conservés"} · {rediges.length}{" "}
-          critère{rediges.length > 1 ? "s" : ""} évaluable{rediges.length > 1 ? "s" : ""} sur {criteres.length}
+          {rediges.length} critère{rediges.length > 1 ? "s" : ""} évaluable{rediges.length > 1 ? "s" : ""} sur {criteres.length}
         </p>
       </section>
 

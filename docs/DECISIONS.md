@@ -1764,6 +1764,41 @@ Le **code personnel d'un agent** (rattachement de la progression, 4 à 8
 chiffres) se réinitialisait déjà, depuis la fiche de l'agent, en tutorat et en
 administration (question 11) : rien n'a changé de ce côté.
 
+## Texte RGPD resserré (22/09/2026)
+
+Demandé le 22/09/2026 : « simplifie tout le texte avec le RGPD pour le rendre
+moins visible, synthétise drastiquement ».
+
+**Ce qui a changé.**
+
+- Pied de page : un paragraphe de neuf lignes devient une ligne et un lien
+  (« Vos données »).
+- Écran de connexion : l'encadré de trois puces devient une ligne ; la phrase
+  d'introduction ne répète plus le titre.
+- Accueil : la mention « Aucun compte nominatif · rapports enregistrés… » quitte
+  le bandeau ; il ne reste que le nombre de critères évaluables.
+- Rapport de session et progression : une phrase chacun, et un lien discret
+  « Vos données » **là où l'identifiant se saisit** (émission, rattachement).
+- Volet avant connexion et questions fréquentes : deux lignes au lieu de six.
+- `/donnees-personnelles` : de cinq sections à une liste de six lignes.
+
+**Ce qui n'a pas été retiré**, et pourquoi. La page d'information garde
+chacun des éléments que l'article 13 du règlement (UE) 2016/679 impose de
+fournir : responsable du traitement, contact du DPO, finalité, base légale,
+destinataires, durée de conservation, droits, droit de réclamation auprès de
+la CNIL — resserrés, pas supprimés, et toujours `[à compléter]` là où le DPO
+n'a rien fourni. Le lien reste aux deux endroits où l'identifiant se saisit :
+c'est l'information « en couches » que recommandent les lignes directrices
+sur la transparence du groupe de l'article 29 (WP260 rév. 01, 11/04/2018,
+reprises par le CEPD) — une première couche courte, la seconde à un clic.
+Ces lignes directrices attendent de la première couche la finalité, le
+responsable et l'existence des droits ; la ligne actuelle en dit moins : à
+valider avec le DPO, comme la fiche de registre.
+
+Corrigé au passage : la réponse « Les entraînements ne sont jamais
+enregistrés » était fausse pour un agent rattaché (la fin d'un entraînement
+est notée) ; la nouvelle réponse ne l'affirme plus.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
