@@ -1298,6 +1298,65 @@ pareil d'une fiche à l'autre. C'est le libellé du métier concerné qui est
 rendu à l'écran et sur le rapport : autrement, la pièce produite ne
 correspondrait plus au document opposable qu'elle prétend servir.
 
+## L'échelle du préparateur corrigée, le bloc 7 ramené à sa source (22/09/2026)
+
+Les quatre fiches d'habilitation officielles, fournies le 22/09/2026, ont
+contredit le code sur trois points. Le document transcrit à l'ouverture du
+projet — « onze pages A4 paysage, sept blocs thématiques » — était une
+**refonte**, pas le document qualité. L'en-tête de `content/habilitation.ts`
+ne signalait comme adaptations que le marquage « O » et la correspondance
+blocs ↔ niveaux : les codes de niveaux venaient donc vraisemblablement de
+cette refonte. Je ne peux pas le vérifier, et je ne prétends pas le savoir.
+
+**Ce qui est corrigé, sans arbitrage — le document officiel fait foi.**
+
+| Ce que portait le code | Ce que dit la fiche |
+|---|---|
+| Niveaux `P1` / `P2` au préparatoire | **`N1b`**. Les onze critères du bloc 6 y passent. |
+| Un « référent préparatoire » (`P2`) | Il n'existe **qu'un** niveau référent, `N3`. |
+| `N2` = « `N1c` + bloc 5 en autonomie » | « Habilitation acquise si niveau 1a + 1b + 1c » : les trois branches réunies. |
+| `N1c` seule branche sous `N1a` | Deux branches : « Niveau 1 : 1a+1b **ou** 1a+1c ». |
+| `N3` = « critères obligatoires des niveaux détenus » | **100 %** des critères de 1a+1b+1c, obligatoires *et* non obligatoires — la fiche le précise. |
+
+**Tranché (question 45, choix b) : le bloc 7 ne porte plus qu'un critère.**
+
+Des six critères d'« Encadrement et référent », un seul a une source : la
+participation à la formation d'au moins un préparateur. Les cinq autres —
+évaluer et tracer les compétences d'un apprenant, rédiger et réviser des
+procédures, animer des groupes de travail, CAPA, veille — ne figurent dans
+**aucune** des quatre fiches ; celui des non-conformités faisait de surcroît
+doublon avec `B3-09`.
+
+Et une objection de nature, pas seulement de source : une ancienneté ou un
+parrainage **ne s'évalue pas par QCM**. Le site couvre les étapes 1 et 2,
+théorie et connaissances. Ce que la fiche exige encore du niveau référent —
+100 % des critères inférieurs, plus d'une année d'expérience — est une
+condition d'éligibilité, et elle est portée par `niveaux[].condition`, lue
+par le pharmacien à l'étape 5.
+
+Écartés : garder les six en les marquant « hors fiche » (cinq taches durables
+sur une pièce opposable, et cinq emplacements de module qui ne seraient
+jamais écrits — « animer un groupe de travail » n'est pas un contenu de
+formation) ; supprimer le bloc entier (cela effaçait le seul endroit où le
+site nomme l'acte de tutorat).
+
+**Le compte passe de 58 à 53 critères**, 40 obligatoires, 2 rédigés.
+
+**Ce qui n'est pas corrigé, et pourquoi.** Le marquage « O ». La source
+existe désormais — les quatre fiches le portent, 44 marques sur le
+préparateur — mais les critères d'ici **agrègent** plusieurs lignes du
+portfolio : le marquage ne se reporte pas ligne à ligne. `arbitrageEnAttente`
+le dit maintenant en ces termes, au lieu de laisser croire qu'aucune source
+n'existe.
+
+**Les rattachements orphelins se signalent, ils ne s'effacent pas.**
+`niveauxOrphelins()` (`content/referentiel-db.ts`) relit les modules déposés,
+les réglages de modules, les documents déposés et les prérequis des niveaux
+déposés, et liste ceux qui citent un code inconnu. `/admin/referentiel`
+l'affiche en tête. Rien n'est supprimé sur ce constat : effacer en silence un
+rattachement que quelqu'un a posé sciemment, sans qu'il l'apprenne, serait
+pire que l'orphelin.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

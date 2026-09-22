@@ -11,6 +11,8 @@
 
 /** Marqueur d'un élément non encore arbitré par le pharmacien responsable. */
 export const A_PRECISER = "[à préciser]" as const;
+/** Donnée que l'unité doit fournir : jamais remplacée par une valeur vraisemblable. */
+export const A_COMPLETER = "[à compléter]" as const;
 
 import { motAttendu, normaliser, verdictLegende, type Legende, type Repere } from "./schema";
 import {
@@ -27,17 +29,26 @@ export type { Legende, Repere };
 export type { Bareme } from "./bareme";
 
 /**
- * Niveaux d'habilitation de l'unité.
- * Socle transversal N1a ; parcours Chimiothérapie N1c → N2 → N3 ;
- * parcours Préparatoire P1 → P2.
+ * Niveaux d'habilitation, échelle de la fiche **préparateur**.
+ * Socle N1a ; préparatoire N1b ; chimiothérapie N1c ; routine N2 ; référent N3.
+ *
+ * Corrigé le 22/09/2026 : le code portait `P1` / `P2` pour le parcours
+ * préparatoire, et un « référent préparatoire » qui n'existe pas. La fiche
+ * officielle nomme ce niveau **N1b** et ne connaît qu'un niveau référent, N3.
+ * Les codes venaient de la refonte de la fiche fournie à l'ouverture du
+ * projet, pas du document qualité.
+ *
+ * Ces codes sont ceux d'un seul métier. Les trois autres fiches de l'unité
+ * ont leur propre échelle, et certains codes s'y répètent avec un autre sens
+ * — voir `metiers` dans `content/habilitation.ts`.
  *
  * Depuis la décision du 19/09/2026 (question 38, choix b), des niveaux
  * peuvent être **déposés en base** : le type reste donc ouvert. Les codes
- * ci-dessous sont ceux de la fiche d'habilitation, gardés nommément pour que
- * l'éditeur continue de les proposer ; `(string & {})` accepte les autres
- * sans faire disparaître cette complétion.
+ * ci-dessous sont gardés nommément pour que l'éditeur continue de les
+ * proposer ; `(string & {})` accepte les autres sans faire disparaître cette
+ * complétion.
  */
-export const NIVEAUX_FICHE = ["N1a", "N1c", "N2", "N3", "P1", "P2"] as const;
+export const NIVEAUX_FICHE = ["N1a", "N1b", "N1c", "N2", "N3"] as const;
 
 export type NiveauHabilitation =
   | (typeof NIVEAUX_FICHE)[number]

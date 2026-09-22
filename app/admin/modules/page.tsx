@@ -46,7 +46,7 @@ export default async function Modules({
       <section className="panneau-titre">
         <h1>Modules</h1>
         <p>
-          Le texte des 58 critères de la fiche reste versionné avec le site (décision du 18/09/2026).
+          Le texte des 53 critères de la fiche reste versionné avec le site (décision du 18/09/2026).
           Un <strong>module déposé</strong> s&apos;ajoute depuis cet écran, à la manière d&apos;un dépôt
           du Lecteur QIM · QCM : titre, objectif, présentation courte, rattachement facultatif à un
           critère, profils (filières, niveaux, parcours), seuil de réussite. Ses questions se déposent

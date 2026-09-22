@@ -1,7 +1,7 @@
 /**
  * Réglages d'un module du code (décision du 19/09/2026, question 36, choix a).
  *
- * Le texte des 58 critères reste versionné avec le site, mais son
+ * Le texte des 53 critères reste versionné avec le site, mais son
  * **rattachement** ne l'est plus : filières, niveaux, et présence au parcours
  * d'intégration ou de maintien se règlent depuis l'administration, comme pour
  * un module déposé. La fiche d'habilitation reste la source : un réglage est

@@ -113,7 +113,7 @@ const questionsFrequentes = (conservation: "aucune" | "pseudonyme") => [
   },
   {
     q: "Pourquoi certains critères sont-ils marqués « à rédiger » ?",
-    r: "Les 58 critères de la fiche d'habilitation sont tous référencés, mais deux modules seulement sont écrits à ce jour. Les autres apparaissent pour que le programme complet soit visible ; les tuteurs peuvent déjà y déposer des questions.",
+    r: "Les 53 critères de la fiche d'habilitation sont tous référencés, mais deux modules seulement sont écrits à ce jour. Les autres apparaissent pour que le programme complet soit visible ; les tuteurs peuvent déjà y déposer des questions.",
   },
 ];
 

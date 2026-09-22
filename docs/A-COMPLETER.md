@@ -91,13 +91,13 @@ remplissent dans `docs/RGPD.md`, qui sert de projet de fiche de registre.
 
 ## B. Ce qui empêche le site de servir : le contenu
 
-### B1. Cinquante-six textes de formation
+### B1. Cinquante et un textes de formation
 
 | | |
 |---|---|
 | **Où ça se voit** | Sur l'accueil, chaque critère non rédigé porte l'étiquette « **Module à rédiger** » ; sur sa page, « Ce critère est un emplacement ouvert : son contenu de formation reste à rédiger » |
-| **Ce qui le porte** | `content/habilitation.ts` (les 58 critères) et `content/modules/` (les textes) |
-| **État exact** | **58 critères, 2 rédigés** — `comportement-zac` (critère 1.1) et `protection-operateur-cytotoxiques` (critère 1.4). **56 emplacements vides.** |
+| **Ce qui le porte** | `content/habilitation.ts` (les 53 critères) et `content/modules/` (les textes) |
+| **État exact** | **53 critères, 2 rédigés** — `comportement-zac` (critère 1.1) et `protection-operateur-cytotoxiques` (critère 1.4). **51 emplacements vides.** Le compte est passé de 58 à 53 le 22/09/2026 : le bloc 7 portait cinq critères sans source dans les fiches (question 45, choix b). |
 | **À fournir** | Le texte de chaque module |
 | **Qui décide** | Vous et les tuteurs ; tranché le 19/09/2026 (question 10, choix a) : les textes vivent dans le code, je les place et je pousse |
 
@@ -140,13 +140,32 @@ justement pourquoi il est listé ici.
 | | |
 |---|---|
 | **Où ça se voit** | Sélecteur de filière, entrée « **Postes de travail — `[à préciser]`** » |
-| **Ce qui le porte** | `postesDeTravail`, `content/habilitation.ts:162` |
-| **À fournir** | La liste des postes de l'unité, **si** vous voulez composer les programmes par poste |
+| **Ce qui le porte** | `postesDeTravail`, `content/habilitation.ts` |
+| **À fournir** | Rien : **les portfolios fournis le 22/09/2026 les donnent** — postes A à H pour les préparateurs, CHIMIO 1 / 2 / 3 pour les pharmaciens, avec leur contenu et leurs horaires. Ils seront versés quand le dépôt sera privé |
 | **Qui décide** | Vous |
 
 La fiche d'habilitation raisonne en filières et niveaux, pas en postes : cette
 entrée est un ajout, et elle peut rester vide sans rien bloquer. C'est le seul
 marqueur de cette liste qui soit **facultatif**.
+
+### B6. Les trois autres métiers et les références de leurs fiches
+
+| | |
+|---|---|
+| **Où ça se voit** | `/admin/referentiel` ; trois des quatre métiers portent une échelle vide et une référence de fiche `[à compléter]` |
+| **Ce qui le porte** | `metiers`, `content/habilitation.ts` |
+| **État exact** | Le vivier de critères est commun (question 44, choix c), mais seul le **préparateur** y est transcrit. Pharmacien / interne, aide en pharmacie et agent d'entretien n'ont ni critères ni échelle |
+| **À fournir** | Rien : les quatre fiches sont fournies. Leur contenu attend la bascule du dépôt en privé (question 43, choix a) |
+
+Deux points ne se règlent pas en versant le contenu :
+
+- les **codes de niveaux se répètent** d'une fiche à l'autre avec un autre
+  sens — la fiche pharmacien nomme `N1a` une sous-catégorie qui n'a rien du
+  socle `N1a` du préparateur. La forme du préfixe qui lèvera l'ambiguïté
+  reste `[à préciser]` ;
+- les **85 références de documents qualité** relevées dans les portfolios
+  (point B3) se rattachent aux lignes du portfolio, qui sont **plus fines**
+  que les 53 critères d'ici. Le rattachement demandera un arbitrage.
 
 ### B5. Périodicité de revalidation par critère
 
@@ -193,7 +212,7 @@ Et deux points d'exploitation :
    Render, et tous les écrans cessent de dire qu'elle manque.
 3. **B2 et B3** — les données locales et les procédures : elles rendent les
    deux modules existants complets, donc utilisables en vrai.
-4. **B1** — la rédaction des 56 textes, qui court en fond.
+4. **B1** — la rédaction des 51 textes, qui court en fond.
 5. **A3 puis A2** — la durée, puis la date, en dernier : la date change la
    nature de toutes les pièces produites.
 

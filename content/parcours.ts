@@ -11,7 +11,7 @@ import {
  *
  * La maille d'un module est le **critère** : un module couvre une ligne de la
  * fiche et une seule, ce qui permet au rapport d'évaluation de se lire ligne à
- * ligne en face d'elle. Les 58 critères produisent donc 58 emplacements de
+ * ligne en face d'elle. Les 53 critères produisent donc 53 emplacements de
  * module, dont deux sont aujourd'hui rédigés.
  *
  * Les intitulés sont transcrits depuis la fiche, sans réécriture.

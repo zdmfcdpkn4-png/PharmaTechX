@@ -15,7 +15,7 @@ import type {
  *
  * Elle complète — sans la remplacer — la banque versionnée avec le code
  * (`content/modules/*.ts`). Une question déposée est rattachée à un module,
- * rédigé ou non : c'est ainsi que les 56 emplacements « à rédiger » reçoivent
+ * rédigé ou non : c'est ainsi que les 51 emplacements « à rédiger » reçoivent
  * leurs premières questions sans redéploiement.
  *
  * Cycle de vie (repris du Lecteur QIM · QCM) : `a_verifier` à l'import ou à

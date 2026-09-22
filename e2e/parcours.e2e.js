@@ -728,8 +728,11 @@ Justification : cf. procédure interne.`,
   await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
   await deplierTousLesGroupes();
   await page.waitForSelector("h3:has-text('Module déposé test')");
-  await page.selectOption("label:has-text('Niveau visé') select", "P1");
-  assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "absent au niveau P1");
+  // N1b depuis le 22/09/2026 : le parcours préparatoire se nomme ainsi dans la
+  // fiche officielle, et P1 n'existe plus. Le sens du contrôle est inchangé —
+  // un module rattaché à N1c ne paraît pas sous une autre branche.
+  await page.selectOption("label:has-text('Niveau visé') select", "N1b");
+  assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "absent au niveau N1b");
   ok("module déposé : brouillon invisible, publié au programme Chimiothérapie · N1c");
 
   // 12c. questions déposées dans le module déposé, présentation et seuil propre

@@ -168,7 +168,7 @@ précédente : l'apprenant traversait trois sections de gouvernance avant son co
    rose `#b41f4d` 11 px `letter-spacing:.12em` en capitales, `h1` 42 px / 1,1 /
    `-0.025em` en `#005586` sur 26 ch, paragraphe 17 px / 1,6, deux actions, puis une ligne
    13 px `#566370` : « Aucun compte nominatif · résultats non conservés · 2 modules en ligne
-   sur 58 critères ».
+   sur 53 critères ».
 6. `#modules` — deux cartes `.carte--module` (verre 84 %, `border-left: 4px solid #005586`) :
    code `B1-01` en pastille mono, pastille rose « Obligatoire », contexte, `h3` 21 px,
    objectif, trois métadonnées (durée, 9 questions · 1 mise en situation, seuil 80 % · 2
@@ -362,8 +362,8 @@ décision et comme réserve de motifs (matrice pour le profil tutorat, liste den
 - **Profil d'accès** : code de rôle → profil (`poste`, `tutorat`, `administration`).
   Tant que la base n'est pas branchée, `controleInactif = true` et le bandeau d'alerte
   s'affiche.
-- **Données de référence à servir** : 7 blocs, 58 critères (44 obligatoires, 18 au socle
-  transversal), niveaux `N1a / N1c / N2 / N3 / P1 / P2` et `N1c→2`, modules rédigés,
+- **Données de référence à servir** : 7 blocs, 53 critères (40 obligatoires, 18 au socle
+  transversal), niveaux `N1a / N1b / N1c / N2 / N3` et `N1c→2`, modules rédigés,
   banques de questions, documents rattachés, bibliographies.
 
 ## Jetons de design

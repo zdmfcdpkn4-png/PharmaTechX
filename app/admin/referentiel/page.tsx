@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes } from "@/content/referentiel-db";
+import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes, niveauxOrphelins } from "@/content/referentiel-db";
 import { Badge } from "@/components/Badge";
 import { ChoixBadge } from "@/components/ChoixBadge";
 import {
@@ -33,10 +33,11 @@ export default async function Referentiel({
   const p = await searchParams;
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [{ filieres, niveaux }, deposeesF, deposesN] = await Promise.all([
+  const [{ filieres, niveaux }, deposeesF, deposesN, orphelins] = await Promise.all([
     getReferentiel(),
     listerFilieresDeposees(true),
     listerNiveauxDeposes(true),
+    niveauxOrphelins().catch(() => []),
   ]);
   const depotF = new Map(deposeesF.map((f) => [f.id, f]));
   const depotN = new Map(deposesN.map((n) => [n.code, n]));
@@ -65,6 +66,31 @@ export default async function Referentiel({
         <p className="encart encart--attention">
           Consultation seule : le référentiel se modifie avec un code d&apos;administration.
         </p>
+      )}
+
+      {orphelins.length > 0 && (
+        <section className="encart encart--attention" role="status">
+          <p>
+            <strong>
+              {orphelins.length === 1
+                ? "Un rattachement cite un niveau inconnu"
+                : `${orphelins.length} rattachements citent un niveau inconnu`}
+              .
+            </strong>{" "}
+            L&apos;échelle du préparateur a été corrigée le 22/09/2026 :{" "}
+            <code>P1</code> et <code>P2</code> ont laissé place à <code>N1b</code>, la
+            fiche officielle ne connaissant ni ces codes ni de référent préparatoire.
+            Rien n&apos;a été supprimé — ces lignes sont listées pour être reprises à la
+            main, ou laissées telles quelles.
+          </p>
+          <ul className="liste-nue">
+            {orphelins.map((o) => (
+              <li key={`${o.origine}-${o.cle}`} className="legende">
+                {o.origine} — <strong>{o.cle}</strong> : {o.codes.join(", ")}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className="section">

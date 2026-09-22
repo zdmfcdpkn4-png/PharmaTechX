@@ -137,8 +137,9 @@ Travailler sur ces longueurs, pas sur du faux texte.
 
 **Identifiant de critère** — `B1-04`, `B3-10`, `B6-11`. Court, à afficher.
 
-**Niveaux** — `N1a`, `N1c`, `N2`, `N3`, `P1`, `P2`, et `N1c→2` pour les critères
-du bloc 5 qui se valident en doublon puis en autonomie.
+**Niveaux** — `N1a`, `N1b`, `N1c`, `N2`, `N3`, et `N1c→2` pour les critères
+du bloc 5 qui se valident en doublon puis en autonomie. Ce sont ceux de la
+fiche préparateur ; les trois autres métiers ont leur propre échelle.
 
 **Titre de bloc** — jusqu'à 78 caractères :
 > « Réaliser des préparations magistrales et hospitalières (parcours

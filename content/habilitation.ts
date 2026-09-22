@@ -1,4 +1,4 @@
-import { A_PRECISER } from "./types";
+import { A_COMPLETER, A_PRECISER } from "./types";
 import type { NiveauHabilitation } from "./types";
 
 /**
@@ -12,17 +12,24 @@ import type { NiveauHabilitation } from "./types";
  * Commentaires »). Les intitulés de blocs et de critères sont transcrits tels
  * quels, sans réécriture.
  *
- * ⚠ Deux éléments de cette fiche étaient explicitement en attente d'arbitrage
- * pharmacien au moment de sa rédaction, et le restent ici :
- *   1. le marquage « O » (critère obligatoire) — proposition, pas donnée source ;
- *   2. la correspondance blocs ↔ niveaux — adaptation, pas donnée du portfolio.
- * Ils sont signalés par `arbitrageEnAttente` et affichés comme tels.
+ * ⚠ Ce document était une **refonte**, pas le document qualité. Les fiches
+ * officielles fournies le 22/09/2026 l'ont contredit sur trois points, ici
+ * corrigés : le parcours préparatoire se nomme **N1b** et non `P1` / `P2` ;
+ * il n'existe **qu'un** niveau référent, N3 ; et le bloc « Encadrement »
+ * portait six critères quand la fiche n'en donne qu'un (question 45, choix b).
+ *
+ * ⚠ Un élément reste en attente d'arbitrage, signalé par
+ * `arbitrageEnAttente` et affiché comme tel : le marquage « O » des critères
+ * obligatoires. La source existe désormais — les quatre fiches le portent —
+ * mais les critères d'ici **agrègent** plusieurs lignes du portfolio, si
+ * bien que le marquage ne se reporte pas ligne à ligne. Il le sera critère
+ * par critère quand les portfolios seront versés.
  */
 
 /** Marque les données reprises de la fiche mais non encore validées. */
 export const arbitrageEnAttente = {
   marquageObligatoire:
-    "Le marquage « O » des critères obligatoires est une proposition issue de la rédaction de la fiche, fondée sur l'enjeu sécurité/qualité. Il n'a pas de base réglementaire item par item et reste à arbitrer.",
+    "Le marquage « O » des critères obligatoires vient de la rédaction de la fiche, pas des documents qualité : les quatre fiches officielles portent bien ce marquage, mais les critères d'ici agrègent plusieurs lignes de portfolio et il ne se reporte pas ligne à ligne. Il reste à arbitrer critère par critère.",
   correspondanceBlocsNiveaux:
     "La correspondance blocs ↔ niveaux est une adaptation destinée à préserver la logique N1/N2/N3 malgré la restructuration thématique. Elle ne figure pas telle quelle dans le portfolio.",
 } as const;
@@ -50,46 +57,39 @@ export const niveaux: Niveau[] = [
     libelle: "N1a — socle général",
     filiere: "socle",
     condition:
-      "Acquis si tous les critères obligatoires « O » des blocs transversaux (1 et 3) sont validés. Prérequis aux deux parcours.",
+      "Acquis si tous les critères obligatoires « O » des blocs transversaux (1 et 3) sont validés. Prérequis des deux branches, N1b et N1c.",
     prerequis: [],
   },
   {
+    code: "N1b",
+    libelle: "N1b — préparatoire",
+    filiere: "preparatoire",
+    condition:
+      "N1a + critères obligatoires du bloc 6 validés. Avec N1a, vaut « niveau 1 » : la fiche écrit « 1a+1b ou 1a+1c ».",
+    prerequis: ["N1a"],
+  },
+  {
     code: "N1c",
-    libelle: "N1c — chimiothérapie (base)",
+    libelle: "N1c — chimiothérapie",
     filiere: "chimiotherapie",
     condition:
-      "N1a + critères obligatoires des blocs 2, 4 et 5 (en doublon) validés.",
+      "N1a + critères obligatoires des blocs 2, 4 et 5 validés. Avec N1a, vaut « niveau 1 » : la fiche écrit « 1a+1b ou 1a+1c ».",
     prerequis: ["N1a"],
   },
   {
     code: "N2",
-    libelle: "N2 — chimiothérapie (routine)",
+    libelle: "N2 — routine",
     filiere: "chimiotherapie",
-    condition: "N1c + production du bloc 5 validée en autonomie.",
-    prerequis: ["N1c"],
-  },
-  {
-    code: "P1",
-    libelle: "P1 — préparatoire (base)",
-    filiere: "preparatoire",
     condition:
-      "N1a + critères obligatoires « P1 » du bloc 6 validés.",
-    prerequis: ["N1a"],
-  },
-  {
-    code: "P2",
-    libelle: "P2 — préparatoire (référent)",
-    filiere: "preparatoire",
-    condition:
-      "P1 + critères « P2 » du bloc 6 validés (autonomie complète au préparatoire).",
-    prerequis: ["P1"],
+      "Les trois branches réunies : « Habilitation acquise si niveau 1a + 1b + 1c, si tous les critères obligatoires validés. »",
+    prerequis: ["N1a", "N1b", "N1c"],
   },
   {
     code: "N3",
-    libelle: "N3 — référent / encadrement",
+    libelle: "N3 — référent (tuteur des nouveaux préparateurs)",
     filiere: "encadrement",
     condition:
-      "100 % des critères obligatoires des niveaux détenus, expérience de plus d'un an dans l'unité, encadrement d'au moins un préparateur (bloc 7) et participation aux groupes de travail (chapitre V).",
+      "100 % des critères des niveaux 1a + 1b + 1c — obligatoires ET non obligatoires, la fiche le précise — puis participation à la formation d'au moins un préparateur en binôme avec un pharmacien ou un préparateur de niveau 3, et plus d'une année d'expérience dans l'unité.",
     prerequis: ["N2"],
   },
 ];
@@ -138,9 +138,9 @@ export const filieres: Filiere[] = [
     id: "preparatoire",
     libelle: "Parcours Préparatoire",
     description:
-      "Préparations magistrales et hospitalières, et gestion des matières premières. P1 puis P2.",
+      "Préparations magistrales et hospitalières, et gestion des matières premières. Niveau N1b de la fiche.",
     blocs: [6],
-    niveaux: ["P1", "P2"],
+    niveaux: ["N1b"],
   },
   {
     id: "encadrement",
@@ -151,6 +151,52 @@ export const filieres: Filiere[] = [
     niveaux: ["N3"],
   },
 ];
+
+// ───────────────────────────────────────────────────────────────── Métiers
+
+/**
+ * Métier : un par fiche d'habilitation de l'unité.
+ *
+ * Tranché le 22/09/2026 (question 44, choix c) : un **vivier unique** de
+ * critères, chacun portant les métiers auxquels il s'applique et, par métier,
+ * son niveau, son caractère obligatoire et le libellé de sa fiche d'origine.
+ * Un même texte de formation sert les quatre métiers, au lieu d'être écrit
+ * quatre fois et révisé quatre fois.
+ *
+ * ⚠ Les **échelles de niveaux ne sont pas communes**, et les codes se
+ * répètent d'une fiche à l'autre avec un autre sens : la fiche pharmacien
+ * nomme `N1a` une sous-catégorie (validation pharmaceutique seule) qui n'a
+ * rien du socle `N1a` du préparateur. Tant que les trois autres échelles ne
+ * sont pas versées, leur liste reste vide : le conflit de codes n'est pas
+ * tranché, et il ne doit pas l'être en silence.
+ */
+export interface Metier {
+  id: string;
+  libelle: string;
+  /** Référence de la fiche d'habilitation qui fait foi pour ce métier. */
+  fiche: string;
+  /** Codes de niveaux de **ce** métier, du plus bas au plus haut. */
+  niveaux: NiveauHabilitation[];
+}
+
+/** Métier dont la fiche a été transcrite : tout critère du vivier le porte. */
+export const METIER_PAR_DEFAUT = "preparateur";
+
+export const metiers: Metier[] = [
+  {
+    id: METIER_PAR_DEFAUT,
+    libelle: "Préparateur en pharmacie",
+    fiche: A_COMPLETER,
+    niveaux: ["N1a", "N1b", "N1c", "N2", "N3"],
+  },
+  { id: "pharmacien", libelle: "Pharmacien / interne", fiche: A_COMPLETER, niveaux: [] },
+  { id: "aide", libelle: "Aide en pharmacie", fiche: A_COMPLETER, niveaux: [] },
+  { id: "agent-entretien", libelle: "Agent d'entretien", fiche: A_COMPLETER, niveaux: [] },
+];
+
+export function getMetier(id: string): Metier | undefined {
+  return metiers.find((m) => m.id === id);
+}
 
 /**
  * Postes de travail de l'unité.
@@ -239,17 +285,39 @@ export const blocsCompetence: BlocCompetence[] = [
 
 // ─────────────────────────────────────────────────────────────── Critères
 
+/** Ce qu'une fiche de métier dit d'un critère du vivier. */
+export interface RattachementMetier {
+  /** Colonne « Niv. » de la fiche de ce métier. */
+  niveau: NiveauHabilitation | "N1c→2";
+  /** Colonne « O » de la fiche de ce métier. */
+  obligatoire: boolean;
+  /**
+   * Libellé de la fiche de **ce** métier, quand il diffère du libellé commun.
+   * Absent : le libellé commun fait foi. Une même compétence ne s'écrit pas
+   * pareil d'une fiche à l'autre, et c'est le libellé du métier concerné qui
+   * est rendu à l'écran et sur le rapport — sans quoi la pièce produite ne
+   * correspondrait plus au document opposable qu'elle sert.
+   */
+  libelle?: string;
+}
+
 export interface Critere {
   id: string;
   bloc: number;
   /** Sous-section du bloc, telle qu'elle figure dans la fiche. */
   sousSection: string | null;
-  /** Colonne « O » — critère obligatoire pour l'habilitation. */
+  /** Colonne « O » de la fiche du métier par défaut. Voir `obligatoirePour`. */
   obligatoire: boolean;
-  /** Colonne « Niv. » de la fiche. */
+  /** Colonne « Niv. » de la fiche du métier par défaut. Voir `niveauPour`. */
   niveau: NiveauHabilitation | "N1c→2";
   /** Colonne « Compétence / savoir-faire évalué », transcrite telle quelle. */
   libelle: string;
+  /**
+   * Ce que chaque fiche dit de ce critère. Un métier absent de cette carte
+   * ne l'évalue pas. Le métier par défaut y figure toujours : c'est celui
+   * dont la fiche a été transcrite.
+   */
+  metiers: Record<string, RattachementMetier>;
   /** Module du site couvrant ce critère, s'il existe. */
   moduleId?: string;
 }
@@ -262,6 +330,7 @@ function c(
   libelle: string,
   sousSection: string | null = null,
   moduleId?: string,
+  autresMetiers: Record<string, RattachementMetier> = {},
 ): Critere {
   return {
     id: `B${bloc}-${String(rang).padStart(2, "0")}`,
@@ -270,6 +339,7 @@ function c(
     obligatoire,
     niveau,
     libelle,
+    metiers: { [METIER_PAR_DEFAUT]: { niveau, obligatoire }, ...autresMetiers },
     moduleId,
   };
 }
@@ -327,25 +397,29 @@ export const criteres: Critere[] = [
   c(5, 9, false, "N1a", "Envoi d'une chimiothérapie en intra-CHD et Hors Les Murs", "Flux logistiques"),
 
   // ── BLOC 6 — Préparations magistrales et hospitalières
-  c(6, 1, true, "P1", "Habillage et règles d'hygiène au préparatoire", "Connaissances générales"),
-  c(6, 2, true, "P1", "Circuit des préparations ; supports utilisés et règles de rédaction", "Connaissances générales"),
-  c(6, 3, false, "P1", "Logiciels du préparatoire, archivage, entretien et rangement du matériel, échantillothèque", "Connaissances générales"),
-  c(6, 4, true, "P1", "Cohérence fiche de fabrication / prescription ; matériel, matières premières et contrôle des balances", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 5, true, "P1", "Renseignement et contrôle de la fiche ; inscription à l'ordonnancier et au registre d'envoi", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 6, true, "P1", "Réalisation selon les bonnes pratiques et étiquetage (mentions obligatoires)", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 7, false, "P2", "Échantillonnage le cas échéant", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 8, true, "P2", "Libération après validation pharmaceutique ; traçabilité et gestion des stocks", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 9, false, "P2", "Circuit des préparations hospitalières ; entretien et rangement du matériel", "Réalisation d'une préparation magistrale et / ou hospitalière"),
-  c(6, 10, true, "P1", "Contrôle à réception des matières premières", "Gestion des matières premières"),
-  c(6, 11, false, "P2", "Rangement et commande des matières premières", "Gestion des matières premières"),
+  c(6, 1, true, "N1b", "Habillage et règles d'hygiène au préparatoire", "Connaissances générales"),
+  c(6, 2, true, "N1b", "Circuit des préparations ; supports utilisés et règles de rédaction", "Connaissances générales"),
+  c(6, 3, false, "N1b", "Logiciels du préparatoire, archivage, entretien et rangement du matériel, échantillothèque", "Connaissances générales"),
+  c(6, 4, true, "N1b", "Cohérence fiche de fabrication / prescription ; matériel, matières premières et contrôle des balances", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 5, true, "N1b", "Renseignement et contrôle de la fiche ; inscription à l'ordonnancier et au registre d'envoi", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 6, true, "N1b", "Réalisation selon les bonnes pratiques et étiquetage (mentions obligatoires)", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 7, false, "N1b", "Échantillonnage le cas échéant", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 8, true, "N1b", "Libération après validation pharmaceutique ; traçabilité et gestion des stocks", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 9, false, "N1b", "Circuit des préparations hospitalières ; entretien et rangement du matériel", "Réalisation d'une préparation magistrale et / ou hospitalière"),
+  c(6, 10, true, "N1b", "Contrôle à réception des matières premières", "Gestion des matières premières"),
+  c(6, 11, false, "N1b", "Rangement et commande des matières premières", "Gestion des matières premières"),
 
   // ── BLOC 7 — Encadrement et référent
-  c(7, 1, true, "N3", "Encadrer et former un préparateur en doublon, selon le portfolio de formation"),
-  c(7, 2, true, "N3", "Évaluer et tracer les compétences d'un apprenant (renseigner la présente fiche d'habilitation)"),
-  c(7, 3, true, "N3", "Participer à la rédaction et à la révision des procédures et modes opératoires (Ennov®)"),
-  c(7, 4, true, "N3", "Animer ou participer aux groupes de travail et projets d'amélioration du service"),
-  c(7, 5, true, "N3", "Contribuer à la gestion des non-conformités et aux actions correctives / préventives (CAPA)"),
-  c(7, 6, false, "N3", "Assurer la veille et la transmission des savoirs critiques de l'unité"),
+  //
+  // Ramené à un seul critère le 22/09/2026 (question 45, choix b). Les cinq
+  // autres — évaluer et tracer les compétences d'un apprenant, rédiger et
+  // réviser des procédures, animer des groupes de travail, CAPA, veille —
+  // ne figurent dans **aucune** des quatre fiches officielles, et celui des
+  // non-conformités faisait doublon avec B3-09. Le reste de ce que la fiche
+  // exige du niveau référent — 100 % des critères des niveaux inférieurs,
+  // ancienneté — est une condition d'éligibilité, portée par
+  // `niveaux[].condition` : une ancienneté ne s'évalue pas par QCM.
+  c(7, 1, true, "N3", "Participation à la formation d'au moins un préparateur, en binôme avec un pharmacien ou un préparateur de niveau 3"),
 ];
 
 // ─────────────────────────────────────────── Chaîne d'habilitation
@@ -445,4 +519,49 @@ export function criteresDeLaFiliere(
 
 export function getCritere(id: string): Critere | undefined {
   return criteres.find((x) => x.id === id);
+}
+
+// ──────────────────────────────────────── Lecture du vivier, métier par métier
+
+/** Critères que la fiche de ce métier évalue, dans l'ordre du vivier. */
+export function criteresDuMetier(metierId: string): Critere[] {
+  return criteres.filter((x) => x.metiers[metierId] !== undefined);
+}
+
+/** Métiers dont la fiche évalue ce critère, dans l'ordre de `metiers`. */
+export function metiersDuCritere(critere: Critere): Metier[] {
+  return metiers.filter((m) => critere.metiers[m.id] !== undefined);
+}
+
+/**
+ * Le libellé à rendre pour un métier : celui de sa fiche s'il en a un, le
+ * libellé commun sinon. Un métier qui n'évalue pas le critère reçoit quand
+ * même le libellé commun — le texte reste lisible hors de tout rattachement.
+ */
+export function libellePour(critere: Critere, metierId: string): string {
+  return critere.metiers[metierId]?.libelle ?? critere.libelle;
+}
+
+/** Obligatoire pour ce métier ? Faux si sa fiche n'évalue pas ce critère. */
+export function obligatoirePour(critere: Critere, metierId: string): boolean {
+  return critere.metiers[metierId]?.obligatoire ?? false;
+}
+
+/** Niveau de ce critère dans la fiche de ce métier, `null` s'il n'y figure pas. */
+export function niveauPour(
+  critere: Critere,
+  metierId: string,
+): Critere["niveau"] | null {
+  return critere.metiers[metierId]?.niveau ?? null;
+}
+
+/**
+ * Codes de niveaux que la fiche versionnée connaît.
+ *
+ * Sert à repérer les rattachements devenus orphelins après une correction de
+ * l'échelle — `P1` et `P2` ont disparu le 22/09/2026. Rien n'est supprimé sur
+ * ce constat : un rattachement orphelin se signale, il ne s'efface pas.
+ */
+export function codesDeNiveauDeLaFiche(): Set<string> {
+  return new Set(niveaux.map((n) => String(n.code)));
 }

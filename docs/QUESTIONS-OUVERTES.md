@@ -351,3 +351,24 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, son niveau, son caractère obligatoire et le libellé de sa fiche
     d'origine. Un même texte de formation sert les quatre métiers. Le
     détail et les contre-arguments sont dans `DECISIONS.md`.
+
+45. **Bloc « Encadrement et référent »** — tranché le 22/09/2026 (choix b) :
+    ramené au seul critère que les fiches portent, la participation à la
+    formation d'au moins un préparateur. Les cinq autres ne figuraient dans
+    aucune des quatre fiches officielles, et l'un faisait doublon avec B3-09.
+    Le reste de ce qu'exige le niveau référent (100 % des critères
+    inférieurs, ancienneté) est une condition d'éligibilité, pas un critère
+    évaluable : une ancienneté ne se mesure pas par QCM. 58 critères → 53.
+
+46. **Codes de niveaux qui se répètent d'un métier à l'autre** — ouvert le
+    22/09/2026, conséquence du choix c en question 44. La fiche pharmacien
+    nomme `N1a` une sous-catégorie (validation pharmaceutique seule,
+    « CHIMIO 3 ») qui n'a rien du socle `N1a` du préparateur ; `N1b` s'y
+    répète aussi avec un autre sens. Les codes doivent donc être distingués
+    par métier, et `niveaux_deposes.code` est une clé primaire globale.
+    `[à préciser]` la forme : préfixe de métier sur tous les codes
+    (`PREP-N1a`, `PH-N1a`), ce qui casse les codes existants et les données
+    qui les citent ; ou préfixe sur les seuls nouveaux métiers, le
+    préparateur gardant les siens, ce qui est asymétrique mais n'invalide
+    rien. Tant que les trois autres échelles ne sont pas versées, leur liste
+    reste vide et le conflit ne se pose pas.

@@ -284,3 +284,63 @@ export async function referentielDuModule(m: {
     }),
   };
 }
+
+
+// ────────────────────────────────────── Rattachements devenus orphelins
+
+/** Une ligne qui cite un code de niveau que le référentiel ne connaît plus. */
+export interface NiveauOrphelin {
+  /** Table d'origine, en clair. */
+  origine: string;
+  /** Clé de la ligne, telle qu'elle s'affiche en administration. */
+  cle: string;
+  /** Codes cités et introuvables. */
+  codes: string[];
+}
+
+/**
+ * Rattachements citant un code de niveau inconnu du référentiel servi.
+ *
+ * Utile après une **correction de l'échelle** : le 22/09/2026, `P1` et `P2`
+ * ont disparu au profit de `N1b`, la fiche officielle ne connaissant ni
+ * référent préparatoire ni ces deux codes. Une ligne déposée avant cette
+ * correction peut encore les citer.
+ *
+ * Rien n'est supprimé sur ce constat, et c'est le point : un rattachement
+ * orphelin se **signale**. L'effacer en silence ferait disparaître un
+ * rattachement que quelqu'un a posé sciemment, sans qu'il l'apprenne.
+ *
+ * Sans base configurée, la liste est vide : il n'y a rien à orpheliner.
+ */
+export async function niveauxOrphelins(): Promise<NiveauOrphelin[]> {
+  if (!baseConfiguree()) return [];
+  const { niveaux } = await getReferentiel().catch(() => ({ niveaux: NIVEAUX_CODE }));
+  const connus = new Set(niveaux.map((n) => String(n.code)));
+  // Un code déposé mais désactivé reste connu : il n'orpheline pas ce qui le cite.
+  for (const n of await listerNiveauxDeposes(true).catch(() => [])) connus.add(n.code);
+
+  const inconnus = (v: unknown): string[] =>
+    chaines(v).filter((code) => !connus.has(code));
+
+  const orphelins: NiveauOrphelin[] = [];
+  const pousser = (origine: string, cle: string, codes: string[]) => {
+    if (codes.length > 0) orphelins.push({ origine, cle, codes });
+  };
+
+  const [modules, reglages, depots, deposes] = await Promise.all([
+    sql<{ id: string; titre: string; niveaux: unknown }>`
+      SELECT id, titre, niveaux FROM modules_deposes`.catch(() => ({ rows: [] })),
+    sql<{ module_id: string; niveaux: unknown }>`
+      SELECT module_id, niveaux FROM reglages_modules WHERE niveaux IS NOT NULL`.catch(() => ({ rows: [] })),
+    sql<{ id: number; titre: string; niveaux: unknown }>`
+      SELECT id, titre, niveaux FROM depots`.catch(() => ({ rows: [] })),
+    sql<{ code: string; prerequis: unknown }>`
+      SELECT code, prerequis FROM niveaux_deposes`.catch(() => ({ rows: [] })),
+  ]);
+
+  for (const l of modules.rows) pousser("Module déposé", l.titre || l.id, inconnus(l.niveaux));
+  for (const l of reglages.rows) pousser("Réglage de module", l.module_id, inconnus(l.niveaux));
+  for (const l of depots.rows) pousser("Document déposé", l.titre || String(l.id), inconnus(l.niveaux));
+  for (const l of deposes.rows) pousser("Prérequis d'un niveau déposé", l.code, inconnus(l.prerequis));
+  return orphelins;
+}

@@ -10,7 +10,7 @@ import { listeConnue, niveauxConnus, parcoursConnus, reglageVide, type ReglageMo
 /**
  * Modules déposés depuis l'administration (décision du 18/09/2026, question
  * 10, à la manière des dépôts du Lecteur QIM · QCM). Le texte de formation
- * des 58 critères reste versionné avec le code ; un module déposé porte un
+ * des 53 critères reste versionné avec le code ; un module déposé porte un
  * titre, un objectif, une présentation courte, un rattachement facultatif à
  * un critère de la fiche, les profils auxquels il est proposé (filières,
  * niveaux, parcours), son seuil de réussite, et reçoit questions et documents

@@ -111,12 +111,17 @@ serveur avant soumission. Garanti par `import "server-only"` dans
 
 ## 5. Données de la fiche d'habilitation
 
-7 blocs, 58 critères (44 obligatoires), transcrits sans réécriture depuis la
+7 blocs, 53 critères (40 obligatoires), transcrits sans réécriture depuis la
 fiche d'habilitation préparateur de l'unité (`content/habilitation.ts`).
-Socle N1a (blocs 1 et 3) ; chimiothérapie N1c → N2 (blocs 2, 4, 5) ;
-préparatoire P1 → P2 (bloc 6) ; encadrement N3 (bloc 7). Deux points
-restent en attente d'arbitrage pharmacien (marquage « O », correspondance
-blocs ↔ niveaux) et sont affichés comme tels.
+Socle N1a (blocs 1 et 3) ; préparatoire N1b (bloc 6) ; chimiothérapie N1c
+(blocs 2, 4, 5) ; routine N2 ; référent N3 (bloc 7). Deux points restent en
+attente d'arbitrage pharmacien (marquage « O », correspondance blocs ↔
+niveaux) et sont affichés comme tels.
+
+Quatre métiers coexistent dans l'unité, un par fiche d'habilitation ; le
+vivier de critères est commun, chaque critère portant par métier son niveau,
+son caractère obligatoire et le libellé de sa fiche (question 44, choix c).
+Seul le préparateur est transcrit à ce jour.
 
 ## 6. Formats et barèmes
 
@@ -185,7 +190,7 @@ portant sa **justification** et ses sources, mises en situation,
 signalements des apprenants.
 
 `/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
-à la manière des dépôts du Lecteur QIM · QCM) : le texte des 58 critères
+à la manière des dépôts du Lecteur QIM · QCM) : le texte des 53 critères
 reste dans le code, mais un tuteur ou l'administrateur ajoute un module avec
 titre, objectif, présentation courte, rattachement facultatif à un critère de
 la fiche, **profils** (filières, niveaux, parcours) et seuil propre ; ses
@@ -351,7 +356,7 @@ DPO (`docs/RGPD.md`), la procédure interne et la source de temps qu'exige le
 statut opposable, l'accord DSI/DPO sur l'hébergement (Render pour le service,
 Supabase pour la base), l'API de données de Supabase à couper et la
 vérification des plans, les valeurs du barème à arrêter (réglables depuis
-`/admin/bareme`, valeurs par défaut posées), les 56 modules à rédiger dans le
+`/admin/bareme`, valeurs par défaut posées), les 51 modules à rédiger dans le
 code (décision du 18/09/2026, question 10).
 
 ## 12. Limites connues
