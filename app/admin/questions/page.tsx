@@ -38,7 +38,7 @@ const ERREURS_FICHE: Record<string, string> = {
 export default async function Questions({
   searchParams,
 }: {
-  searchParams: Promise<{ module?: string; statut?: string; niveau?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{ module?: string; statut?: string; niveau?: string; obligatoires?: string; ok?: string; erreur?: string }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -64,9 +64,13 @@ export default async function Questions({
     moduleId ? listerFiches({ moduleId }) : statut === "a_verifier" ? listerFiches({ statut: "a_verifier" }) : Promise.resolve([]),
     compterFichesAVerifier(),
   ]);
-  const questions = filtreNiveau
-    ? toutes.filter((q) => (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau))
-    : toutes;
+  // Filtre des obligatoires (question 63) : le socle posé à chaque évaluation, module par module.
+  const seulesObligatoires = p.obligatoires === "1";
+  const questions = toutes.filter(
+    (q) =>
+      (!filtreNiveau || (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau)) &&
+      (!seulesObligatoires || q.obligatoire),
+  );
   const parModule = new Map<string, typeof questions>();
   for (const q of questions) {
     const liste = parModule.get(q.module_id) ?? [];
@@ -166,6 +170,13 @@ export default async function Questions({
               <option value="a_preciser">À préciser</option>
             </select>
           </label>
+          <label className="champ">
+            <span>Obligatoires</span>
+            <select name="obligatoires" defaultValue={seulesObligatoires ? "1" : ""}>
+              <option value="">Toutes les questions</option>
+              <option value="1">Obligatoires seulement</option>
+            </select>
+          </label>
         </div>
         <div className="actions">
           <button type="submit" className="bouton bouton--compact bouton--secondaire">
@@ -230,6 +241,7 @@ export default async function Questions({
                   )}
                   {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                   {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
+                  {q.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
                   {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
                   <span className="legende" style={{ marginLeft: "auto" }}>
                     v{q.version} · créée par {q.cree_par}

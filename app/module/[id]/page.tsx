@@ -52,7 +52,8 @@ export default async function PageModule({
     ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)
     : null;
   const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
-  const requete = dansProgramme ? `?programme=${idProgramme}` : dansProfil && profil ? requeteProfil(profil) : "";
+  // Le profil suit de page en page, même sans ordre propre : son niveau est le niveau cible du tirage (question 62).
+  const requete = dansProgramme ? `?programme=${idProgramme}` : profil ? requeteProfil(profil) : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
   const contenu = (

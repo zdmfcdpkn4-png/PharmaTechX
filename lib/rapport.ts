@@ -11,6 +11,7 @@ import {
 import { STATUT_DISPOSITIF, STATUT_ESSAI, dateMiseEnServiceLisible, libelleProcedure } from "./statut";
 import { MENTION_ESSAI } from "./essai";
 import { mentionValidation } from "../content/fiches";
+import { libelleCible, libelleEcartees } from "../content/cible";
 import type { SyntheseDocument } from "../content/types";
 
 /**
@@ -241,7 +242,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
       const exclue = exclues.has(q.questionId);
       return `<tr${exclue ? ' class="exclue"' : ""}>
       <td class="mono">${i + 1}</td>
-      <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}${q.reservee ? " · réservée" : ""}</td>
+      <td>${formatDe(q)}${q.eliminatoire ? " · éliminatoire" : ""}${q.reservee ? " · réservée" : ""}${q.obligatoire ? " · obligatoire" : ""}</td>
       <td>${echapper(objetDe(q))}</td>
       <td><strong>${etatDe(q)}</strong>${exclue ? '<br><span class="petit">exclue du calcul</span>' : ""}${retireesApres.has(q.questionId) ? '<br><span class="petit">retirée de la banque après la décision</span>' : ""}</td>
       <td class="mono droite">${exclue ? "—" : `${nombre(q.note)} / 1`}</td>
@@ -293,6 +294,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
           <span class="petit">${formatDe(d)}</span>
           ${d.eliminatoire ? '<span class="elim">Éliminatoire</span>' : ""}
           ${d.reservee ? '<span class="res">Réservée à l’évaluation</span>' : ""}
+          ${d.obligatoire ? '<span class="res">Obligatoire</span>' : ""}
           <span class="mono points">${nombre(d.note)} / 1 point</span>
         </div>
         ${exclusion ? `<p class="petit"><strong>Exclue du calcul</strong> — ${echapper(exclusion)}.</p>` : ""}
@@ -313,6 +315,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && r.reservees.posees > 0 ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
     <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
     ${r.fiches ? `<p class="petit">${echapper(ligneFichesRemises(r.fiches))}</p>` : ""}
+    ${r.cible ? `<p class="petit">${echapper(`${libelleCible(r.cible)}${libelleEcartees(r.cible) ? ` ${libelleEcartees(r.cible)}` : ""}`)}</p>` : ""}
     ${r.jugement && r.jugement.role !== "apprenant" ? `<p class="petit">Caches des schémas à découvrir jugés par <strong>${echapper(r.jugement.par)}</strong>, qui l'a confirmé par son propre code d'accès au moment de la correction (question 52) ; mention scellée avec le résultat.</p>` : ""}
 
     <table class="verdict">
@@ -352,7 +355,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     ${tableauVisas(o.visas ?? [], o.empreinte)}
 
     <h2 class="nouvelle-page">Détail des questions, justifications et sources</h2>
-    <p class="petit">Chaque justification renvoie au texte applicable. Les questions éliminatoires sont signalées : une erreur y invalide le critère quel que soit le score global. Les questions réservées à l’évaluation, signalées aussi, ne sont jamais posées en entraînement.</p>
+    <p class="petit">Chaque justification renvoie au texte applicable. Les questions éliminatoires sont signalées : une erreur y invalide le critère quel que soit le score global. Les questions réservées à l’évaluation, signalées aussi, ne sont jamais posées en entraînement ; les questions obligatoires sont posées à chaque évaluation qui peut conclure.</p>
     ${details}
     ${sources.length ? `<h2>Sources citées</h2><ol class="sources">${sources.map((s) => `<li>${echapper(s)}</li>`).join("")}</ol>` : ""}
   </section>`;

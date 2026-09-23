@@ -3106,6 +3106,173 @@ page ni erreur serveur.
 - **Rendu.** Section vue à 1 280 et 360 px de large, sans défilement
   horizontal.
 
+## Tirage selon le niveau cible, questions obligatoires et signalées (23/09/2026, questions 62 et 63, choix a)
+
+**Demandes.** « Piocher dans les questions de la banque un nombre de questions
+à définir dans le barème, piochées au hasard, correspondant à la cible du
+niveau du profil et du module à valider ; exclure les questions de ce fait
+signalées. » Puis, en réponse à la question 62 : « À mais définir un minimum
+pour la validité du test avec des questions taggées obligatoires pour la
+partie initiale et une part aléatoire pour permettre de répéter le test ;
+pour les répétitions le classement par niveau vaut pour équivalence. Ces
+tests sont un complément à la formation pratique et à l'évaluation du
+tuteur. »
+
+**Constaté avant le travail.**
+- Le nombre de questions était déjà au barème : Découverte 5, Habilitation
+  10, dix au moins pour conclure. Le tirage se faisait au hasard dans la
+  banque du module ; les éliminatoires y étaient toujours posées, les
+  réservées tirées en priorité.
+- Le niveau de la question ne jouait pas (question 51, 22/09/2026). Une
+  question signalée restait tirée.
+- L'évaluation ne connaissait le niveau cible que si le profil avait son
+  ordre propre (question 55).
+- Le serveur ne contrôlait que la règle des réservées ; un tirage qui
+  omettait une éliminatoire passait.
+
+**Tranché.**
+- Question 62, **a** (réponse « À » lue comme a) : un plafond de niveau de
+  question selon le niveau cible, réglé au barème. Cela revient sur la
+  question 51. Écartés : une répartition sans plafond (b) ; aucun filtre (c).
+- Question 63, **a** (réponse « À ») : des questions obligatoires posées à
+  chaque évaluation, et une part aléatoire de même composition par niveau
+  d'une passation à l'autre. Écartés :
+  - (b), les obligatoires à la première évaluation seulement : il fallait
+    connaître l'historique de la personne, ce qui n'est sûr que pour un
+    apprenant rattaché ; et la question de remplacement ne vérifie plus le
+    point de l'obligatoire ;
+  - (c), le plafond seul : deux passations pouvaient différer beaucoup en
+    difficulté.
+
+**Ce qui est fait.**
+- **Tirage** (`content/tirage.ts`), dans cet ordre.
+  1. Écarter les questions au signalement ouvert, celles au-dessus du
+     plafond, et les réservées hors des tirages qui peuvent conclure. Une
+     question sans niveau (« à préciser ») n'est écartée par aucun plafond.
+  2. Imposer les éliminatoires, et les obligatoires en Habilitation et
+     Complet.
+  3. Remplacer une question toujours posée qu'un signalement écarte par une
+     question du même niveau, si la banque admise en offre une.
+  4. Répartir : chaque niveau est complété jusqu'à sa part du tirage, les
+     réservées d'abord. Les places qu'un niveau ne peut pas remplir vont aux
+     questions sans niveau, puis aux autres niveaux admis.
+  - Complet : toute la banque admise.
+  - Des questions imposées au-delà de la part de leur niveau sont toutes
+    posées : le tirage s'allonge plutôt que d'en retirer une.
+- **Barème** (`/admin/bareme`, section « Tirage selon le niveau cible »).
+  - Un plafond par niveau d'habilitation : questions initiales seulement,
+    initiales et intermédiaires, ou tous niveaux.
+  - Une répartition par plafond, en parts relatives.
+  - Valeurs par défaut :
+    - N1a, N1b, N1c : initiales seulement ;
+    - N2 : initiales et intermédiaires ;
+    - N3, et tout autre niveau : tous niveaux ;
+    - répartitions 100 % ; 43 / 57 % ; 30 / 40 / 30 %.
+  - Les répartitions par défaut reprennent le « environ 3, 4 et 3 » du prompt
+    de génération.
+  - Un barème enregistré avant prend ces valeurs.
+- **Étiquette « obligatoire »**, sans effet sur la note.
+  - Colonne `questions.obligatoire`, case de l'éditeur, étiquette et filtre
+    « Obligatoires seulement » dans la banque.
+  - Au dépôt : ligne « Obligatoire : oui » en texte, champ `obligatoire` en
+    JSON.
+  - Le prompt de mise en forme la transcrit si le texte source le dit ; le
+    prompt de génération ne l'écrit jamais.
+- **Évaluation** (`components/Evaluation.tsx`).
+  - Liste « Niveau cible » à l'écran de réglage. Elle est préremplie par le
+    profil de la page, sinon par le niveau du code de session.
+  - Le profil suit désormais dans l'adresse des modules, même sans ordre
+    propre.
+  - L'écran annonce :
+    - les questions admises et celles au-dessus du plafond ;
+    - celles écartées par un signalement ;
+    - les obligatoires et leurs remplacements ;
+    - la taille exacte de chaque tirage.
+  - Une évaluation interrompue garde son niveau cible à la reprise.
+  - Le rejeu des ratées écarte une question signalée depuis.
+- **Serveur** (`/api/evaluation`).
+  - Même règle que le navigateur.
+  - Contrôle étendu : aucune question au-dessus du plafond ; toutes les
+    éliminatoires et obligatoires admises posées ; réservées en priorité,
+    niveau par niveau ; chaque niveau à sa part, ou à ce que la banque admise
+    en offre.
+  - Un signalement clos depuis moins de sept jours compte encore comme
+    signalé au contrôle, pas au tirage : une clôture survenue pendant
+    l'épreuve, ou avant une reprise, ne fait pas refuser le tirage.
+  - Sans liste de questions, la correction porte sur la banque admise.
+- **Résultat scellé et rapport** (`content/cible.ts`).
+  - Ils portent :
+    - le niveau cible et le plafond ;
+    - les questions posées par niveau et les obligatoires ;
+    - les questions toujours posées qu'un signalement a écartées, remplacées
+      ou non ;
+    - la mention « obligatoire » sur chaque question concernée.
+  - Un rapport antérieur n'en porte rien.
+
+**Conséquences et limites.**
+- **Banques minces sous un plafond.** Avec la répartition du prompt, un
+  module de dix questions renseignées n'en offre qu'environ trois au
+  niveau 1. Sans questions « à préciser » pour compléter, le tirage
+  Habilitation d'un N1 y reste fermé tant que dix questions ne sont pas
+  admises ; l'écran de réglage le dit. Le plafond se règle au barème, jusqu'à
+  « tous niveaux ».
+- **Équivalence approchée.** « Même niveau » n'est pas « même difficulté » :
+  le niveau est le jugement de l'auteur de la question, pas une difficulté
+  mesurée. Fixer la part de chaque niveau revient à un plan de test, qui fixe
+  le poids de chaque domaine d'un test (Raymond et Grande 2019 ; Coderre et
+  al. 2009) ; aucune de ces sources ne traite d'un tirage par niveau dans la
+  banque d'un établissement.
+- **Obligatoires retenues.** Elles reviennent à chaque passation et leur
+  correction est montrée : elles se retiennent. Wood (2009) ne trouve pas
+  d'avantage aux candidats qui revoient des questions, mais dans un examen
+  sans correction détaillée entre deux passations : pas transposable ici.
+- **Questions versionnées sans niveau.** Tant que leur niveau n'est pas
+  renseigné, la répartition ne compose rien dans ces modules : obligatoires
+  et signalements mis à part, leur tirage reste celui d'avant.
+- **Reprise refusée.** Le serveur refuse désormais un tirage qui omet une
+  éliminatoire. Une évaluation reprise après l'ajout d'une éliminatoire ou
+  d'une obligatoire au module est donc refusée (« Recommencez
+  l'évaluation ») ; c'est rare.
+- **Exemple corrigé.** L'exemple de la question 62 mettait N1b et N1c à des
+  paliers différents ; ce sont les deux branches du même niveau 1, et les
+  valeurs par défaut les alignent. `[à vérifier]` par le pharmacien
+  responsable, au barème.
+- **Même mot, deux objets.** L'étiquette « obligatoire » d'une question n'est
+  pas le marquage « O » des critères obligatoires de la fiche d'habilitation.
+
+**Références.**
+1. Raymond MR, Grande JP. A practical guide to test blueprinting. Med Teach.
+   2019;41(8):854-61. doi:10.1080/0142159X.2019.1595556
+2. Coderre S, Woloschuk W, McLaughlin K. Twelve tips for blueprinting. Med
+   Teach. 2009;31(4):322-4. doi:10.1080/01421590802225770
+3. Wood TJ. The effect of reused questions on repeat examinees. Adv Health
+   Sci Educ Theory Pract. 2009;14(4):465-73. doi:10.1007/s10459-008-9129-z
+
+**Vérifié le 23/09/2026.** `npm run verifier` (308 tests, 19 de plus),
+`npm run build`, deux passes de bout en bout de 86 étapes, sans erreur de
+page ni erreur serveur.
+- **Tirage** (`test/tirage.test.ts`) : 300 banques et réglages tirés au
+  hasard, chaque tirage accepté par le contrôle du serveur ; même
+  composition par niveau sur 200 passations ; remplacement d'une obligatoire
+  signalée ; tirage faussé refusé.
+- **Étape 14a bis, nouvelle.**
+  - Une obligatoire de niveau avancé, créée par le tuteur et validée par
+    l'administration, a son étiquette et son filtre dans la banque.
+  - Le barème montre les plafonds par défaut.
+  - À l'évaluation, N3 tire 11 questions et N2 en tire 10, l'avancée étant
+    au-dessus du niveau cible. En Habilitation, l'obligatoire est posée et
+    étiquetée ; le résultat dit « Niveau cible N3 … Posées : 1 avancée, 9 sans
+    niveau ; 1 obligatoire ».
+  - Le serveur refuse (400) une obligatoire omise et une question au-dessus
+    du niveau cible.
+  - Signalée, l'obligatoire n'est plus tirée, et l'écran comme le résultat
+    scellé disent qu'elle reste sans remplaçante.
+  - Fin de l'étape : le signalement est clos et la question retirée.
+- **Rendu.** Réglage de l'évaluation, barème et filtres de la banque vus à
+  1 280 et 360 px de large, sans défilement horizontal ; le niveau cible est
+  prérempli par le profil de l'adresse. Les libellés des plafonds, tronqués
+  dans les listes du barème à trois colonnes, ont été raccourcis.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

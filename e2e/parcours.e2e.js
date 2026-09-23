@@ -2531,6 +2531,111 @@ Justification : cf. procédure interne.`,
   assert.ok(resultatComplet.detail.some((d) => d.questionId === idReservee && d.reservee === true));
   ok("questions réservées : écartées de l'entraînement, posées et étiquetées en évaluation complète, tirage non conforme refusé (400), comptées dans le résultat scellé");
 
+  // 14a bis. tirage selon le niveau cible (questions 62 et 63, choix a) : plafond et répartition du barème,
+  //          question obligatoire toujours posée, question au signalement ouvert écartée de tout tirage,
+  //          contrôle du serveur. Une obligatoire de niveau avancé est créée par le tuteur et validée par
+  //          l'administration ; l'étape finie, son signalement est clos et elle est retirée : la suite du
+  //          parcours garde ses comptes.
+  const ENONCE_OBLIGATOIRE = "Question obligatoire de niveau avancé ?";
+  await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
+  await page.fill("textarea[name=enonce]", ENONCE_OBLIGATOIRE);
+  const champsO = page.locator(".proposition--editeur input[type=text]");
+  await champsO.nth(0).fill("Bonne réponse");
+  await champsO.nth(1).fill("Mauvaise 1");
+  await champsO.nth(2).fill("Mauvaise 2");
+  await champsO.nth(3).fill("Mauvaise 3");
+  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+  await page.fill("textarea[name=justification]", "Parce que c'est la bonne.");
+  await page.selectOption("select[name=niveauQuestion]", "avance");
+  await page.check("input[name=obligatoire]");
+  await page.click("button:has-text('Créer la question')");
+  await page.waitForURL(/ok=creee/);
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  const ligneObligatoire = page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE });
+  await ligneObligatoire.locator(".etiquette:text-is('Obligatoire')").waitFor();
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ligneObligatoire.locator("form button:has-text('Valider')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&obligatoires=1");
+  assert.equal(await page.locator(".question-ligne").count(), 1, "filtre des obligatoires : la seule du module");
+  const idObligatoire = (
+    await page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("a:has-text('Modifier')").getAttribute("href")
+  ).split("/").pop();
+  // Barème : un plafond par niveau cible, avec ses valeurs par défaut.
+  await page.goto(BASE + "/admin/bareme");
+  await page.waitForSelector("h2:has-text('Tirage selon le niveau cible')");
+  assert.equal(await page.locator("select[name='plafond-N1c']").inputValue(), "initial");
+  assert.equal(await page.locator("select[name='plafond-N2']").inputValue(), "intermediaire");
+  assert.equal(await page.locator("select[name='plafond-N3']").inputValue(), "avance");
+  // Évaluation : le niveau cible règle le tirage.
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  const libelleCompletCible = async () => (await page.locator("fieldset.choix-difficulte label").nth(2).innerText()).replace(/\s+/g, " ");
+  await page.selectOption("select[name=niveauCible]", "N3");
+  assert.match(await libelleCompletCible(), /Complet — 11 questions/, "N3 : tous les niveaux, l'avancée comprise");
+  await page.selectOption("select[name=niveauCible]", "N2");
+  assert.match(await libelleCompletCible(), /Complet — 10 questions/, "N2 : l'avancée est au-dessus du niveau cible");
+  await page.waitForSelector("text=1 au-dessus du niveau cible");
+  await page.selectOption("select[name=niveauCible]", "N3");
+  await page.check("input[name=difficulte] >> nth=1"); // Habilitation
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  const fObligatoire = page.locator("fieldset.question", { hasText: ENONCE_OBLIGATOIRE });
+  assert.equal(await fObligatoire.count(), 1, "l'obligatoire est posée en Habilitation");
+  await fObligatoire.locator(".etiquette:text-is('Obligatoire')").waitFor();
+  // Une réponse au moins : sans elle, la validation reste fermée.
+  await fObligatoire.locator("label.option input").first().check();
+  await validerEvaluation();
+  await page.waitForSelector(".resultat-entete");
+  assert.match(
+    await page.locator("p.legende", { hasText: "Niveau cible N3" }).innerText(),
+    /questions de tous niveaux\. Posées : 1 avancée, 9 sans niveau ; 1 obligatoire\./,
+    "le résultat scellé dit le tirage",
+  );
+  // Serveur : obligatoire omise, question au-dessus du niveau cible, refusées.
+  const corrigerCible = (corps) => page.request.post(BASE + "/api/evaluation", { data: { moduleId: "comportement-zac", reponses: {}, ...corps } });
+  const toutN3 = await (await corrigerCible({ mode: "evaluation", difficulte: "complet", niveauCible: "N3" })).json();
+  const idsBanque = toutN3.detail.map((d) => d.questionId);
+  assert.equal(idsBanque.length, 11);
+  assert.deepEqual(toutN3.cible.parNiveau, { initial: 0, intermediaire: 0, avance: 1, a_preciser: 10 });
+  const refusOubli = await corrigerCible({ questionIds: idsBanque.filter((id) => id !== idObligatoire), mode: "evaluation", difficulte: "complet", niveauCible: "N3" });
+  assert.equal(refusOubli.status(), 400);
+  assert.match((await refusOubli.json()).erreur, /obligatoire non posée/);
+  const refusPlafond = await corrigerCible({ questionIds: idsBanque, mode: "evaluation", difficulte: "complet", niveauCible: "N2" });
+  assert.equal(refusPlafond.status(), 400);
+  assert.match((await refusPlafond.json()).erreur, /au-dessus du niveau cible/);
+  // Signalement ouvert : l'obligatoire quitte tout tirage, et le résultat le dit.
+  const statutSignalement = await page.evaluate(async (id) => {
+    const r = await fetch("/api/signalement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: id, moduleId: "comportement-zac", motif: "Ambigu", note: "Signalement e2e du tirage" }),
+    });
+    return r.status;
+  }, idObligatoire);
+  assert.equal(statutSignalement, 200);
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.selectOption("select[name=niveauCible]", "N3");
+  await page.waitForSelector("text=1 écartée par un signalement ouvert");
+  assert.match(await libelleCompletCible(), /Complet — 10 questions/, "l'obligatoire signalée n'est plus tirée");
+  await page.waitForSelector("text=aucune autre question de son niveau ne peut la remplacer");
+  const apresSignalement = await (await corrigerCible({ mode: "evaluation", difficulte: "complet", niveauCible: "N3" })).json();
+  assert.ok(!apresSignalement.detail.some((d) => d.questionId === idObligatoire), "écartée de la correction sans liste");
+  assert.deepEqual(apresSignalement.cible.ecartees.map((e) => [e.questionId, e.remplacee]), [[idObligatoire, false]]);
+  // Remise en ordre : signalement clos, question retirée.
+  await page.goto(BASE + "/admin/signalements");
+  const carteTirage = page.locator("li.carte", { hasText: "Signalement e2e du tirage" });
+  await carteTirage.locator("button:has-text('Rejeter')").click();
+  await carteTirage.locator("text=Rejeté par").waitFor();
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("form button:has-text('Retirer')").click(),
+  ]);
+  await rebrancher(codeTuteur);
+  ok("tirage selon le niveau cible : plafonds du barème, obligatoire posée et étiquetée, niveau cible dans le résultat scellé, obligatoire omise ou question au-dessus du plafond refusées (400), question signalée écartée de tout tirage et dite sans remplaçante");
+
   // 15. limiteur : 5 échecs bloquent
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);

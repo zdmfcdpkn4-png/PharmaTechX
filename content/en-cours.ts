@@ -12,6 +12,12 @@ export interface EtatEnCours {
   difficulte: "decouverte" | "habilitation" | "complet";
   /** Libellé du tirage à la reprise (« Habilitation · 10 questions »). */
   libelle: string;
+  /**
+   * Niveau cible du tirage (questions 62 et 63) : la reprise le garde, sans
+   * quoi le serveur jugerait les questions posées sous un autre plafond.
+   * Absent des états antérieurs : `null`, aucun plafond.
+   */
+  niveauCible?: string | null;
   reponses: Record<string, string[]>;
   /** Jugement par proposition : vrai, faux, ou « nsp » — « je ne sais pas » (question 35). */
   qim: Record<string, Record<string, boolean | "nsp">>;
@@ -107,6 +113,7 @@ export function normaliserEtatEnCours(brut: unknown): EtatEnCours | null {
     mode,
     difficulte,
     libelle: typeof b.libelle === "string" ? b.libelle.slice(0, 80) : "",
+    niveauCible: typeof b.niveauCible === "string" && /^[A-Za-z0-9-]{1,12}$/.test(b.niveauCible) ? b.niveauCible : null,
     reponses,
     qim,
     legendes,

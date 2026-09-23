@@ -50,6 +50,8 @@ export interface LigneQuestion {
   eliminatoire: boolean;
   /** Réservée à l'évaluation (question 18) : jamais posée en entraînement. */
   reservee: boolean;
+  /** Obligatoire (question 63) : posée à chaque évaluation qui peut conclure. */
+  obligatoire: boolean;
   niveau_question: NiveauQuestion | null;
   refs: Reference[];
   statut: StatutQuestion;
@@ -107,6 +109,7 @@ export interface QuestionAEnregistrer {
   justification: string;
   eliminatoire: boolean;
   reservee: boolean;
+  obligatoire: boolean;
   niveauQuestion: NiveauQuestion | null;
   refs: Reference[];
   statut: StatutQuestion;
@@ -119,7 +122,7 @@ export function nouvelId(prefixe = "q"): string {
 
 const COLONNES = `
   q.id, q.module_id, q.situation_id, q.format, q.enonce, q.options, q.legendes,
-  q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.reservee, q.niveau_question, q.refs, q.statut,
+  q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.reservee, q.obligatoire, q.niveau_question, q.refs, q.statut,
   q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text, q.valide_par_auteur,
   q.edite_le::text, q.version, q.cree_par_acces, q.edite_par, q.edite_par_acces,
   i.largeur AS image_largeur, i.hauteur AS image_hauteur, i.alt AS image_alt,
@@ -141,6 +144,7 @@ export function versQuestion(l: LigneQuestion): Question {
     justification: l.justification,
     eliminatoire: l.eliminatoire,
     reservee: l.reservee,
+    obligatoire: l.obligatoire,
     niveauQuestion: l.niveau_question ?? null,
     references: l.refs,
     origine: "base",
@@ -254,11 +258,11 @@ export async function enregistrerQuestion(
   const acces = acteur.acces ?? null;
   await sql`
     INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
-      mode_reponse, image_id, justification, eliminatoire, reservee, niveau_question, refs, statut, depot_id, cree_par,
+      mode_reponse, image_id, justification, eliminatoire, reservee, obligatoire, niveau_question, refs, statut, depot_id, cree_par,
       valide_par, valide_le, cree_par_acces, edite_par, edite_par_acces)
     VALUES (${ident}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
       ${options}::jsonb, ${legendes}::jsonb, ${q.modeReponse}, ${q.imageId},
-      ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${q.niveauQuestion}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
+      ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${q.obligatoire}, ${q.niveauQuestion}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
       ${par}, ${q.statut === "valide" ? par : null}, ${q.statut === "valide" ? new Date() : null},
       ${acces}, ${par}, ${acces})
     ON CONFLICT (id) DO UPDATE SET
@@ -275,6 +279,7 @@ export async function enregistrerQuestion(
       justification = EXCLUDED.justification,
       eliminatoire = EXCLUDED.eliminatoire,
       reservee = EXCLUDED.reservee,
+      obligatoire = EXCLUDED.obligatoire,
       niveau_question = EXCLUDED.niveau_question,
       refs = EXCLUDED.refs,
       statut = EXCLUDED.statut,
@@ -392,11 +397,11 @@ export async function insererLot(
       const id = nouvelId();
       await s`
         INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
-          mode_reponse, image_id, justification, eliminatoire, reservee, niveau_question, refs, statut, depot_id, rang, cree_par,
+          mode_reponse, image_id, justification, eliminatoire, reservee, obligatoire, niveau_question, refs, statut, depot_id, rang, cree_par,
           cree_par_acces, edite_par, edite_par_acces)
         VALUES (${id}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
           ${JSON.stringify(q.options)}::jsonb, ${JSON.stringify(q.legendes)}::jsonb,
-          ${q.modeReponse}, ${q.imageId}, ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${q.niveauQuestion},
+          ${q.modeReponse}, ${q.imageId}, ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${q.obligatoire}, ${q.niveauQuestion},
           ${JSON.stringify(q.refs)}::jsonb, ${q.statut}, ${q.depotId ?? null}, ${rang++}, ${par},
           ${acces}, ${par}, ${acces})`;
       ids.push(id);
@@ -505,4 +510,25 @@ export async function signalementsOuvertsDe(questionId: string): Promise<LigneSi
     WHERE s.question_id = ${questionId} AND s.statut = 'ouvert'
     ORDER BY s.cree_le DESC`;
   return r.rows;
+}
+
+/**
+ * Questions qu'un signalement écarte du tirage (question 62, choix a), parmi
+ * celles données. `ouvertes` : au signalement ouvert — le tirage les écarte.
+ * `tolerees` : les mêmes, plus celles dont le signalement a été clos depuis
+ * moins de sept jours ; le contrôle du tirage les tient encore pour
+ * signalées, pour qu'une clôture survenue pendant l'épreuve, ou avant la
+ * reprise d'une évaluation interrompue, ne fasse pas refuser le tirage.
+ */
+export async function questionsSignalees(ids: string[]): Promise<{ ouvertes: string[]; tolerees: string[] }> {
+  if (ids.length === 0) return { ouvertes: [], tolerees: [] };
+  const r = await sql<{ question_id: string; ouvert: boolean }>`
+    SELECT question_id, bool_or(statut = 'ouvert') AS ouvert FROM signalements
+    WHERE question_id = ANY(${ids}::text[])
+      AND (statut = 'ouvert' OR traite_le > NOW() - INTERVAL '7 days')
+    GROUP BY question_id`;
+  return {
+    ouvertes: r.rows.filter((l) => l.ouvert).map((l) => l.question_id),
+    tolerees: r.rows.map((l) => l.question_id),
+  };
 }

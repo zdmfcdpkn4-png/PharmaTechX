@@ -68,8 +68,9 @@ export type TypeParcours = "integration" | "maintien";
  *
  * `null` = non renseigné : une question déposée sans niveau le reste, et la
  * banque l'affiche « à préciser » plutôt que de lui en attribuer un.
- * Le niveau ne change pas les tirages (question 51) : il sert à équilibrer
- * la banque, pas à composer l'évaluation.
+ * Depuis le 23/09/2026 (questions 62 et 63, choix a, qui reviennent sur la
+ * question 51), le niveau compose le tirage : plafond selon le niveau cible,
+ * répartition par niveau — voir `content/tirage.ts`.
  */
 export const NIVEAUX_QUESTION = ["initial", "intermediaire", "avance"] as const;
 export type NiveauQuestion = (typeof NIVEAUX_QUESTION)[number];
@@ -289,6 +290,12 @@ export interface Question {
    * priorité dans les tirages qui peuvent conclure (Habilitation, Complet).
    */
   reservee?: boolean;
+  /**
+   * Obligatoire (question 63, choix a, 23/09/2026) : posée à chaque
+   * évaluation qui peut conclure (Habilitation, Complet), sans effet sur la
+   * note ; une éliminatoire l'est de fait.
+   */
+  obligatoire?: boolean;
   /** Initial, intermédiaire ou avancé ; `null` tant qu'il n'est pas renseigné. */
   niveauQuestion?: NiveauQuestion | null;
   references?: Reference[];

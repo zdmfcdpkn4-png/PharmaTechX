@@ -457,9 +457,11 @@ export function TableauDeBord({
   const titreBloc = (numero: string) => blocs.find((b) => b.numero === numero)?.titre ?? "";
   const blocsPresents = blocs.filter((b) => programme.some((m) => m.bloc === b.numero));
   const trouves = actifs ? filtrerModules(programme, filtres, etatDe, titreBloc) : [];
+  // Le profil choisi suit dans l'adresse des modules, qu'il ait ou non son ordre : son niveau est le
+  // niveau cible du tirage (question 62, choix a).
   const requeteCarte = aLaCarte
     ? `?programme=${aLaCarte.id}`
-    : ordreProfil
+    : posteId && niveauCode
       ? requeteProfil({ parcours, filiere: posteId, niveau: niveauCode })
       : "";
 

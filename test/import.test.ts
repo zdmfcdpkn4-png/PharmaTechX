@@ -211,6 +211,25 @@ test("dépôt JSON : le niveau se lit sous « niveau », « niveauQuestion » ou
   assert.deepEqual(r.questions.map((q) => q.niveauQuestion), ["avance", "initial", null]);
 });
 
+test("question obligatoire (question 63) : ligne « Obligatoire : oui » en texte, champ « obligatoire » en JSON", () => {
+  const [oui, non, seule] = analyserTexte(
+    "QCM 1. Un ?\nA. Oui (V)\nB. Non (F)\nObligatoire : oui\n\nQCM 2. Deux ?\nA. Oui (V)\nB. Non (F)\nObligatoire : non\n\nQIM 3. Trois.\nA. Vrai (V)\nB. Faux (F)\nObligatoire",
+    { formatDefaut: "QCM" },
+  ).questions;
+  assert.equal(oui.obligatoire, true);
+  assert.equal(non.obligatoire, false);
+  assert.equal(seule.obligatoire, true, "le mot seul vaut oui, comme « Éliminatoire »");
+  assert.ok(!oui.enonce.includes("Obligatoire") && oui.options.every((o) => !o.texte.includes("Obligatoire")), "la ligne n'est ni énoncé ni proposition");
+  const json = analyserTexte(
+    JSON.stringify([
+      { format: "QIM", enonce: "x", options: [{ id: "a", texte: "Un", vrai: true }, { id: "b", texte: "Deux", vrai: false }], obligatoire: true },
+      { format: "QIM", enonce: "y", options: [{ id: "a", texte: "Un", vrai: true }, { id: "b", texte: "Deux", vrai: false }] },
+    ]),
+    { formatDefaut: "QIM" },
+  ).questions;
+  assert.deepEqual(json.map((q) => q.obligatoire), [true, false]);
+});
+
 
 test("le niveau se lit sur un schéma à compléter", () => {
   const [q] = analyserTexte("SCHÉMA 1. Légendez.\nImage : coupe.png\n1. sas (10, 10)\n2. filtre (20, 20)\nNiveau : intermédiaire", { formatDefaut: "QCM" }).questions;

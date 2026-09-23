@@ -405,7 +405,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     obligatoire remplacée aux répétitions par une question du même niveau
     tirée au hasard, même composition par niveau (b) ; socle à chaque
     évaluation, part aléatoire sous le seul plafond, sans composition par
-    niveau (c).
+    niveau (c). Tranchée le même jour (choix a, réponse « À » lue comme a)
+    et mise en œuvre avec la question 62 : étiquette « obligatoire »,
+    plafond et répartition au barème, niveau cible choisi à l'écran de
+    réglage, questions signalées écartées, contrôle du serveur, tirage cité
+    par le rapport. `[à vérifier]` les plafonds par défaut (N1a, N1b, N1c :
+    initiales ; N2 : jusqu'aux intermédiaires ; N3 : tous niveaux). Détail
+    dans `DECISIONS.md`.
 
 62. **Tirage : niveau cible du profil et questions signalées** — demandé le
     23/09/2026 : « piocher dans les questions de la banque un nombre de
@@ -429,7 +435,7 @@ telle. Ordre : ce qui change le déploiement en premier.
     sur la décision du 22/09/2026 (question 51), avec des compléments —
     minimum de validité, questions obligatoires, part aléatoire, équivalence
     des répétitions par niveau — qui font l'objet de la question 63. Mise en
-    œuvre après elle.
+    œuvre avec elle, le même jour.
 
 61. **Accès rapide : position et ouverture** — demandé le 23/09/2026 :
     « pour le menu d'accès rapide, revoit le positionnement et le mode

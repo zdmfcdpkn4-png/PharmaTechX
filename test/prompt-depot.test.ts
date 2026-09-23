@@ -39,6 +39,8 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.ok(qcm.corrigeDetecte, "corrigé complet");
   assert.ok(qcm.eliminatoire, "« Éliminatoire : oui » est lu");
   assert.ok(qcm.reservee, "« Réservée à l'évaluation : oui » est lu");
+  assert.ok(qcm.obligatoire, "« Obligatoire : oui » est lu");
+  assert.ok(!qim.obligatoire, "sans ligne : pas obligatoire");
   assert.equal(qcm.niveauQuestion, "intermediaire", "« Niveau : intermédiaire » est lu");
   assert.equal(qim.niveauQuestion, null, "sans ligne de niveau : à préciser");
   assert.equal(qcm.refs.length, 1, "une source lue");
@@ -154,7 +156,7 @@ for (const type of ["QIM", "QCM"] as const) {
     assert.ok(p.includes("N'invente rien"));
     assert.ok(p.includes("Réponses : aucune"));
     assert.ok(p.includes("N'écris ni « (V) » ni « (F) »"));
-    assert.ok(p.includes("N'écris ni « Éliminatoire » ni « Réservée à l'évaluation »"));
+    assert.ok(p.includes("N'écris ni « Éliminatoire », ni « Réservée à l'évaluation », ni « Obligatoire »"));
     assert.ok(p.includes(EXEMPLE_GENERATION[type]), "l'exemple testé est celui du prompt");
   });
 }

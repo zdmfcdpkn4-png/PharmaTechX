@@ -4,12 +4,17 @@ import { infoBareme, lireBareme } from "@/lib/bareme-db";
 import {
   BAREME_DEFAUT,
   LIBELLES_FORMAT,
+  LIBELLES_PLAFOND,
   type CleFormat,
   LIMITES_BAREME,
   estBaremeDefaut,
+  plafondDuNiveau,
   resumeBareme,
   type BaremeFormat,
 } from "@/content/bareme";
+import { ORDRE_NIVEAUX, repartir } from "@/content/tirage";
+import { LIBELLES_NIVEAU_QUESTION, type NiveauQuestion } from "@/content/types";
+import { listeNiveaux } from "@/content/referentiel-db";
 import { actionEnregistrerBareme, actionRetablirBareme } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +22,13 @@ export const dynamic = "force-dynamic";
 const MESSAGES: Record<string, string> = {
   enregistre: "Barème enregistré : il s'applique aux évaluations à venir.",
   defaut: "Valeurs par défaut rétablies.",
+};
+
+/** Libellés courts des plafonds pour les listes : les phrases entières y étaient tronquées sur trois colonnes. */
+const PLAFONDS_COURTS: Record<NiveauQuestion, string> = {
+  initial: "Initiales seulement",
+  intermediaire: "Initiales et intermédiaires",
+  avance: "Tous niveaux",
 };
 
 const FORMATS = [
@@ -108,7 +120,7 @@ function ReglagesFormat({
 export default async function Bareme({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   await sessionRequise("admin");
   const p = await searchParams;
-  const [bareme, info] = await Promise.all([lireBareme(), infoBareme()]);
+  const [bareme, info, niveaux] = await Promise.all([lireBareme(), infoBareme(), listeNiveaux()]);
   const d = BAREME_DEFAUT;
 
   return (
@@ -198,6 +210,64 @@ export default async function Bareme({ searchParams }: { searchParams: Promise<{
               <input type="number" name="tirageHabilitation" min={LIMITES_BAREME.tirage.min} max={LIMITES_BAREME.tirage.max} step={1} defaultValue={bareme.tirages.habilitation} />
             </label>
           </div>
+
+          <h2 style={{ fontSize: "1.1rem" }}>Tirage selon le niveau cible</h2>
+          <p className="legende">
+            Questions 62 et 63 (23/09/2026). Le niveau d&apos;habilitation visé par le profil fixe le niveau de
+            question le plus élevé tiré ; une question sans niveau (« à préciser ») est tirée pour tous. Chaque
+            tirage suit ensuite la répartition de son plafond : deux passations au même niveau cible ont la même
+            composition. Éliminatoires et obligatoires sont toujours posées et comptent dans leur niveau ; les
+            places qu&apos;un niveau ne peut pas remplir vont aux questions sans niveau, puis aux autres niveaux admis.
+          </p>
+          <div className="rangee">
+            {niveaux.map((n) => (
+              <label key={n.code} className="champ">
+                <span>
+                  {n.libelle} (défaut : {PLAFONDS_COURTS[plafondDuNiveau(d, n.code)].toLowerCase()})
+                </span>
+                <select name={`plafond-${n.code}`} defaultValue={plafondDuNiveau(bareme, n.code)}>
+                  {ORDRE_NIVEAUX.map((p) => (
+                    <option key={p} value={p}>
+                      {PLAFONDS_COURTS[p]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+          <p className="legende" style={{ margin: ".25rem 0 .5rem" }}>
+            Répartition, en parts relatives (%). Sous le plafond « initiales seulement », toutes les questions sont
+            initiales.
+          </p>
+          {(["intermediaire", "avance"] as const).map((p) => {
+            const admis = ORDRE_NIVEAUX.slice(0, ORDRE_NIVEAUX.indexOf(p) + 1);
+            const nombres = repartir(bareme.tirages.habilitation, bareme.repartitions[p], p);
+            return (
+              <div key={p}>
+                <h3 style={{ fontSize: "1rem", marginBottom: ".25rem" }}>
+                  {LIBELLES_PLAFOND[p][0].toUpperCase() + LIBELLES_PLAFOND[p].slice(1)} — Habilitation :{" "}
+                  {admis.map((n) => `${LIBELLES_NIVEAU_QUESTION[n].toLowerCase()} ${nombres[n]}`).join(", ")}
+                </h3>
+                <div className="rangee">
+                  {admis.map((n) => (
+                    <label key={n} className="champ">
+                      <span>
+                        {LIBELLES_NIVEAU_QUESTION[n]}, % (défaut {d.repartitions[p][n]})
+                      </span>
+                      <input
+                        type="number"
+                        name={`part-${p}-${n}`}
+                        min={LIMITES_BAREME.partNiveau.min}
+                        max={LIMITES_BAREME.partNiveau.max}
+                        step={1}
+                        defaultValue={bareme.repartitions[p][n]}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
           <div className="actions">
             <button type="submit" className="bouton">Enregistrer le barème</button>
           </div>

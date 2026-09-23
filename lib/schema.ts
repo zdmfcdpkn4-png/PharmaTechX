@@ -457,6 +457,9 @@ export const SCHEMA: string[] = [
   // bloque aucun visa.
   `ALTER TABLE signalements ALTER COLUMN question_id DROP NOT NULL`,
   `ALTER TABLE signalements ADD COLUMN IF NOT EXISTS depot_id INTEGER`,
+  // question obligatoire (question 63, choix a) : posée à chaque évaluation
+  // qui peut conclure, sans effet sur la note
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS obligatoire BOOLEAN NOT NULL DEFAULT FALSE`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

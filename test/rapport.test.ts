@@ -197,3 +197,23 @@ test("hors mode test, ni filigrane ni bandeau de test", () => {
   assert.ok(!html.includes('class="filigrane"'));
   assert.ok(!html.includes("Mode test"));
 });
+
+test("tirage selon le niveau cible (questions 62 et 63) : ligne scellée citée, obligatoire marquée ; absente des résultats antérieurs", () => {
+  const avecCible: ResultatRapport = {
+    ...resultat,
+    detail: [{ ...resultat.detail[0], obligatoire: true, niveauQuestion: "initial" }, resultat.detail[1]],
+    cible: {
+      niveau: "N2",
+      plafond: "intermediaire",
+      parNiveau: { initial: 1, intermediaire: 0, avance: 0, a_preciser: 1 },
+      obligatoires: 1,
+      ecartees: [{ questionId: "q9", enonce: "Question <signalée>", eliminatoire: false, remplacee: true }],
+    },
+  };
+  const html = construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "Intégration" }, [avecCible], {});
+  assert.ok(html.includes("Niveau cible N2 : questions initiales et intermédiaires. Posées : 1 initiale, 1 sans niveau ; 1 obligatoire."));
+  assert.ok(html.includes("Écartée du tirage par un signalement ouvert : « Question &lt;signalée&gt; » (obligatoire, remplacée par une question du même niveau)."));
+  assert.ok(html.includes("QCM · éliminatoire · obligatoire") || html.includes("· éliminatoire · obligatoire"));
+  const ancien = construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "Intégration" }, [resultat], {});
+  assert.ok(!ancien.includes("Niveau cible"), "un résultat antérieur se relit sans la ligne");
+});

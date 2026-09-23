@@ -1753,6 +1753,9 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
 .resultat-ligne.ko { background: var(--echec-fond); color: var(--echec); }
 
 .choix-difficulte { display: grid; gap: 0.5rem; margin: 1rem 0; }
+/* Niveau cible du tirage (questions 62 et 63) : au-dessus des tirages, même marge. */
+.choix-niveau { margin: 1rem 0; }
+.choix-niveau .champ { margin: 0; max-width: 36rem; }
 .option.est-choisie { border-color: var(--marque); background: var(--marque-clair); }
 
 /* Contenu interne de la barre de passation — même gabarit que l'en-tête. */

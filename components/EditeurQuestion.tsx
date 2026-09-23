@@ -61,6 +61,8 @@ export interface QuestionInitiale {
   justification: string;
   eliminatoire: boolean;
   reservee: boolean;
+  /** Posée à chaque évaluation qui peut conclure (question 63). */
+  obligatoire: boolean;
   /** Initial, intermédiaire, avancé ; `null` = à préciser. */
   niveauQuestion: NiveauQuestion | null;
   /** Une référence par ligne : « Source — Libellé — Date — URL ». */
@@ -547,6 +549,13 @@ export function EditeurQuestion({
         <span>
           Réservée à l&apos;évaluation — jamais posée en entraînement ni en Découverte, tirée en priorité en
           Habilitation et Complet
+        </span>
+      </label>
+      <label className="option option--compact" style={{ display: "inline-flex" }}>
+        <input type="checkbox" name="obligatoire" defaultChecked={initiale?.obligatoire ?? false} />
+        <span>
+          Obligatoire — posée à chaque évaluation Habilitation et Complet, sous le niveau cible, sans effet sur la
+          note ; comptée dans sa part de niveau
         </span>
       </label>
 

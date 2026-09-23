@@ -9,6 +9,8 @@ import { A_PRECISER, banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
+import { questionsSignalees } from "@/content/banque-db";
+import { listeNiveaux } from "@/content/referentiel-db";
 import { Evaluation } from "@/components/Evaluation";
 import { NoterConsultation } from "@/components/NoterConsultation";
 
@@ -28,11 +30,12 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   const idProgramme = lireIdProgramme(sp.programme);
   const profil = idProgramme ? null : lireProfilDemande(sp);
-  const [bareme, syntheses, dansProgramme, ratt] = await Promise.all([
+  const [bareme, syntheses, dansProgramme, ratt, niveaux] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
     rattachement(),
+    listeNiveaux(),
   ]);
   // L'apprenant rattaché suit son ordre propre sur ce profil, s'il en a un (question 56).
   const dansProfil = profil
@@ -41,7 +44,8 @@ export default async function PageEvaluation({
   // Programme à la carte (question 50) ou profil qui a son ordre (question 55) :
   // le module suivant est celui de leur ordre.
   const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
-  const requete = dansProgramme ? `?programme=${idProgramme}` : dansProfil && profil ? requeteProfil(profil) : "";
+  // Le profil suit de page en page, même sans ordre propre : son niveau est le niveau cible du tirage (question 62).
+  const requete = dansProgramme ? `?programme=${idProgramme}` : profil ? requeteProfil(profil) : "";
   const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
   // Un document de synthèse déposé est réservé aux sessions ouvertes par un code (question 13, choix b).
   const synthesesVisibles = session ? syntheses : syntheses.filter((d) => !d.url.startsWith("/api/fichiers/"));
@@ -50,6 +54,14 @@ export default async function PageEvaluation({
   // quittent le serveur qu'après soumission, via la route de correction.
   const banque = banquePublique(mod);
   if (banque.length === 0) notFound();
+  // Tirage selon le niveau cible (questions 62 et 63) : celui du profil de la page, sinon celui du code de
+  // session ; les questions au signalement ouvert sont écartées de tout tirage jusqu'à la clôture.
+  const codes = niveaux.map((n) => String(n.code));
+  const niveauDemande = profil?.niveau ?? session?.niveau ?? null;
+  const niveauInitial = niveauDemande ? (codes.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null) : null;
+  const signalees = baseConfiguree()
+    ? (await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[] }))).ouvertes
+    : [];
 
   return (
     <article>
@@ -80,6 +92,9 @@ export default async function PageEvaluation({
         requete={requete}
         rattache={Boolean(ratt)}
         enCoursInitial={enCours}
+        niveaux={niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle }))}
+        niveauInitial={niveauInitial}
+        signalees={signalees}
       />
     </article>
   );

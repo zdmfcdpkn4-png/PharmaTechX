@@ -22,6 +22,9 @@ test("normaliserEtatEnCours : forme contrôlée, champs hors tirage ignorés", (
   assert.equal(e.indexCourant, 1, "borné à la dernière question");
   assert.deepEqual(Object.keys(e.corrections), ["q1"]);
   assert.equal(questionsRenseignees(e), 2);
+  assert.equal(e.niveauCible, null, "état antérieur : aucun niveau cible");
+  assert.equal(normaliserEtatEnCours({ questionIds: ["q1"], mode: "evaluation", difficulte: "habilitation", niveauCible: "N2" })?.niveauCible, "N2");
+  assert.equal(normaliserEtatEnCours({ questionIds: ["q1"], mode: "evaluation", difficulte: "habilitation", niveauCible: "<N2>" })?.niveauCible, null);
   assert.equal(normaliserEtatEnCours({ questionIds: [], mode: "evaluation", difficulte: "complet" }), null);
   assert.equal(normaliserEtatEnCours({ questionIds: ["q1"], mode: "autre", difficulte: "complet" }), null);
   assert.equal(normaliserEtatEnCours("rien"), null);

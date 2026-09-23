@@ -103,7 +103,7 @@ test("sanitizeQuestion retire réponses, justification et mots des légendes", (
 });
 
 // ── barème harmonisé (décision du 19/09/2026, question 34) ──────────────────
-import { BAREME_DEFAUT, CLES_FORMAT, estBaremeDefaut, largeurBande, libelleBaremeCourt, libelleQim, normaliserBareme, noterElements, resumeBareme } from "../content/bareme";
+import { BAREME_DEFAUT, CLES_FORMAT, estBaremeDefaut, largeurBande, libelleBaremeCourt, libellePlafonds, libelleQim, libelleRepartitions, normaliserBareme, noterElements, plafondDuNiveau, resumeBareme } from "../content/bareme";
 import { libelleBareme } from "../content/types";
 
 test("normaliserBareme : défauts, bornes, cohérence tirage / minimum", () => {
@@ -178,8 +178,8 @@ test("libellés du barème : dynamiques", () => {
   assert.match(libelleBareme(qim, b), /-0,5/);
   assert.match(libelleBareme(qim), /je ne sais pas/);
   assert.match(libelleBareme(qcm), /tout ou rien/);
-  // cinq formats, puis seuil, bande de garde et tirages
-  assert.equal(resumeBareme().length, 8);
+  // cinq formats, puis seuil, bande de garde, tirages, plafonds et répartitions (questions 62 et 63)
+  assert.equal(resumeBareme().length, 10);
   assert.match(resumeBareme(normaliserBareme({ bande: { mode: "fixe", points: 5 } }))[6], /5 points de pourcentage/);
 });
 
@@ -190,4 +190,52 @@ test("séquence à ordonner : barème propre, identique à celui des QIM par dé
   assert.deepEqual(BAREME_DEFAUT.ordre, BAREME_DEFAUT.qim, "mêmes valeurs que la QIM");
   assert.notEqual(BAREME_DEFAUT.ordre, BAREME_DEFAUT.qim, "objet distinct : réglable séparément");
   assert.ok(CLES_FORMAT.includes("ordre"), "réglable dans /admin/bareme");
+});
+
+// Questions 62 et 63 (23/09/2026) : plafond de niveau selon le niveau cible,
+// répartition de chaque tirage par niveau de question.
+test("plafonds : le chiffre du niveau d'habilitation donne le palier, tout autre niveau tire tous les niveaux", () => {
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "N1a"), "initial");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "N1b"), "initial");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "N1c"), "initial");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "N2"), "intermediaire");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "N3"), "avance");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, "S1"), "avance", "niveau déposé non réglé");
+  assert.equal(plafondDuNiveau(BAREME_DEFAUT, null), "avance", "sans niveau cible");
+  assert.equal(
+    libellePlafonds(),
+    "N1a, N1b, N1c → questions initiales seulement ; N2 → questions initiales et intermédiaires ; N3, tout autre niveau cible → questions de tous niveaux",
+  );
+});
+
+test("plafonds et répartitions : un barème enregistré avant la question 62 prend les valeurs par défaut", () => {
+  const ancien = normaliserBareme({ seuilDefaut: 80, minQuestions: 10 });
+  assert.deepEqual(ancien.plafonds, BAREME_DEFAUT.plafonds);
+  assert.deepEqual(ancien.repartitions, BAREME_DEFAUT.repartitions);
+  assert.ok(estBaremeDefaut(normaliserBareme(JSON.parse(JSON.stringify(BAREME_DEFAUT)))));
+});
+
+test("plafonds : réglage retenu, code mal formé ou plafond inconnu ignorés", () => {
+  const b = normaliserBareme({ plafonds: { N1c: "intermediaire", S1: "initial", "N1 a": "avance", N2: "expert" } });
+  assert.equal(b.plafonds.N1c, "intermediaire");
+  assert.equal(b.plafonds.S1, "initial", "un niveau déposé se règle aussi");
+  assert.equal(b.plafonds.N2, "intermediaire", "valeur inconnue : défaut gardé");
+  assert.ok(!("N1 a" in b.plafonds));
+});
+
+test("répartitions : bornées, rien au-dessus du plafond, parts toutes nulles remplacées par le défaut", () => {
+  const b = normaliserBareme({
+    repartitions: {
+      initial: { initial: "", intermediaire: 50, avance: 50 },
+      intermediaire: { initial: 0, intermediaire: 0 },
+      avance: { initial: 250, intermediaire: -3, avance: "20" },
+    },
+  });
+  assert.deepEqual(b.repartitions.initial, { initial: 100, intermediaire: 0, avance: 0 });
+  assert.deepEqual(b.repartitions.intermediaire, BAREME_DEFAUT.repartitions.intermediaire);
+  assert.deepEqual(b.repartitions.avance, { initial: 100, intermediaire: 0, avance: 20 });
+  assert.equal(
+    libelleRepartitions(),
+    "questions initiales seulement : initial 100 % (Habilitation : 10) ; questions initiales et intermédiaires : initial 43 %, intermédiaire 57 % (Habilitation : 4 + 6) ; questions de tous niveaux : initial 30 %, intermédiaire 40 %, avancé 30 % (Habilitation : 3 + 4 + 3)",
+  );
 });

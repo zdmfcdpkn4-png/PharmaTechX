@@ -2,11 +2,23 @@ import { NextResponse } from "next/server";
 import { getModuleComplet } from "@/content/store";
 import { ordreLecture, motAttendu, verdictLegende } from "@/content/schema";
 import { RE_TROU, banqueDuModule, noterQuestion } from "@/content/types";
-import type { Question, ReponseApprenant } from "@/content/types";
+import type { NiveauQuestion, Question, ReponseApprenant } from "@/content/types";
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
-import { tirageConforme, type Difficulte } from "@/content/tirage";
+import {
+  admissibles,
+  niveauDe,
+  tirageConforme,
+  toujoursPosee,
+  toujoursPoseesEcartees,
+  type ContexteTirage,
+  type Difficulte,
+} from "@/content/tirage";
+import { plafondDuNiveau } from "@/content/bareme";
+import type { CibleScellee } from "@/content/cible";
+import { questionsSignalees } from "@/content/banque-db";
+import { baseConfiguree } from "@/lib/db";
 import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
 import {
@@ -19,7 +31,7 @@ import {
 } from "@/content/jugement";
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
-import { referentielDuModule } from "@/content/referentiel-db";
+import { identifiantsConnus, referentielDuModule } from "@/content/referentiel-db";
 import { syntheseDuModule } from "@/lib/synthese";
 import type { SyntheseDocument } from "@/content/types";
 
@@ -69,6 +81,8 @@ interface CorpsRequete {
   jugements?: unknown;
   /** Évaluation : code du tuteur qui confirme les jugements. Vérifié, jamais conservé. */
   codeTuteur?: unknown;
+  /** Niveau cible du tirage (questions 62 et 63) : un code de niveau connu, sinon aucun. */
+  niveauCible?: unknown;
 }
 
 export interface DetailLegende {
@@ -93,6 +107,10 @@ export interface DetailQuestion {
   eliminatoire: boolean;
   /** Réservée à l'évaluation (question 18) : jamais vue en entraînement. */
   reservee: boolean;
+  /** Obligatoire (question 63) : posée à chaque évaluation qui peut conclure. Absent des résultats antérieurs. */
+  obligatoire?: boolean;
+  /** Niveau de la question au moment de l'évaluation ; `null` : à préciser. Absent des résultats antérieurs. */
+  niveauQuestion?: NiveauQuestion | null;
   choixApprenant: string[];
   reponsesAttendues: string[];
   justification: string;
@@ -166,6 +184,13 @@ export interface ResultatEvaluation {
    * résultats antérieurs.
    */
   fiches?: SyntheseDocument[];
+  /**
+   * Tirage selon le niveau cible (questions 62 et 63, 23/09/2026) : niveau
+   * visé, plafond, questions posées par niveau, questions toujours posées
+   * qu'un signalement a écartées. Évaluation seulement ; absent des
+   * résultats antérieurs.
+   */
+  cible?: CibleScellee;
   /** Sceau du serveur sur ce résultat (vérifié à l'émission du rapport). */
   jeton: string;
 }
@@ -242,25 +267,50 @@ export async function POST(request: Request) {
     );
   }
 
-  // Le tirage est décidé côté client ; le serveur ne corrige que les questions
-  // effectivement posées, en vérifiant qu'elles appartiennent bien au module.
-  const idsDemandes =
-    Array.isArray(corps.questionIds) && corps.questionIds.every((v) => typeof v === "string")
-      ? (corps.questionIds as string[])
-      : null;
-
-  const posees = idsDemandes ? banque.filter((q) => idsDemandes.includes(q.id)) : banque;
-
-  if (posees.length === 0) {
-    return NextResponse.json({ erreur: "Aucune question valide dans la soumission." }, { status: 400 });
-  }
   // Questions réservées à l'évaluation (question 18, choix c) : le tirage,
   // fait dans le navigateur, doit respecter leur règle — aucune en
   // entraînement ni en Découverte, priorité en Habilitation et Complet.
   const modeTirage = corps.mode === "entrainement" ? "entrainement" : "evaluation";
   const difficulte: Difficulte =
     corps.difficulte === "decouverte" || corps.difficulte === "complet" ? corps.difficulte : "habilitation";
-  const conformite = tirageConforme(posees, banque, modeTirage, difficulte);
+  // Tirage selon le niveau cible (questions 62 et 63) : même règle qu'au
+  // navigateur — plafond et répartition du barème, questions signalées
+  // écartées, éliminatoires et obligatoires posées. Un niveau cible inconnu
+  // vaut « non précisé » : aucun plafond.
+  const bareme = await lireBareme();
+  const niveauDemande = typeof corps.niveauCible === "string" ? corps.niveauCible.slice(0, 12) : "";
+  const connus = niveauDemande ? (await identifiantsConnus()).niveaux : [];
+  const niveauCible = connus.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null;
+  const signalements = baseConfiguree()
+    ? await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[], tolerees: [] as string[] }))
+    : { ouvertes: [] as string[], tolerees: [] as string[] };
+  const plafond = plafondDuNiveau(bareme, niveauCible);
+  const contexte: ContexteTirage = {
+    mode: modeTirage,
+    difficulte,
+    nb: difficulte === "complet" ? null : bareme.tirages[difficulte],
+    plafond,
+    repartition: bareme.repartitions[plafond],
+    // Signalements ouverts, et clos depuis moins de sept jours : une clôture
+    // survenue pendant l'épreuve ne fait pas refuser le tirage.
+    signalees: signalements.tolerees,
+  };
+
+  // Le tirage est décidé côté client ; le serveur ne corrige que les questions
+  // effectivement posées, en vérifiant qu'elles appartiennent bien au module.
+  // Sans liste, toute la banque admise au tirage : plafond et signalements
+  // ouverts — la tolérance aux signalements clos ne vaut que pour le contrôle.
+  const idsDemandes =
+    Array.isArray(corps.questionIds) && corps.questionIds.every((v) => typeof v === "string")
+      ? (corps.questionIds as string[])
+      : null;
+  const posees = idsDemandes
+    ? banque.filter((q) => idsDemandes.includes(q.id))
+    : admissibles(banque, { ...contexte, signalees: signalements.ouvertes });
+  if (posees.length === 0) {
+    return NextResponse.json({ erreur: "Aucune question valide dans la soumission." }, { status: 400 });
+  }
+  const conformite = tirageConforme(posees, banque, contexte);
   if (!conformite.ok) return NextResponse.json({ erreur: conformite.raison }, { status: 400 });
 
   // Schémas à découvrir (question 52, choix b) : les jugements portés sur les
@@ -307,7 +357,6 @@ export async function POST(request: Request) {
   const legendes = dictionnaireDeChaines(corps.legendes);
   const rangs = dictionnaireDeNombres(corps.rangs);
   const trous = dictionnaireDeChaines(corps.trous);
-  const bareme = await lireBareme();
 
   const titresSituations = new Map<string, string>();
   for (const s of mod.misesEnSituation) {
@@ -341,6 +390,8 @@ export async function POST(request: Request) {
       correct: discordances === 0,
       eliminatoire: q.eliminatoire === true,
       reservee: q.reservee === true,
+      obligatoire: q.obligatoire === true,
+      niveauQuestion: q.niveauQuestion ?? null,
       choixApprenant: libelle(rep.choix),
       reponsesAttendues: libelle(q.bonnesReponses),
       justification: q.justification,
@@ -398,6 +449,34 @@ export async function POST(request: Request) {
 
   const decision = decider(detail, mod.seuilReussite, { minQuestions: bareme.minQuestions, bande: bareme.bande });
 
+  // Ce que le tirage a visé et posé (questions 62 et 63), scellé avec le
+  // résultat et cité par le rapport. Une question toujours posée qu'un
+  // signalement a écartée est dite remplacée tant que la banque admise
+  // offrait une autre question de son niveau.
+  let cible: CibleScellee | undefined;
+  if (modeTirage === "evaluation") {
+    const ids = new Set(posees.map((q) => q.id));
+    const parNiveau: CibleScellee["parNiveau"] = { initial: 0, intermediaire: 0, avance: 0, a_preciser: 0 };
+    for (const q of posees) parNiveau[niveauDe(q) ?? "a_preciser"] += 1;
+    const libres = new Map<NiveauQuestion | null, number>();
+    for (const q of admissibles(banque, contexte)) {
+      if (!toujoursPosee(q, contexte)) libres.set(niveauDe(q), (libres.get(niveauDe(q)) ?? 0) + 1);
+    }
+    cible = {
+      niveau: niveauCible,
+      plafond,
+      parNiveau,
+      obligatoires: posees.filter((q) => q.obligatoire && !q.eliminatoire).length,
+      ecartees: toujoursPoseesEcartees(banque, contexte)
+        .filter((q) => !ids.has(q.id))
+        .map((q) => {
+          const reste = libres.get(niveauDe(q)) ?? 0;
+          if (reste > 0) libres.set(niveauDe(q), reste - 1);
+          return { questionId: q.id, enonce: q.enonce, eliminatoire: q.eliminatoire === true, remplacee: reste > 0 };
+        }),
+    };
+  }
+
   const sansJeton: Omit<ResultatEvaluation, "jeton"> = {
     moduleId: mod.id,
     moduleTitre: mod.titre,
@@ -431,6 +510,7 @@ export async function POST(request: Request) {
     mode: modeTirage,
     ...(jugement ? { jugement } : {}),
     fiches: await syntheseDuModule(mod).catch(() => []),
+    ...(cible ? { cible } : {}),
   };
 
   const resultat: ResultatEvaluation = { ...sansJeton, jeton: sceller(sansJeton) };

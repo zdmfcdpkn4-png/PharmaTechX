@@ -16,6 +16,7 @@ import { indiceFormat, type FormatChoix } from "@/lib/import-format";
  *   Source : ANSM — BPP 2023 — 21/07/2023 — https://…
  *   Éliminatoire : oui
  *   Réservée à l'évaluation : oui
+ *   Obligatoire : oui
  *
  * Une question de n'importe quel format peut porter une illustration, et la
  * description lue à la place de l'image (séquence et texte à trous compris
@@ -98,6 +99,8 @@ export interface QuestionImportee {
   eliminatoire: boolean;
   /** Réservée à l'évaluation (question 18) : ligne « Réservée : oui ». */
   reservee: boolean;
+  /** Posée à chaque évaluation qui peut conclure (question 63) : ligne « Obligatoire : oui ». */
+  obligatoire: boolean;
   /** Ligne « Niveau : initial » (ou « Difficulté : … ») ; `null` si absente ou illisible. */
   niveauQuestion: NiveauQuestion | null;
   refs: Reference[];
@@ -156,6 +159,7 @@ const RE_JUSTIF = /^(?:Justifications?|Explications?)\s*[:–—-]\s*(.*)$/i;
 const RE_SOURCE = /^(?:Sources?|R[ée]f[ée]rences?)\s*[:–—-]\s*(.+)$/i;
 const RE_ELIM = /^[EÉé]liminatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_RESERVEE = /^R[ée]serv[ée]e?(?:\s+[àa]\s+l['’][ée]valuation)?\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
+const RE_OBLIGATOIRE = /^Obligatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
 /**
  * « Description de l'image : … » (23/09/2026) : ce que montre l'image, lu à la
@@ -259,6 +263,7 @@ interface Brouillon {
   refs: Reference[];
   eliminatoire: boolean;
   reservee: boolean;
+  obligatoire: boolean;
   corrige: boolean;
   dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "rien";
 }
@@ -295,6 +300,7 @@ function nouveau(
     refs: [],
     eliminatoire: false,
     reservee: false,
+    obligatoire: false,
     corrige: false,
     dernier: "enonce",
   };
@@ -341,6 +347,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      obligatoire: b.obligatoire,
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
@@ -376,6 +383,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      obligatoire: b.obligatoire,
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: attendues.length === numeros.length,
@@ -409,6 +417,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
+      obligatoire: b.obligatoire,
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
@@ -466,6 +475,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     justification: justificationAssemblee(b),
     eliminatoire: b.eliminatoire,
     reservee: b.reservee,
+    obligatoire: b.obligatoire,
     niveauQuestion: lireNiveauQuestion(b.difficulte),
     refs: b.refs,
     corrigeDetecte: corrige,
@@ -638,6 +648,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         courant.dernier = "rien";
         continue;
       }
+      const ob = RE_OBLIGATOIRE.exec(ligne);
+      if (ob) {
+        courant.obligatoire = !ob[1] || /^(oui|vrai|yes)$/i.test(ob[1]);
+        courant.dernier = "rien";
+        continue;
+      }
       if (courant.dernier === "enonce") courant.enonce.push(ligne);
       else if (courant.dernier === "justif") courant.justification.push(ligne);
       continue;
@@ -763,6 +779,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       courant.dernier = "rien";
       continue;
     }
+    const ob = RE_OBLIGATOIRE.exec(ligne);
+    if (ob) {
+      courant.obligatoire = !ob[1] || /^(oui|vrai|yes)$/i.test(ob[1]);
+      courant.dernier = "rien";
+      continue;
+    }
     if (courant.dernier === "enonce") courant.enonce.push(ligne);
     else if (courant.dernier === "prop") {
       const derniere = courant.props[courant.props.length - 1];
@@ -790,6 +812,7 @@ interface QuestionJson {
   justification?: unknown;
   eliminatoire?: unknown;
   reservee?: unknown;
+  obligatoire?: unknown;
   /** « initial », « intermédiaire », « avancé » — sous l'un de ces trois noms. */
   niveau?: unknown;
   niveauQuestion?: unknown;
@@ -878,7 +901,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
         avertissements.push(`Schéma « ${enonce.slice(0, 50)} » ignoré : aucune légende.`);
         continue;
       }
-      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: ["Image à choisir dans l'éditeur."] });
+      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, obligatoire: q.obligatoire === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: ["Image à choisir dans l'éditeur."] });
       continue;
     }
     const opts = optionsDe(q);
@@ -887,7 +910,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
       continue;
     }
     // « QCM sans proposition vraie » : dans `alertesFormat`, recalculé par l'aperçu.
-    questions.push({ format, origineFormat, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: avert });
+    questions.push({ format, origineFormat, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, obligatoire: q.obligatoire === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: avert });
   }
   if (questions.length === 0) avertissements.push("Aucune question reconnue dans le JSON.");
   return { questions, avertissements };

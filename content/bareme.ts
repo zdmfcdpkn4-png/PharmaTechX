@@ -32,6 +32,9 @@
  * navigateur (affichage des règles avant l'épreuve).
  */
 
+import { ORDRE_NIVEAUX, repartir, type Repartition } from "./tirage";
+import type { NiveauQuestion } from "./types";
+
 export type ModeNotation = "partiel" | "tout_ou_rien";
 
 export interface BaremeFormat {
@@ -71,6 +74,19 @@ export interface Bareme {
   minQuestions: number;
   tirages: { decouverte: number; habilitation: number };
   bande: BandeGarde;
+  /**
+   * Plafond de niveau de question par niveau d'habilitation visé (question
+   * 62, choix a) : le niveau de question le plus élevé tiré. Un niveau
+   * d'habilitation absent de la liste, ou un niveau cible inconnu : tous les
+   * niveaux.
+   */
+  plafonds: Record<string, NiveauQuestion>;
+  /**
+   * Part de chaque niveau de question dans un tirage, pour chaque plafond
+   * (question 63, choix a) : deux passations au même niveau cible ont la même
+   * composition. Parts relatives, en pourcentage.
+   */
+  repartitions: Record<NiveauQuestion, Repartition>;
 }
 
 /** Barème des quiz de Flore : juste +, faux −, « je ne sais pas » rien, plancher 0. */
@@ -87,7 +103,34 @@ export const BAREME_DEFAUT: Bareme = {
   minQuestions: 10,
   tirages: { decouverte: 5, habilitation: 10 },
   bande: { mode: "question", points: 5 },
+  // Le chiffre du niveau d'habilitation donne le palier : niveau 1 (N1a, et
+  // ses deux branches N1b et N1c), questions initiales ; N2, jusqu'aux
+  // intermédiaires ; N3, tous les niveaux.
+  plafonds: { N1a: "initial", N1b: "initial", N1c: "initial", N2: "intermediaire", N3: "avance" },
+  // Tous niveaux : environ 3, 4 et 3 sur dix, la répartition que le prompt de
+  // génération demande pour une banque ; sous un plafond, les mêmes rapports
+  // entre les niveaux admis (3 pour 4, arrondi à 43 / 57).
+  repartitions: {
+    initial: { initial: 100, intermediaire: 0, avance: 0 },
+    intermediaire: { initial: 43, intermediaire: 57, avance: 0 },
+    avance: { initial: 30, intermediaire: 40, avance: 30 },
+  },
 };
+
+/** Ce que chaque plafond laisse tirer, dans une phrase. */
+export const LIBELLES_PLAFOND: Record<NiveauQuestion, string> = {
+  initial: "questions initiales seulement",
+  intermediaire: "questions initiales et intermédiaires",
+  avance: "questions de tous niveaux",
+};
+
+/** Le plafond d'un niveau cible ; sans niveau cible, ou pour un niveau que le barème ne cite pas : tous les niveaux. */
+export function plafondDuNiveau(b: Pick<Bareme, "plafonds">, niveauCible: string | null | undefined): NiveauQuestion {
+  return (niveauCible ? b.plafonds[niveauCible] : undefined) ?? "avance";
+}
+
+/** Code de niveau d'habilitation recevable comme clé de plafond (mêmes règles que l'adresse d'un profil). */
+const RE_CODE_NIVEAU = /^[A-Za-z0-9-]{1,12}$/;
 
 export const LIMITES_BAREME = {
   seuil: { min: 50, max: 100 },
@@ -100,6 +143,8 @@ export const LIMITES_BAREME = {
   plancher: { min: -1, max: 0 },
   /** Plafond d'une question : son poids dans le total. */
   plafond: { min: 0.1, max: 1 },
+  /** Part d'un niveau de question dans un tirage, en pourcentage. */
+  partNiveau: { min: 0, max: 100 },
 } as const;
 
 export const LIBELLES_FORMAT: Record<CleFormat, string> = {
@@ -150,6 +195,43 @@ function formatNormalise(brut: unknown, defaut: BaremeFormat): BaremeFormat {
 }
 
 /**
+ * Plafonds par niveau cible : ceux par défaut, corrigés par les réglages
+ * reçus. Un code mal formé ou un plafond inconnu est ignoré.
+ */
+function plafondsNormalises(brut: unknown): Record<string, NiveauQuestion> {
+  const out: Record<string, NiveauQuestion> = { ...BAREME_DEFAUT.plafonds };
+  for (const [code, v] of Object.entries(objet(brut))) {
+    if (RE_CODE_NIVEAU.test(code) && typeof v === "string" && (ORDRE_NIVEAUX as readonly string[]).includes(v)) {
+      out[code] = v as NiveauQuestion;
+    }
+  }
+  return out;
+}
+
+/**
+ * Parts de chaque plafond : entiers de 0 à 100, rien au-dessus du plafond.
+ * Des parts toutes nulles ne tireraient rien : celles par défaut les
+ * remplacent.
+ */
+function repartitionsNormalisees(brut: unknown): Record<NiveauQuestion, Repartition> {
+  const b = objet(brut);
+  const out = {} as Record<NiveauQuestion, Repartition>;
+  for (const plafond of ORDRE_NIVEAUX) {
+    const defaut = BAREME_DEFAUT.repartitions[plafond];
+    const r = objet(b[plafond]);
+    const rang = ORDRE_NIVEAUX.indexOf(plafond);
+    const parts = Object.fromEntries(
+      ORDRE_NIVEAUX.map((n, i) => [
+        n,
+        i > rang ? 0 : nombreBorne(r[n], defaut[n], LIMITES_BAREME.partNiveau.min, LIMITES_BAREME.partNiveau.max),
+      ]),
+    ) as Repartition;
+    out[plafond] = ORDRE_NIVEAUX.some((n) => parts[n] > 0) ? parts : { ...defaut };
+  }
+  return out;
+}
+
+/**
  * Barème complet à partir d'une valeur quelconque (base, formulaire, ancien
  * enregistrement) : chaque champ absent ou invalide prend sa valeur par
  * défaut, chaque nombre est ramené dans ses bornes. Le tirage d'habilitation
@@ -180,6 +262,8 @@ export function normaliserBareme(brut: unknown): Bareme {
       mode: bande.mode === "demi_question" || bande.mode === "fixe" ? bande.mode : "question",
       points: nombreBorne(bande.points, d.bande.points, LIMITES_BAREME.bandePoints.min, LIMITES_BAREME.bandePoints.max, 1),
     },
+    plafonds: plafondsNormalises(b.plafonds),
+    repartitions: repartitionsNormalisees(b.repartitions),
   };
 }
 
@@ -298,6 +382,31 @@ export function libelleBaremeCourt(b: unknown = BAREME_DEFAUT): string {
   return `QCM : ${libelleQcm(n)} QIM : ${libelleQim(n)} Schéma : ${libelleSchema(n)}${ordre}${trous} Bande de garde : ${libelleBande(n)} · ${n.minQuestions} question${n.minQuestions > 1 ? "s" : ""} au moins pour conclure`;
 }
 
+const NOM_NIVEAU: Record<NiveauQuestion, string> = { initial: "initial", intermediaire: "intermédiaire", avance: "avancé" };
+
+/** Les plafonds en une phrase : « N1a, N1b, N1c → questions initiales seulement ; … ». */
+export function libellePlafonds(b: Bareme = BAREME_DEFAUT): string {
+  return ORDRE_NIVEAUX.map((p) => {
+    const codes = Object.entries(b.plafonds)
+      .filter(([, v]) => v === p)
+      .map(([c]) => c);
+    if (p === "avance") codes.push(codes.length > 0 ? "tout autre niveau cible" : "tout niveau cible");
+    return codes.length > 0 ? `${codes.join(", ")} → ${LIBELLES_PLAFOND[p]}` : "";
+  })
+    .filter(Boolean)
+    .join(" ; ");
+}
+
+/** Les répartitions en une phrase, avec ce qu'elles donnent pour le tirage Habilitation. */
+export function libelleRepartitions(b: Bareme = BAREME_DEFAUT): string {
+  return ORDRE_NIVEAUX.map((p) => {
+    const admis = ORDRE_NIVEAUX.slice(0, ORDRE_NIVEAUX.indexOf(p) + 1);
+    const parts = b.repartitions[p];
+    const nombres = repartir(b.tirages.habilitation, parts, p);
+    return `${LIBELLES_PLAFOND[p]} : ${admis.map((n) => `${NOM_NIVEAU[n]} ${parts[n]} %`).join(", ")} (Habilitation : ${admis.map((n) => nombres[n]).join(" + ")})`;
+  }).join(" ; ");
+}
+
 /** Le barème en quelques lignes, pour l'écran de réglage, l'accueil et le rapport. */
 export function resumeBareme(b: Bareme = BAREME_DEFAUT): string[] {
   return [
@@ -309,5 +418,7 @@ export function resumeBareme(b: Bareme = BAREME_DEFAUT): string[] {
     `Seuil de réussite par défaut : ${b.seuilDefaut} %.`,
     `Bande de garde (verdict indéterminé, arbitrage du tuteur) : ${libelleBande(b)}.`,
     `Tirages : découverte ${b.tirages.decouverte} question${b.tirages.decouverte > 1 ? "s" : ""}, habilitation ${b.tirages.habilitation} ; ${b.minQuestions} question${b.minQuestions > 1 ? "s" : ""} au moins pour conclure.`,
+    `Niveau cible et niveau des questions tirées : ${libellePlafonds(b)}. Une question sans niveau est tirée pour tous.`,
+    `Répartition de chaque tirage par niveau de question : ${libelleRepartitions(b)}.`,
   ];
 }

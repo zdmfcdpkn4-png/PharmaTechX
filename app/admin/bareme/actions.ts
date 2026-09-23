@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
 import { enregistrerBareme, retablirBareme } from "@/lib/bareme-db";
+import { ORDRE_NIVEAUX } from "@/content/tirage";
 
 /**
  * Réglage du barème (décision du 18/09/2026, question 10) — administration
@@ -25,6 +26,15 @@ export async function actionEnregistrerBareme(formData: FormData) {
     min: v(`${cle}-min`),
     max: v(`${cle}-max`),
   });
+  // Tirage selon le niveau cible (questions 62 et 63) : un plafond par niveau
+  // listé, des parts par plafond ; codes et valeurs vérifiés à la normalisation.
+  const plafonds: Record<string, string> = {};
+  for (const [cle, valeur] of formData.entries()) {
+    if (cle.startsWith("plafond-")) plafonds[cle.slice("plafond-".length)] = String(valeur);
+  }
+  const repartitions = Object.fromEntries(
+    ORDRE_NIVEAUX.map((p) => [p, Object.fromEntries(ORDRE_NIVEAUX.map((n) => [n, v(`part-${p}-${n}`)]))]),
+  );
   const bareme = await enregistrerBareme(
     {
       qcm: format("qcm"),
@@ -36,6 +46,8 @@ export async function actionEnregistrerBareme(formData: FormData) {
       minQuestions: v("minQuestions"),
       tirages: { decouverte: v("tirageDecouverte"), habilitation: v("tirageHabilitation") },
       bande: { mode: v("bandeMode"), points: v("bandePoints") },
+      plafonds,
+      repartitions,
     },
     s,
   );

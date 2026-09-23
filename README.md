@@ -147,6 +147,15 @@ Le résultat scellé, le rapport et le registre portent le nombre de questions
 réservées posées. Dans le code, `reservee: true` sur la question ; en base, la
 case de l'éditeur ou la ligne « Réservée à l'évaluation : oui » à l'import.
 
+Une question **obligatoire** (décision du 23/09/2026, question 63, choix a)
+est posée à chaque évaluation Habilitation et Complet, sans effet sur la
+note ; en base, la case de l'éditeur ou la ligne « Obligatoire : oui » à
+l'import. Le **niveau cible** du profil fixe le niveau de question le plus
+élevé tiré, et chaque tirage suit la répartition par niveau réglée pour ce
+plafond (question 62, choix a) ; une question au signalement ouvert n'est
+tirée nulle part. Le serveur refuse un tirage qui omet une éliminatoire ou
+une obligatoire, ou qui pose une question au-dessus du niveau cible.
+
 **Barème harmonisé et réglable** (décisions du 18/09/2026, question 10, et du
 19/09/2026, questions 34 et 35) : les **cinq** formats suivent **la même règle**
 et se règlent avec **les six mêmes champs** depuis `/admin/bareme` — mode

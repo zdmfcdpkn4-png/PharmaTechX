@@ -36,6 +36,7 @@ Justification : texte affiché à l'apprenant après la correction.
 Source : ANSM — Bonnes pratiques de préparation 2023 — 21/07/2023 — https://ansm.sante.fr/
 Éliminatoire : oui
 Réservée à l'évaluation : oui
+Obligatoire : oui
 Niveau : intermédiaire
 
 QIM 2. Concernant la zone à atmosphère contrôlée, chaque proposition se juge séparément.
@@ -114,6 +115,7 @@ PRÉCISIONS
 - Le corrigé s'écrit « (V) » / « (F) » en fin de proposition, ou en ligne « Réponses : A C ». Si le texte source porte les deux, ils doivent coïncider ; sinon, applique la règle 3.
 - « Éliminatoire : oui » — une erreur rend le critère non acquis, quel que soit le score. À ne mettre que si le texte source le dit.
 - « Réservée à l'évaluation : oui » — la question n'est jamais posée en entraînement. Même règle.
+- « Obligatoire : oui » — la question est posée à chaque évaluation qui peut conclure. Même règle.
 - « Niveau : initial », « Niveau : intermédiaire » ou « Niveau : avancé » — le niveau de la question (restitution ; reformulation, comparaison ; raisonnement, piège). Même règle : à ne mettre que si le texte source le dit. Sinon, pas de ligne : le tuteur le renseignera dans l'éditeur.
 - « Image : nom-du-fichier.jpg » — illustration d'une question de tout type (QCM, QIM, séquence, texte à trous), ou image d'un schéma à compléter : photographie, schéma, capture. La ligne suit l'énoncé. Le fichier se dépose avec le texte, sur le même écran ; le nom doit être celui du fichier, l'extension importe peu. N'annonce une image que si le texte source en désigne une.
 - « Description de l'image : … » — sous la ligne Image, ce que montre l'image, en une phrase, sans donner la réponse : elle est lue à la place de l'image par un lecteur d'écran. Recopie la légende ou le titre que le texte source donne à l'image ; il n'en donne pas : pas de ligne, le tuteur l'écrira dans l'éditeur.
@@ -152,8 +154,8 @@ TEXTE SOURCE À METTRE EN FORME
  * 3. Aucun « (V) » ni « (F) » en fin de proposition : le corrigé est sur sa
  *    ligne, et un « V » isolé en fin de phrase (« le facteur V ») resterait
  *    ambigu pour l'analyseur.
- * 4. Ni « Éliminatoire » ni « Réservée à l'évaluation » : ce sont des
- *    décisions du tuteur, prises dans l'éditeur, pas celles d'une IA.
+ * 4. Ni « Éliminatoire », ni « Réservée à l'évaluation », ni « Obligatoire » :
+ *    ce sont des décisions du tuteur, prises dans l'éditeur, pas celles d'une IA.
  *
  * Les lignes « Extrait X » et « Pièges » sont lues par l'analyseur et
  * versées dans la justification, affichée après la correction ; la ligne
@@ -270,5 +272,5 @@ Règles propres au site :
 - N'écris ni « (V) » ni « (F) » en fin de proposition : le corrigé est sur la ligne Réponses.
 - Pièges : la lettre de chaque proposition fausse, suivie de son type d'erreur.
 - Source : recopie la référence que porte le document (organisme — code et titre — date), séparée par des tirets longs. Le document n'en porte pas : pas de ligne Source. Ne reconstitue ni code, ni titre, ni date.
-- N'écris ni « Éliminatoire » ni « Réservée à l'évaluation » : ces décisions reviennent au tuteur.`;
+- N'écris ni « Éliminatoire », ni « Réservée à l'évaluation », ni « Obligatoire » : ces décisions reviennent au tuteur.`;
 }

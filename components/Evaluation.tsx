@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
-import { reserveesAdmises, tirer, type Difficulte } from "@/content/tirage";
+import { ORDRE_NIVEAUX, bilanTirage, repartir, tirer, type ContexteTirage, type Difficulte } from "@/content/tirage";
 import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
-import { libelleBande, type Bareme } from "@/content/bareme";
+import { LIBELLES_PLAFOND, libelleBande, plafondDuNiveau, type Bareme } from "@/content/bareme";
+import { libelleCible, libelleEcartees } from "@/content/cible";
+import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
 import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
@@ -64,6 +66,20 @@ function difficultes(b: Bareme): Record<Difficulte, { libelle: string; descripti
       nb: null,
     },
   };
+}
+
+/**
+ * Questions éliminatoires ou obligatoires qu'un signalement ouvert écarte, annoncées avant l'épreuve :
+ * combien une question du même niveau remplace, combien restent sans remplaçante.
+ */
+function annonceEcartees(remplacees: number, nonRemplacees: number): string {
+  const total = remplacees + nonRemplacees;
+  if (total === 0) return "";
+  const s = (n: number) => (n > 1 ? "s" : "");
+  const tete = ` ${total} question${s(total)} éliminatoire${s(total)} ou obligatoire${s(total)} ${total > 1 ? "sont écartées" : "est écartée"} par un signalement ouvert`;
+  if (nonRemplacees === 0) return `${tete} : une question du même niveau en prend la place.`;
+  if (remplacees === 0) return `${tete} : aucune autre question de ${total > 1 ? "leur" : "son"} niveau ne peut ${total > 1 ? "les" : "la"} remplacer.`;
+  return `${tete} : ${remplacees} remplacée${s(remplacees)} par une question du même niveau, ${nonRemplacees} sans remplaçante faute d'autre question de ce niveau.`;
 }
 
 /** QCM à réponse unique : l'énoncé ne mentionne pas « plusieurs ». */
@@ -425,6 +441,9 @@ export function Evaluation({
   rattache = false,
   enCoursInitial = null,
   requete = "",
+  niveaux = [],
+  niveauInitial = null,
+  signalees = [],
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -444,12 +463,33 @@ export function Evaluation({
   enCoursInitial?: EtatEnCours | null;
   /** Programme à la carte (`?programme=…`) : gardé sur les liens vers les modules. */
   requete?: string;
+  /** Niveaux d'habilitation proposés comme niveau cible (questions 62 et 63). */
+  niveaux?: { code: string; libelle: string }[];
+  /** Niveau cible du profil de la page, ou du code de session ; `null` : non précisé. */
+  niveauInitial?: string | null;
+  /** Questions au signalement ouvert : écartées de tout tirage (question 62). */
+  signalees?: string[];
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
-  // Tirage d'habilitation par défaut ; Découverte seule si la banque du
-  // critère ne peut pas réunir un tirage concluant.
-  const banqueSuffisante = banque.length >= MIN_QUESTIONS_HABILITATION;
+  // Niveau cible (questions 62 et 63) : il fixe le plafond de niveau des
+  // questions tirées et la répartition du tirage, réglés au barème.
+  const [niveauCible, setNiveauCible] = useState<string>(niveauInitial ?? "");
+  const plafond = plafondDuNiveau(bareme, niveauCible || null);
+  const contexte = (d: Difficulte, m: Mode): ContexteTirage => ({
+    mode: m,
+    difficulte: d,
+    nb: DIFFICULTES[d].nb,
+    plafond,
+    repartition: bareme.repartitions[plafond],
+    signalees,
+  });
+  // Tirage d'habilitation par défaut ; Découverte seule si la banque admise
+  // au niveau cible ne peut pas réunir un tirage concluant.
+  const suffisante = (niveau: string) =>
+    bilanTirage(banque, { ...contexte("habilitation", "evaluation"), plafond: plafondDuNiveau(bareme, niveau || null) }).admises >=
+    MIN_QUESTIONS_HABILITATION;
+  const banqueSuffisante = suffisante(niveauCible);
   const [difficulte, setDifficulte] = useState<Difficulte>(banqueSuffisante ? "habilitation" : "decouverte");
   const [mode, setMode] = useState<Mode>("evaluation");
   const [demarre, setDemarre] = useState(false);
@@ -480,17 +520,18 @@ export function Evaluation({
   const [enCours, setEnCours] = useState<EtatEnCours | null>(enCoursInitial);
   const { enregistrer } = useSessionFormation();
 
-  // Tirage dans le navigateur (content/tirage.ts) : les questions réservées à
-  // l'évaluation n'entrent que dans un tirage qui peut conclure, en mode
-  // évaluation ; le serveur vérifie la conformité à la correction.
+  // Tirage dans le navigateur (content/tirage.ts) : niveau cible, questions
+  // signalées écartées, éliminatoires et obligatoires, réservées, répartition
+  // par niveau ; le serveur vérifie la conformité à la correction.
   const posees = useMemo(
     () =>
       sousEnsemble
         ? banque.filter((q) => sousEnsemble.ids.includes(q.id))
-        : tirer(banque, DIFFICULTES[difficulte].nb, reserveesAdmises(mode, difficulte)),
+        : tirer(banque, contexte(difficulte, mode)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [banque, difficulte, mode, graine, sousEnsemble],
+    [banque, difficulte, mode, graine, sousEnsemble, niveauCible],
   );
+  const bilanEvaluation = bilanTirage(banque, contexte("habilitation", "evaluation"));
   const nbReservees = banque.filter((q) => q.reservee).length;
   const nbADecouvrir = banque.filter(estADecouvrir).length;
 
@@ -547,6 +588,7 @@ export function Evaluation({
         mode,
         difficulte,
         libelle: libelleTirage,
+        niveauCible: niveauCible || null,
         reponses,
         qim,
         legendes,
@@ -564,7 +606,7 @@ export function Evaluation({
       if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, reponses, qim, legendes, rangs, trous, jugements, reveles, indexCourant, corrections]);
+  }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, niveauCible, reponses, qim, legendes, rangs, trous, jugements, reveles, indexCourant, corrections]);
 
   const effacerEnCours = () => {
     if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
@@ -575,6 +617,8 @@ export function Evaluation({
   const reprendre = (e: EtatEnCours) => {
     setMode(e.mode);
     setDifficulte(e.difficulte);
+    // Le serveur juge la reprise sous le plafond de son tirage : le niveau cible est celui de la sauvegarde.
+    setNiveauCible(e.niveauCible ?? "");
     setReponses(e.reponses);
     setQim(e.qim);
     setLegendes(e.legendes);
@@ -686,6 +730,7 @@ export function Evaluation({
       tirage: libelleTirage,
       mode,
       difficulte,
+      niveauCible: niveauCible || null,
     };
   };
 
@@ -771,8 +816,9 @@ export function Evaluation({
     effacerEnCours();
   };
 
-  /** Jamais de question réservée en entraînement, même ratée à l'évaluation. */
-  const rateesRejouables = (ids: string[]) => ids.filter((id) => !banque.find((q) => q.id === id)?.reservee);
+  /** Jamais de question réservée en entraînement, même ratée à l'évaluation ; ni de question signalée depuis. */
+  const rateesRejouables = (ids: string[]) =>
+    ids.filter((id) => !banque.find((q) => q.id === id)?.reservee && !signalees.includes(id));
 
   /** Repasse les questions ratées, une à la fois, en entraînement : rien n'est enregistré. */
   const rejouerRatees = (idsRatees: string[]) => {
@@ -828,9 +874,14 @@ export function Evaluation({
       <section className="carte">
         <h2>Régler l&apos;évaluation</h2>
         <p>
-          Les questions sont tirées au sort dans la banque du critère ({banque.length} disponibles).
-          Les questions éliminatoires sont toujours posées, et les mises en situation sont tirées avec
-          leur vignette entière.
+          Les questions sont tirées au sort dans la banque du critère : {bilanEvaluation.admises} admise
+          {bilanEvaluation.admises > 1 ? "s" : ""} au niveau cible sur {banque.length}
+          {bilanEvaluation.auDessus > 0 ? `, ${bilanEvaluation.auDessus} au-dessus du niveau cible` : ""}
+          {bilanEvaluation.signalees > 0
+            ? `, ${bilanEvaluation.signalees} écartée${bilanEvaluation.signalees > 1 ? "s" : ""} par un signalement ouvert jusqu'à sa clôture`
+            : ""}
+          . Les questions éliminatoires et obligatoires sont toujours posées, et les mises en situation sont
+          tirées avec leur vignette entière.
         </p>
         <p className="encart">
           Seuil de réussite <strong>{seuil}&nbsp;%</strong>. Une erreur sur une question éliminatoire
@@ -841,7 +892,8 @@ export function Evaluation({
         </p>
         {!banqueSuffisante && (
           <p className="encart encart--attention">
-            La banque de ce critère compte {banque.length} question{banque.length > 1 ? "s" : ""} validée{banque.length > 1 ? "s" : ""} sur les{" "}
+            Au niveau cible, la banque de ce critère admet {bilanEvaluation.admises} question
+            {bilanEvaluation.admises > 1 ? "s" : ""} validée{bilanEvaluation.admises > 1 ? "s" : ""} sur les{" "}
             {MIN_QUESTIONS_HABILITATION} requises : seul le tirage Découverte est ouvert, non concluant, pour se situer.
           </p>
         )}
@@ -864,12 +916,41 @@ export function Evaluation({
             </div>
           </div>
         )}
+        <div className="choix-niveau">
+          <label className="champ">
+            <span className="champ-titre">Niveau cible</span>
+            <select
+              name="niveauCible"
+              value={niveauCible}
+              onChange={(e) => {
+                const v = e.target.value;
+                setNiveauCible(v);
+                if (!suffisante(v)) setDifficulte("decouverte");
+              }}
+            >
+              <option value="">Non précisé — questions de tous niveaux</option>
+              {niveaux.map((n) => (
+                <option key={n.code} value={n.code}>
+                  {n.libelle}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="legende" style={{ margin: ".25rem 0 0" }}>
+            {LIBELLES_PLAFOND[plafond][0].toUpperCase() + LIBELLES_PLAFOND[plafond].slice(1)}, selon le barème ; tirage
+            Habilitation :{" "}
+            {ORDRE_NIVEAUX.map((n) => ({ n, k: repartir(bareme.tirages.habilitation, bareme.repartitions[plafond], plafond)[n] }))
+              .filter(({ k }) => k > 0)
+              .map(({ n, k }) => `${LIBELLES_NIVEAU_QUESTION[n].toLowerCase()} ${k}`)
+              .join(", ")}
+            . Les questions sans niveau complètent les places qu&apos;un niveau ne peut pas remplir.
+          </p>
+        </div>
         <fieldset className="choix-difficulte">
           <legend className="champ-titre">Tirage</legend>
           {(Object.keys(DIFFICULTES) as Difficulte[]).map((d) => {
-            const vise = DIFFICULTES[d].nb;
-            const admissibles = reserveesAdmises(mode, d) ? banque.length : banque.length - nbReservees;
-            const reel = vise === null ? admissibles : Math.min(vise, admissibles);
+            // Taille exacte du tirage : elle ne dépend pas du hasard, seulement de la banque et du réglage.
+            const reel = tirer(banque, contexte(d, mode), () => 0).length;
             const concluant = reel >= MIN_QUESTIONS_HABILITATION;
             const ferme = d !== "decouverte" && !banqueSuffisante;
             return (
@@ -906,6 +987,10 @@ export function Evaluation({
                 {nbReservees > 0
                   ? ` En Habilitation et Complet, ${nbReservees} question${nbReservees > 1 ? "s" : ""} réservée${nbReservees > 1 ? "s" : ""} à l'évaluation, jamais vue${nbReservees > 1 ? "s" : ""} en entraînement, ${nbReservees > 1 ? "sont tirées" : "est tirée"} en priorité.`
                   : ""}
+                {bilanEvaluation.obligatoires > 0
+                  ? ` ${bilanEvaluation.obligatoires} question${bilanEvaluation.obligatoires > 1 ? "s" : ""} obligatoire${bilanEvaluation.obligatoires > 1 ? "s" : ""} ${bilanEvaluation.obligatoires > 1 ? "sont posées" : "est posée"} à chaque évaluation Habilitation et Complet.`
+                  : ""}
+                {annonceEcartees(bilanEvaluation.remplacees, bilanEvaluation.nonRemplacees)}
                 {nbADecouvrir > 0
                   ? ` La banque compte ${nbADecouvrir > 1 ? `${nbADecouvrir} schémas` : "un schéma"} à découvrir : s'il est tiré, votre tuteur, assis à côté de vous, juge chaque cache et confirme par son propre code à la validation.`
                   : ""}
@@ -944,6 +1029,7 @@ export function Evaluation({
         <span className="etiquette etiquette--neutre">{etatLisible(d)}</span>
         {d.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
         {d.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
+        {d.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
         <span style={{ marginLeft: "auto", fontWeight: 650 }}>{nombre(d.note)} pt</span>
       </div>
       <p>
@@ -998,6 +1084,7 @@ export function Evaluation({
           <span className="etiquette etiquette--site">{libelleFormat(q)}</span>
           {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
           {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
+          {q.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
         </div>
 
         {q.type === "TAT" ? (
@@ -1126,6 +1213,13 @@ export function Evaluation({
         <p className={`encart${decision.verdictBrut === "acquis" ? "" : " encart--attention"}`}>
           {expliquerVerdict(decision)}
         </p>
+
+        {resultat.cible && (
+          <p className="legende">
+            {libelleCible(resultat.cible)}
+            {libelleEcartees(resultat.cible) ? ` ${libelleEcartees(resultat.cible)}` : ""}
+          </p>
+        )}
 
         {resultat.jugement && resultat.jugement.role !== "apprenant" && (
           <p className="encart">
