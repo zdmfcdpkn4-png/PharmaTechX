@@ -1962,7 +1962,8 @@ sans rien qui prenne le focus, donc sans défilement au clavier (axe,
 atteignable. Champ de seuil des modules : 24 px de haut sur écran tactile,
 conforme AA, sous les 44 px visés par le site. Vignette du titre d'un module
 sur téléphone : 56 px depuis le 19/09, sous les 72 px fixés pour les
-illustrations (`content/badges.ts`).
+illustrations (`content/badges.ts`) — portée à 72 px le 23/09/2026 (choix b,
+« Vignette du titre d'un module sur téléphone »).
 
 ## Tableau de bord de l'accueil : ce qui a été retenu du prompt de modernisation (22/09/2026)
 
@@ -2378,6 +2379,46 @@ seul bogue ; c) documenter seulement.
   s'est pas présenté ici.
 - `npm ci --ignore-scripts` installerait React sans le correctif : le test le
   signale ; le build Render n'emploie pas cette option.
+
+## Vignette du titre d'un module sur téléphone : 72 px (23/09/2026, choix b)
+
+**Constat** (audit du 22/09/2026). Sous 34rem (544 px), l'illustration à côté
+du titre d'un module passait de 96 à 56 px, sous le seuil d'environ 72 px en
+dessous duquel une illustration ne se lit plus (`content/badges.ts`).
+
+**Options**, mesurées sur iPhone SE avec le titre long de B1-06 (« Principe
+d'une ZAC ; surveillance des températures… ») : a) la masquer — titre de
+296 px de large, 6 lignes ; b) 72 px — 212 px, 11 lignes ; c) garder 56 px —
+228 px, 9 lignes, dessin illisible.
+
+**Tranché : b.** `.titre-vignette .badge--illustration` passe à 72 px sous
+34rem (`app/globals.css`) : page d'un module (vignette de 96 px au-delà) et
+liste des modules déposés (vignette de 72 px, que la règle ne réduit plus).
+
+Mesuré le 23/09/2026 (Chromium, appareils émulés), titre long de B1-06 et
+titre moyen du module « Protection de l'opérateur… » :
+
+| Largeur | Vignette | Colonne du titre | Titre long | Titre moyen |
+|---|---|---|---|---|
+| 320 px | 72 px | 157 px | 13 lignes, un mot dépasse de 35 px | 6 lignes |
+| iPhone SE (375 px) | 72 px | 212 px | 11 lignes | 4 lignes |
+| iPhone 15 (393 px) | 72 px | 230 px | 9 lignes | 4 lignes |
+| 544 px | 72 px | 381 px | 6 lignes | 3 lignes |
+| 560 px | 96 px | 369 px | 6 lignes | 3 lignes |
+
+Aucune page ne défile de côté.
+
+**Limite, à trancher.** Jusqu'à 360 px de large environ — vieux téléphones,
+mais aussi écran de PC zoomé à 400 %, 320 px étant la largeur de référence du
+critère WCAG 2.2 1.4.10 (*Reflow*) —, la colonne du titre (largeur de l'écran
+moins 163 px) est plus étroite que certains mots en 28 px : à 320 px,
+« réfrigérateurs, » (199 px) dépasse du bloc de 35 px, contre 19 px à 56 px.
+Le mot reste lisible et la page ne défile pas de côté, mais il sort de la
+carte. Le défaut existait, le choix b l'accentue. Essayés sans les retenir :
+couper les mots trop longs (`overflow-wrap`), qui les casse sans trait
+d'union (« surveillanc / e ») ; la césure automatique (`hyphens: auto`),
+inopérante dans le Chromium de test, faute de dictionnaire — sur iOS et
+Android `[à vérifier]`.
 
 ## Non fait
 

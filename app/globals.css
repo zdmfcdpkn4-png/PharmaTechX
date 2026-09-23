@@ -2126,9 +2126,11 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .titre-vignette { display: flex; align-items: flex-start; gap: 1rem; }
 .titre-vignette > div { min-width: 0; }
 .titre-vignette > div > :first-child { margin-top: 0; }
+/* Sur téléphone, 72 px et non moins : le seuil de lisibilité des
+   illustrations. Un titre long y gagne des lignes (choix b du 23/09/2026). */
 @media (max-width: 34rem) {
   .titre-vignette { gap: 0.75rem; }
-  .titre-vignette .badge--illustration { width: 56px; height: 56px; }
+  .titre-vignette .badge--illustration { width: 72px; height: 72px; }
 }
 .case-seule {
   display: inline-flex; align-items: center; gap: 0.5rem;
