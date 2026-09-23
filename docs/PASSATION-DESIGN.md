@@ -75,7 +75,8 @@ réelles du projet (`public/`), aux hauteurs indiquées dans `globals.css`
 ### Typographie
 
 `"Aptos", "Inter", ui-sans-serif, system-ui, …` — Aptos est présente sur les postes du CHD
-via Office ; Inter est le repli web (Google Fonts, poids 400/500/600/700). **Gilroy est
+via Office ; Inter est le repli web (poids 400/500/600/700 ; servie par le site depuis le
+23/09/2026, plus par Google Fonts — `docs/DECISIONS.md`). **Gilroy est
 réservé à l'imprimé par la charte : ne pas l'utiliser ici.**
 
 ### Accessibilité — WCAG 2.1 AA
@@ -455,9 +456,10 @@ Ce qui a été repris du présent handoff, et ce qui reste ouvert.
   `--decalage`, retour en haut avec focus replacé, `prefers-reduced-motion`.
 - Fond organique à quatre formes, `aria-hidden`, en couche fixe.
 - Logos réels remis en place aux hauteurs prévues.
-- Inter chargée par `<link>` plutôt que `next/font` — pas de récupération au
+- ~~Inter chargée par `<link>` plutôt que `next/font` — pas de récupération au
   build, et le rendu reste correct si Google Fonts est injoignable depuis le
-  réseau de l'établissement.
+  réseau de l'établissement.~~ Remplacé le 23/09/2026 : Inter est servie par
+  le site, sans aucun appel à Google (`docs/DECISIONS.md`).
 - Accueil restructuré : héros, `#modules`, `#dispositif` (6 étapes avec leur
   étiquette de lieu et leur preuve), `#evaluation` (les 6 formats et leur
   barème), programme complet replié par bloc en `.ligne-critere`, conditions

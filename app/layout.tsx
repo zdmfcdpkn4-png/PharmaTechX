@@ -226,23 +226,9 @@ export default async function RootLayout({
 
   return (
     <html lang="fr">
-      <head>
-        {/* Inter en repli web. Aptos, présente sur les postes du CHD via
-            Office, reste en tête de la pile (voir `body` dans globals.css).
-            Chargée par lien plutôt que par next/font : pas de récupération au
-            build, et le rendu reste correct si Google Fonts est injoignable
-            depuis le réseau de l'établissement. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        />
-      </head>
+      {/* Aucune ressource tierce : Inter, en repli d'Aptos, est servie par le
+          site lui-même (`@font-face` en tête de globals.css, décision du
+          23/09/2026). */}
       <body>
         {/* Décor : quatre formes floutées en dérive très lente, derrière tout. */}
         <div className="fond-organique" aria-hidden="true">

@@ -108,8 +108,20 @@ Justification : cf. procédure interne.`,
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
-  page.on("pageerror", (e) => console.log("ERREUR PAGE:", e.message));
+  page.on("pageerror", (e) => console.log("ERREUR PAGE:", page.url(), e.message));
   page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE:", m.text()); });
+  // Aucune ressource tierce (décision du 23/09/2026) : toute requête hors de
+  // l'origine du site, dans chaque contexte, est relevée et fait échouer la fin
+  // du parcours. Seule exception, la page « pirate » que le test d'encadrement
+  // sert lui-même depuis une autre origine.
+  const originesAdmises = new Set([new URL(BASE).origin]);
+  const tiers = new Set();
+  const surveillerTiers = (c) =>
+    c.on("request", (r) => {
+      const u = r.url();
+      if (/^https?:/.test(u) && !originesAdmises.has(new URL(u).origin)) tiers.add(new URL(u).host);
+    });
+  surveillerTiers(ctx);
   /** Capture d'un écran (ou d'un élément), seulement si CAPTURES est défini. */
   const capture = async (nom, cible) => {
     if (!CAPTURES) return;
@@ -1943,6 +1955,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/nouveau=/);
   let codeJetable = new URL(page.url()).searchParams.get("nouveau");
   const ctx2 = await browser.newContext();
+  surveillerTiers(ctx2);
   const page2 = await ctx2.newPage();
   const entrerJetable = async () => {
     await page2.goto(BASE + "/connexion");
@@ -2227,6 +2240,7 @@ Justification : cf. procédure interne.`,
     res.end(`<!doctype html><title>origine tierce</title><iframe id="cadre-test" src="${BASE}/connexion"></iframe>`);
   });
   await new Promise((r) => pirate.listen(0, "127.0.0.1", r));
+  originesAdmises.add("http://127.0.0.1:" + pirate.address().port);
   await page.goto("http://127.0.0.1:" + pirate.address().port + "/");
   await page.waitForTimeout(1500);
   assert.equal(await champCadre(), 0, "autre origine : le site refuse d'être encadré");
@@ -2251,6 +2265,9 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/erreur=bloque/);
   await page.waitForSelector("[role=alert]:has-text('Trop de tentatives')");
   ok("limiteur : adresse bloquée après cinq échecs");
+
+  assert.deepEqual([...tiers], [], `requêtes hors du site : ${[...tiers].join(", ")}`);
+  ok("aucune ressource tierce : polices servies par le site, aucune requête hors de son origine");
 
   await browser.close();
   console.log("\nE2E terminé : " + etapes.length + " étapes réussies");

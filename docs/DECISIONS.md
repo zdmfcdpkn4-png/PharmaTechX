@@ -2033,6 +2033,53 @@ partout, cibles tactiles, contrastes mesurés, mode zone.
   que la page soit prête ; la barre de navigation donne le retour sans
   changer le rendu.
 
+## Police Inter servie par le site, plus par Google (23/09/2026, choix b)
+
+**Constat** (audit du 22/09/2026). Chaque page, connexion comprise, chargeait
+la police Inter depuis `fonts.googleapis.com` et `fonts.gstatic.com` : le
+navigateur de chaque poste transmettait ainsi son adresse IP à Google, alors
+que l'onglet RGPD et `docs/RGPD.md` annoncent « aucun tiers ». Une adresse IP
+dynamique peut être une donnée à caractère personnel (CJUE, 19/10/2016,
+*Breyer*, C-582/14, ECLI:EU:C:2016:779). Décision de référence sur ce cas
+précis : LG München I, 20/01/2022, 3 O 17493/20 — l'intérêt légitime ne
+couvre pas l'appel à Google puisque la police peut être hébergée localement ;
+juridiction allemande de première instance, sans autorité en France.
+
+**Options.** a) retirer Inter (Aptos puis polices du système) ; b) héberger
+Inter sur le site ; c) garder Google Fonts et le déclarer comme destinataire.
+
+**Tranché : b.** Aucun tiers, rendu identique partout.
+
+- Fichiers : `public/polices/inter/`, tirés du paquet npm
+  `@fontsource-variable/inter` 5.3.0 (police Inter, licence SIL OFL 1.1,
+  texte joint en `OFL.txt`) ; axe de graisse seul ; trois sous-ensembles :
+  latin (48 Ko), latin étendu (85 Ko), grec (19 Ko — ΔP, β, γ peuvent venir
+  d'une question déposée). Empreintes SHA-256 :
+  `3100e775…4c62` (latin), `34b9c504…c956` (latin étendu),
+  `1be3448e…b6f6` (grec).
+- Déclaration : `@font-face` en tête de `app/globals.css`, graisses bornées
+  à 400–700 comme le lien d'avant, `font-display: swap`, sans préchargement :
+  le navigateur ne télécharge un fichier que si la page emploie un caractère
+  de son sous-ensemble, et aucun quand Aptos, en tête de pile, est présente.
+- Servis sans session : le middleware laisse passer les `.woff2`, la page de
+  connexion a donc sa police.
+- Garde-fou : la chaîne de bout en bout relève toute requête hors de
+  l'origine du site, dans chacun de ses contextes, et échoue s'il y en a une
+  — seule exception, la page « pirate » que le test d'encadrement sert
+  lui-même depuis une autre origine.
+- Vérifié le 23/09/2026 : fichier latin servi sans session (200,
+  `font/woff2`) ; police chargée et rendue sur la connexion et l'accueil
+  (PC 1366, iPhone SE émulé), latin étendu et grec non téléchargés ; aucune
+  requête hors du site ; audit d'affichage refait en Inter (six tailles) :
+  aucune page qui déborde, en-têtes et volet inchangés.
+- Mise à jour : remplacer les trois fichiers par ceux d'une version plus
+  récente du paquet (`npm pack`), avec leurs empreintes ici.
+- Hors périmètre : les maquettes `docs/maquettes/*.dc.html` appellent encore
+  Google Fonts ; ce sont des documents de conception, que le site ne sert pas.
+
+**Effet réel** : seulement quand la branche `production` portera ce
+changement. D'ici là, le site en ligne continue d'appeler Google Fonts.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

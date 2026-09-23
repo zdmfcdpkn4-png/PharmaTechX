@@ -7,7 +7,8 @@
  *   Secondaires  #46B4B3 turquoise et #F4C137 jaune  — accents ponctuels
  *   Identité     barre rose verticale à gauche, bandeau bleu en pied,
  *                logos HdV et Pharmacotechnie jamais déformés ni recolorés
- *   Typographie  Aptos (postes CHD via Office), Inter en repli web.
+ *   Typographie  Aptos (postes CHD via Office), Inter en repli, servie par
+ *                le site (public/polices/inter, voir @font-face ci-dessous).
  *                Gilroy réservé à l'imprimé par la charte : non utilisé ici.
  *
  * Nouveautés de cette version :
@@ -21,6 +22,43 @@
  * Le mode sombre est volontairement laissé en attente (décision : à traiter
  * plus tard). Le bloc en fin de fichier documente ce qu'il faudra reprendre.
  * ========================================================================== */
+
+/* Inter, servie par le site (décision du 23/09/2026, choix b) : le lien vers
+   Google Fonts transmettait l'adresse IP de chaque poste à Google, connexion
+   comprise. Fichiers de @fontsource-variable/inter 5.3.0, licence SIL OFL 1.1
+   (public/polices/inter/OFL.txt) : axe de graisse seul, trois sous-ensembles.
+   Le navigateur ne télécharge que ceux dont la page emploie un caractère, et
+   aucun quand Aptos, en tête de pile, est présente. Graisses bornées à 400–700
+   comme le lien d'avant : un 800 se rend en 700, rien ne change à l'écran. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/polices/inter/inter-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/polices/inter/inter-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* Grec : ΔP, β, γ peuvent venir d'une question déposée. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/polices/inter/inter-greek-wght-normal.woff2") format("woff2");
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
 
 :root {
   /* --- charte ------------------------------------------------------------ */
