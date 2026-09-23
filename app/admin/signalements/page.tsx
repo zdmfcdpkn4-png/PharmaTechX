@@ -1,11 +1,26 @@
 import Link from "next/link";
 import { listerSignalements } from "@/content/banque-db";
-import { actionTraiterSignalement } from "../questions/actions";
+import { LIBELLES_STATUT_SIGNALEMENT } from "@/content/signalements";
+import { getModule, getTousModulesAvecDeposes } from "@/content/store";
+import { banqueDuModule } from "@/content/types";
+import { actionRejeterSignalement, actionTraiterSignalement } from "../questions/actions";
+import { titreModule } from "../questions/commun";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Énoncé d'une question de la banque versionnée avec le site : absente de la
+ * table des questions, elle ne sortait de la jointure que par son identifiant
+ * (question 54, choix a + b).
+ */
+function enonceDuCode(moduleId: string, questionId: string): string | null {
+  const m = getModule(moduleId);
+  return m ? (banqueDuModule(m).find((q) => q.id === questionId)?.enonce ?? null) : null;
+}
+
 export default async function Signalements() {
-  const signalements = await listerSignalements();
+  const [signalements, modules] = await Promise.all([listerSignalements(), getTousModulesAvecDeposes()]);
+  const duCode = new Map(signalements.map((s) => [s.id, s.enonce ? null : enonceDuCode(s.module_id, s.question_id)]));
   return (
     <>
       <section className="panneau-titre">
@@ -20,19 +35,25 @@ export default async function Signalements() {
         {signalements.map((s) => (
           <li key={s.id} className="carte">
             <div className="etape-tete">
-              <span className={`etiquette ${s.statut === "ouvert" ? "etiquette--attention" : "etiquette--neutre"}`}>{s.statut}</span>
+              <span className={`etiquette ${s.statut === "ouvert" ? "etiquette--attention" : "etiquette--neutre"}`}>{LIBELLES_STATUT_SIGNALEMENT[s.statut]}</span>
               <strong>{s.motif}</strong>
               <span className="legende" style={{ marginLeft: "auto" }}>
-                {new Date(s.cree_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} · {s.module_id}
+                {new Date(s.cree_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} · {titreModule(modules, s.module_id)}
               </span>
             </div>
-            <p style={{ marginBottom: ".25rem" }}>{s.enonce ?? <span className="legende">question de la banque versionnée : {s.question_id}</span>}</p>
+            <p style={{ marginBottom: ".25rem" }}>
+              {s.enonce ?? duCode.get(s.id) ?? (
+                <span className="legende">Question introuvable, supprimée ou renommée depuis le signalement : {s.question_id}</span>
+              )}
+            </p>
             {s.note && <p className="legende">« {s.note} »</p>}
-            {s.enonce && (
+            {s.enonce ? (
               <p className="legende">
                 <Link href={`/admin/questions/${s.question_id}`}>Ouvrir la question</Link>
               </p>
-            )}
+            ) : duCode.get(s.id) ? (
+              <p className="legende">Banque versionnée avec le site : elle se corrige dans le code ({s.question_id}).</p>
+            ) : null}
             {s.statut === "ouvert" ? (
               <form action={actionTraiterSignalement}>
                 <input type="hidden" name="id" value={s.id} />
@@ -42,12 +63,12 @@ export default async function Signalements() {
                 </label>
                 <div className="actions">
                   <button type="submit" name="statut" value="traite" className="bouton bouton--compact">Clore — traité</button>
-                  <button type="submit" name="statut" value="rejete" className="bouton bouton--compact bouton--secondaire">Rejeter</button>
+                  <button type="submit" formAction={actionRejeterSignalement} className="bouton bouton--compact bouton--secondaire">Rejeter</button>
                 </div>
               </form>
             ) : (
               <p className="legende">
-                {s.statut === "traite" ? "Traité" : "Rejeté"} par {s.traite_par} le{" "}
+                {LIBELLES_STATUT_SIGNALEMENT[s.statut]} par {s.traite_par} le{" "}
                 {s.traite_le ? new Date(s.traite_le).toLocaleDateString("fr-FR") : ""}{s.reponse ? ` — ${s.reponse}` : ""}
               </p>
             )}

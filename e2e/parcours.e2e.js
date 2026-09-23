@@ -558,6 +558,12 @@ Justification : cf. procédure interne.`,
 
   // 8. signalement sur la première question du tirage
   await page.locator("details.signaler summary").first().click();
+  // question 54 (a + b) : la question à réviser a son motif, à côté de l'erreur
+  assert.equal(
+    await page.locator("details.signaler select").first().locator("option", { hasText: "À mettre à jour (référence ou pratique périmée)" }).count(),
+    1,
+    "motif de révision proposé à l'apprenant",
+  );
   await page.locator("details.signaler select").first().selectOption("Ambigu");
   await page.locator("details.signaler textarea").first().fill("Test de signalement e2e");
   await page.locator("details.signaler button:has-text('Transmettre')").first().click();
@@ -606,8 +612,67 @@ Justification : cf. procédure interne.`,
   // 10b. le signalement est traité : l'arbitrage s'ouvre
   await page.goto(BASE + "/admin/signalements");
   await page.waitForSelector("text=Test de signalement e2e");
+  // Question 54 (a + b) : statut accentué, module nommé, et le signalement lu
+  // aussi dans la banque — sur la liste et sur la fiche de la question.
+  const carteSignalement = page.locator("li.carte", { hasText: "Test de signalement e2e" });
+  // textContent : l'étiquette est en capitales à l'écran (text-transform).
+  assert.equal((await carteSignalement.locator(".etiquette").first().textContent()).trim(), "Ouvert", "statut accentué, non plus la valeur brute");
+  const enteteSignalement = await carteSignalement.locator(".etape-tete .legende").textContent();
+  assert.ok(
+    enteteSignalement.includes("B1-02 — ") && !enteteSignalement.includes("critere-b1-02"),
+    "module désigné par son critère et son titre, non par son identifiant",
+  );
+  const lienQuestion = await carteSignalement.locator("a:has-text('Ouvrir la question')").getAttribute("href");
+  await page.goto(BASE + "/admin/questions?module=critere-b1-02");
+  const ligneSignalee = page.locator("li.question-ligne", { has: page.locator(`a[href="${lienQuestion}"]`) });
+  assert.equal(
+    (await ligneSignalee.locator(".etiquette--attention", { hasText: "signalement" }).textContent()).trim(),
+    "1 signalement ouvert",
+    "la liste de la banque marque la question signalée",
+  );
+  await page.goto(BASE + lienQuestion);
+  assert.ok(
+    (await page.locator(".encart--attention", { hasText: "signalement ouvert sur cette question" }).textContent()).includes(
+      "Ambigu — « Test de signalement e2e »",
+    ),
+    "la fiche de la question détaille le signalement ouvert",
+  );
+  await page.goto(BASE + "/admin/signalements");
   await page.locator("button:has-text('Clore — traité')").first().click();
   await page.waitForSelector("text=Traité par");
+  assert.equal((await carteSignalement.locator(".etiquette").first().textContent()).trim(), "Traité", "statut clos accentué");
+
+  // Question de la banque versionnée avec le site : l'écran des signalements
+  // en donne l'énoncé, lu dans le code, et non plus le seul identifiant ; le
+  // motif de révision passe le contrôle du serveur. Rejeté aussitôt : ouvert,
+  // il verrouillerait les rapports qui tirent cette question.
+  const enonceDuCode = /id: "zac-q1",[\s\S]*?enonce:\s*"([^"]+)"/.exec(
+    fs.readFileSync(path.join(__dirname, "..", "content", "modules", "comportement-zac.ts"), "utf8"),
+  )[1];
+  const depotSignalement = await page.evaluate(async () => {
+    const r = await fetch("/api/signalement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: "zac-q1",
+        moduleId: "comportement-zac",
+        motif: "À mettre à jour (référence ou pratique périmée)",
+        note: "Signalement e2e d'une question du code",
+      }),
+    });
+    return { statut: r.status, corps: await r.json() };
+  });
+  assert.deepEqual(depotSignalement, { statut: 200, corps: { ok: true } }, "motif de révision accepté par le serveur");
+  await page.goto(BASE + "/admin/signalements");
+  const carteDuCode = page.locator("li.carte", { hasText: "Signalement e2e d'une question du code" });
+  const texteDuCode = await carteDuCode.textContent();
+  assert.ok(texteDuCode.includes(enonceDuCode), "énoncé de la question du code affiché");
+  assert.ok(texteDuCode.includes("elle se corrige dans le code (zac-q1)"), "la correction se fait dans le code, et l'écran le dit");
+  assert.equal(await carteDuCode.locator("strong").first().textContent(), "À mettre à jour (référence ou pratique périmée)");
+  await carteDuCode.locator("button:has-text('Rejeter')").click();
+  await carteDuCode.locator("text=Rejeté par").waitFor();
+  ok("signalements lisibles : statut accentué, module nommé, énoncé d'une question du code, question signalée marquée sur la liste et la fiche, motif « À mettre à jour »");
+
   await page.goto(urlRapport);
   await titreArbitrage.waitFor();
   assert.equal(await titreVisaTuteur.count(), 0);

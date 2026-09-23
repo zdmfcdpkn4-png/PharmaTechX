@@ -2609,6 +2609,55 @@ l'accueil, voit refuser le changement de métier de la filière, la
 désactive, modifie AP-N1 sous son code et le retrouve sous l'intitulé de
 l'aide dans les Repères, puis rend la base à son état d'avant.
 
+## Signalement des questions : l'existant complété (23/09/2026, question 54, choix a + b)
+
+**Demande.** « Créer un système de signalement comme pour le quiz si non
+existant, pour signaler les questions erronées ou nécessitant une révision —
+vérifier avant d'agir. » **Vérifié : il existe**, repris du Lecteur QIM · QCM
+le 18/09/2026 (tableau en tête de ce journal ; qui peut signaler : question
+30). Depuis la correction de chaque question, en entraînement comme en
+évaluation, tout code signale — motif fermé, précision libre, rien de
+nominatif ; le tutorat clôt ou rejette depuis Administration → Suivi →
+Signalements ; un signalement ouvert sur une question tirée bloque l'arbitrage
+et les visas des rapports en cours. En mode test, il n'est pas transmis.
+
+**Tranché : a + b** — corriger l'écran du tutorat (a) et rendre le
+signalement visible là où la question se révise (b).
+
+**Ce qui est fait.**
+- Motif « À mettre à jour (référence ou pratique périmée) » : la révision a
+  le sien, à côté de l'erreur. « Ambigu » reste proposé d'abord, « Autre » en
+  dernier. Aucune migration : la base ne contraint pas le motif.
+- Écran Signalements : statut accentué (Ouvert, Traité, Rejeté, au lieu des
+  valeurs brutes de la base) ; module désigné par son critère et son titre ;
+  question de la banque versionnée lue dans le code, avec son énoncé et la
+  mention qu'elle s'y corrige ; question disparue dite introuvable, et non
+  plus « de la banque versionnée ».
+- Banque de questions : étiquette « n signalement(s) ouvert(s) » sur la
+  question signalée ; sur sa fiche, un encart détaille motif, précision et
+  date, rappelle le blocage des rapports en cours et renvoie à l'écran
+  Signalements. Une question de la banque versionnée n'a pas de fiche : son
+  signalement se lit sur l'écran Signalements seulement.
+
+**Défaut corrigé au passage** (révélé par l'étape de bout en bout ajoutée).
+« Rejeter » enregistrait « traité », depuis toujours : la valeur du bouton
+cliqué (`statut=rejete`) ne parvenait pas à l'action du formulaire — le
+navigateur la connaît au moment de l'envoi, mais les champs transmis sont
+`id` et `reponse` seulement ; la cause dans React n'est pas élucidée.
+« Rejeter » porte désormais sa propre action (`formAction`,
+`actionRejeterSignalement`). Les rejets antérieurs figurent donc « traité »,
+au journal aussi (`signalement:traite`) ; seule une réponse saisie à la
+clôture peut les distinguer, `[à vérifier]` sur la base réelle. Le seul autre
+bouton qui transmet sa valeur, « Rétablir la fiche » du réglage des modules,
+a été contrôlé : sa valeur part bien (`mode=defaut`).
+
+**Vérifié le 23/09/2026.** `npm run verifier` (246 tests), `npm run build`,
+deux passes de bout en bout de 80 étapes, sans erreur de page ni erreur
+serveur. L'étape ajoutée lit le motif de révision proposé à l'apprenant, le
+statut « Ouvert » puis « Traité », le module nommé, l'étiquette de la liste et
+l'encart de la fiche ; elle dépose ensuite, par l'API, un signalement « À
+mettre à jour » sur une question du code, en lit l'énoncé et le rejette.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

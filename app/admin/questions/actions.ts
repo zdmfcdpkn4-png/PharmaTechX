@@ -426,3 +426,13 @@ export async function actionTraiterSignalement(formData: FormData) {
   revalidatePath("/admin/signalements");
   redirect("/admin/signalements");
 }
+
+/**
+ * « Rejeter » a sa propre action, posée sur le bouton (`formAction`) : la
+ * valeur du bouton cliqué ne parvenait pas à l'action du formulaire, et un
+ * rejet s'enregistrait « traité » (constaté le 23/09/2026, question 54).
+ */
+export async function actionRejeterSignalement(formData: FormData) {
+  formData.set("statut", "rejete");
+  return actionTraiterSignalement(formData);
+}

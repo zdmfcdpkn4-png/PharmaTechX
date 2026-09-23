@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { comptesParModule, listerQuestions, type StatutQuestion } from "@/content/banque-db";
+import { comptesParModule, listerQuestions, signalementsOuvertsParQuestion, type StatutQuestion } from "@/content/banque-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
@@ -35,10 +35,11 @@ export default async function Questions({
       : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
         ? (p.niveau as NiveauQuestion)
         : undefined;
-  const [toutes, comptes, referentiel] = await Promise.all([
+  const [toutes, comptes, referentiel, signales] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
+    signalementsOuvertsParQuestion(),
   ]);
   const questions = filtreNiveau
     ? toutes.filter((q) => (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau))
@@ -166,6 +167,12 @@ export default async function Questions({
                   <span className={`etiquette ${q.statut === "valide" ? "etiquette--ok" : q.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
                     {LIBELLES_STATUT[q.statut]}
                   </span>
+                  {/* Question 54 (a + b) : le signalement se voit là où la question se corrige. */}
+                  {(signales[q.id] ?? 0) > 0 && (
+                    <span className="etiquette etiquette--attention">
+                      {signales[q.id]} signalement{signales[q.id] > 1 ? "s" : ""} ouvert{signales[q.id] > 1 ? "s" : ""}
+                    </span>
+                  )}
                   {q.niveau_question ? (
                     <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveau_question]}</span>
                   ) : (

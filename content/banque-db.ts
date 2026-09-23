@@ -437,3 +437,26 @@ export async function compterSignalementsOuverts(): Promise<number> {
   const r = await sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM signalements WHERE statut = 'ouvert'`;
   return r.rows[0]?.n ?? 0;
 }
+
+/**
+ * Signalements ouverts, par question (question 54, choix a + b) : la banque
+ * les montre là où la question se corrige, et non plus sur le seul écran des
+ * signalements.
+ */
+export async function signalementsOuvertsParQuestion(): Promise<Record<string, number>> {
+  const r = await sql<{ question_id: string; n: number }>`
+    SELECT question_id, COUNT(*)::int AS n FROM signalements
+    WHERE statut = 'ouvert' GROUP BY question_id`;
+  return Object.fromEntries(r.rows.map((l) => [l.question_id, l.n]));
+}
+
+/** Signalements ouverts d'une question, du plus récent au plus ancien. */
+export async function signalementsOuvertsDe(questionId: string): Promise<LigneSignalement[]> {
+  const r = await sql<LigneSignalement>`
+    SELECT s.id, s.question_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
+           s.traite_par, s.traite_le::text, s.reponse, NULL::text AS enonce
+    FROM signalements s
+    WHERE s.question_id = ${questionId} AND s.statut = 'ouvert'
+    ORDER BY s.cree_le DESC`;
+  return r.rows;
+}

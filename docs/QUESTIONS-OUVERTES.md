@@ -371,6 +371,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+54. **Signalement des questions erronées ou à réviser** — demandé le
+    23/09/2026 « s'il n'existe pas » ; vérifié : il existe (question 30).
+    Tranché le même jour (choix a + b) : écran du tutorat corrigé (statut
+    accentué, module nommé, énoncé des questions du code), motif « À mettre à
+    jour (référence ou pratique périmée) », signalements ouverts marqués sur
+    la liste et la fiche de la question. « Rejeter », qui enregistrait
+    « traité », corrigé au passage. Détail dans `DECISIONS.md`.
+
 53. **Source des échelles des trois autres métiers** — posée le 23/09/2026
     sous le libellé « 47 bis », tranchée le même jour (choix b, après un
     premier choix a retiré avant tout travail) : saisies au Référentiel. Le
