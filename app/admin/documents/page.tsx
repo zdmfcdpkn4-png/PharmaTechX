@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { listerDepots } from "@/lib/db";
+import { LIBELLES_STATUT_FICHE } from "@/content/fiches";
 import { modeStockage, stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { getReferentiel } from "@/content/referentiel-db";
@@ -14,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   "type-refuse": "Type de fichier refusé : PDF, PNG, JPEG, MP4, WebM, texte, Word, PowerPoint ou Excel.",
   "stockage-absent": "Aucun stockage de fichiers n'est disponible.",
   "module-inconnu": "Module de rattachement inconnu.",
+  "fiche-sans-module":
+    "Une fiche de synthèse se rattache à un module : elle se montre en fin de test de ce module, et se valide depuis sa banque.",
 };
 
 export default async function Documents({
@@ -35,13 +39,19 @@ export default async function Documents({
           Procédures internes, fiches réflexes, référentiels, vidéos et fiches de synthèse,
           rattachés à un module (du code ou déposé) ou généraux. Une <strong>fiche de synthèse</strong>{" "}
           rattachée à un module s&apos;affiche en fin de test, après la correction (PDF et images en
-          ligne). Un document général se propose à tous les profils, ou aux filières et niveaux
+          ligne), une fois validée depuis la banque du module (question 59). Un document général se propose à tous les profils, ou aux filières et niveaux
           cochés : il apparaît alors sur le programme de ces profils. Stockage :{" "}
           {mode === "blob" ? "Vercel Blob" : mode === "base" ? "base de données (portable, sans service supplémentaire)" : "aucun"}.
         </p>
       </section>
 
       {p.ok === "depose" && <p className="encart encart--ok">Document déposé.</p>}
+      {p.ok === "fiche-a-verifier" && (
+        <p className="encart encart--ok">
+          Fiche de synthèse déposée, à vérifier : elle n&apos;est montrée qu&apos;une fois validée, depuis la banque du module,
+          par un autre code que le vôtre — ou le vôtre, tracé, s&apos;il est d&apos;administration.
+        </p>
+      )}
       {p.erreur && MESSAGES[p.erreur] && <p className="encart encart--attention">{MESSAGES[p.erreur]}</p>}
       {!stockageConfigure() && (
         <p className="encart encart--attention">
@@ -69,7 +79,7 @@ export default async function Documents({
                 {(Object.keys(NATURES_DOCUMENT) as (keyof typeof NATURES_DOCUMENT)[]).map((n) => (
                   <option key={n} value={n}>
                     {NATURES_DOCUMENT[n]}
-                    {n === "synthese" ? " — affichée en fin de test" : ""}
+                    {n === "synthese" ? " — à valider, puis affichée en fin de test" : ""}
                   </option>
                 ))}
               </select>
@@ -124,6 +134,13 @@ export default async function Documents({
         {depots.map((d) => (
           <li key={d.id} className="carte">
             <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
+            {d.nature === "synthese" && (
+              <>
+                <span className={`etiquette ${d.statut === "valide" ? "etiquette--ok" : d.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
+                  {LIBELLES_STATUT_FICHE[d.statut]}
+                </span>{" "}
+              </>
+            )}
             <a href={d.url} target="_blank" rel="noreferrer">
               {d.titre}
             </a>
@@ -136,6 +153,14 @@ export default async function Documents({
                   ? ""
                   : " · tous profils"}
               {" · "}déposé le {new Date(d.depose_le).toLocaleDateString("fr-FR")} par {d.depose_par}
+              {d.nature === "synthese" && d.module_id && (
+                <>
+                  {" · "}
+                  <Link href={`/admin/questions?module=${encodeURIComponent(d.module_id)}#fiches`}>
+                    {d.statut === "a_verifier" ? "à valider dans la banque du module" : "voir dans la banque du module"}
+                  </Link>
+                </>
+              )}
             </span>
             <div className="actions" style={{ marginTop: ".5rem" }}>
               <form action={actionSupprimerDepot}>

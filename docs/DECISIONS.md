@@ -3006,6 +3006,106 @@ le serveur quand on force l'envoi, l'écran gardant les choix faits ; après
 trois modules, chacune dans le format choisi. Aperçu vu à 1 280 et 360 px
 de large, sans défilement horizontal.
 
+## Fiche de synthèse validée, citée et signalable (23/09/2026, questions 59 et 60, choix a)
+
+**Demandes.** « Pouvoir intégrer à la validation du module une fiche de
+synthèse que l'on pourrait déposer dans la banque et relier à la validation
+du module. » Puis : « idem pour les fiches de synthèse, pouvoir les signaler
+si défaut. »
+
+**Constaté avant le travail.**
+- Une fiche de synthèse se déposait depuis Administration → Documents et
+  s'affichait en fin de test dès son dépôt, sans relecture par un autre code.
+- Le rapport d'évaluation ne la citait pas, et la banque n'offrait pas de
+  dépôt de fiche.
+- Le signalement ne portait que sur les questions.
+
+**Tranché.**
+- Question 59, **a** (réponse « À » lue comme a) : « validation du module »
+  désigne la validation du contenu par le tutorat. Écartés : la lecture
+  attestée par l'apprenant (b), parce qu'une case cochée atteste une
+  déclaration, pas une lecture ; les deux (c).
+- Question 60, **a** : le même circuit que les questions, sans effet sur les
+  rapports. Écartés : le verrou des visas des rapports qui citent la fiche
+  (b), disproportionné pour un document qui ne pèse pas sur la note ; le
+  retrait de la fiche tant que le signalement est ouvert (c), qui laisserait
+  un signalement infondé retirer à tous une fiche validée par deux codes.
+
+**Ce qui est fait.**
+- **Base.**
+  - `depots.statut` : `a_verifier`, `valide` ou `retire`.
+  - Auteur enregistré par son code (`depose_par` = rôle · libellé,
+    `depose_par_acces`) ; dernier correcteur (`edite_*`) ; validation
+    (`valide_*`, `valide_par_auteur`).
+  - Les documents déjà déposés, et ceux des autres natures, sont « valide »
+    d'office.
+  - `signalements.question_id` accepte NULL ; `depot_id` désigne la fiche.
+- **Banque** (`/admin/questions`, `app/admin/questions/fiches.tsx`).
+  - Sur un module, une section « Fiches de synthèse » : statut, signalements
+    ouverts, « Valider la fiche » aux quatre yeux (l'exception de
+    l'administration tracée), « Retirer » ou « Remettre à vérifier »,
+    « Déposer une version corrigée », dépôt d'une nouvelle fiche.
+  - Sous le filtre « à vérifier », les fiches en attente de tous les modules.
+- **Documents.** Une fiche exige un module et entre « à vérifier » ; son
+  statut s'affiche, avec un lien vers la banque du module.
+- **Apprenant.** Seules les fiches validées sont montrées : fin de test et
+  d'entraînement, page du module, documents généraux. En fin d'évaluation, la
+  fiche montrée est celle que le résultat scelle.
+- **Rapport.**
+  - Le résultat scelle les fiches montrées : titre, adresse, validation.
+  - Le rapport imprimé et l'écran du rapport les citent : « Fiche de synthèse
+    remise en fin de test : … (validée le … par …) ». Pour une fiche déposée
+    avant la règle : « validée d'office : déposée le …, avant la règle du
+    23/09/2026 ».
+  - Un rapport antérieur ne porte aucune mention.
+- **Signalement** (`/api/signalement`).
+  - Un bouton sous chaque fiche déposée, avec des motifs propres : erreur de
+    contenu, à mettre à jour, fichier illisible ou qui ne s'ouvre pas,
+    autre ; note libre.
+  - Seule une fiche validée du module peut être signalée ; en mode test, rien
+    n'est écrit.
+  - L'écran Signalements nomme la fiche et renvoie vers la banque ; la banque
+    montre ses signalements ouverts.
+  - Aucun verrou : les requêtes des verrous ne lisent que `question_id`.
+- **File d'attente.**
+  - « Questions à vérifier » devient « Questions et fiches à vérifier » ; même
+    compteur sur la pastille de la banque.
+  - Un signalement de fiche compte parmi les signalements ouverts.
+- **Journal** : `depot-fiche`, `statut-fiche:valide`,
+  `statut-fiche:valide-par-auteur`, `statut-fiche:retire`,
+  `statut-fiche:a_verifier`, `fiche-corrigee`.
+- **Version corrigée.** Le nouveau fichier remplace l'adresse de la fiche,
+  qui repart « à vérifier ». L'ancien fichier est gardé : un rapport émis
+  avant pointe encore sur lui.
+
+**Conséquences et limites.**
+- Les fiches déjà déposées restent montrées, « validées d'office » ; leur
+  nombre en production est `[à vérifier]`.
+- Tout document déposé enregistre désormais son auteur par son code, et plus
+  par son rôle seul : la règle des quatre yeux compare des codes.
+- Supprimer une fiche reste possible à l'écran Documents. Un rapport qui la
+  citait garde la citation, mais son lien ne mène plus au fichier.
+- Une fiche fausse reste montrée jusqu'à ce que le tutorat la retire ou la
+  corrige : c'est le choix a de la question 60.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (289 tests, 5 de plus),
+`npm run build`, deux passes de bout en bout de 85 étapes, sans erreur de
+page ni erreur serveur.
+- **Étape 12f, reprise.** La fiche déposée par l'administration est
+  « à vérifier » et absente de la page du module. Validée par son auteur,
+  elle s'affiche en fin de test. Elle s'y signale avec ses motifs propres.
+- **Étape 12f bis, nouvelle.**
+  - La fiche du tutorat n'offre pas « Valider » à son auteur ; elle attend
+    sous le filtre « à vérifier ».
+  - L'administration la valide, et le résultat scellé cite les deux fiches
+    avec leur validation. Un motif de question est refusé pour une fiche.
+  - L'écran Signalements nomme la fiche signalée ; la banque montre
+    « 1 signalement ouvert ».
+  - La version corrigée repart « à vérifier » et n'est plus citée, puis le
+    signalement est clos.
+- **Rendu.** Section vue à 1 280 et 360 px de large, sans défilement
+  horizontal.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

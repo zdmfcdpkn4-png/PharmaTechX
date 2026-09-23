@@ -7,7 +7,18 @@ import type { Module, SyntheseDocument } from "@/content/types";
  * code puis documents déposés. Un PDF ou une image s'affichent en ligne en
  * fin de test ; le type d'un fichier conservé en base est lu dans la table
  * `fichiers`, celui d'une adresse externe est deviné à l'extension.
+ *
+ * Depuis le 23/09/2026 (question 59, choix a), seules les fiches validées en
+ * sortent — `depotsDuModule` ne rend que celles-là —, avec leur validation :
+ * le résultat d'une évaluation les scelle, et le rapport les cite.
  */
+
+/** Date lue en base (texte PostgreSQL) → ISO 8601 ; `null` si absente ou illisible. */
+function iso(texte: string | null): string | null {
+  if (!texte) return null;
+  const d = new Date(texte);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 const FICHIER_BASE = /^\/api\/fichiers\/([^/?#]+)/;
 
@@ -40,6 +51,10 @@ export async function syntheseDuModule(mod: Module): Promise<SyntheseDocument[]>
       titre: d.titre,
       url: d.url,
       affichage: type ? affichageParType(type) : affichageParExtension(d.url),
+      deposeeLe: iso(d.depose_le),
+      valideeLe: iso(d.valide_le),
+      valideePar: d.valide_par,
+      valideeParAuteur: d.valide_par_auteur,
     });
   }
   return docs;

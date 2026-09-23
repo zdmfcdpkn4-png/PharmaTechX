@@ -409,7 +409,12 @@ export async function insererLot(
 
 export interface LigneSignalement {
   id: number;
-  question_id: string;
+  /** Question signalée ; vide pour une fiche de synthèse (question 60). */
+  question_id: string | null;
+  /** Fiche de synthèse signalée (question 60) ; vide pour une question. */
+  depot_id: number | null;
+  fiche_titre: string | null;
+  fiche_url: string | null;
   module_id: string;
   motif: string;
   note: string;
@@ -434,11 +439,29 @@ export async function enregistrerSignalement(s: {
     VALUES (${s.questionId}, ${s.moduleId}, ${s.motif}, ${s.note})`;
 }
 
+/**
+ * Signalement d'une fiche de synthèse (question 60, choix a) : même table, la
+ * question laissée vide. Les verrous des rapports ne lisent que `question_id`.
+ */
+export async function enregistrerSignalementFiche(s: {
+  depotId: number;
+  moduleId: string;
+  motif: string;
+  note: string;
+}): Promise<void> {
+  await sql`
+    INSERT INTO signalements (question_id, depot_id, module_id, motif, note)
+    VALUES (NULL, ${s.depotId}, ${s.moduleId}, ${s.motif}, ${s.note})`;
+}
+
 export async function listerSignalements(): Promise<LigneSignalement[]> {
   const r = await sql<LigneSignalement>`
-    SELECT s.id, s.question_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
-           s.traite_par, s.traite_le::text, s.reponse, q.enonce
-    FROM signalements s LEFT JOIN questions q ON q.id = s.question_id
+    SELECT s.id, s.question_id, s.depot_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
+           s.traite_par, s.traite_le::text, s.reponse, q.enonce,
+           d.titre AS fiche_titre, d.url AS fiche_url
+    FROM signalements s
+      LEFT JOIN questions q ON q.id = s.question_id
+      LEFT JOIN depots d ON d.id = s.depot_id
     ORDER BY (s.statut = 'ouvert') DESC, s.cree_le DESC LIMIT 200`;
   return r.rows;
 }
@@ -468,15 +491,16 @@ export async function compterSignalementsOuverts(): Promise<number> {
 export async function signalementsOuvertsParQuestion(): Promise<Record<string, number>> {
   const r = await sql<{ question_id: string; n: number }>`
     SELECT question_id, COUNT(*)::int AS n FROM signalements
-    WHERE statut = 'ouvert' GROUP BY question_id`;
+    WHERE statut = 'ouvert' AND question_id IS NOT NULL GROUP BY question_id`;
   return Object.fromEntries(r.rows.map((l) => [l.question_id, l.n]));
 }
 
 /** Signalements ouverts d'une question, du plus récent au plus ancien. */
 export async function signalementsOuvertsDe(questionId: string): Promise<LigneSignalement[]> {
   const r = await sql<LigneSignalement>`
-    SELECT s.id, s.question_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
-           s.traite_par, s.traite_le::text, s.reponse, NULL::text AS enonce
+    SELECT s.id, s.question_id, s.depot_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
+           s.traite_par, s.traite_le::text, s.reponse, NULL::text AS enonce,
+           NULL::text AS fiche_titre, NULL::text AS fiche_url
     FROM signalements s
     WHERE s.question_id = ${questionId} AND s.statut = 'ouvert'
     ORDER BY s.cree_le DESC`;

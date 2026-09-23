@@ -11,7 +11,7 @@ import {
 
 const PLEIN: ComptesAttente = {
   signalements: 3,
-  questionsAVerifier: 12,
+  contenusAVerifier: 12,
   rapportsAViser: 2,
   verdictsAArbitrer: 1,
   quizAnciens: 4,
@@ -26,11 +26,11 @@ test("l'ordre des items ne dépend d'aucun compteur (critère 7)", () => {
   const ordre = (c: ComptesAttente) => itemsAFaire("tuteur", c, true).map((i) => i.cle);
   // « Quiz de plus de 24 mois » a été ajouté en **fin** de file le 22/09/2026 :
   // les quatre premiers gardent leur rang, donc leur place sous la main.
-  const attendu = ["rapportsAViser", "verdictsAArbitrer", "signalements", "questionsAVerifier", "quizAnciens"];
+  const attendu = ["rapportsAViser", "verdictsAArbitrer", "signalements", "contenusAVerifier", "quizAnciens"];
   assert.deepEqual(ordre(PLEIN), attendu);
   assert.deepEqual(ordre(AUCUN_COMPTE), attendu, "tous les compteurs à zéro : même ordre");
   assert.deepEqual(
-    ordre({ signalements: 99, questionsAVerifier: 0, rapportsAViser: 0, verdictsAArbitrer: 0, quizAnciens: 0 }),
+    ordre({ signalements: 99, contenusAVerifier: 0, rapportsAViser: 0, verdictsAArbitrer: 0, quizAnciens: 0 }),
     attendu,
     "un compteur élevé ne remonte pas son item",
   );
@@ -52,7 +52,7 @@ test("un item à zéro reste dans la liste (critère 3)", () => {
 
 test("sans conservation, les écrans de rapports n'existent pas : pas d'item", () => {
   const cles = itemsAFaire("admin", PLEIN, false).map((i) => i.cle);
-  assert.deepEqual(cles, ["signalements", "questionsAVerifier"]);
+  assert.deepEqual(cles, ["signalements", "contenusAVerifier"]);
 });
 
 test("jamais plus de cinq items", () => {

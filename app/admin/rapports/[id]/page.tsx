@@ -6,7 +6,7 @@ import { CopierMention } from "@/components/CopierMention";
 import { LIBELLES_REFUS_MENTION, mentionDePreuve } from "@/lib/mention";
 import { LIBELLES_COURTS_VERDICT, LIBELLES_VERDICT, expliquerVerdict } from "@/lib/decision";
 import { LIBELLES_STATUT_RAPPORT, contexteDecision, lireRapport } from "@/lib/rapports";
-import { QUALITES_VISA } from "@/lib/rapport";
+import { QUALITES_VISA, ligneFichesRemises } from "@/lib/rapport";
 import { dataUri, lireSignature, signatureCourante } from "@/lib/signatures";
 import { actionAnnulerRapport, actionArbitrerRapport, actionPurgerRapport, actionViserRapport } from "../actions";
 
@@ -357,6 +357,8 @@ export default async function Rapport({
           son propre code d&apos;accès au moment de la correction (question 52). La mention est scellée avec le résultat.
         </p>
       )}
+      {/* Fiche montrée en fin de test (question 59), scellée avec le résultat ; absente des rapports antérieurs. */}
+      {r.resultat.fiches && <p className="legende rapport-fiches">{ligneFichesRemises(r.resultat.fiches)}</p>}
       <table className="tableau">
         <thead><tr><th>N°</th><th>Format</th><th>Énoncé</th><th>Résultat</th><th>Points</th></tr></thead>
         <tbody>

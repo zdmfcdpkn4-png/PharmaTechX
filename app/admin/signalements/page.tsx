@@ -20,15 +20,18 @@ function enonceDuCode(moduleId: string, questionId: string): string | null {
 
 export default async function Signalements() {
   const [signalements, modules] = await Promise.all([listerSignalements(), getTousModulesAvecDeposes()]);
-  const duCode = new Map(signalements.map((s) => [s.id, s.enonce ? null : enonceDuCode(s.module_id, s.question_id)]));
+  const duCode = new Map(
+    signalements.map((s) => [s.id, s.enonce || !s.question_id ? null : enonceDuCode(s.module_id, s.question_id)]),
+  );
   return (
     <>
       <section className="panneau-titre">
         <h1>Signalements</h1>
         <p>
-          Remarques déposées par les apprenants depuis la correction — motif fermé, note libre.
-          Le tutorat tranche : corriger la question, puis clore le signalement.
-          Une question de la banque versionnée avec le site se corrige dans le code.
+          Remarques déposées par les apprenants depuis la correction — motif fermé, note libre —,
+          sur une question ou sur une fiche de synthèse. Le tutorat tranche : corriger, puis clore
+          le signalement. Une question de la banque versionnée avec le site se corrige dans le code ;
+          une fiche se corrige depuis la banque de son module, où elle repart « à vérifier ».
         </p>
       </section>
       <ul className="liste-nue">
@@ -41,13 +44,31 @@ export default async function Signalements() {
                 {new Date(s.cree_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} · {titreModule(modules, s.module_id)}
               </span>
             </div>
-            <p style={{ marginBottom: ".25rem" }}>
-              {s.enonce ?? duCode.get(s.id) ?? (
-                <span className="legende">Question introuvable, supprimée ou renommée depuis le signalement : {s.question_id}</span>
-              )}
-            </p>
+            {s.depot_id !== null ? (
+              // Fiche de synthèse (question 60) : sans effet sur les rapports.
+              <p style={{ marginBottom: ".25rem" }}>
+                <span className="etiquette etiquette--neutre">Fiche de synthèse</span>{" "}
+                {s.fiche_titre && s.fiche_url ? (
+                  <a href={s.fiche_url} target="_blank" rel="noreferrer">{s.fiche_titre}</a>
+                ) : (
+                  <span className="legende">Fiche supprimée depuis le signalement (dépôt {s.depot_id}).</span>
+                )}
+              </p>
+            ) : (
+              <p style={{ marginBottom: ".25rem" }}>
+                {s.enonce ?? duCode.get(s.id) ?? (
+                  <span className="legende">Question introuvable, supprimée ou renommée depuis le signalement : {s.question_id}</span>
+                )}
+              </p>
+            )}
             {s.note && <p className="legende">« {s.note} »</p>}
-            {s.enonce ? (
+            {s.depot_id !== null ? (
+              <p className="legende">
+                <Link href={`/admin/questions?module=${encodeURIComponent(s.module_id)}#fiches`}>
+                  Corriger ou retirer la fiche dans la banque du module
+                </Link>
+              </p>
+            ) : s.enonce ? (
               <p className="legende">
                 <Link href={`/admin/questions/${s.question_id}`}>Ouvrir la question</Link>
               </p>

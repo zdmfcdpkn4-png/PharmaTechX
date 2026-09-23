@@ -8,12 +8,31 @@ import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
 import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
+import { compterFichesAVerifier, listerFiches } from "@/lib/fiches-db";
+import { SectionFiches } from "./fiches";
 
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, string> = {
   creee: "Question créée.",
   modifiee: "Question enregistrée.",
+  "fiche-deposee": "Fiche de synthèse déposée, à vérifier : elle n'est montrée qu'une fois validée.",
+  "fiche-validee": "Fiche de synthèse validée : elle est montrée en fin de test et citée par le rapport.",
+  "fiche-retiree": "Fiche de synthèse retirée : elle n'est plus montrée.",
+  "fiche-remise": "Fiche de synthèse remise à vérifier : elle n'est plus montrée jusqu'à sa validation.",
+  "fiche-corrigee": "Version corrigée déposée : la fiche repart à vérifier.",
+};
+
+/** Refus d'un geste sur une fiche de synthèse (questions 59 et 60). */
+const ERREURS_FICHE: Record<string, string> = {
+  "fiche-quatre-yeux":
+    "Règle des quatre yeux : une fiche se valide par un autre code que celui qui l'a déposée ou corrigée — ou par lui, s'il est d'administration.",
+  "fiche-inconnue": "Fiche inconnue, ou déjà traitée.",
+  "fiche-module": "Choisissez d'abord le module de la fiche.",
+  "fiche-fichier-manquant": "Aucun fichier sélectionné.",
+  "fiche-trop-lourde": "Fichier trop lourd.",
+  "fiche-type-refuse": "Type de fichier refusé : PDF, image, vidéo, texte, Word, PowerPoint ou Excel.",
+  "fiche-stockage": "Aucun stockage de fichiers n'est disponible.",
 };
 
 export default async function Questions({
@@ -35,11 +54,15 @@ export default async function Questions({
       : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
         ? (p.niveau as NiveauQuestion)
         : undefined;
-  const [toutes, comptes, referentiel, signales] = await Promise.all([
+  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
     signalementsOuvertsParQuestion(),
+    // Fiches de synthèse (question 59) : celles du module choisi, ou, sous le
+    // filtre « à vérifier », celles qui attendent une validation.
+    moduleId ? listerFiches({ moduleId }) : statut === "a_verifier" ? listerFiches({ statut: "a_verifier" }) : Promise.resolve([]),
+    compterFichesAVerifier(),
   ]);
   const questions = filtreNiveau
     ? toutes.filter((q) => (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau))
@@ -79,6 +102,11 @@ export default async function Questions({
       </section>
 
       {p.ok && MESSAGES[p.ok] && <p className="encart encart--ok">{MESSAGES[p.ok]}</p>}
+      {p.erreur && ERREURS_FICHE[p.erreur] && (
+        <p className="encart encart--attention" role="alert">
+          {ERREURS_FICHE[p.erreur]}
+        </p>
+      )}
       {p.erreur === "quatre-yeux" && (
         <p className="encart encart--attention" role="alert">
           Règle des quatre yeux : une question se valide par un autre code que celui qui l&apos;a écrite (création ou dernière
@@ -143,9 +171,27 @@ export default async function Questions({
           <button type="submit" className="bouton bouton--compact bouton--secondaire">
             Filtrer
           </button>
-          <span className="legende">{questions.length} question{questions.length > 1 ? "s" : ""}</span>
+          <span className="legende">
+            {questions.length} question{questions.length > 1 ? "s" : ""}
+            {fichesAVerifier > 0 && (
+              <>
+                {" · "}
+                <Link href="/admin/questions?statut=a_verifier#fiches">
+                  {fichesAVerifier} fiche{fichesAVerifier > 1 ? "s" : ""} de synthèse à vérifier
+                </Link>
+              </>
+            )}
+          </span>
         </div>
       </form>
+
+      <SectionFiches
+        fiches={fiches}
+        moduleId={moduleId}
+        titreModule={titreModule}
+        session={session}
+        retour={retour}
+      />
 
       {questions.length === 0 && (
         <p className="encart">Aucune question en base pour ce filtre. La banque versionnée avec le site n&apos;apparaît pas ici : elle se modifie dans <code>content/modules/</code>.</p>

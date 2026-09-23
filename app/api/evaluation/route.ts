@@ -20,6 +20,8 @@ import {
 import { enregistrerEvaluation, rattachement } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
 import { referentielDuModule } from "@/content/referentiel-db";
+import { syntheseDuModule } from "@/lib/synthese";
+import type { SyntheseDocument } from "@/content/types";
 
 export const dynamic = "force-dynamic";
 
@@ -157,6 +159,13 @@ export interface ResultatEvaluation {
    * l'auto-évaluation en entraînement. Absent sans cache jugé.
    */
   jugement?: JugementScelle;
+  /**
+   * Fiches de synthèse montrées en fin de test (question 59, choix a,
+   * 23/09/2026) : les fiches validées du module à l'instant de la correction,
+   * avec leur validation — scellées ici, citées par le rapport. Absent des
+   * résultats antérieurs.
+   */
+  fiches?: SyntheseDocument[];
   /** Sceau du serveur sur ce résultat (vérifié à l'émission du rapport). */
   jeton: string;
 }
@@ -421,6 +430,7 @@ export async function POST(request: Request) {
     },
     mode: modeTirage,
     ...(jugement ? { jugement } : {}),
+    fiches: await syntheseDuModule(mod).catch(() => []),
   };
 
   const resultat: ResultatEvaluation = { ...sansJeton, jeton: sceller(sansJeton) };

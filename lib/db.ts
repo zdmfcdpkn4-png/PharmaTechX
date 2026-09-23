@@ -361,7 +361,17 @@ export interface LigneDepot {
   module_id: string | null;
   critere_id: string | null;
   depose_le: string;
-  depose_par: Role;
+  /** Rôle seul pour un document d'avant le 23/09/2026 ; « rôle · libellé » depuis. */
+  depose_par: string;
+  /**
+   * Une fiche de synthèse déposée entre « à vérifier » et n'est montrée
+   * qu'une fois validée (question 59) ; tout autre document est « valide »
+   * d'office.
+   */
+  statut: "a_verifier" | "valide" | "retire";
+  valide_par: string | null;
+  valide_le: string | null;
+  valide_par_auteur: boolean;
   /** Profils auxquels le document est proposé : filières et niveaux (vides = tous). */
   filieres: string[];
   niveaux: string[];
@@ -482,16 +492,21 @@ export async function ecrireRang(moduleId: string, parcours: string, rang: numbe
 
 // ───────────────────────────────────────────────────── documents déposés
 
-const COLONNES_DEPOT = `id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par, filieres, niveaux`;
+const COLONNES_DEPOT = `id, titre, nature, url, module_id, critere_id, depose_le::text, depose_par, filieres, niveaux,
+  statut, valide_par, valide_le::text, valide_par_auteur`;
 
 export async function listerDepots(): Promise<LigneDepot[]> {
   const r = await requete<LigneDepot>(`SELECT ${COLONNES_DEPOT} FROM depots ORDER BY depose_le DESC`);
   return r.rows;
 }
 
+/**
+ * Documents d'un module tels que l'apprenant les voit : validés seulement.
+ * Une fiche de synthèse à vérifier ou retirée n'en sort pas (question 59).
+ */
 export async function depotsDuModule(moduleId: string): Promise<LigneDepot[]> {
   const r = await requete<LigneDepot>(
-    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id = $1 ORDER BY depose_le DESC`,
+    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id = $1 AND statut = 'valide' ORDER BY depose_le DESC`,
     [moduleId],
   );
   return r.rows;
@@ -500,7 +515,7 @@ export async function depotsDuModule(moduleId: string): Promise<LigneDepot[]> {
 /** Documents sans module, proposés par profil sur le programme (filières et niveaux). */
 export async function depotsGeneraux(): Promise<LigneDepot[]> {
   const r = await requete<LigneDepot>(
-    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id IS NULL ORDER BY depose_le DESC`,
+    `SELECT ${COLONNES_DEPOT} FROM depots WHERE module_id IS NULL AND statut = 'valide' ORDER BY depose_le DESC`,
   );
   return r.rows;
 }
@@ -513,23 +528,32 @@ export async function typesFichiers(ids: string[]): Promise<Record<string, strin
 }
 
 export async function compterDepotsDuModule(moduleId: string): Promise<number> {
-  const r = await sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM depots WHERE module_id = ${moduleId}`;
+  const r = await sql<{ n: number }>`SELECT COUNT(*)::int AS n FROM depots WHERE module_id = ${moduleId} AND statut = 'valide'`;
   return r.rows[0]?.n ?? 0;
 }
 
+/**
+ * Enregistre un document déposé. Son auteur est gardé par son code — la règle
+ * des quatre yeux compare des codes — et une fiche de synthèse entre « à
+ * vérifier » (question 59, choix a) : elle n'est montrée qu'une fois validée.
+ */
 export async function enregistrerDepot(
   titre: string,
   nature: string,
   url: string,
   moduleId: string | null,
   critereId: string | null,
-  role: Role,
+  acteur: { role: Role; libelle: string; acces?: number | null },
   profils: ProfilsDepot = { filieres: [], niveaux: [] },
-): Promise<void> {
-  await sql`
-    INSERT INTO depots (titre, nature, url, module_id, critere_id, depose_par, filieres, niveaux)
-    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${role},
-      ${JSON.stringify(profils.filieres)}::jsonb, ${JSON.stringify(profils.niveaux)}::jsonb)`;
+): Promise<number> {
+  const statut = nature === "synthese" ? "a_verifier" : "valide";
+  const r = await sql<{ id: number }>`
+    INSERT INTO depots (titre, nature, url, module_id, critere_id, depose_par, depose_par_acces, statut, filieres, niveaux)
+    VALUES (${titre}, ${nature}, ${url}, ${moduleId}, ${critereId}, ${`${acteur.role} · ${acteur.libelle}`},
+      ${acteur.acces ?? null}, ${statut},
+      ${JSON.stringify(profils.filieres)}::jsonb, ${JSON.stringify(profils.niveaux)}::jsonb)
+    RETURNING id`;
+  return r.rows[0].id;
 }
 
 export async function supprimerDepot(id: number): Promise<string | null> {

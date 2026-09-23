@@ -435,6 +435,29 @@ export const SCHEMA: string[] = [
   // n'en sert qu'un, sinon NULL.
   `ALTER TABLE depots_questions ALTER COLUMN module_id DROP NOT NULL`,
 
+  // ── fiche de synthèse validée aux quatre yeux (question 59, 23/09/2026) ──
+  // Une fiche déposée entre « à vérifier » et n'est montrée à l'apprenant
+  // qu'une fois validée. Les documents déjà déposés, et ceux des autres
+  // natures, sont « valide » d'office. L'auteur est désormais enregistré par
+  // son code — rôle · libellé et identifiant —, comme pour une question.
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS statut TEXT NOT NULL DEFAULT 'valide'`,
+  `ALTER TABLE depots DROP CONSTRAINT IF EXISTS depots_statut_check`,
+  `ALTER TABLE depots ADD CONSTRAINT depots_statut_check CHECK (statut IN ('a_verifier','valide','retire'))`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS depose_par_acces INTEGER`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS edite_par TEXT`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS edite_par_acces INTEGER`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS edite_le TIMESTAMPTZ`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS valide_par TEXT`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS valide_par_acces INTEGER`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS valide_le TIMESTAMPTZ`,
+  `ALTER TABLE depots ADD COLUMN IF NOT EXISTS valide_par_auteur BOOLEAN NOT NULL DEFAULT FALSE`,
+  // ── signalement d'une fiche de synthèse (question 60, choix a) ───────────
+  // Même table que les questions : question_id vide, depot_id renseigné. Les
+  // verrous des rapports ne lisent que question_id : une fiche signalée ne
+  // bloque aucun visa.
+  `ALTER TABLE signalements ALTER COLUMN question_id DROP NOT NULL`,
+  `ALTER TABLE signalements ADD COLUMN IF NOT EXISTS depot_id INTEGER`,
+
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
   `DO $$

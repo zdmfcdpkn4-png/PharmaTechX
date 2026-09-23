@@ -141,6 +141,15 @@ export interface SyntheseDocument {
   titre: string;
   url: string;
   affichage: "pdf" | "image" | "lien";
+  /**
+   * Fiche déposée (question 59) : dépôt et validation, en ISO 8601, et
+   * validateur. Sans validateur, la fiche a été déposée avant la règle du
+   * 23/09/2026 et reste montrée, « validée d'office ».
+   */
+  deposeeLe?: string | null;
+  valideeLe?: string | null;
+  valideePar?: string | null;
+  valideeParAuteur?: boolean;
 }
 
 export interface Ressource {

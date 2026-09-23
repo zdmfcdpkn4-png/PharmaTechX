@@ -27,7 +27,8 @@ export type ProfilAcces = "poste" | "tuteur" | "admin";
 /** Compteurs bruts, calculés côté serveur par `lib/attente.ts`. */
 export interface ComptesAttente {
   signalements: number;
-  questionsAVerifier: number;
+  /** Questions et fiches de synthèse à vérifier (question 59, 23/09/2026) : une seule file de relecture. */
+  contenusAVerifier: number;
   rapportsAViser: number;
   verdictsAArbitrer: number;
   /** Quiz validés depuis plus longtemps que la périodicité de réévaluation. */
@@ -36,7 +37,7 @@ export interface ComptesAttente {
 
 export const AUCUN_COMPTE: ComptesAttente = {
   signalements: 0,
-  questionsAVerifier: 0,
+  contenusAVerifier: 0,
   rapportsAViser: 0,
   verdictsAArbitrer: 0,
   quizAnciens: 0,
@@ -73,14 +74,14 @@ const ORDRE: Record<ProfilAcces, DefinitionItem[]> = {
     { cle: "rapportsAViser", libelle: "Rapports à viser", href: "/admin/rapports", conservation: true },
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
-    { cle: "questionsAVerifier", libelle: "Questions à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?statut=a_verifier" },
     { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
   admin: [
     { cle: "rapportsAViser", libelle: "Rapports à viser", href: "/admin/rapports", conservation: true },
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
-    { cle: "questionsAVerifier", libelle: "Questions à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?statut=a_verifier" },
     { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
 };

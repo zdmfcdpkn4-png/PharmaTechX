@@ -231,16 +231,19 @@ export async function actionDeposer(formData: FormData) {
   const moduleId = String(formData.get("moduleId") ?? "") || null;
   const critereId = String(formData.get("critereId") ?? "") || null;
   if (moduleId && !(await moduleExiste(moduleId))) redirect("/admin/documents?erreur=module-inconnu");
+  // Une fiche de synthèse se montre en fin de test d'un module et se valide
+  // depuis sa banque (question 59) : sans module, elle ne serait ni l'un ni l'autre.
+  if (nature === "synthese" && !moduleId) redirect("/admin/documents?erreur=fiche-sans-module");
   // profils (filières, niveaux) auxquels un document général est proposé — question 10
   const profils = await filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
 
   const octets = Buffer.from(await fichier.arrayBuffer());
   const { url } = await deposerFichier(fichier.name, fichier.type, octets);
-  await enregistrerDepot(titre, nature, url, moduleId, critereId, s.role, profils);
-  await journaliser(s, "depot-document", url, { titre, nature, moduleId, ...profils });
+  const id = await enregistrerDepot(titre, nature, url, moduleId, critereId, s, profils);
+  await journaliser(s, nature === "synthese" ? "depot-fiche" : "depot-document", url, { id, titre, nature, moduleId, ...profils });
   revalidatePath("/admin/documents");
   revalidatePath("/");
-  redirect("/admin/documents?ok=depose");
+  redirect(nature === "synthese" ? "/admin/documents?ok=fiche-a-verifier" : "/admin/documents?ok=depose");
 }
 
 export async function actionSupprimerDepot(formData: FormData) {

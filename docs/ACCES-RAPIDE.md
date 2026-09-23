@@ -103,7 +103,7 @@ niveaux.
 ├──────────────────────────────────────────────────┤
 │  À FAIRE                                         │  ← 0 à 5 items, selon rôle
 │    ▸ Signalements                            (3) │
-│    ▸ Questions à vérifier                   (12) │
+│    ▸ Questions et fiches à vérifier         (12) │
 │    ▸ Rapports en attente de visa             (2) │
 ├──────────────────────────────────────────────────┤
 │  ALLER À                                         │  ← le volet, replié
@@ -130,13 +130,15 @@ constater qu'il ne dit rien.
 
 Le cœur du gain. Chaque item porte un **compteur calculé côté serveur**, déjà
 disponible : `compterSignalementsOuverts()`, le décompte `aVerifier` de la
-banque, les rapports en attente de visa du tableau de pilotage.
+banque, auquel s'ajoute `compterFichesAVerifier()` depuis le 23/09/2026 (fiches
+de synthèse, question 59), les rapports en attente de visa du tableau de
+pilotage.
 
 | Profil | Items, dans cet ordre |
 |---|---|
 | Poste | *(zone absente)* |
-| Tutorat | Signalements · Questions à vérifier · Rapports en attente de visa · Identifiants d'agents |
-| Administration | Rapports en attente de visa · Verdicts à arbitrer · Signalements · Questions à vérifier · Codes d'accès |
+| Tutorat | Signalements · Questions et fiches à vérifier · Rapports en attente de visa · Identifiants d'agents |
+| Administration | Rapports en attente de visa · Verdicts à arbitrer · Signalements · Questions et fiches à vérifier · Codes d'accès |
 
 **Règles dures :**
 

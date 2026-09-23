@@ -1115,15 +1115,28 @@ Justification : justification deux.`;
   assert.equal(await page.locator("a:has-text('Document profil chimio')").count(), 0, "invisible au niveau N2");
   ok("document général proposé aux profils Chimiothérapie · N1c seulement");
 
-  // 12f. fin de test : document de synthèse, rejeu des questions ratées, module suivant du parcours
+  // 12f. fin de test : document de synthèse, rejeu des questions ratées, module suivant du parcours.
+  //      Depuis la question 59 (23/09/2026), la fiche déposée entre « à vérifier » et n'est
+  //      montrée qu'une fois validée ; l'administrateur, qui l'a déposée, la valide — tracé.
   await page.goto(BASE + "/admin/documents");
   await page.setInputFiles("input[name=fichier]", PNG);
   await page.fill("input[name=titre]", "Synthèse du module déposé");
   await page.selectOption("select[name=nature]", "synthese");
   await page.selectOption("select[name=moduleId]", idModule);
   await page.click("button:has-text('Déposer')");
-  await page.waitForSelector("text=Document déposé");
-  await page.waitForSelector("text=Fiche de synthèse");
+  await page.waitForSelector("text=Fiche de synthèse déposée, à vérifier");
+  await page.waitForSelector("li.carte:has-text('Synthèse du module déposé') .etiquette:text-is('À vérifier')");
+  await page.goto(BASE + "/module/" + idModule);
+  assert.equal(await page.locator("a:has-text('Synthèse du module déposé')").count(), 0, "fiche à vérifier : absente de la page du module");
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  const ficheDepot = page.locator("#fiches .fiche-ligne", { hasText: "Synthèse du module déposé" });
+  assert.match(await ficheDepot.innerText(), /vous en êtes l'auteur : validation tracée comme telle/);
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ficheDepot.locator("button:has-text('Valider la fiche')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await ficheDepot.locator(".etiquette:text-is('Validée par son auteur')").waitFor();
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("fieldset.question");
@@ -1144,13 +1157,97 @@ Justification : justification deux.`;
   await page.waitForSelector(".resultat-entete");
   await page.waitForSelector("h2:has-text('Document de synthèse')");
   await page.waitForSelector("img.synthese-image");
+  // Question 60 : la fiche montrée se signale, avec ses propres motifs.
+  const signalerFiche = page.locator(".synthese-doc details.signaler", { hasText: "Signaler un problème sur cette fiche" });
+  await signalerFiche.locator("summary").click();
+  assert.deepEqual(
+    await signalerFiche.locator("select option").allInnerTexts(),
+    ["Erreur de contenu", "À mettre à jour (référence ou pratique périmée)", "Fichier illisible ou qui ne s'ouvre pas", "Autre"],
+  );
+  await signalerFiche.locator("select").selectOption("Erreur de contenu");
+  await signalerFiche.locator("textarea").fill("Le seuil indiqué est faux.");
+  await signalerFiche.locator("button:has-text('Transmettre')").click();
+  await page.waitForSelector(".synthese-doc :text('Signalement transmis au tutorat')");
   await page.click("button:has-text('Retravailler la question ratée')");
   await page.waitForSelector("text=À revoir · 1 question ratée");
   assert.equal(await page.locator("fieldset.question").count(), 1);
   await page.goto(BASE + "/module/comportement-zac");
   await page.waitForSelector("a:has-text('Module suivant')");
   await page.waitForSelector("text=Parcours : Socle transversal, module");
-  ok("fin de test : document de synthèse affiché, question ratée rejouée en entraînement, module suivant du parcours");
+  ok("fin de test : fiche de synthèse déposée à vérifier, validée par son auteur administrateur, affichée et signalée ; question ratée rejouée en entraînement, module suivant du parcours");
+
+  // 12f bis. fiche de synthèse (questions 59 et 60, choix a) : déposée par le tutorat depuis la
+  //          banque, validée par un autre code, citée par le résultat scellé ; signalement lu à
+  //          l'écran Signalements puis clos ; version corrigée, qui repart à vérifier.
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.setInputFiles(".fiche-depot input[name=fichier]", PNG);
+  await page.fill(".fiche-depot input[name=titre]", "Fiche du tutorat");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.click(".fiche-depot button:has-text('Déposer la fiche')"),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  const ficheTutorat = page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" });
+  await ficheTutorat.locator(".etiquette:text-is('À vérifier')").waitFor();
+  assert.equal(await ficheTutorat.locator("button:has-text('Valider la fiche')").count(), 0, "le tutorat ne valide pas sa propre fiche");
+  assert.match(await ficheTutorat.innerText(), /à valider par un autre code que tuteur · Tuteur test/);
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/admin/questions?statut=a_verifier");
+  assert.equal(await page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" }).count(), 1, "sous le filtre « à vérifier », la fiche attend avec les questions");
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ficheTutorat.locator("button:has-text('Valider la fiche')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await ficheTutorat.locator(".etiquette:text-is('Validée')").waitFor();
+  assert.match(await ficheTutorat.innerText(), /validée le \d{2}\/\d{2}\/\d{4} par admin · /);
+  // Le résultat scellé cite les fiches montrées, avec leur validation.
+  const evaluerAvecFiches = async () => {
+    const r = await page.request.post(BASE + "/api/evaluation", {
+      data: { moduleId: idModule, reponses: {}, mode: "evaluation", difficulte: "complet", tirage: "Complet" },
+    });
+    assert.equal(r.status(), 200);
+    return (await r.json()).fiches;
+  };
+  const citees = await evaluerAvecFiches();
+  assert.deepEqual(citees.map((f) => f.titre).sort(), ["Fiche du tutorat", "Synthèse du module déposé"]);
+  const citee = citees.find((f) => f.titre === "Fiche du tutorat");
+  assert.match(citee.valideePar, /^admin · /);
+  assert.ok(citee.valideeLe, "date de validation scellée");
+  assert.equal(
+    (await page.request.post(BASE + "/api/signalement", { data: { ficheId: citee.id, moduleId: idModule, motif: "Ambigu" } })).status(),
+    400,
+    "un motif de question ne vaut pas pour une fiche",
+  );
+  // Écran Signalements : la fiche signalée en 12f, nommée, renvoyée vers la banque ; puis close.
+  await page.goto(BASE + "/admin/signalements");
+  const signalementFiche = page.locator("li.carte", { hasText: "Le seuil indiqué est faux." });
+  await signalementFiche.locator(".etiquette:text-is('Fiche de synthèse')").waitFor();
+  assert.equal(await signalementFiche.locator("a:has-text('Synthèse du module déposé')").count(), 1);
+  assert.equal(await signalementFiche.locator("a:has-text('Corriger ou retirer la fiche dans la banque du module')").count(), 1);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await ficheDepot.locator(".etiquette:text-is('1 signalement ouvert')").waitFor();
+  // Version corrigée : la fiche repart à vérifier, n'est plus citée ni montrée.
+  await ficheDepot.locator("details.fiche-correction summary").click();
+  await ficheDepot.locator("input[name=fichier]").setInputFiles(PNG);
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ficheDepot.locator("button:has-text('Remplacer')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await ficheDepot.locator(".etiquette:text-is('À vérifier')").waitFor();
+  assert.match(await ficheDepot.innerText(), /corrigée le \d{2}\/\d{2}\/\d{4} par admin · /);
+  assert.deepEqual((await evaluerAvecFiches()).map((f) => f.titre), ["Fiche du tutorat"], "la fiche corrigée n'est plus montrée avant sa validation");
+  await page.goto(BASE + "/admin/signalements");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    signalementFiche.locator("button:has-text('Clore — traité')").click(),
+  ]);
+  await page.goto(BASE + "/admin/signalements");
+  await signalementFiche.locator(".etiquette:text-is('Traité')").waitFor();
+  ok("fiche de synthèse : déposée par le tutorat, validée par un autre code, citée par le résultat scellé ; signalement nommé et clos ; version corrigée repartie à vérifier");
 
   // 12g. réglage d'un module du code (question 36, choix a) : un critère
   // restreint au maintien disparaît du parcours d'intégration, puis la fiche
@@ -1426,7 +1523,7 @@ Justification : justification deux.`;
   assert.ok(await nul.isVisible(), "un item à zéro reste visible");
   assert.match(await nul.getAttribute("aria-label"), /aucun$/, "le compteur est dans le nom accessible");
 
-  const aVerifierPanneau = Number(await compteurPanneau("Questions à vérifier"));
+  const aVerifierPanneau = Number(await compteurPanneau("Questions et fiches à vérifier"));
 
   // le filtre porte sur les trois zones, sans anti-rebond
   await page.fill(".ar-recherche input", "journ");

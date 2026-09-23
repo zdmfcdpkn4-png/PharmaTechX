@@ -206,7 +206,11 @@ des questions ou des documents s'y rattachent.
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
 niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
-synthèse**, rattachée à un module, s'affiche en fin de test. Les documents
+synthèse**, rattachée à un module, s'affiche en fin de test une fois validée
+(23/09/2026, questions 59 et 60) : elle se dépose aussi depuis la banque du
+module, entre « à vérifier » et se valide aux quatre yeux, comme une
+question ; le rapport cite la fiche montrée, et l'apprenant peut la signaler,
+sans effet sur les visas. Les documents
 déposés sont **réservés aux sessions ouvertes par un code** (décision du
 18/09/2026, question 13) : sans session, la route répond 401 et les pages
 n'en donnent que le nombre ; un store Blob, aux adresses publiques, est donc

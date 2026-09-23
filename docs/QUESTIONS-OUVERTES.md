@@ -388,6 +388,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     Signalements, mention sur la fiche (a) ; a, et un signalement ouvert
     verrouille les visas des rapports qui citent la fiche (b) ; a, et la
     fiche est retirée aux apprenants tant que le signalement est ouvert (c).
+    Tranchée le même jour (choix a, réponse « À » lue comme a) et mise en
+    œuvre : motifs propres, écran Signalements, signalements ouverts sur la
+    fiche dans la banque, version corrigée repartie « à vérifier ». Détail
+    dans `DECISIONS.md`.
 
 59. **Fiche de synthèse et validation du module** — demandé le 23/09/2026 :
     « pouvoir intégrer à la validation du module une fiche de synthèse que
@@ -404,7 +408,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     dès le dépôt, lecture attestée par l'apprenant, citée par le rapport avec
     l'attestation (b) ; les deux (c). Le signalement d'une fiche défectueuse
     viendra ensuite. Tranchée le même jour (choix a, réponse « À » lue
-    comme a) ; mise en œuvre avec la question 60.
+    comme a) ; mise en œuvre avec la question 60 : dépôt et validation aux
+    quatre yeux depuis la banque, seules les fiches validées montrées, fiche
+    citée par le résultat scellé et le rapport. `[à vérifier]` le nombre de
+    fiches déjà déposées en production, restées montrées « validées
+    d'office ». Détail dans `DECISIONS.md`.
 
 58. **Dépôt de questions : QIM et QCM mêlés** — suite de la question 57,
     même demande (« attention, possibilité de mélange QIM / QCM »). Vérifié

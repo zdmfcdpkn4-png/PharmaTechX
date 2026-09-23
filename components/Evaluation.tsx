@@ -7,7 +7,7 @@ import { reserveesAdmises, tirer, type Difficulte } from "@/content/tirage";
 import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
 import { libelleBande, type Bareme } from "@/content/bareme";
-import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
+import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
 import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
@@ -113,8 +113,20 @@ function classeCorrection(d: DetailQuestion): string {
   return "correction--erronee";
 }
 
-/** Document de synthèse du module, affiché en fin de test : PDF et images en ligne, sinon un lien. */
-function Synthese({ docs }: { docs: SyntheseDocument[] }) {
+/**
+ * Document de synthèse du module, affiché en fin de test : PDF et images en
+ * ligne, sinon un lien. Une fiche déposée se signale (question 60, choix a) :
+ * le signalement va au tutorat, sans effet sur le rapport.
+ */
+function Synthese({
+  docs,
+  moduleId,
+  signalementPossible,
+}: {
+  docs: SyntheseDocument[];
+  moduleId: string;
+  signalementPossible: boolean;
+}) {
   if (docs.length === 0) return null;
   return (
     <section className="carte synthese" aria-labelledby="t-synthese">
@@ -133,6 +145,7 @@ function Synthese({ docs }: { docs: SyntheseDocument[] }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={d.url} alt={d.titre} className="synthese-image" />
           )}
+          {signalementPossible && d.id.startsWith("depot-") && <Signaler ficheId={d.id} moduleId={moduleId} />}
         </div>
       ))}
     </section>
@@ -334,8 +347,11 @@ function RecapitulatifValidation({
   );
 }
 
-function Signaler({ questionId, moduleId }: { questionId: string; moduleId: string }) {
-  const [motif, setMotif] = useState<string>(MOTIFS_SIGNALEMENT[0]);
+/** Signalement d'une question, ou d'une fiche de synthèse (question 60) : motifs propres à chacune. */
+function Signaler({ questionId, ficheId, moduleId }: { questionId?: string; ficheId?: string; moduleId: string }) {
+  const surFiche = Boolean(ficheId);
+  const motifs: readonly string[] = surFiche ? MOTIFS_SIGNALEMENT_FICHE : MOTIFS_SIGNALEMENT;
+  const [motif, setMotif] = useState<string>(motifs[0]);
   const [note, setNote] = useState("");
   const [etat, setEtat] = useState<"repos" | "envoi" | "fait" | "erreur" | "essai">("repos");
 
@@ -345,19 +361,20 @@ function Signaler({ questionId, moduleId }: { questionId: string; moduleId: stri
   if (etat === "essai") {
     return (
       <p className="encart encart--attention">
-        Mode test : le signalement n&apos;est pas transmis — il bloquerait les visas des rapports réels qui
-        contiennent cette question. Notez-la, et signalez-la en dehors du mode test.
+        {surFiche
+          ? "Mode test : le signalement n'est pas transmis. Notez la fiche, et signalez-la en dehors du mode test."
+          : "Mode test : le signalement n'est pas transmis — il bloquerait les visas des rapports réels qui contiennent cette question. Notez-la, et signalez-la en dehors du mode test."}
       </p>
     );
   }
   return (
     <details className="signaler">
-      <summary>Signaler un problème sur cette question</summary>
+      <summary>{surFiche ? "Signaler un problème sur cette fiche" : "Signaler un problème sur cette question"}</summary>
       <div className="signaler-corps">
         <label className="champ">
           <span>Motif</span>
           <select value={motif} onChange={(e) => setMotif(e.target.value)}>
-            {MOTIFS_SIGNALEMENT.map((m) => (
+            {motifs.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
@@ -378,7 +395,7 @@ function Signaler({ questionId, moduleId }: { questionId: string; moduleId: stri
                 const r = await fetch("/api/signalement", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ questionId, moduleId, motif, note }),
+                  body: JSON.stringify({ ...(surFiche ? { ficheId } : { questionId }), moduleId, motif, note }),
                 });
                 const corps = (await r.json().catch(() => ({}))) as { essai?: boolean };
                 setEtat(corps.essai ? "essai" : r.ok ? "fait" : "erreur");
@@ -1119,7 +1136,8 @@ export function Evaluation({
 
         {resultat.detail.map((d, i) => rendreCorrection(d, i, posees.find((q) => q.id === d.questionId)))}
 
-        <Synthese docs={syntheses} />
+        {/* La fiche montrée est celle que le résultat scelle et que le rapport cite (question 59). */}
+        <Synthese docs={resultat.fiches ?? syntheses} moduleId={moduleId} signalementPossible={signalementPossible} />
 
         <p className="encart">
           <strong>Ce résultat ne vaut pas habilitation.</strong> Il constitue la preuve de
@@ -1162,7 +1180,7 @@ export function Evaluation({
             </div>
           </div>
           {posees.map((q, i) => corrections[q.id] && rendreCorrection(corrections[q.id], i, q))}
-          <Synthese docs={syntheses} />
+          <Synthese docs={syntheses} moduleId={moduleId} signalementPossible={signalementPossible} />
           <div className="actions">
             <button type="button" className="bouton" onClick={recommencer}>
               Nouveau tirage

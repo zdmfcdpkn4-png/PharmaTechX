@@ -1967,6 +1967,15 @@ fieldset.groupe { margin: 0.75rem 0; padding: 0.875rem 1rem; border: 1px solid v
 .apercu-pour-tous .champ { margin: 0; }
 .apercu-pour-tous .actions { margin-top: 0; }
 .depot-modules { margin: 0 0 0.5rem; }
+/* Fiches de synthèse dans la banque (questions 59 et 60). */
+.fiches-banque { margin-bottom: 1rem; }
+.fiche-ligne { padding: 0.75rem 0 0.5rem; border-top: 1px solid var(--bord); }
+.fiche-ligne:first-child { border-top: 0; padding-top: 0.25rem; }
+.fiche-correction { margin-top: 0.5rem; }
+.fiche-correction > summary { cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--marque); }
+.fiche-correction .champ { margin: 0.5rem 0 0; }
+.fiche-depot { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--bord-fort); }
+.fiche-depot .champ { margin: 0.5rem 0 0; }
 .question-ligne .apercu-options { color: var(--texte-doux); }
 .etiquette--ok { background: var(--succes-fond); color: var(--succes); }
 

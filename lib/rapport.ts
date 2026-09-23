@@ -10,6 +10,8 @@ import {
 } from "./decision";
 import { STATUT_DISPOSITIF, STATUT_ESSAI, dateMiseEnServiceLisible, libelleProcedure } from "./statut";
 import { MENTION_ESSAI } from "./essai";
+import { mentionValidation } from "../content/fiches";
+import type { SyntheseDocument } from "../content/types";
 
 /**
  * Rapport d'évaluation — document A4 imprimable, repris de la maquette
@@ -191,6 +193,18 @@ function tableauVisas(visas: VisaRapport[], empreinte?: string): string {
   <p class="petit">Le visa du pharmacien responsable ne prononce pas l'habilitation : il accuse réception de la preuve de l'étape 2. L'habilitation finale se prononce au chapitre IV de la fiche d'habilitation.</p>`;
 }
 
+/**
+ * Fiches de synthèse montrées en fin de test (question 59, choix a,
+ * 23/09/2026), telles que le résultat les scelle : titre et validation.
+ */
+export function ligneFichesRemises(fiches: SyntheseDocument[]): string {
+  if (fiches.length === 0) return "Aucune fiche de synthèse validée pour ce module au moment de l'évaluation.";
+  const pluriel = fiches.length > 1 ? "s" : "";
+  return `Fiche${pluriel} de synthèse remise${pluriel} en fin de test : ${fiches
+    .map((f) => `${f.titre} (${mentionValidation(f)})`)
+    .join(" ; ")}.`;
+}
+
 function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRapport, premiere: boolean): string {
   const dec = o.decision ?? decisionParDefaut(r);
   const d = dec.decision;
@@ -298,6 +312,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     <h1>${echapper(r.moduleTitre)}</h1>
     <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && r.reservees.posees > 0 ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
     <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
+    ${r.fiches ? `<p class="petit">${echapper(ligneFichesRemises(r.fiches))}</p>` : ""}
     ${r.jugement && r.jugement.role !== "apprenant" ? `<p class="petit">Caches des schémas à découvrir jugés par <strong>${echapper(r.jugement.par)}</strong>, qui l'a confirmé par son propre code d'accès au moment de la correction (question 52) ; mention scellée avec le résultat.</p>` : ""}
 
     <table class="verdict">

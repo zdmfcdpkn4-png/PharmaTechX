@@ -193,7 +193,7 @@ export default async function RootLayout({
               {
                 href: "/admin/questions",
                 libelle: "Banque de questions",
-                compte: comptes.questionsAVerifier,
+                compte: comptes.contenusAVerifier,
               },
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },

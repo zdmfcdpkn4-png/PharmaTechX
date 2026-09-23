@@ -1,5 +1,6 @@
 import "server-only";
 import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
+import { compterFichesAVerifier } from "./fiches-db";
 import { AUCUN_COMPTE, type ComptesAttente, type ProfilAcces } from "@/content/acces-rapide";
 import { anciennetesQuiz, rapportsEnAttente, SANS_FILTRE, type RapportEnAttente } from "./pilotage-db";
 import { quizAnciens } from "./pilotage";
@@ -10,7 +11,7 @@ import { maintien } from "@/content/habilitation";
  *
  * Tous proviennent des fonctions qui alimentent déjà les écrans
  * correspondants — `compterSignalementsOuverts()`, `comptesParModule()`,
- * `rapportsEnAttente()`. C'est la seule façon de tenir le critère 2 de
+ * `compterFichesAVerifier()`, `rapportsEnAttente()`. C'est la seule façon de tenir le critère 2 de
  * `docs/ACCES-RAPIDE.md` : « les compteurs égalent ceux des écrans ». Une
  * requête écrite pour l'occasion aurait divergé au premier changement de
  * règle.
@@ -34,7 +35,7 @@ export async function comptesAttente(
 ): Promise<ComptesAttente> {
   if (profil === "poste") return AUCUN_COMPTE;
 
-  const [signalements, parModule, rapports, anciennetes] = await Promise.all([
+  const [signalements, parModule, rapports, anciennetes, fichesAVerifier] = await Promise.all([
     compterSignalementsOuverts().catch(() => 0),
     comptesParModule().catch(
       () => ({}) as Record<string, { valides: number; aVerifier: number; reservees: number }>,
@@ -45,9 +46,12 @@ export async function comptesAttente(
     conservation
       ? anciennetesQuiz(SANS_FILTRE).catch(() => [])
       : Promise.resolve([]),
+    compterFichesAVerifier().catch(() => 0),
   ]);
 
-  const questionsAVerifier = Object.values(parModule).reduce((s, c) => s + c.aVerifier, 0);
+  // Questions et fiches de synthèse (question 59) : la banque montre les deux
+  // sous le même filtre « à vérifier ».
+  const contenusAVerifier = Object.values(parModule).reduce((s, c) => s + c.aVerifier, 0) + fichesAVerifier;
 
   // Un signalement ouvert sur une question du tirage verrouille visa et
   // arbitrage : ces rapports n'appellent aucun acte tant qu'il n'est pas clos.
@@ -68,7 +72,7 @@ export async function comptesAttente(
 
   return {
     signalements,
-    questionsAVerifier,
+    contenusAVerifier,
     rapportsAViser,
     verdictsAArbitrer,
     quizAnciens: quizDepasses,
