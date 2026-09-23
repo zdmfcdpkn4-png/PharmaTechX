@@ -7,6 +7,7 @@ import { journaliser } from "@/lib/journal";
 import { IMAGE_MAX_OCTETS, enregistrerImage, majAltImage } from "@/lib/images";
 import { texteDocx } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
+import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, type IndexModules } from "@/lib/import-module";
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
@@ -20,12 +21,14 @@ import {
   lireQuestion,
   supprimerQuestion,
   supprimerSituation,
+  textesValidesParModule,
   traiterSignalement,
   type OptionBase,
   type QuestionAEnregistrer,
   type StatutQuestion,
 } from "@/content/banque-db";
 import type { EtatFormulaireQuestion, EtatImport, QuestionImporteeAvecImage } from "./import-etat";
+import { modulesOuvertsAuDepot, versRepere } from "./commun";
 
 /**
  * Actions de la banque de questions — réservées aux profils tutorat et
@@ -312,12 +315,69 @@ function apparierImages(
   });
 }
 
+/** Texte d'une question tel que la proposition de module le compare : tout ce qu'elle dit. */
+function texteDeQuestion(q: QuestionImportee): string {
+  return [q.enonce, ...q.options.map((o) => o.texte), ...q.legendes.map((l) => l.attendu), q.justification].join(" ");
+}
+
+/**
+ * Module de chaque question (question 57, choix a) : sa ligne « Module : »,
+ * sinon le module choisi au formulaire, sinon la proposition du site ; à
+ * défaut, à choisir dans l'aperçu. La proposition ne lit la base que si une
+ * question en a besoin.
+ */
+async function rattacherModules(questions: QuestionImportee[], moduleFormulaire: string): Promise<QuestionImporteeAvecImage[]> {
+  const ouverts = await modulesOuvertsAuDepot();
+  const reperes = ouverts.map(versRepere);
+  const noms = reperesModules(reperes);
+  let index: IndexModules | null = null;
+  if (!moduleFormulaire && questions.some((q) => !q.moduleLigne)) {
+    const valides = await textesValidesParModule();
+    index = indexerModules(
+      ouverts.map((m) => ({
+        ...versRepere(m),
+        textes: [
+          m.objectif,
+          ...[...m.questions, ...m.misesEnSituation.flatMap((x) => x.questions)].flatMap((q) => [q.enonce, ...q.options.map((o) => o.texte)]),
+          ...(valides.get(m.id) ?? []),
+        ],
+      })),
+    );
+  }
+  return questions.map((q): QuestionImporteeAvecImage => {
+    if (q.moduleLigne) {
+      const r = resoudreLigneModule(q.moduleLigne, reperes);
+      return r.id
+        ? { ...q, moduleId: r.id, origineModule: "ligne", detailModule: `ligne « Module : ${q.moduleLigne} »` }
+        : { ...q, moduleId: null, origineModule: "a-choisir", detailModule: `ligne « Module : ${q.moduleLigne} » : ${r.raison}` };
+    }
+    if (moduleFormulaire) return { ...q, moduleId: moduleFormulaire, origineModule: "formulaire", detailModule: "module choisi au formulaire" };
+    const p = proposerModule(index as IndexModules, texteDeQuestion(q));
+    if (p.id) {
+      const retenu = p.candidats[0];
+      return { ...q, moduleId: p.id, origineModule: "proposition", detailModule: `proposé — mots communs : ${retenu.mots.join(", ")}` };
+    }
+    const hesitation = p.candidats
+      .slice(0, 2)
+      .map((c) => `${noms.get(c.id) ?? c.id} (${c.mots.slice(0, 3).join(", ")})`)
+      .join(" ou ");
+    return {
+      ...q,
+      moduleId: null,
+      origineModule: "a-choisir",
+      detailModule: hesitation ? `à choisir — rien de net : ${hesitation}` : "à choisir — aucun mot commun avec un module",
+    };
+  });
+}
+
 export async function actionAnalyserImport(prec: EtatImport, formData: FormData): Promise<EtatImport> {
   await sessionRequise("tuteur");
+  // Module du formulaire : facultatif depuis la question 57 (choix a) ; choisi,
+  // il vaut pour les questions sans ligne « Module : ».
   const moduleId = chaine(formData, "moduleId", 80);
   const formatDefaut = chaine(formData, "formatDefaut", 3) === "QIM" ? "QIM" : "QCM";
   const base: EtatImport = { ...prec, etape: "saisie", moduleId, formatDefaut, questions: [], images: [], avertissements: [], erreur: undefined };
-  if (!(await moduleExiste(moduleId))) return { ...base, erreur: "Choisir le module de rattachement." };
+  if (moduleId && !(await moduleExiste(moduleId))) return { ...base, erreur: "Module inconnu." };
 
   let texte = chaine(formData, "texte", 400_000);
   let nom = "texte collé";
@@ -357,7 +417,7 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
   }
 
   const r = analyserTexte(texte, { formatDefaut });
-  const questions = apparierImages(r.questions, images);
+  const questions = apparierImages(await rattacherModules(r.questions, moduleId), images);
   // « Description de l'image » : elle remplace le nom du fichier, posé par
   // défaut à l'enregistrement. Appliquée ici, sur les images que cette
   // requête vient de créer — pas sur ce que renverrait l'aperçu.
@@ -378,7 +438,6 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
 
 export async function actionConfirmerImport(prec: EtatImport, formData: FormData): Promise<EtatImport> {
   const s = await sessionRequise("tuteur");
-  const moduleId = chaine(formData, "moduleId", 80);
   const nom = chaine(formData, "nom", 200) || "dépôt";
   let questions: QuestionImporteeAvecImage[];
   try {
@@ -387,18 +446,42 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
   } catch {
     return { ...prec, erreur: "Aperçu illisible : relancer l'analyse." };
   }
-  if (!(await moduleExiste(moduleId))) return { ...prec, erreur: "Module inconnu." };
-  const retenues = questions.filter((_, i) => formData.get(`exclure-${i}`) !== "on");
+  // Module et format de chaque question : ceux de l'aperçu, où ils se changent
+  // (questions 57 et 58, choix a). Rien n'entre en base sans module ; le
+  // format ne passe que de QCM à QIM ou l'inverse.
+  const retenues: { q: QuestionImporteeAvecImage; moduleId: string; format: TypeQuestion }[] = [];
+  let sansModule = 0;
+  questions.forEach((q, i) => {
+    if (formData.get(`exclure-${i}`) === "on") return;
+    const moduleId = chaine(formData, `module-${i}`, 80);
+    if (!moduleId) {
+      sansModule++;
+      return;
+    }
+    const demande = chaine(formData, `format-${i}`, 3);
+    const format = (q.format === "QCM" || q.format === "QIM") && (demande === "QCM" || demande === "QIM") ? demande : q.format;
+    retenues.push({ q, moduleId, format });
+  });
+  if (sansModule > 0) {
+    return {
+      ...prec,
+      erreur: `${sansModule} question${sansModule > 1 ? "s" : ""} sans module : choisissez-le, ou excluez-la${sansModule > 1 ? "s" : ""}.`,
+    };
+  }
   if (retenues.length === 0) return { ...prec, erreur: "Aucune question retenue." };
+  const modules = [...new Set(retenues.map((r) => r.moduleId))];
+  for (const id of modules) {
+    if (!(await moduleExiste(id))) return { ...prec, erreur: `Module inconnu : ${id}.` };
+  }
 
   const depotId = await enregistrerDepotQuestions(
-    { nom, moduleId, nb: retenues.length, nbAVerifier: retenues.length },
+    { nom, moduleId: modules.length === 1 ? modules[0] : null, nb: retenues.length, nbAVerifier: retenues.length },
     s,
   );
-  const lot: QuestionAEnregistrer[] = retenues.map((q) => ({
+  const lot: QuestionAEnregistrer[] = retenues.map(({ q, moduleId, format }) => ({
     moduleId,
     situationId: null,
-    format: q.format,
+    format,
     enonce: q.enonce.slice(0, 2000),
     options: q.format === "SCH" ? [] : q.options.map((o) => ({ id: o.id, texte: o.texte.slice(0, 500), vrai: o.vrai })),
     legendes: q.format === "SCH" ? q.legendes : [],
@@ -413,9 +496,17 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     depotId,
   }));
   const ids = await insererLot(lot, s);
-  await journaliser(s, "import-questions", depotId, { moduleId, nom, n: ids.length });
+  await journaliser(s, "import-questions", depotId, { modules, nom, n: ids.length });
   revalidatePath("/admin/questions");
-  return { ...prec, etape: "fait", ajoutees: ids.length, erreur: undefined, questions: [], images: [] };
+  return {
+    ...prec,
+    etape: "fait",
+    ajoutees: ids.length,
+    ajouteesParModule: modules.map((id) => ({ id, n: retenues.filter((r) => r.moduleId === id).length })),
+    erreur: undefined,
+    questions: [],
+    images: [],
+  };
 }
 
 // ────────────────────────────────────────────────────────────── signalements

@@ -1,7 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { EXEMPLE_DEPOT, PROMPT_DEPOT } from "../content/prompt-depot";
+import { EXEMPLE_DEPOT, promptDepot } from "../content/prompt-depot";
 import { analyserTexte } from "../lib/import-questions";
+import { alertesFormat } from "../lib/import-format";
+import { reperesModules, resoudreLigneModule } from "../lib/import-module";
+import { emplacements } from "../content/parcours";
+import { protectionOperateur } from "../content/modules/protection-operateur";
+import { comportementZac } from "../content/modules/comportement-zac";
+
+/** Les modules du code, sous la forme que lit la ligne « Module : ». */
+const MODULES_CODE = [protectionOperateur, comportementZac, ...emplacements].map((m) => ({
+  id: m.id,
+  titre: m.titre,
+  critere: String(m.critereId),
+}));
 
 /*
  * Le prompt décrit un format ; l'analyseur en lit un autre s'ils divergent.
@@ -67,13 +79,45 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   );
 
   assert.equal(r.avertissements.length, 0, "aucun avertissement sur l'exemple de référence");
+  assert.deepEqual(
+    r.questions.map((q) => alertesFormat(q)),
+    [[], [], [], [], [], []],
+    "aucune alerte de format non plus",
+  );
+  assert.deepEqual(
+    [qcm, qim, illustre].map((q) => q.origineFormat),
+    ["mot-cle", "mot-cle", "mot-cle"],
+    "le format vient du mot-clé",
+  );
+
+  // Questions 57 et 58 : un dépôt sert plusieurs modules, par ligne « Module : ».
+  assert.deepEqual(
+    r.questions.map((q) => q.moduleLigne),
+    ["B1-01", "B1-01", "B1-01", "B3-01", "B1-01", "B1-01"],
+    "chaque ligne Module vaut pour les questions qui la suivent",
+  );
+  assert.deepEqual(resoudreLigneModule("B1-01", MODULES_CODE), { id: "comportement-zac" });
+  assert.deepEqual(resoudreLigneModule("B3-01", MODULES_CODE), { id: "critere-b3-01" });
 });
 
-test("le prompt porte l'exemple et interdit d'inventer", () => {
-  assert.ok(PROMPT_DEPOT.includes(EXEMPLE_DEPOT), "l'exemple est repris dans le prompt");
-  assert.match(PROMPT_DEPOT, /N'invente rien/);
-  assert.match(PROMPT_DEPOT, /\[à vérifier\]/);
-  assert.match(PROMPT_DEPOT, /TEXTE SOURCE/);
+test("le prompt porte l'exemple, la liste des modules, et interdit d'inventer", () => {
+  const noms = reperesModules(MODULES_CODE);
+  const prompt = promptDepot(MODULES_CODE.map((m) => ({ repere: noms.get(m.id) ?? m.id, titre: m.titre })));
+  assert.ok(prompt.includes(EXEMPLE_DEPOT), "l'exemple est repris dans le prompt");
+  assert.match(prompt, /N'invente rien/);
+  assert.match(prompt, /\[à vérifier\]/);
+  assert.match(prompt, /TEXTE SOURCE/);
+  assert.match(prompt, /Chaque question commence par son mot-clé/, "mot-clé exigé (question 58)");
+  assert.match(prompt, /écris « Q n\. »/, "format inconnu : ni QCM ni QIM inventé");
+  assert.match(prompt, /« Module : B1-05 »/, "ligne Module décrite (question 57)");
+  assert.ok(prompt.includes("MODULES (code — titre)\nB1-01 — Comportement et habillage"), "liste triée par code");
+  assert.ok(prompt.includes("B7-01 — Participation à la formation"), "dernier critère listé");
+  const lignes = prompt.split("MODULES (code — titre)\n")[1].split("\n\n")[0].split("\n");
+  assert.equal(lignes.length, 53, "un module par critère de la fiche");
+  for (const ligne of lignes) {
+    const code = ligne.split(" — ")[0];
+    assert.ok(resoudreLigneModule(code, MODULES_CODE).id, `le code ${code} de la liste se relit`);
+  }
 });
 
 // ─────────────────────────── Prompt de génération à partir d'un document
@@ -146,10 +190,11 @@ test("génération : le prompt emploie les trois niveaux du site, et eux seuls",
 // ─────────────────────────── Illustrations de tout type (23/09/2026)
 
 test("prompt de transcription : image et description pour tout type, sans donner la réponse", () => {
-  assert.match(PROMPT_DEPOT, /tout type \(QCM, QIM, séquence, texte à trous\)/);
-  assert.match(PROMPT_DEPOT, /« Description de l'image : … »/);
-  assert.match(PROMPT_DEPOT, /sans donner la réponse/);
-  assert.match(PROMPT_DEPOT, /N'annonce une image que si le texte source en désigne une/);
+  const prompt = promptDepot([]);
+  assert.match(prompt, /tout type \(QCM, QIM, séquence, texte à trous\)/);
+  assert.match(prompt, /« Description de l'image : … »/);
+  assert.match(prompt, /sans donner la réponse/);
+  assert.match(prompt, /N'annonce une image que si le texte source en désigne une/);
 });
 
 test("prompt de génération : une figure du document s'annonce, et se lit au dépôt", () => {

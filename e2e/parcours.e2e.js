@@ -426,6 +426,102 @@ Justification : cf. procédure interne.`,
   assert.equal(/Extrait [AB]/.test(apercu), false, "aucun extrait collé à une proposition");
   ok("prompt de génération : variantes QIM et QCM, format lu par le dépôt, adjectifs en -if intacts");
 
+  // 4c. un dépôt, plusieurs modules, QCM et QIM mêlés (questions 57 et 58,
+  //     23/09/2026) : module proposé d'après les mots, ligne « Module : »,
+  //     ligne inconnue, intertitre, corrigé à l'envers signalé puis corrigé
+  //     en changeant le format ; rien n'entre en base sans module.
+  await page.goto(BASE + "/admin/questions/import");
+  assert.equal(await page.inputValue("select[name=moduleId]"), "", "sans module au formulaire : proposition d'après les mots");
+  const blocPrompt = page.locator("details:has(summary:has-text('Faire mettre en forme'))");
+  await blocPrompt.locator("summary").click();
+  const promptMiseEnForme = await blocPrompt.locator("pre.exemple").innerText();
+  assert.ok(promptMiseEnForme.includes("MODULES (code — titre)"), "le prompt porte la liste des modules");
+  assert.ok(promptMiseEnForme.includes("B1-05 — Sécurité incendie"), "un critère de la fiche y figure");
+  await page.fill(
+    "textarea[name=texte]",
+    [
+      "1. Concernant l'extincteur et l'évacuation en cas d'incendie, lesquelles sont vraies ? (plusieurs réponses possibles)",
+      "A. L'issue de secours reste dégagée",
+      "B. L'extincteur se vérifie une fois par an",
+      "Réponses : A",
+      "",
+      "QIM",
+      "2. Parmi les propositions suivantes, lesquelles sont fausses ? (plusieurs réponses possibles)",
+      "A. Alpha",
+      "B. Bêta",
+      "Réponses : A",
+      "",
+      "Module : B6-10",
+      "",
+      "3. Concernant le contrôle à réception des matières premières, indiquez si les propositions suivantes sont vraies ou fausses.",
+      "A. Le certificat d'analyse est vérifié",
+      "B. La matière première est rangée avant contrôle",
+      "Réponses : A",
+      "",
+      "Module : Z9-99",
+      "",
+      "QCM 4. Laquelle est juste ?",
+      "A. Une",
+      "B. Deux",
+      "Réponses : A",
+    ].join("\n"),
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 4 questions')");
+  const questionApercu = (i) => page.locator("ol.apercu-import > li").nth(i);
+  assert.equal(await page.inputValue("select[name=module-0]"), "critere-b1-05", "module proposé d'après les mots");
+  const origine0 = await questionApercu(0).locator(".apercu-origine").innerText();
+  assert.match(origine0, /proposé — mots communs : .*incendie/, "les mots partagés sont montrés");
+  assert.match(origine0, /format d'après l'énoncé : « lesquelles »/);
+  assert.equal(await page.inputValue("select[name=format-0]"), "QCM");
+
+  assert.equal(await page.inputValue("select[name=format-1]"), "QIM", "l'intertitre fixe le format");
+  assert.equal(await page.inputValue("select[name=module-1]"), "", "aucun mot commun : à choisir");
+  assert.match(await questionApercu(1).locator(".apercu-origine").innerText(), /aucun mot commun avec un module · format de l'intertitre/);
+  assert.equal(await questionApercu(1).locator(".etiquette:text-is('Module à choisir')").count(), 1);
+  assert.match(await questionApercu(1).locator(".apercu-alertes").innerText(), /corrigé à l'envers/, "QCM à rebours déposé en QIM : signalé");
+  await page.selectOption("select[name=format-1]", "QCM");
+  assert.equal(await questionApercu(1).locator(".apercu-alertes").count(), 0, "passé en QCM : l'alerte tombe");
+  assert.match(await questionApercu(1).locator(".apercu-origine").innerText(), /format changé dans l'aperçu/);
+
+  assert.equal(await page.inputValue("select[name=module-2]"), "critere-b6-10", "ligne « Module : » résolue");
+  assert.match(await questionApercu(2).locator(".apercu-origine").innerText(), /ligne « Module : B6-10 » · format de l'intertitre/);
+  assert.equal(await page.inputValue("select[name=format-2]"), "QIM");
+
+  assert.equal(await page.inputValue("select[name=module-3]"), "", "ligne inconnue : à choisir");
+  assert.match(await questionApercu(3).locator(".apercu-origine").innerText(), /aucun module ne répond à « Z9-99 » · format du mot-clé/);
+
+  const ajouter = page.locator("button:has-text('Ajouter à la banque')");
+  assert.equal(await ajouter.isDisabled(), true, "deux questions sans module : ajout impossible");
+  assert.match(await page.locator("p[role=status]:has-text('sans module')").innerText(), /2 questions sans module/);
+  assert.match(await page.locator(".depot-repartition").innerText(), /B1-05 \(1\) · B6-10 \(1\) · à choisir \(2\)/);
+  // Le serveur refuse aussi, bouton contourné ; après le refus, l'écran garde
+  // les choix de l'aperçu (formulaire envoyé sans réinitialisation React).
+  await page.evaluate(() => document.querySelector("ol.apercu-import").closest("form").requestSubmit());
+  await page.waitForSelector("[role=alert]:has-text('2 questions sans module')");
+  assert.equal(await page.inputValue("select[name=module-0]"), "critere-b1-05", "après le refus, le module proposé reste affiché");
+  assert.equal(await page.inputValue("select[name=format-1]"), "QCM", "le format changé aussi");
+  await page.selectOption(".apercu-pour-tous select", "critere-b6-11");
+  await page.click("button:has-text('Appliquer aux questions à choisir')");
+  assert.equal(await page.inputValue("select[name=module-1]"), "critere-b6-11");
+  assert.equal(await page.inputValue("select[name=module-3]"), "critere-b6-11");
+  assert.equal(await page.inputValue("select[name=module-0]"), "critere-b1-05", "une question déjà rattachée ne bouge pas");
+  assert.equal(await ajouter.isDisabled(), false);
+  await ajouter.click();
+  await page.waitForSelector("text=4 questions ajoutées");
+  assert.match(await page.locator(".encart--ok").innerText(), /dans 3 modules/);
+  assert.equal(await page.locator("ul.depot-modules li").count(), 3, "un lien par module");
+
+  await page.goto(BASE + "/admin/questions?module=critere-b6-11&statut=a_verifier");
+  const alphaBeta = page.locator(".question-ligne:has-text('lesquelles sont fausses')");
+  assert.equal(await alphaBeta.locator(".etiquette--site").innerText(), "QCM", "enregistrée dans le format choisi à l'aperçu");
+  assert.equal(await page.locator(".question-ligne:has-text('Laquelle est juste')").count(), 1);
+  await page.goto(BASE + "/admin/questions?module=critere-b6-10&statut=a_verifier");
+  assert.equal(await page.locator(".question-ligne:has-text('réception des matières premières') .etiquette--site").innerText(), "QIM");
+  await page.goto(BASE + "/admin/questions?module=critere-b1-05&statut=a_verifier");
+  assert.equal(await page.locator(".question-ligne:has-text('incendie')").count(), 1);
+  ok("dépôt mêlé : module proposé avec ses mots, ligne Module lue ou inconnue, intertitre, corrigé à l'envers signalé puis corrigé, rien sans module, trois modules servis");
+
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {
     await page.goto(BASE + "/");

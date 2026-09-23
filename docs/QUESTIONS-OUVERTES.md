@@ -397,7 +397,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     par le prompt de mise en forme. En plus : intertitre reconnu et énoncé
     lu — format proposé d'après l'énoncé quand ni mot-clé ni intertitre ne
     le disent, contradiction signalée sinon (a) ; intertitre seulement (b) ;
-    rien de plus (c).
+    rien de plus (c). Tranchée le même jour (choix a) et mise en œuvre avec
+    la question 57 : intertitres lus et plus jamais collés à une
+    proposition, format proposé d'après la consigne, alertes recalculées à
+    chaque changement de format dans l'aperçu — dont le corrigé à l'envers.
+    Détail dans `DECISIONS.md`.
 
 57. **Dépôt de questions : module de chaque question, plusieurs modules par
     dépôt** — demandé le 23/09/2026 : « détection de module lors du dépôt,
@@ -415,7 +419,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     seulement (c). Le mélange QIM / QCM viendra ensuite. Tranchée le même
     jour (choix a) ; mise en œuvre avec la question 58. Lecture retenue,
     sans objection : une question reste rattachée à un seul module, un dépôt
-    en sert plusieurs.
+    en sert plusieurs. La proposition est prudente : aucune erreur sur 55
+    questions d'essai, mais 24 laissées « à choisir » tant que les modules
+    n'ont qu'un titre. Détail dans `DECISIONS.md`.
 
 56. **Ordre « à la carte pour un utilisateur »** — suite de la question 55,
     posée et tranchée le 23/09/2026 (choix a) : un ordre propre à un

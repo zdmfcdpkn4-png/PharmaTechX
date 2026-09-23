@@ -86,7 +86,8 @@ export interface LigneSituation {
 export interface LigneDepotQuestions {
   id: string;
   nom: string;
-  module_id: string;
+  /** Module du dépôt s'il n'en sert qu'un ; `null` s'il en sert plusieurs (question 57) — chaque question porte le sien. */
+  module_id: string | null;
   nb: number;
   nb_a_verifier: number;
   depose_par: string;
@@ -343,7 +344,7 @@ export async function supprimerSituation(id: string): Promise<void> {
 // ───────────────────────────────────────────────────────────────── dépôts
 
 export async function enregistrerDepotQuestions(
-  d: { nom: string; moduleId: string; nb: number; nbAVerifier: number },
+  d: { nom: string; moduleId: string | null; nb: number; nbAVerifier: number },
   acteur: { role: Role; libelle: string },
 ): Promise<string> {
   const id = nouvelId("dep");
@@ -358,6 +359,22 @@ export async function listerDepotsQuestions(): Promise<LigneDepotQuestions[]> {
     SELECT id, nom, module_id, nb, nb_a_verifier, depose_par, depose_le::text
     FROM depots_questions ORDER BY depose_le DESC LIMIT 100`;
   return r.rows;
+}
+
+/**
+ * Textes des questions validées, par module — énoncé et propositions : ce
+ * que la proposition de module compare à une question déposée (question 57).
+ */
+export async function textesValidesParModule(): Promise<Map<string, string[]>> {
+  const r = await sql<{ module_id: string; enonce: string; options: OptionBase[] | null }>`
+    SELECT module_id, enonce, options FROM questions WHERE statut = 'valide'`;
+  const out = new Map<string, string[]>();
+  for (const l of r.rows) {
+    const textes = out.get(l.module_id) ?? [];
+    textes.push(l.enonce, ...(Array.isArray(l.options) ? l.options.map((o) => o.texte) : []));
+    out.set(l.module_id, textes);
+  }
+  return out;
 }
 
 /** Insère d'un bloc les questions d'un dépôt, dans une transaction. */

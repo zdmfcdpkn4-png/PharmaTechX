@@ -2880,6 +2880,132 @@ clic du tutorat sur « Terminer le test », dans l'en-tête masqué au
 défilement ; le test remonte désormais en haut de page avant ce clic, comme
 il le faisait déjà pour l'administrateur.
 
+## Dépôt de questions : plusieurs modules, QCM et QIM mêlés (23/09/2026, questions 57 et 58, choix a)
+
+**Demande.** « Ajout détection de module lors du dépôt, possibilité d'avoir
+plusieurs modules concernés par le même dépôt (proposition) ; attention,
+possibilité de mélange QIM / QCM. »
+
+**Constaté avant le travail**, par un essai de l'analyseur :
+- un dépôt se rattachait à un seul module, choisi dans une liste ; une ligne
+  « Module : … » du texte était ignorée, sans avertissement ;
+- sans mot-clé « QCM n. » ou « QIM n. », toutes les questions prenaient le
+  format par défaut ; un intertitre « QCM » ou « QIM » était ignoré, ou
+  collé au texte de la dernière proposition quand aucune ligne vide ne le
+  précédait ;
+- un QCM « lesquelles sont fausses ? » enregistré en QIM gardait pour vraies
+  ses lettres à cocher, qui sont les propositions fausses : corrigé lu à
+  l'envers, sans avertissement.
+
+**Tranché.**
+- Question 57, **a** : la ligne « Module : » d'abord, puis la proposition du
+  site d'après les mots, confirmée dans l'aperçu ; « à choisir » sans
+  proposition nette ; rien n'entre en base sans module. Écartés : la ligne
+  seule, sinon un module par défaut (b) ; la proposition seule (c). Lecture
+  retenue, sans objection : une question reste rattachée à un seul module,
+  un dépôt en sert plusieurs.
+- Question 58, **a** : dans tous les cas, le format de chaque question
+  affiché et modifiable dans l'aperçu, et le mot-clé exigé par le prompt de
+  mise en forme ; en plus, intertitre reconnu et énoncé lu — format proposé
+  d'après la consigne quand ni mot-clé ni intertitre ne le disent,
+  contradiction signalée sinon. Écartés : l'intertitre seul (b) ; rien de
+  plus (c).
+
+**Ce qui est fait.**
+- Analyseur (`lib/import-questions.ts`). Le format d'un QCM ou d'une QIM
+  vient, dans l'ordre, du mot-clé, du dernier intertitre (« QCM », « QIM »,
+  « Questions à choix multiples »… seul sur sa ligne, numéroté ou non), de
+  la consigne de l'énoncé, puis du format par défaut ; l'origine est gardée.
+  Une ligne « Module : » vaut pour les questions qui la suivent ; écrite
+  dans une question, sans ligne vide avant elle, elle vaut aussi pour cette
+  question. Un JSON peut porter `module`. Un intertitre ne se colle plus à
+  une proposition.
+- Consigne (`lib/import-format.ts`). QIM : « vraies ou fausses »,
+  « chaque proposition », « indépendamment », « indiquer la ou les
+  propositions exactes » — la consigne des QIM des modules rédigés. QCM :
+  « lesquelles », « laquelle », « plusieurs réponses », « cochez »… ; plus
+  faiblement, un énoncé qui pose une question. Les 18 énoncés des deux
+  modules rédigés sont lus dans leur format (test).
+- Alertes recalculées à chaque changement de format dans l'aperçu : QCM à
+  rebours enregistré en QIM (« corrigé à l'envers ») ; consigne qui
+  contredit le format écrit ; QCM sans proposition vraie ; plusieurs vraies
+  sans « plusieurs » dans l'énoncé. **Ajout hors de la lettre du choix a**,
+  même danger : un QCM à rebours corrigé par (V) / (F) — le site fait
+  cocher les (V), alors qu'un « (F) » posé par un humain dit en général
+  « fausse ».
+- Module (`lib/import-module.ts`). La ligne se résout par l'identifiant, qui
+  décide seul, puis par le code du critère ou le titre exact, puis par un
+  début de titre qui ne désigne qu'un module ; un nom inconnu ou porté par
+  deux modules laisse « à choisir », raison affichée. La proposition compare
+  la question — énoncé, propositions, légendes, justification — au titre,
+  à l'objectif et aux questions validées de chaque module (code et base) :
+  un mot pèse d'autant plus qu'il est rare parmi les modules, un mot du titre
+  compte double. Elle n'est faite que nette : deux mots partagés au moins,
+  un poids de 6 au moins, et le double au moins du module suivant. Les
+  modules déposés retirés ne sont ni désignés ni proposés.
+- Formulaire : la liste « Module » reste, devenue facultative. Choisie, elle
+  vaut pour les questions sans ligne « Module : » — c'est le chemin d'avant,
+  depuis la page d'un module ; laissée vide, le site propose.
+- Aperçu : pour chaque question, un choix de module et, pour un QCM ou une
+  QIM, un choix de format, avec ce qui les a décidés (ligne lue, mots
+  partagés, hésitation, mot-clé, intertitre, consigne). Répartition par
+  module ; « Appliquer aux questions à choisir » pour les questions sans
+  module. L'ajout est refusé tant qu'une question retenue n'a pas de module,
+  sur la page et par le serveur ; le format ne passe que de QCM à QIM ou
+  l'inverse. Après l'ajout, un lien par module servi. Le formulaire de
+  l'aperçu s'envoie sans la réinitialisation automatique de React : après
+  un refus du serveur, l'écran garde les choix faits.
+- Base : `depots_questions.module_id` accepte NULL — le module du dépôt s'il
+  n'en sert qu'un ; chaque question porte le sien. Journal
+  `import-questions` : la liste des modules servis.
+- Prompt de mise en forme (`content/prompt-depot.ts`) : mot-clé exigé
+  devant chaque question, « Q n. » quand rien ne dit le format ; ligne
+  « Module : » avant chaque groupe, d'après la liste des modules du site
+  (code du critère — titre, triée ; identifiant quand un code est porté par
+  deux modules) ; exemple à deux modules. Le prompt de génération n'est pas
+  modifié : il n'écrit pas de ligne « Module : ».
+
+**Étalonnage de la proposition** (23/09/2026, avec les modules du code
+seuls) :
+- les 18 questions des deux modules rédigés, chacune retirée de son module
+  avant l'essai : 12 bien rattachées, 6 à choisir, aucune erreur ;
+- 22 questions d'essai visant chacune un module, qui reprennent des mots de
+  son titre : 15 bien rattachées, 7 à choisir, aucune erreur ;
+- 15 questions d'essai écrites pour piéger (vocabulaire absent des titres,
+  cas ambigus) : 4 bien rattachées, 11 à choisir, aucune erreur. Avant la
+  règle des deux mots, l'une d'elles partait à tort : « température »
+  envoyait une question de stabilité vers la surveillance des
+  températures.
+Ces questions d'essai ont été rédigées pour l'étalonnage, pas tirées de
+dépôts réels : elles montrent que la règle est prudente, pas ce qu'elle
+rendra sur les textes de l'unité.
+
+**Limites.**
+- Tant que les modules n'ont qu'un titre, la proposition manque souvent :
+  près d'une question d'essai sur deux (24 sur 55) est restée « à choisir ».
+  Elle s'améliore à mesure que des questions sont validées.
+- La consigne ne reconnaît que les tournures du site et leurs variantes
+  proches : « Cochez la bonne réponse » est lu, « Vrai ou faux : » aussi,
+  mais une consigne inhabituelle laisse le format par défaut — la colonne
+  du format de l'aperçu est à lire.
+- Une ligne « Module : » collée à la question suivante, sans ligne vide, est
+  lue comme appartenant aussi à la question qui la précède ; le prompt
+  demande la ligne vide.
+- Une question n'appartient qu'à un module.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (284 tests, 25 de plus),
+`npm run build`, deux passes de bout en bout de 84 étapes, sans erreur de
+page ni erreur serveur. L'étape ajoutée dépose un texte sans mot-clé qui
+sert trois modules : le module de la première question est proposé
+(B1-05, mots partagés affichés), un intertitre « QIM » fixe le format de la
+suivante, dont le corrigé à l'envers est signalé puis disparaît quand elle
+passe en QCM ; une ligne « Module : B6-10 » est lue, une ligne
+« Module : Z9-99 » laisse « à choisir » ; l'ajout est bloqué, et refusé par
+le serveur quand on force l'envoi, l'écran gardant les choix faits ; après
+« Appliquer aux questions à choisir », les quatre questions entrent dans
+trois modules, chacune dans le format choisi. Aperçu vu à 1 280 et 360 px
+de large, sans défilement horizontal.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

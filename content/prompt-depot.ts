@@ -16,10 +16,17 @@
  *
  * `test/prompt-depot.test.ts` passe l'exemple dans l'analyseur réel : le
  * prompt et le format ne peuvent pas diverger sans que les tests tombent.
+ *
+ * Depuis le 23/09/2026 (questions 57 et 58, choix a), le prompt exige le
+ * mot-clé QCM ou QIM devant chaque question, et fait écrire une ligne
+ * « Module : » avant les questions de chaque module, d'après la liste des
+ * modules qu'il porte : un dépôt peut en servir plusieurs.
  */
 
 /** Exemple canonique du format attendu : lu tel quel par l'analyseur. */
-export const EXEMPLE_DEPOT = `QCM 1. Énoncé de la question (plusieurs réponses)
+export const EXEMPLE_DEPOT = `Module : B1-01
+
+QCM 1. Énoncé de la question (plusieurs réponses)
 A. Première proposition (V)
 B. Deuxième proposition (F)
 C. Troisième proposition (V)
@@ -45,12 +52,16 @@ B. La charlotte (F)
 C. Le masque (F)
 Justification : …
 
+Module : B3-01
+
 SCHÉMA 1. Légendez les éléments repérés sur cette coupe d'isolateur.
 Image : isolateur-coupe.png
 Description de l'image : Coupe d'un isolateur, vue de face, deux repères numérotés.
 1. sas de transfert (32, 24, 14, 5)
 2. filtre HEPA | filtre terminal (58, 19)
 Justification : …
+
+Module : B1-01
 
 SÉQUENCE 1. Remettez dans l'ordre les étapes de l'habillage en zone à atmosphère contrôlée.
 Image : tenue-zac.jpg
@@ -66,8 +77,23 @@ TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
 Leurres : couloir | décontamination
 Justification : …`;
 
-/** Prompt à copier dans l'assistant, avec le texte source à la fin. */
-export const PROMPT_DEPOT = `Tu mets en forme des questions d'évaluation pour le dépôt du site de formation de l'unité de pharmacotechnie (CHD Vendée). Tu transcris ce que le texte source contient ; tu ne rédiges pas de contenu nouveau.
+/** Module tel que la liste du prompt le donne : son nom court (code du critère, sinon identifiant) et son titre. */
+export interface ModulePrompt {
+  repere: string;
+  titre: string;
+}
+
+/**
+ * Prompt à copier dans l'assistant, avec le texte source à la fin. La liste
+ * des modules est celle du site au moment de la copie : les modules déposés
+ * y figurent, les modules retirés non.
+ */
+export function promptDepot(modules: ModulePrompt[]): string {
+  const liste = [...modules]
+    .sort((a, b) => a.repere.localeCompare(b.repere, "fr", { numeric: true }))
+    .map((m) => `${m.repere} — ${m.titre}`)
+    .join("\n");
+  return `Tu mets en forme des questions d'évaluation pour le dépôt du site de formation de l'unité de pharmacotechnie (CHD Vendée). Tu transcris ce que le texte source contient ; tu ne rédiges pas de contenu nouveau.
 
 RÈGLES ABSOLUES
 1. N'invente rien : ni question, ni proposition, ni corrigé, ni justification, ni source. Ce qui n'est pas dans le texte source n'apparaît pas dans ta réponse.
@@ -82,7 +108,9 @@ ${EXEMPLE_DEPOT}
 
 PRÉCISIONS
 - Une ligne vide sépare deux questions. Au plus 120 questions, de A à E (cinq propositions au plus), énoncé de 2 000 caractères au plus.
+- Chaque question commence par son mot-clé, « QCM n. » ou « QIM n. », même quand le texte source ne l'écrit qu'une fois, en intertitre. Le format se lit dans le texte source : l'intertitre sous lequel la question est rangée, ou sa consigne — « indiquez si … vraies ou fausses », « indiquer la ou les propositions exactes » : QIM ; « lesquelles… ? », « quel… ? » : QCM. Rien ne le dit : écris « Q n. », le site proposera un format que le tuteur vérifiera.
 - QCM : une seule réponse exacte, sauf si l'énoncé dit « plusieurs réponses ». QIM : chaque proposition se juge vraie ou fausse séparément.
+- « Module : B1-05 » — seule sur sa ligne, précédée d'une ligne vide, avant la première question d'un module : elle vaut pour les questions qui suivent, jusqu'à la ligne Module suivante. Le code se prend dans la liste MODULES ci-dessous, d'après ce que dit le texte source (titre de chapitre, thème traité). Le texte source ne permet pas de choisir, ou hésite entre deux modules : pas de ligne Module, le site proposera un module que le tuteur vérifiera.
 - Le corrigé s'écrit « (V) » / « (F) » en fin de proposition, ou en ligne « Réponses : A C ». Si le texte source porte les deux, ils doivent coïncider ; sinon, applique la règle 3.
 - « Éliminatoire : oui » — une erreur rend le critère non acquis, quel que soit le score. À ne mettre que si le texte source le dit.
 - « Réservée à l'évaluation : oui » — la question n'est jamais posée en entraînement. Même règle.
@@ -94,10 +122,14 @@ PRÉCISIONS
 - Séquence à ordonner : « SÉQUENCE n. », puis une étape par ligne, numérotée, **dans l'ordre juste**. L'apprenant les recevra mélangées. N'écris une séquence que si le texte source donne l'ordre.
 - Texte à trous : « TEXTE n. », l'énoncé portant les marques {1}, {2}… là où il manque un mot, puis une ligne numérotée par trou avec la vignette attendue, dans l'ordre des marques. Une ligne « Leurres : … | … » ajoute des vignettes fausses au menu. Ne crée des leurres que si le texte source en propose.
 
+MODULES (code — titre)
+${liste}
+
 TEXTE SOURCE À METTRE EN FORME
 """
 [colle ici le texte brut]
 """`;
+}
 
 // ─────────────────────────────────────────── Génération à partir d'un document
 

@@ -1958,6 +1958,15 @@ fieldset.groupe { margin: 0.75rem 0; padding: 0.875rem 1rem; border: 1px solid v
 .apercu-options li { display: flex; gap: 0.5rem; align-items: baseline; }
 .apercu-options .num { font: 700 0.75rem/1.2 ui-monospace, Menlo, monospace; color: var(--marque); min-width: 1.25rem; }
 .apercu-options .vraie .num { color: var(--succes); }
+/* Dépôt : module et format de chaque question, et d'où ils viennent (questions 57 et 58). */
+.apercu-rattachement { gap: 0.75rem; margin-top: 0.5rem; }
+.apercu-rattachement .champ { margin: 0; }
+.apercu-rattachement .champ--format { flex: 0 0 7.5rem; }
+.apercu-origine { margin: 0.25rem 0 0.5rem; }
+.apercu-pour-tous { align-items: end; margin-bottom: 0.75rem; }
+.apercu-pour-tous .champ { margin: 0; }
+.apercu-pour-tous .actions { margin-top: 0; }
+.depot-modules { margin: 0 0 0.5rem; }
 .question-ligne .apercu-options { color: var(--texte-doux); }
 .etiquette--ok { background: var(--succes-fond); color: var(--succes); }
 

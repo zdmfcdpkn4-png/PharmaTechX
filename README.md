@@ -234,6 +234,17 @@ et `test/prompt-depot.test.ts` passe son exemple dans l'analyseur réel, de
 sorte que le prompt et le format ne puissent pas diverger. Le dépôt lui-même
 n'appelle aucune IA.
 
+**Un dépôt, plusieurs modules** (23/09/2026, questions 57 et 58) : une ligne
+`Module : B1-05` vaut pour les questions qui la suivent ; sans elle, le
+module choisi au formulaire ; sans choix, le site propose le module qui
+partage le plus de mots avec la question, et montre ces mots — sans
+proposition nette, la question est « à choisir ». Le format d'un QCM ou
+d'une QIM vient du mot-clé, sinon d'un intertitre « QCM » / « QIM », sinon
+de la consigne de l'énoncé, sinon du format par défaut. L'aperçu montre et
+laisse changer le module et le format de chaque question, avec ce qui les a
+décidés, et signale un QCM « lesquelles sont fausses ? » déposé en QIM
+(corrigé à l'envers). Rien n'entre en base sans module.
+
 **Images** : une question de n'importe quel format peut porter une
 illustration (PNG ou JPEG, 2 Mo au plus), en plus de l'image d'un schéma à
 compléter, qui reste obligatoire pour ce format. Au dépôt, la ligne

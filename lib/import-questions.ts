@@ -1,6 +1,7 @@
 import { poser, type Legende } from "@/content/schema";
 import { lireNiveauQuestion, trousDuTexte } from "@/content/types";
 import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
+import { indiceFormat, type FormatChoix } from "@/lib/import-format";
 
 /**
  * Import de questions depuis un texte — reprise, adaptée, de l'extraction
@@ -25,11 +26,21 @@ import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
  *
  * Le fichier est déposé avec le texte et apparié par son nom.
  *
- * Le mot-clé QCM ou QIM fixe le format ; sans lui, le format par défaut du
- * dépôt s'applique. Une question sans corrigé est importée quand même, toutes
- * ses propositions à Faux, et signalée : un tuteur tranche dans l'éditeur.
+ * Le mot-clé QCM ou QIM fixe le format ; sans lui, un intertitre « QCM » ou
+ * « QIM » seul sur sa ligne vaut pour les questions qui suivent ; sans
+ * intertitre, la consigne de l'énoncé (`lib/import-format.ts`) ; sinon, le
+ * format par défaut du dépôt (question 58, choix a, 23/09/2026). L'origine du
+ * format est gardée : l'aperçu la montre, et le format s'y change. Une
+ * question sans corrigé est importée quand même, toutes ses propositions à
+ * Faux, et signalée : un tuteur tranche dans l'éditeur.
  * Toute question importée entre en base au statut « à vérifier », hors tirage
  * tant qu'un tuteur ou un administrateur ne l'a pas validée.
+ *
+ * Une ligne « Module : B1-05 » (code du critère, identifiant ou titre du
+ * module) vaut pour les questions qui suivent, jusqu'à la suivante ; écrite
+ * dans une question, sans ligne vide avant elle, elle vaut aussi pour cette
+ * question (question 57, choix a). L'analyseur ne fait que la lire : le
+ * module est résolu, ou proposé, par `lib/import-module.ts`.
  *
  * Schéma à compléter :
  *
@@ -92,9 +103,21 @@ export interface QuestionImportee {
   refs: Reference[];
   /** Un corrigé complet a-t-il été lu ? */
   corrigeDetecte: boolean;
-  /** Ce que l'analyseur n'a pas pu trancher, en clair. */
+  /** Corrigé lu dans les « (V) » / « (F) » des propositions, sans ligne « Réponses ». */
+  corrigeParMarqueurs?: boolean;
+  /** QCM ou QIM : d'où vient le format (mot-clé, intertitre, énoncé, défaut du dépôt). */
+  origineFormat?: OrigineFormat;
+  /** Valeur de la ligne « Module : » qui vaut pour cette question, telle qu'écrite. */
+  moduleLigne?: string;
+  /**
+   * Ce que l'analyseur n'a pas pu trancher, en clair. Les avertissements qui
+   * dépendent du format n'y sont pas : l'aperçu les recalcule
+   * (`alertesFormat`), le format pouvant y être changé.
+   */
   avertissements: string[];
 }
+
+export type OrigineFormat = "mot-cle" | "intertitre" | "enonce" | "defaut";
 
 export interface ResultatImport {
   questions: QuestionImportee[];
@@ -158,6 +181,16 @@ const RE_DIFFICULTE = /^(?:Niveau|Difficult[ée])\s*[:–—-]\s*(initial|base|i
 const RE_ELEMENT = /^(\d{1,2})\s*[.):–—-]\s*(.+)$/;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
 const RE_LETTRES = /\b[A-Ea-e]\b/g;
+/** « Module : B1-05 » (question 57, choix a). */
+const RE_MODULE = /^Modules?\s*[:–—-]\s*(.+)$/i;
+/**
+ * Intertitre « QCM » ou « QIM », seul sur sa ligne, numéroté ou non
+ * (question 58, choix a) : il fixe le format des questions qui suivent sans
+ * mot-clé. Avant, il était ignoré — ou collé au texte de la dernière
+ * proposition quand aucune ligne vide ne le précédait.
+ */
+const RE_INTERTITRE =
+  /^(?:(?:partie|section|s[ée]rie)\s+\w{1,4}\s*[.:–—-]?\s*)?(?:(?:[IVX]{1,4}|\d{1,2})\s*[.):–—-]\s*)?(QCM|QIM|questions?\s+[àa]\s+choix\s+multiples?|questions?\s+[àa]\s+interpr[ée]tations?\s+multiples?)s?\s*:?$/i;
 const RE_DECOR = /\*\*|__|`/g;
 const RE_PUCE = /^[\s>*•·#-]+(?=\S)/;
 
@@ -201,6 +234,13 @@ function place(brut: string | undefined): Legende["repere"] | null {
 interface Brouillon {
   genre: "question" | "schema" | "sequence" | "trous";
   format: TypeQuestion;
+  /** QCM ou QIM écrit devant la question. */
+  formatMotCle?: FormatChoix;
+  /** Dernier intertitre « QCM » ou « QIM » lu avant la question. */
+  formatIntertitre?: FormatChoix;
+  moduleLigne?: string;
+  /** Un verdict « (V) » / « (F) » a été lu en fin de proposition. */
+  marqueurs: boolean;
   numero?: number;
   enonce: string[];
   props: { lettre: string; texte: string; v: boolean | null }[];
@@ -223,10 +263,25 @@ interface Brouillon {
   dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "rien";
 }
 
-function nouveau(genre: Brouillon["genre"], format: TypeQuestion, numero: number | undefined, tete: string): Brouillon {
+/** Ce qui, lu avant l'en-tête d'une question, vaut pour elle. */
+interface Contexte {
+  formatMotCle?: FormatChoix;
+  formatIntertitre?: FormatChoix;
+  moduleLigne?: string;
+}
+
+function nouveau(
+  genre: Brouillon["genre"],
+  format: TypeQuestion,
+  numero: number | undefined,
+  tete: string,
+  contexte: Contexte,
+): Brouillon {
   return {
     genre,
     format,
+    ...contexte,
+    marqueurs: false,
     numero,
     enonce: tete ? [tete] : [],
     props: [],
@@ -289,6 +344,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
+      moduleLigne: b.moduleLigne,
       avertissements,
     };
   }
@@ -323,6 +379,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: attendues.length === numeros.length,
+      moduleLigne: b.moduleLigne,
       avertissements,
     };
   }
@@ -355,12 +412,21 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       niveauQuestion: lireNiveauQuestion(b.difficulte),
       refs: b.refs,
       corrigeDetecte: true,
+      moduleLigne: b.moduleLigne,
       avertissements,
     };
   }
   if (b.props.length < 2) return null;
   if (!enonce) avertissements.push("Énoncé vide.");
-  const format = b.format === "SCH" ? defaut : b.format;
+  // Mot-clé, puis intertitre, puis consigne de l'énoncé, puis défaut du dépôt.
+  const indice = indiceFormat(enonce);
+  const [format, origineFormat]: [FormatChoix, OrigineFormat] = b.formatMotCle
+    ? [b.formatMotCle, "mot-cle"]
+    : b.formatIntertitre
+      ? [b.formatIntertitre, "intertitre"]
+      : indice.format
+        ? [indice.format, "enonce"]
+        : [defaut, "defaut"];
   const manquants = b.props.filter((p) => p.v === null).length;
   const corrige = manquants === 0;
   if (!corrige) {
@@ -386,14 +452,11 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       );
     }
   }
-  if (format === "QCM" && !options.some((o) => o.vrai) && corrige) {
-    avertissements.push("QCM sans aucune proposition vraie : vérifier le corrigé.");
-  }
-  if (format === "QCM" && options.filter((o) => o.vrai).length > 1 && !/plusieurs/i.test(enonce)) {
-    avertissements.push("Plusieurs réponses vraies : l'énoncé devrait mentionner « plusieurs réponses ».");
-  }
+  // Les avertissements propres au QCM dépendent du format : ils sont dans
+  // `alertesFormat` (lib/import-format.ts), recalculés par l'aperçu.
   return {
     format,
+    origineFormat,
     enonce,
     options,
     legendes: [],
@@ -406,6 +469,8 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     niveauQuestion: lireNiveauQuestion(b.difficulte),
     refs: b.refs,
     corrigeDetecte: corrige,
+    corrigeParMarqueurs: b.marqueurs && !b.corrige,
+    moduleLigne: b.moduleLigne,
     avertissements,
   };
 }
@@ -443,9 +508,34 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     courant = null;
   };
 
+  // Ce qui vaut pour les questions à venir : dernier intertitre de format,
+  // dernière ligne « Module : ».
+  let formatIntertitre: FormatChoix | undefined;
+  let moduleLigne: string | undefined;
+  let apresLigneVide = true;
+
   for (const brut of texte.replace(/\r\n?/g, "\n").split("\n")) {
     const ligne = sansDecor(brut);
     if (!ligne) {
+      if (courant) courant.dernier = "rien";
+      apresLigneVide = true;
+      continue;
+    }
+    const detachee = apresLigneVide;
+    apresLigneVide = false;
+
+    const it = RE_INTERTITRE.exec(ligne);
+    if (it) {
+      formatIntertitre = /qim|interpr/i.test(it[1]) ? "QIM" : "QCM";
+      if (courant) courant.dernier = "rien";
+      continue;
+    }
+    const mod = RE_MODULE.exec(ligne);
+    if (mod) {
+      moduleLigne = mod[1].trim();
+      // Écrite dans une question, sans ligne vide avant elle, la ligne est de
+      // cette question — comme « Niveau » ou « Source » — et des suivantes.
+      if (courant && !detachee) courant.moduleLigne = moduleLigne;
       if (courant) courant.dernier = "rien";
       continue;
     }
@@ -453,19 +543,19 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     const s = RE_SCHEMA.exec(ligne);
     if (s) {
       clore();
-      courant = nouveau("schema", "SCH", Number(s[1]), s[2].trim());
+      courant = nouveau("schema", "SCH", Number(s[1]), s[2].trim(), { moduleLigne });
       continue;
     }
     const seq = RE_SEQUENCE.exec(ligne);
     if (seq) {
       clore();
-      courant = nouveau("sequence", "ORD", Number(seq[1]), seq[2].trim());
+      courant = nouveau("sequence", "ORD", Number(seq[1]), seq[2].trim(), { moduleLigne });
       continue;
     }
     const tat = RE_TEXTE.exec(ligne);
     if (tat) {
       clore();
-      courant = nouveau("trous", "TAT", Number(tat[1]), tat[2].trim());
+      courant = nouveau("trous", "TAT", Number(tat[1]), tat[2].trim(), { moduleLigne });
       continue;
     }
     const q = RE_QUESTION.exec(ligne);
@@ -478,8 +568,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       (RE_LEGENDE.test(ligne) || RE_ELEMENT.test(ligne));
     if (q && !dansUnBloc) {
       clore();
-      const fmt = (q[1]?.toUpperCase() as "QCM" | "QIM" | undefined) ?? options.formatDefaut;
-      courant = nouveau("question", fmt, Number(q[2]), q[3].trim());
+      const motCle = q[1]?.toUpperCase() as FormatChoix | undefined;
+      courant = nouveau("question", motCle ?? options.formatDefaut, Number(q[2]), q[3].trim(), {
+        formatMotCle: motCle,
+        formatIntertitre,
+        moduleLigne,
+      });
       continue;
     }
     if (!courant) continue;
@@ -617,6 +711,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       if (vf && t.length > vf[0].length) {
         v = /^v/i.test(vf[1]);
         t = t.slice(0, t.length - vf[0].length).trim();
+        courant.marqueurs = true;
       }
       if (lettre !== LETTRES[courant.props.length]) {
         avertissements.push(`Proposition « ${lettre} » hors séquence dans la question ${courant.numero ?? "?"}.`);
@@ -703,6 +798,9 @@ interface QuestionJson {
   refs?: unknown;
   legendes?: unknown;
   bonnesReponses?: unknown;
+  /** Module, comme la ligne « Module : » d'un texte : code du critère, identifiant ou titre. */
+  module?: unknown;
+  moduleId?: unknown;
 }
 
 function chaine(v: unknown, defaut = ""): string {
@@ -759,8 +857,16 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
   for (const item of liste.slice(0, MAX_QUESTIONS_IMPORT)) {
     const q = (item && typeof item === "object" ? item : {}) as QuestionJson;
     const fmtBrut = chaine(q.format, chaine(q.type)).toUpperCase();
-    const format: TypeQuestion = fmtBrut === "QIM" || fmtBrut === "SCH" ? fmtBrut : fmtBrut === "QCM" ? "QCM" : options.formatDefaut;
     const enonce = chaine(q.enonce).trim();
+    // Format écrit, sinon consigne de l'énoncé, sinon défaut du dépôt (question 58).
+    const indice = indiceFormat(enonce);
+    const [format, origineFormat]: [TypeQuestion, OrigineFormat] =
+      fmtBrut === "QIM" || fmtBrut === "SCH" || fmtBrut === "QCM"
+        ? [fmtBrut, "mot-cle"]
+        : indice.format
+          ? [indice.format, "enonce"]
+          : [options.formatDefaut, "defaut"];
+    const moduleLigne = chaine(q.module, chaine(q.moduleId)).trim() || undefined;
     const avert: string[] = [];
     if (format === "SCH") {
       const legs = (Array.isArray(q.legendes) ? q.legendes : []) as Record<string, unknown>[];
@@ -772,7 +878,7 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
         avertissements.push(`Schéma « ${enonce.slice(0, 50)} » ignoré : aucune légende.`);
         continue;
       }
-      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, avertissements: ["Image à choisir dans l'éditeur."] });
+      questions.push({ format, enonce: enonce || "Légendez ce schéma.", options: [], legendes, justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: ["Image à choisir dans l'éditeur."] });
       continue;
     }
     const opts = optionsDe(q);
@@ -780,8 +886,8 @@ function analyserJson(texte: string, options: OptionsImport): ResultatImport | n
       avertissements.push(`Question « ${enonce.slice(0, 50)} » ignorée : moins de deux propositions.`);
       continue;
     }
-    if (!opts.some((o) => o.vrai) && format === "QCM") avert.push("QCM sans proposition vraie : vérifier le corrigé.");
-    questions.push({ format, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, avertissements: avert });
+    // « QCM sans proposition vraie » : dans `alertesFormat`, recalculé par l'aperçu.
+    questions.push({ format, origineFormat, enonce, options: opts, legendes: [], justification: chaine(q.justification), eliminatoire: q.eliminatoire === true, reservee: q.reservee === true, niveauQuestion: lireNiveauQuestion(q.niveau ?? q.niveauQuestion ?? q.difficulte), refs: referencesDe(q), corrigeDetecte: true, moduleLigne, avertissements: avert });
   }
   if (questions.length === 0) avertissements.push("Aucune question reconnue dans le JSON.");
   return { questions, avertissements };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PROMPT_DEPOT } from "@/content/prompt-depot";
+import { promptDepot, type ModulePrompt } from "@/content/prompt-depot";
 
 /**
  * Prompt de mise en forme, à copier dans l'assistant de son choix.
@@ -10,14 +10,16 @@ import { PROMPT_DEPOT } from "@/content/prompt-depot";
  * texte brut ailleurs, puis colle le résultat ici. Le prompt est affiché en
  * clair — il fait partie de ce qui est relu — et le bouton ne fait que le
  * copier. Si le navigateur refuse le presse-papiers, le texte reste
- * sélectionnable à la main.
+ * sélectionnable à la main. Il porte la liste des modules du site, pour que
+ * l'assistant écrive la ligne « Module : » de chaque groupe de questions.
  */
-export function PromptDepot() {
+export function PromptDepot({ modules }: { modules: ModulePrompt[] }) {
   const [etat, setEtat] = useState<"prêt" | "copié" | "refusé">("prêt");
+  const texte = promptDepot(modules);
 
   const copier = async () => {
     try {
-      await navigator.clipboard.writeText(PROMPT_DEPOT);
+      await navigator.clipboard.writeText(texte);
       setEtat("copié");
     } catch {
       setEtat("refusé");
@@ -50,7 +52,7 @@ export function PromptDepot() {
             {etat === "refusé" && "Le navigateur a refusé le presse-papiers : sélectionnez le texte ci-dessous."}
           </span>
         </div>
-        <pre className="exemple">{PROMPT_DEPOT}</pre>
+        <pre className="exemple">{texte}</pre>
       </div>
     </details>
   );

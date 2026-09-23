@@ -430,6 +430,11 @@ export const SCHEMA: string[] = [
      PRIMARY KEY (agent_id, filiere_id, niveau, parcours)
    )`,
 
+  // ── un dépôt de questions sert plusieurs modules (question 57, 23/09/2026) ─
+  // Chaque question porte son module ; le dépôt ne garde le sien que s'il
+  // n'en sert qu'un, sinon NULL.
+  `ALTER TABLE depots_questions ALTER COLUMN module_id DROP NOT NULL`,
+
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
   `DO $$

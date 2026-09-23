@@ -1,5 +1,6 @@
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { A_PRECISER, type Module } from "@/content/types";
+import { reperesModules, type ModuleRepere } from "@/lib/import-module";
 import type { ModuleChoix } from "@/components/EditeurQuestion";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { QuestionInitiale } from "@/components/EditeurQuestion";
@@ -13,6 +14,28 @@ export async function choixModules(): Promise<ModuleChoix[]> {
     redige: m.redige,
     origine: m.origine ?? "code",
   }));
+}
+
+/** Module tel que le lit une ligne « Module : » : identifiant, titre, code du critère s'il en a un. */
+export function versRepere(m: Pick<Module, "id" | "titre" | "critereId">): ModuleRepere {
+  return { id: m.id, titre: m.titre, critere: typeof m.critereId === "string" && m.critereId !== A_PRECISER ? m.critereId : "" };
+}
+
+/**
+ * Modules qui peuvent recevoir un dépôt : tous, sauf les modules déposés
+ * retirés — une ligne « Module : » ne les désigne pas, la proposition ne les
+ * propose pas (question 57). La liste de l'aperçu les garde, comme le reste
+ * de la banque.
+ */
+export async function modulesOuvertsAuDepot(): Promise<Module[]> {
+  return (await getTousModulesAvecDeposes()).filter((m) => m.statut !== "retire");
+}
+
+/** Liste « code — titre » donnée à l'assistant dans le prompt de mise en forme. */
+export async function listeModulesPourPrompt(): Promise<{ repere: string; titre: string }[]> {
+  const modules = (await modulesOuvertsAuDepot()).map(versRepere);
+  const noms = reperesModules(modules);
+  return modules.map((m) => ({ repere: noms.get(m.id) ?? m.id, titre: m.titre }));
 }
 
 /** Ce qui précède le titre d'un module dans une liste : son critère, ou « Dépôt » pour un module déposé. */

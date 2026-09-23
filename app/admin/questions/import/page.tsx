@@ -4,12 +4,13 @@ import { PromptDepot } from "@/components/PromptDepot";
 import { PromptGeneration } from "@/components/PromptGeneration";
 import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
 import { actionAnalyserImport, actionConfirmerImport } from "../actions";
-import { choixModules } from "../commun";
+import { choixModules, listeModulesPourPrompt } from "../commun";
 
 export const dynamic = "force-dynamic";
 
 export default async function Import({ searchParams }: { searchParams: Promise<{ module?: string }> }) {
   const p = await searchParams;
+  const [modules, modulesPrompt] = await Promise.all([choixModules(), listeModulesPourPrompt()]);
   return (
     <>
       <p className="fil">
@@ -19,8 +20,9 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
         <h1>Déposer des questions</h1>
         <p>
           Collez un texte ou déposez un fichier (.txt, .md, .docx, .json). L&apos;analyse ne devine
-          rien : les verdicts viennent du corrigé écrit dans le texte. Chaque question est montrée
-          avant d&apos;être ajoutée, au statut « à vérifier ».
+          aucun verdict : ils viennent du corrigé écrit dans le texte. Le module et le format
+          qu&apos;elle retient ou propose se vérifient dans l&apos;aperçu : chaque question y est
+          montrée avant d&apos;être ajoutée, au statut « à vérifier ».
         </p>
       </section>
       <details className="bloc" style={{ marginBottom: "1rem" }}>
@@ -28,7 +30,11 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
         <div className="contenu-bloc">
           <pre className="exemple">{EXEMPLE_DEPOT}</pre>
           <p className="legende">
-            Le mot-clé QCM ou QIM fixe le format ; sans lui, le format par défaut s&apos;applique. Un
+            Le mot-clé QCM ou QIM fixe le format ; sans lui, un intertitre « QCM » ou « QIM » seul
+            sur sa ligne vaut pour les questions qui suivent ; sans intertitre, la consigne de
+            l&apos;énoncé (« indiquez si … vraies ou fausses », « lesquelles… ? ») ; sinon, le format par
+            défaut. Une ligne « Module : B1-05 » — code du critère, identifiant ou titre du module —
+            vaut pour les questions qui suivent : un dépôt peut servir plusieurs modules. Un
             corrigé se lit dans « (V) / (F) » en fin de proposition ou dans « Réponses : A C ».
             Pour un schéma, les quatre nombres sont le rectangle du mot d&apos;origine (x, y,
             largeur, hauteur en % de l&apos;image) ; deux nombres posent un repère sans cache. Un
@@ -39,10 +45,10 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
           </p>
         </div>
       </details>
-      <PromptDepot />
+      <PromptDepot modules={modulesPrompt} />
       <PromptGeneration />
       <ImportQuestions
-        modules={await choixModules()}
+        modules={modules}
         moduleInitial={p.module}
         analyser={actionAnalyserImport}
         confirmer={actionConfirmerImport}

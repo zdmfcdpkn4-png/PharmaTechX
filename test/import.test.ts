@@ -218,3 +218,109 @@ test("le niveau se lit sur un schéma à compléter", () => {
   assert.equal(q.niveauQuestion, "intermediaire");
   assert.equal(q.legendes.length, 2, "la ligne de niveau n'est pas prise pour une légende");
 });
+
+// ─────────────── Questions 57 et 58 (23/09/2026) : modules et formats mêlés
+
+const MELE = `QCM
+
+1. Parmi les propositions suivantes concernant le sas, lesquelles sont fausses ? (plusieurs réponses possibles)
+A. Le sas est en surpression
+B. Le sas est en dépression
+C. Le sas se nettoie chaque jour
+Réponses : A B
+
+QIM
+2. Concernant la ZAC, indiquez si les propositions suivantes sont vraies ou fausses.
+A. La ZAC est de classe B
+B. Les bijoux sont autorisés
+Réponses : A
+
+3. Concernant l'isolateur, indiquez si les propositions suivantes sont vraies ou fausses.
+A. Il est en dépression
+B. Il se décontamine au peroxyde
+Réponses : aucune
+`;
+
+test("un intertitre « QCM » ou « QIM » fixe le format des questions qui suivent", () => {
+  for (const formatDefaut of ["QCM", "QIM"] as const) {
+    const r = analyserTexte(MELE, { formatDefaut });
+    assert.deepEqual(r.questions.map((q) => q.format), ["QCM", "QIM", "QIM"], `défaut ${formatDefaut}`);
+    assert.deepEqual(r.questions.map((q) => q.origineFormat), ["intertitre", "intertitre", "intertitre"]);
+    assert.deepEqual(r.questions[0].options.map((o) => o.vrai), [true, true, false], "le QCM à rebours garde ses lettres à cocher");
+  }
+});
+
+test("sans mot-clé ni intertitre, la consigne de l'énoncé décide avant le format par défaut", () => {
+  const sansIntertitre = MELE.replace(/^QCM\n|^QIM\n/gm, "");
+  const r = analyserTexte(sansIntertitre, { formatDefaut: "QIM" });
+  assert.deepEqual(r.questions.map((q) => q.format), ["QCM", "QIM", "QIM"], "« lesquelles sont fausses » reste un QCM même par défaut QIM");
+  assert.deepEqual(r.questions.map((q) => q.origineFormat), ["enonce", "enonce", "enonce"]);
+  const muet = analyserTexte("1. Énoncé\nA. x (V)\nB. y (F)", { formatDefaut: "QIM" });
+  assert.equal(muet.questions[0].origineFormat, "defaut");
+});
+
+test("le mot-clé l'emporte sur l'intertitre et sur l'énoncé", () => {
+  const r = analyserTexte("QIM\n\nQCM 1. Concernant X, indiquez si les propositions suivantes sont vraies ou fausses.\nA. a (V)\nB. b (F)", {
+    formatDefaut: "QIM",
+  });
+  assert.equal(r.questions[0].format, "QCM");
+  assert.equal(r.questions[0].origineFormat, "mot-cle");
+});
+
+test("un intertitre collé à la dernière proposition ne s'ajoute plus à son texte", () => {
+  const r = analyserTexte(
+    "QIM 1. Concernant X, indiquez si les propositions suivantes sont vraies ou fausses.\nA. Première (V)\nB. Deuxième (F)\nQCM\n2. Laquelle est juste ?\nA. Une (V)\nB. Deux (F)",
+    { formatDefaut: "QIM" },
+  );
+  assert.equal(r.questions[0].options[1].texte, "Deuxième");
+  assert.equal(r.questions[1].format, "QCM", "l'intertitre vaut pour la question suivante");
+  for (const intertitre of ["Questions à interprétation multiple", "II. QIM", "Partie 2 : QIM", "## QIM"]) {
+    const t = analyserTexte(`${intertitre}\n\n1. Énoncé\nA. x (V)\nB. y (F)`, { formatDefaut: "QCM" });
+    assert.equal(t.questions[0].format, "QIM", intertitre);
+  }
+});
+
+test("« Module : » vaut pour les questions qui suivent, jusqu'à la suivante", () => {
+  const r = analyserTexte(
+    [
+      "1. Sans module\nA. x (V)\nB. y (F)",
+      "Module : B1-05",
+      "2. Question\nA. x (V)\nB. y (F)",
+      "SÉQUENCE 1. Ordre\n1. un\n2. deux",
+      "Module : B6-10",
+      "SCHÉMA 1. Légendez\n1. sas",
+    ].join("\n\n"),
+    { formatDefaut: "QCM" },
+  );
+  assert.deepEqual(r.questions.map((q) => q.moduleLigne), [undefined, "B1-05", "B1-05", "B6-10"]);
+});
+
+test("« Module : » écrit dans une question, sans ligne vide, vaut aussi pour elle", () => {
+  const r = analyserTexte(
+    "QCM 1. Première\nA. x\nB. y\nRéponses : A\nModule : B1-05\n\nQCM 2. Deuxième\nA. x\nB. y\nRéponses : B\nModule : B6-10\n\nQCM 3. Troisième\nA. x\nB. y\nRéponses : A",
+    { formatDefaut: "QCM" },
+  );
+  assert.deepEqual(r.questions.map((q) => q.moduleLigne), ["B1-05", "B6-10", "B6-10"]);
+  assert.equal(r.questions[0].justification, "", "la ligne ne se colle à rien");
+});
+
+test("corrigé lu dans les (V) / (F) : signalé comme tel, pour le QCM à rebours", () => {
+  const r = analyserTexte("QCM 1. Lesquelles ?\nA. x (V)\nB. y (F)\n\nQCM 2. Lesquelles ?\nA. x (V)\nB. y (F)\nRéponses : B", {
+    formatDefaut: "QCM",
+  });
+  assert.deepEqual(r.questions.map((q) => q.corrigeParMarqueurs), [true, false], "la ligne Réponses l'emporte");
+});
+
+test("JSON : le module et l'origine du format se lisent aussi", () => {
+  const r = analyserTexte(
+    JSON.stringify([
+      { module: "B1-05", enonce: "Lesquelles ?", options: [{ texte: "a", vrai: true }, { texte: "b", vrai: false }] },
+      { format: "QIM", enonce: "E", options: [{ texte: "a", vrai: true }, { texte: "b", vrai: false }] },
+    ]),
+    { formatDefaut: "QIM" },
+  );
+  assert.deepEqual(r.questions.map((q) => [q.format, q.origineFormat, q.moduleLigne]), [
+    ["QCM", "enonce", "B1-05"],
+    ["QIM", "mot-cle", undefined],
+  ]);
+});
