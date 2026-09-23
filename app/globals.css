@@ -2132,6 +2132,13 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
   .titre-vignette { gap: 0.75rem; }
   .titre-vignette .badge--illustration { width: 72px; height: 72px; }
 }
+/* Sous 360 px — petits téléphones, écran zoomé à 400 % —, la vignette passe
+   au-dessus du titre : à côté, la colonne devient plus étroite que certains
+   mots (« réfrigérateurs, » en 28 px), qui sortaient de la carte (choix a du
+   23/09/2026). */
+@media (max-width: 22.49rem) {
+  .titre-vignette { flex-direction: column; }
+}
 .case-seule {
   display: inline-flex; align-items: center; gap: 0.5rem;
   min-height: var(--cible); font-size: 0.9375rem; margin: 0.25rem 0;

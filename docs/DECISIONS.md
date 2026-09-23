@@ -2408,17 +2408,33 @@ titre moyen du module « Protection de l'opérateur… » :
 
 Aucune page ne défile de côté.
 
-**Limite, à trancher.** Jusqu'à 360 px de large environ — vieux téléphones,
-mais aussi écran de PC zoomé à 400 %, 320 px étant la largeur de référence du
-critère WCAG 2.2 1.4.10 (*Reflow*) —, la colonne du titre (largeur de l'écran
-moins 163 px) est plus étroite que certains mots en 28 px : à 320 px,
-« réfrigérateurs, » (199 px) dépasse du bloc de 35 px, contre 19 px à 56 px.
-Le mot reste lisible et la page ne défile pas de côté, mais il sort de la
-carte. Le défaut existait, le choix b l'accentue. Essayés sans les retenir :
-couper les mots trop longs (`overflow-wrap`), qui les casse sans trait
-d'union (« surveillanc / e ») ; la césure automatique (`hyphens: auto`),
-inopérante dans le Chromium de test, faute de dictionnaire — sur iOS et
-Android `[à vérifier]`.
+**Écrans étroits (23/09/2026, choix a).** Sous 360 px de large — vieux
+téléphones, mais aussi écran de PC zoomé à 400 %, 320 px étant la largeur de
+référence du critère WCAG 2.2 1.4.10 (*Reflow*) —, la colonne du titre à côté
+de la vignette (largeur de l'écran moins 163 px) devenait plus étroite que
+certains mots en 28 px : à 320 px, « réfrigérateurs, » (199 px) dépassait du
+bloc de 35 px, contre 19 px à 56 px. Le défaut existait, le choix b
+l'accentuait. Options : a) vignette au-dessus du titre sous 360 px
+seulement ; b) au-dessus sur tous les téléphones (titre long de 11 à 6
+lignes sur iPhone SE, mais la vignette ne flanque plus le titre) ; c) laisser
+tel quel. Essayés sans les retenir : couper les mots trop longs
+(`overflow-wrap`), qui les casse sans trait d'union (« surveillanc / e ») ;
+la césure automatique (`hyphens: auto`), inopérante dans le Chromium de
+test, faute de dictionnaire — sur iOS et Android `[à vérifier]`.
+
+**Tranché : a.** Sous 22.49rem (moins de 360 px), `.titre-vignette` passe en
+colonne (`app/globals.css`). Mesuré le 23/09/2026, titre long de B1-06 :
+
+| Largeur | Disposition | Colonne du titre | Titre long | Titre moyen |
+|---|---|---|---|---|
+| 320 px | vignette au-dessus | 241 px | 9 lignes | 4 lignes |
+| 344 px | vignette au-dessus | 265 px | 8 lignes | 3 lignes |
+| 359 px | vignette au-dessus | 280 px | 6 lignes | 3 lignes |
+| 360 px | vignette à côté | 197 px | 12 lignes | 4 lignes |
+| iPhone SE (375 px) | vignette à côté | 212 px | 11 lignes | 4 lignes |
+
+Plus aucun mot ne sort du bloc, à aucune de ces largeurs, et aucune page ne
+défile de côté ; vignette à 72 px partout.
 
 ## Non fait
 
