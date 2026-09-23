@@ -376,6 +376,25 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+62. **Tirage : niveau cible du profil et questions signalées** — demandé le
+    23/09/2026 : « piocher dans les questions de la banque un nombre de
+    questions à définir dans le barème, piochées au hasard, correspondant à
+    la cible du niveau du profil et du module à valider ; exclure les
+    questions de ce fait signalées ». Existant : le nombre est déjà réglé au
+    barème (Tirages : Découverte 5, Habilitation 10 par défaut, jamais sous
+    le minimum pour conclure ; Complet : toute la banque) ; le tirage se fait
+    au hasard dans la banque du module à valider — celui que le niveau cible
+    du profil met au programme —, les éliminatoires toujours posées, les
+    réservées en priorité ; une question signalée n'en est pas écartée ; le
+    niveau de la question (initial, intermédiaire, avancé) ne joue pas,
+    décision du 22/09/2026 (question 51). Posée le 23/09/2026. Dans tous les
+    cas : une question au signalement ouvert est écartée de tout tirage,
+    évaluation et entraînement, jusqu'à la clôture du signalement, le
+    serveur appliquant la même règle. En plus : plafond de niveau selon le
+    niveau cible, réglé au barème, les questions « à préciser » tirées pour
+    tous (a) ; répartition des niveaux selon le niveau cible, réglée au
+    barème (b) ; aucun filtre de niveau, décision du 22/09 maintenue (c).
+
 61. **Accès rapide : position et ouverture** — demandé le 23/09/2026 :
     « pour le menu d'accès rapide, revoit le positionnement et le mode
     d'ouverture pour qu'il limite la gêne de la lecture de la fenêtre en
