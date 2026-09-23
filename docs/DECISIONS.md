@@ -2279,6 +2279,106 @@ pendant le test, puis dans les sauvegardes jusqu'à leur rotation), et une
 vingtaine de requêtes (registre, pilotage, personnel, compteurs, exports) à
 filtrer, plus toutes celles à venir.
 
+## Erreur d'hydratation #418 : correctif amont reporté (23/09/2026, choix a)
+
+**Constat.** La chaîne de bout en bout relevait par intermittence, en
+production, « Minified React error #418 » (échec d'hydratation) sur des pages
+chargées — `/admin/modules`, `/admin/questions`, `/admin/programmes/1` — sans
+échec fonctionnel : React se rétablit seul en abandonnant l'hydratation et en
+reconstruisant toute la page dans le navigateur. Pour l'utilisateur : saut
+visuel possible, perte d'une saisie commencée avant la fin de l'hydratation,
+travail du navigateur doublé.
+
+**Cause** (établie le 23/09/2026) : un bogue de React, pas du site. Le React
+embarqué par Next 15.5.25 (`19.2.0-canary-0bdb9206-20250818`) ne rembobine
+pas le curseur d'hydratation quand il rejoue un élément qui a suspendu sur un
+morceau de données RSC pas encore arrivé : il compare alors l'élément à son
+propre premier enfant et conclut à une divergence. Bogue décrit dans
+react/react#37584, corrigé par react/react#35494 (« [Fiber] Correctly handle
+replaying when hydrating », fusionné le 13/01/2026). Intermittent parce qu'il
+dépend de l'ordre d'arrivée des données : plus probable sur un serveur lent
+ou froid et sur les grandes pages.
+
+- Sonde insérée dans React (copie de diagnostic hors dépôt) : chaque capture
+  montre un élément comparé à son propre premier enfant ; le HTML reçu est
+  toujours bien formé.
+- Versions lues dans les paquets npm : Next 15.5.26, dernière 15.x, embarque
+  le même React ; Next 16.3.6 embarque `19.3.0-canary-cbb046ab-20260731`,
+  corrigé.
+
+**Options.** a) reporter le correctif officiel dans la version actuelle ;
+b) passer à Next 16.3.6, version majeure, tout le site à revalider pour un
+seul bogue ; c) documenter seulement.
+
+**Tranché : a.**
+
+- `scripts/correctif-react-35494.mjs`, lancé par `postinstall` (`npm
+  install`, `npm ci`, donc au build de Render), insère les huit lignes du
+  correctif dans la branche « élément hôte » de `replaySuspendedUnitOfWork`,
+  dans les quatre fichiers client de
+  `node_modules/next/dist/compiled/react-dom/cjs/` (production,
+  développement, deux de profilage). Le canal « experimental » de React
+  embarqué par Next n'est pas employé — aucune des options `ppr`, `taint`,
+  `viewTransition`, `routerBFCache` — et n'est pas touché.
+- Garde-fous : version de React exacte, branche trouvée une seule fois, état
+  d'hydratation présent ; sinon l'installation échoue avec la marche à
+  suivre, et un build Render échoué laisse la version précédente en ligne
+  (Render, « How Render handles deploy failures »). Un fichier déjà corrigé
+  porte une marque en commentaire et n'est pas retouché.
+- Contrôlé : une fois corrigée, la fonction de rejeu de chacun des quatre
+  fichiers est identique, octet pour octet, à celle de React 19.3 (Next
+  16.3.6), hors la ligne de marque ; le reste de chaque fichier est inchangé.
+  Minifiée par `next build`, elle a la même forme que le correctif d'origine,
+  que Next compile à partir de `react-dom` 19.3.0 pour ses pages d'erreur par
+  défaut (routeur « pages ») : seuls les noms raccourcis diffèrent.
+- **Piège constaté** : le cache de webpack tient `node_modules` pour immuable
+  tant que la version du paquet ne change pas (`snapshot.managedPaths`, posé
+  par Next). Après correction de `node_modules`, un build sur cache chaud a
+  rendu le fichier React d'avant, à l'octet près (même empreinte
+  `f785427dddbba9fb`) : le correctif était installé mais pas servi. D'où deux
+  parades : le script efface `.next/cache/webpack` quand il vient de poser le
+  correctif, et `npm run build` se termine par un contrôle du code servi
+  (`--build`) — la fonction de rejeu minifiée doit porter le correctif dans
+  chaque fichier de `.next/static/chunks` qui la contient, sinon le build
+  échoue. Que Render conserve ou non `.next/cache` d'un build à l'autre
+  `[à vérifier]`, le code servi est ainsi contrôlé à chaque déploiement ; la
+  conduite à tenir en cas d'échec est dans `docs/DEPLOIEMENT.md`.
+- `test/correctif-react.test.ts` vérifie que les quatre fichiers installés
+  portent le correctif et restent valides, éprouve le script (insertion
+  unique, seconde passe sans effet, refus d'une autre version de React ou
+  d'une branche absente ou en double) et le contrôle du code servi, sur les
+  formes minifiées relevées : sans correctif, report, correctif d'origine.
+- **À retirer au passage à Next 16** : le script, ses deux appels dans
+  `package.json` (`postinstall`, `build`) et le test. Le script échoue de
+  lui-même dès que la version de React change, ce qui oblige à y penser.
+
+**Vérifié le 23/09/2026.**
+
+- Reproduction déterministe sur le build du dépôt. Un mandataire suspend
+  800 ms le flux RSC de `/admin/modules` à chacune des 90 positions
+  possibles. Sans correctif (build du commit `8c64a59`) : erreur #418 à 5
+  positions sur 90 (73, 81, 86, 89, 90). Avec le correctif : aucune. Même
+  page, même base, même méthode.
+- Parcours de Render rejoué : `npm ci` (correctif posé, cache de webpack
+  effacé), puis `npm run build` (contrôle du code servi réussi).
+- `npm run verifier` : 239 tests. Deux passes de bout en bout de 77 étapes,
+  sans erreur de page ni erreur serveur. Le même jour, avant le correctif,
+  deux passes sur cinq avaient relevé une erreur #418. Deux passes propres ne
+  prouveraient rien, à elles seules, d'un défaut intermittent : la preuve est
+  le balayage.
+
+**Limites.**
+
+- Du code tiers est modifié à l'installation : c'est ce qu'un audit peut
+  interroger. La trace est ici, dans l'en-tête du script et, par la marque,
+  dans le fichier installé.
+- Le correctif voisin pour `<head>` (react/react#37630, élément
+  `HostSingleton`) n'est pas repris : il n'était pas fusionné à la
+  consultation du 23/09/2026, et le cas — une suspension dans `<head>` — ne
+  s'est pas présenté ici.
+- `npm ci --ignore-scripts` installerait React sans le correctif : le test le
+  signale ; le build Render n'emploie pas cette option.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

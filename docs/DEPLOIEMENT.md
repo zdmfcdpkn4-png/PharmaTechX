@@ -538,3 +538,18 @@ Chaque push sur la branche déployée reconstruit le site. Le schéma est
 idempotent : une nouvelle version ajoute ses tables au premier accès. Une
 migration destructive (renommer, supprimer une colonne) n'est pas prévue et se
 ferait par un script à part, documenté dans `lib/schema.ts`.
+
+**Correctif React #35494** (23/09/2026, `docs/DECISIONS.md`, « Erreur
+d'hydratation #418 »). `npm ci` le pose dans le React de Next
+(`postinstall`), et `npm run build` échoue si le code servi au navigateur ne
+le porte pas ; un build échoué laisse la version précédente en ligne (Render,
+« How Render handles deploy failures »,
+<https://render.com/articles/how-render-handles-deploy-failures>). Selon le
+message du journal de build :
+- « Build refusé, correctif React #35494 » : cache de build périmé.
+  Relancer en effaçant le cache de build (bouton « Clear Build Cache and
+  Deploy » d'après le journal des modifications de Render ; emplacement et
+  libellé exacts `[à vérifier]` dans le tableau de bord) ;
+- « correctif React #35494 NON appliqué » : la version de Next a changé ;
+  suivre la décision (à Next 16, le correctif est inclus et le script se
+  retire).
