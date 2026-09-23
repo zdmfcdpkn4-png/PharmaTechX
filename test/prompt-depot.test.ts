@@ -36,10 +36,12 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.deepEqual(qim.options.map((o) => o.vrai), [true, false, true]);
 
   assert.equal(illustre.imageNom, "sas-habillage.jpg", "l'illustration d'un QCM est lue");
+  assert.match(illustre.imageAlt ?? "", /^Sas d'habillage vu depuis l'entrée/, "sa description est lue");
   assert.equal(illustre.options.length, 3);
 
   assert.equal(schema.legendes.length, 2);
   assert.equal(schema.imageNom, "isolateur-coupe.png");
+  assert.match(schema.imageAlt ?? "", /^Coupe d'un isolateur/);
   assert.equal(schema.legendes[1].attendu, "filtre HEPA | filtre terminal");
 
   assert.deepEqual(
@@ -48,6 +50,9 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
     "les étapes sont lues dans l'ordre juste",
   );
   assert.ok(sequence.options.every((o) => o.vrai), "toutes les étapes comptent, c'est l'ordre qui est jugé");
+  assert.equal(sequence.imageNom, "tenue-zac.jpg", "une séquence porte une illustration (23/09/2026)");
+  assert.match(sequence.imageAlt ?? "", /mannequin/);
+  assert.equal(sequence.enonce.includes("Image"), false, "la ligne Image ne se colle plus à l'énoncé");
 
   assert.equal(trous.enonce.includes("{1}"), true, "les marques de trou restent dans l'énoncé");
   assert.deepEqual(
@@ -136,4 +141,76 @@ test("génération : le prompt emploie les trois niveaux du site, et eux seuls",
     assert.ok(p.includes("Niveau : initial (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège)"));
     assert.equal(/Difficulté|\bbase\b/.test(p), false, `${type} : plus de « Difficulté » ni de « base »`);
   }
+});
+
+// ─────────────────────────── Illustrations de tout type (23/09/2026)
+
+test("prompt de transcription : image et description pour tout type, sans donner la réponse", () => {
+  assert.match(PROMPT_DEPOT, /tout type \(QCM, QIM, séquence, texte à trous\)/);
+  assert.match(PROMPT_DEPOT, /« Description de l'image : … »/);
+  assert.match(PROMPT_DEPOT, /sans donner la réponse/);
+  assert.match(PROMPT_DEPOT, /N'annonce une image que si le texte source en désigne une/);
+});
+
+test("prompt de génération : une figure du document s'annonce, et se lit au dépôt", () => {
+  for (const type of ["QIM", "QCM"] as const) {
+    const p = promptGeneration(type);
+    assert.ok(p.includes("« Image : figure-p12-1.png »"), `${type} : nom de la capture à déposer`);
+    assert.ok(p.includes("Pas de figure dans les sources : pas de ligne Image."));
+  }
+  // Ce qu'un assistant écrirait en suivant la règle : lu sans avertissement.
+  const [q] = analyserTexte(
+    `QIM 1. Concernant la figure du sas, indiquez si les propositions suivantes sont vraies ou fausses.
+Image : figure-p12-1.png
+Description de l'image : Plan du sas de transfert et de ses deux portes.
+A. Les deux portes du sas ne s'ouvrent jamais en même temps.
+Extrait A : « les portes sont asservies »
+B. Le sas est en surpression par rapport au couloir.
+Extrait B : « le sas est en dépression »
+Réponses : A
+Pièges : B inversion
+Niveau : initial`,
+    { formatDefaut: "QIM" },
+  ).questions;
+  assert.equal(q.imageNom, "figure-p12-1.png");
+  assert.equal(q.imageAlt, "Plan du sas de transfert et de ses deux portes.");
+  assert.deepEqual(q.avertissements, []);
+  assert.equal(/Image|Description/.test(q.enonce), false, "ni l'une ni l'autre ligne dans l'énoncé");
+});
+
+test("texte à trous : la ligne Image est lue comme pour les autres formats", () => {
+  const [q] = analyserTexte(
+    `TEXTE 1. Sur cette photographie, la porte du sas s'ouvre vers le {1}.
+Image : sas-porte.jpg
+Description de l'image : Porte d'un sas, vue de face.
+1. couloir
+Leurres : local`,
+    { formatDefaut: "QCM" },
+  ).questions;
+  assert.equal(q.format, "TAT");
+  assert.equal(q.imageNom, "sas-porte.jpg");
+  assert.equal(q.imageAlt, "Porte d'un sas, vue de face.");
+  assert.equal(q.enonce, "Sur cette photographie, la porte du sas s'ouvre vers le {1}.");
+});
+
+test("description sans ligne Image : signalée ; « Description : » seule reste du texte", () => {
+  const [sansImage] = analyserTexte(
+    `QCM 1. Quelle tenue ?
+Description de l'image : Tenue sur mannequin.
+A. Combinaison (V)
+B. Blouse (F)`,
+    { formatDefaut: "QCM" },
+  ).questions;
+  assert.equal(sansImage.imageNom, undefined);
+  assert.ok(sansImage.avertissements.some((a) => a.startsWith("Description d'image sans ligne « Image : »")));
+
+  const [libre] = analyserTexte(
+    `QCM 1. Lisez l'extrait.
+Description : la zone est classée ISO 7.
+A. Vrai (V)
+B. Faux (F)`,
+    { formatDefaut: "QCM" },
+  ).questions;
+  assert.equal(libre.imageAlt, undefined, "sans « de l'image », la ligne n'est pas une description d'image");
+  assert.match(libre.enonce, /Description : la zone est classée ISO 7\./, "elle continue l'énoncé, comme avant");
 });

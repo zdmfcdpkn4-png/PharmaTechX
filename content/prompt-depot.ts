@@ -38,6 +38,7 @@ Justification : …
 
 QCM 3. Sur cette photographie du sas d'habillage, quel équipement manque-t-il ?
 Image : sas-habillage.jpg
+Description de l'image : Sas d'habillage vu depuis l'entrée, avec son banc de séparation et son portant de tenues.
 A. Les surchaussures (V)
 B. La charlotte (F)
 C. Le masque (F)
@@ -45,11 +46,14 @@ Justification : …
 
 SCHÉMA 1. Légendez les éléments repérés sur cette coupe d'isolateur.
 Image : isolateur-coupe.png
+Description de l'image : Coupe d'un isolateur, vue de face, deux repères numérotés.
 1. sas de transfert (32, 24, 14, 5)
 2. filtre HEPA | filtre terminal (58, 19)
 Justification : …
 
 SÉQUENCE 1. Remettez dans l'ordre les étapes de l'habillage en zone à atmosphère contrôlée.
+Image : tenue-zac.jpg
+Description de l'image : Tenue complète de zone à atmosphère contrôlée, portée par un mannequin.
 1. Hygiène des mains
 2. Surchaussures
 3. Combinaison
@@ -82,7 +86,8 @@ PRÉCISIONS
 - « Éliminatoire : oui » — une erreur rend le critère non acquis, quel que soit le score. À ne mettre que si le texte source le dit.
 - « Réservée à l'évaluation : oui » — la question n'est jamais posée en entraînement. Même règle.
 - « Niveau : initial », « Niveau : intermédiaire » ou « Niveau : avancé » — le niveau de la question (restitution ; reformulation, comparaison ; raisonnement, piège). Même règle : à ne mettre que si le texte source le dit. Sinon, pas de ligne : le tuteur le renseignera dans l'éditeur.
-- « Image : nom-du-fichier.png » — illustration d'une question, ou image d'un schéma à compléter. Le fichier se dépose avec le texte, sur le même écran ; le nom doit être exactement celui du fichier.
+- « Image : nom-du-fichier.jpg » — illustration d'une question de tout type (QCM, QIM, séquence, texte à trous), ou image d'un schéma à compléter : photographie, schéma, capture. La ligne suit l'énoncé. Le fichier se dépose avec le texte, sur le même écran ; le nom doit être celui du fichier, l'extension importe peu. N'annonce une image que si le texte source en désigne une.
+- « Description de l'image : … » — sous la ligne Image, ce que montre l'image, en une phrase, sans donner la réponse : elle est lue à la place de l'image par un lecteur d'écran. Recopie la légende ou le titre que le texte source donne à l'image ; il n'en donne pas : pas de ligne, le tuteur l'écrira dans l'éditeur.
 - Schéma à compléter : « SCHÉMA n. », puis « Image : … », puis une légende par ligne, numérotée. Entre parenthèses, la place du mot sur l'image en pourcentage de l'image (x, y, largeur, hauteur) ; deux nombres posent un repère sans rien masquer. Si le texte source ne donne pas ces positions, écris les légendes sans parenthèses : elles seront placées à la main dans l'éditeur.
 - Une légende accepte des variantes, séparées par « | » : « filtre HEPA | filtre terminal ».
 - Séquence à ordonner : « SÉQUENCE n. », puis une étape par ligne, numérotée, **dans l'ordre juste**. L'apprenant les recevra mélangées. N'écris une séquence que si le texte source donne l'ordre.
@@ -223,6 +228,7 @@ Règles :
 - Niveau : initial (restitution), intermédiaire (reformulation, comparaison) ou avancé (raisonnement, piège) — environ 3, 4 et 3. Ce sont les trois niveaux des questions du site.
 - Propositions fausses, une seule erreur chacune : inversion de deux termes (surpression/dépression, amont/aval, entrée/sortie, propre/stérile), terme remplacé par son voisin, valeur, unité ou signe modifiés, condition oubliée, énoncé juste attribué au mauvais équipement, local ou poste, dernier mot faux. Mots restrictifs (uniquement, toujours, jamais, tous) : au plus 3 propositions fausses et 1 vraie sur l'ensemble.
 - Si les sources donnent des chiffres, au moins 2 questions en contiennent, avec unités.
+- Figure ou photographie : une question peut porter sur une figure, une photographie ou un schéma des sources, si elle ne se comprend pas sans l'image. Écris alors, juste sous l'énoncé, « Image : figure-p12-1.png » (page 12, première figure de la page), puis « Description de l'image : … » — ce que montre l'image, en une phrase, sans donner la réponse. Chaque proposition reste tranchée par une phrase des sources : la légende de la figure ou le texte qui la commente. Le tuteur déposera la capture de la figure sous ce nom. Pas de figure dans les sources : pas de ligne Image.
 - Les lettres vraies varient d'une question à l'autre.
 - Numérotation continue, une ligne vide entre deux questions.
 

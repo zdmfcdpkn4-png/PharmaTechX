@@ -2084,6 +2084,69 @@ mise sur `production` dans le tableau de bord `[à vérifier]`. Contrôle :
 `/api/sante` donne le commit en ligne, qui doit être celui de cette version
 ou un suivant.
 
+## Illustrations et photos dans les questions, tout type (23/09/2026)
+
+Demandé le 23/09/2026 : « comme pour l'application quiz Flore, vérifie la
+possibilité d'intégrer des illustrations ou photos dans les questions (tout
+type). Intégrer au format du prompt à copier-coller. »
+
+**Ce que fait le quiz de Flore** (`/home/user/quiz-flore`, lu le
+23/09/2026) : une figure par question, de tout type, PNG ou JPEG de 2 Mo au
+plus, en base, servie derrière le code ; ajoutée ou remplacée dans
+l'éditeur, avec sa description ; préparée sur l'appareil avant l'envoi
+(2 000 px de côté, ré-encodée sous 2 Mo) ; affichée entre l'énoncé et les
+propositions, agrandie d'un toucher ; figures repérées automatiquement dans
+le PDF d'un sujet déposé. Son prompt de génération ne prévoit pas d'image.
+
+**Ce qui existait ici depuis le 19/09** : une illustration par question dans
+l'éditeur et au dépôt (ligne « Image : » du prompt de transcription), le
+module d'images de Flore (`lib/images.ts`), l'affichage sous l'énoncé, en
+question comme en correction.
+
+**Ce qui manquait, et qui est fait.**
+
+1. Les séquences et les textes à trous, venus le 19/09 après les
+   illustrations, ne lisaient pas la ligne « Image » : elle se collait à
+   l'énoncé. Ils la lisent.
+2. Une ligne « Description de l'image : … » pour tout type : ce que montre
+   l'image, sans donner la réponse. Elle devient le texte lu à la place de
+   l'image — jusqu'ici, au dépôt, c'était le nom du fichier. Le libellé
+   entier est exigé : un « Description : » seul continue l'énoncé, comme
+   avant.
+3. Le prompt de transcription l'annonce pour tout type, avec un exemple sur
+   une séquence ; le prompt de génération peut désormais fonder une question
+   sur une figure ou une photographie du document : « Image :
+   figure-p12-1.png » (page, rang), description, et chaque proposition reste
+   tranchée par une phrase des sources. Le tuteur dépose la capture sous ce
+   nom. `test/prompt-depot.test.ts` passe ces lignes dans l'analyseur réel.
+4. Une photo de téléphone (3 à 5 Mo) était refusée au-delà de 2 Mo. Elle est
+   désormais préparée sur l'appareil dès son choix, au dépôt comme dans
+   l'éditeur (`components/preparerImage.ts`, sur le modèle de Flore) :
+   2 000 px de côté, ré-encodée en JPEG sous 2 Mo ; un PNG qui tient dans les
+   limites reste tel quel. Le ré-encodage retire aussi les métadonnées de la
+   photo — lieu de la prise de vue, appareil, date. Une image que le
+   navigateur ne sait pas décoder part telle quelle et le serveur la refuse,
+   comme avant.
+5. Mises en garde, au dépôt, dans l'éditeur et sous les deux prompts : aucune
+   donnée de patient (étiquette nominative, ordonnance, écran de logiciel),
+   aucune personne reconnaissable sans son accord ; l'assistant qui met en
+   forme ou génère est un service extérieur.
+
+**Non fait, et pourquoi.**
+
+- Agrandissement d'un toucher (Flore) : l'illustration occupe 34 rem au plus
+  et la page se zoome au pincement ; à ajouter si l'usage le demande.
+- Figures repérées automatiquement dans un PDF (Flore) : rendu des pages et
+  détection des figures, un chantier à part ; ici, le tuteur dépose la
+  capture.
+- Images dans les propositions : ni Flore ni ce site ne le font.
+- Rendu sur le rapport A4 : écarté le 19/09 (le rapport porte les verdicts,
+  pas les énoncés).
+- Mises en situation : la vignette reste un texte ; chacune de ses questions
+  peut porter sa photo.
+- Photo HEIC d'iPhone : le sélecteur d'iOS remet un JPEG quand le champ
+  n'accepte que PNG et JPEG `[à vérifier sur iPhone]`.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

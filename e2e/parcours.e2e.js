@@ -1339,6 +1339,64 @@ Justification : justification deux.`;
   );
   ok("illustration d'un QCM : image appariée par son nom au dépôt, conservée et relue dans l'éditeur");
 
+  // 12i bis. illustration de tout type (23/09/2026) : une séquence annonce sa
+  // photo et la description de celle-ci ; la photo, de plus de 2 Mo, est
+  // réduite sur l'appareil avant l'envoi, puis appariée par son nom.
+  const ENONCE_SEQ_ILLUSTREE = "Sur cette photographie de la tenue, remettez l'habillage dans l'ordre.";
+  const DESCRIPTION_SEQ = "Photographie d'essai : tenue complète sur mannequin.";
+  const photoB64 = await page.evaluate(async () => {
+    const c = document.createElement("canvas");
+    c.width = 2400;
+    c.height = 1800;
+    const ctx = c.getContext("2d");
+    const im = ctx.createImageData(c.width, c.height);
+    for (let i = 0; i < im.data.length; i += 4) {
+      im.data[i] = Math.random() * 255;
+      im.data[i + 1] = Math.random() * 255;
+      im.data[i + 2] = Math.random() * 255;
+      im.data[i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.95));
+    const octets = new Uint8Array(await blob.arrayBuffer());
+    let s = "";
+    for (let i = 0; i < octets.length; i += 0x8000) s += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+    return btoa(s);
+  });
+  const PHOTO_LOURDE = Buffer.from(photoB64, "base64");
+  assert.ok(PHOTO_LOURDE.length > 2 * 1024 * 1024, "photo d'essai de plus de 2 Mo");
+  await page.goto(BASE + "/admin/questions/import?module=comportement-zac");
+  await page.waitForSelector("summary:has-text('copier le prompt')");
+  await page.fill(
+    "textarea[name=texte]",
+    `SÉQUENCE 1. ${ENONCE_SEQ_ILLUSTREE}\nImage : photo-lourde.jpg\nDescription de l'image : ${DESCRIPTION_SEQ}\n1. Hygiène des mains\n2. Surchaussures\n3. Combinaison`,
+  );
+  await page.setInputFiles("input[name=images]", { name: "photo-lourde.jpg", mimeType: "image/jpeg", buffer: PHOTO_LOURDE });
+  await page.waitForSelector("p[data-preparation='prete']:has-text('prête')");
+  assert.match(
+    await page.locator("p[data-preparation='prete']").innerText(),
+    /1 réduite \(.+ Mo → .+ Mo\), métadonnées retirées/,
+    "la photo est réduite sur l'appareil",
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("text=Image appariée");
+  assert.equal(await page.locator("text=plus de 2 Mo").count(), 0, "la photo n'est plus refusée pour son poids");
+  await page.waitForSelector(`text=Description de l'image : ${DESCRIPTION_SEQ}`);
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=question ajoutée");
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page
+    .locator(".question-ligne", { hasText: ENONCE_SEQ_ILLUSTREE.slice(0, 40) })
+    .locator("a:has-text('Modifier')")
+    .click();
+  await page.waitForSelector("img.apercu-illustration");
+  assert.equal(
+    await page.inputValue("input[name=imageAlt]"),
+    DESCRIPTION_SEQ,
+    "la description devient le texte lu à la place de l'image",
+  );
+  ok("illustration de tout type : séquence illustrée au dépôt, description reprise, photo de plus de 2 Mo réduite sur l'appareil");
+
   // 12j. séquence à ordonner et texte à trous (19/09/2026) : dépôt, validation
   // par un autre code, passation au menu déroulant, notation par éléments
   const ORDRE_JUSTE = { "Hygiène des mains": 1, Surchaussures: 2, Combinaison: 3 };

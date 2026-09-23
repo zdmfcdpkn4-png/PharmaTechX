@@ -36,6 +36,10 @@ export function PromptDepot() {
           la coller — et de toute façon, chaque question déposée entre « à vérifier » et attend la
           validation d&apos;un autre code que le vôtre.
         </p>
+        <p className="legende">
+          L&apos;assistant est un service extérieur : ne lui confiez aucun texte ni aucune photo portant
+          des données de patients ou une personne reconnaissable.
+        </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <button type="button" className="bouton bouton--compact" onClick={copier}>
             Copier le prompt

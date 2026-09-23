@@ -40,6 +40,12 @@ export function PromptGeneration() {
           l&apos;apprenant après la correction. Relisez chaque extrait contre le document : c&apos;est
           ce que vérifie le second code avant de valider.
         </p>
+        <p className="legende">
+          Une question peut s&apos;appuyer sur une figure ou une photographie du document : l&apos;assistant
+          l&apos;annonce par « Image : figure-p12-1.png » ; déposez la capture de la figure sous ce nom,
+          avec le texte. L&apos;assistant est un service extérieur : ne lui joignez aucun document ni
+          aucune photo portant des données de patients ou une personne reconnaissable.
+        </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <button type="button" className="bouton bouton--compact" onClick={() => void copier("QIM")}>
             Copier le prompt QIM

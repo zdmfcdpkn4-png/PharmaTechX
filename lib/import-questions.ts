@@ -16,9 +16,12 @@ import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
  *   Éliminatoire : oui
  *   Réservée à l'évaluation : oui
  *
- * Une question de n'importe quel format peut porter une illustration :
+ * Une question de n'importe quel format peut porter une illustration, et la
+ * description lue à la place de l'image (séquence et texte à trous compris
+ * depuis le 23/09/2026) :
  *
  *   Image : sas-habillage.jpg
+ *   Description de l'image : Sas d'habillage vu depuis l'entrée.
  *
  * Le fichier est déposé avec le texte et apparié par son nom.
  *
@@ -74,8 +77,10 @@ export interface QuestionImportee {
   enonce: string;
   options: OptionImportee[];
   legendes: Legende[];
-  /** Nom de fichier d'image annoncé (« Image : … ») — schéma ou illustration. */
+  /** Nom de fichier d'image annoncé (« Image : … ») — schéma ou illustration, tout type. */
   imageNom?: string;
+  /** « Description de l'image : … » — lue à la place de l'image (texte alternatif). */
+  imageAlt?: string;
   /** Schéma : numéro lu dans « SCHÉMA n. », pour apparier une image par rang. */
   numeroSchema?: number;
   justification: string;
@@ -129,6 +134,12 @@ const RE_SOURCE = /^(?:Sources?|R[ée]f[ée]rences?)\s*[:–—-]\s*(.+)$/i;
 const RE_ELIM = /^[EÉé]liminatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_RESERVEE = /^R[ée]serv[ée]e?(?:\s+[àa]\s+l['’][ée]valuation)?\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
+/**
+ * « Description de l'image : … » (23/09/2026) : ce que montre l'image, lu à la
+ * place de l'image par un lecteur d'écran. Le libellé entier est exigé : un
+ * « Description : » seul continuerait l'énoncé comme avant.
+ */
+const RE_DESCRIPTION_IMAGE = /^Description\s+de\s+l['’]\s?image\s*[:–—-]\s*(.+)$/i;
 const RE_SEQUENCE = /^s[ée]quences?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
 const RE_TEXTE = /^textes?(?:\s*[àa]\s*trous)?\s*(?:n\s*[°º]\s*)?(\d{1,3})\s*[.):–—-]?\s*(.*)$/i;
 const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
@@ -199,6 +210,7 @@ interface Brouillon {
   /** Texte à trous : vignettes proposées en plus des attendues. */
   leurres: string[];
   imageNom?: string;
+  imageAlt?: string;
   justification: string[];
   /** Extrait du document qui tranche chaque proposition, par lettre. */
   extraits: { lettre: string; texte: string }[];
@@ -255,6 +267,11 @@ function justificationAssemblee(b: Brouillon): string {
 function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): QuestionImportee | null {
   const avertissements: string[] = [];
   const enonce = b.enonce.join(" ").replace(/\s+/g, " ").trim();
+  // Un schéma trouve son image au rang même sans ligne « Image » ; une autre
+  // question, jamais : sa description resterait sans objet.
+  if (b.imageAlt && !b.imageNom && b.genre !== "schema") {
+    avertissements.push("Description d'image sans ligne « Image : » : ignorée, l'image se choisit dans l'éditeur.");
+  }
 
   if (b.genre === "sequence") {
     if (b.items.length < 2) return null;
@@ -264,6 +281,8 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       // L'ordre de la liste est la réponse : il est relu tel quel.
       options: b.items.map((t, i) => ({ id: cleElement(i), texte: t, vrai: true })),
       legendes: [],
+      imageNom: b.imageNom,
+      imageAlt: b.imageAlt,
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
@@ -296,6 +315,8 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       enonce,
       options,
       legendes: [],
+      imageNom: b.imageNom,
+      imageAlt: b.imageAlt,
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
@@ -326,6 +347,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       options: [],
       legendes,
       imageNom: b.imageNom,
+      imageAlt: b.imageAlt,
       numeroSchema: b.numero,
       justification: b.justification.join(" ").trim(),
       eliminatoire: b.eliminatoire,
@@ -376,6 +398,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     options,
     legendes: [],
     imageNom: b.imageNom,
+    imageAlt: b.imageAlt,
     numeroSchema: b.numero,
     justification: justificationAssemblee(b),
     eliminatoire: b.eliminatoire,
@@ -468,6 +491,20 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         courant.dernier = "rien";
         continue;
       }
+      // Illustration d'une séquence ou d'un texte à trous (23/09/2026) : les
+      // deux formats, venus après le 19/09, ne lisaient pas la ligne « Image ».
+      const imSeq = RE_IMAGE.exec(ligne);
+      if (imSeq) {
+        courant.imageNom = imSeq[1];
+        courant.dernier = "rien";
+        continue;
+      }
+      const diSeq = RE_DESCRIPTION_IMAGE.exec(ligne);
+      if (diSeq) {
+        courant.imageAlt = diSeq[1].trim();
+        courant.dernier = "rien";
+        continue;
+      }
       const el = RE_ELEMENT.exec(ligne);
       if (el) {
         courant.items.push(el[2].trim());
@@ -522,6 +559,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       const im = RE_IMAGE.exec(ligne);
       if (im) {
         courant.imageNom = im[1];
+        continue;
+      }
+      const diSch = RE_DESCRIPTION_IMAGE.exec(ligne);
+      if (diSch) {
+        courant.imageAlt = diSch[1].trim();
+        courant.dernier = "rien";
         continue;
       }
       const j = RE_JUSTIF.exec(ligne);
@@ -586,6 +629,12 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     if (img) {
       // Illustration d'un QCM ou d'une QIM : même ligne que pour un schéma.
       courant.imageNom = img[1];
+      courant.dernier = "rien";
+      continue;
+    }
+    const di = RE_DESCRIPTION_IMAGE.exec(ligne);
+    if (di) {
+      courant.imageAlt = di[1].trim();
       courant.dernier = "rien";
       continue;
     }

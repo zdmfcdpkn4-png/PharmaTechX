@@ -1,5 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
+import { IMAGE_MAX_OCTETS } from "@/content/preparation-image";
 import { sql } from "./db";
 
 /**
@@ -9,7 +10,8 @@ import { sql } from "./db";
  * `/api/images/[id]`.
  */
 
-export const IMAGE_MAX_OCTETS = 2 * 1024 * 1024;
+// Une seule valeur, partagée avec la préparation faite sur l'appareil.
+export { IMAGE_MAX_OCTETS };
 
 export type TypeImage = "image/png" | "image/jpeg";
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
-import { IMAGE_MAX_OCTETS, enregistrerImage } from "@/lib/images";
+import { IMAGE_MAX_OCTETS, enregistrerImage, majAltImage } from "@/lib/images";
 import { texteDocx } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { schemaPret, type Legende } from "@/content/schema";
@@ -273,9 +273,9 @@ function cleFichier(nom: string): string {
  * Apparie les images déposées aux questions lues.
  *
  * Schéma : par nom annoncé, sinon l'image unique, sinon le rang — l'image y
- * est la question elle-même. Illustration d'un QCM ou d'une QIM : par nom
- * seulement, jamais au rang, qui collerait l'image d'un schéma voisin sur une
- * question qui n'en demandait pas.
+ * est la question elle-même. Illustration de toute autre question (QCM, QIM,
+ * séquence, texte à trous) : par nom seulement, jamais au rang, qui collerait
+ * l'image d'un schéma voisin sur une question qui n'en demandait pas.
  */
 function apparierImages(
   questions: QuestionImportee[],
@@ -352,6 +352,13 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
 
   const r = analyserTexte(texte, { formatDefaut });
   const questions = apparierImages(r.questions, images);
+  // « Description de l'image » : elle remplace le nom du fichier, posé par
+  // défaut à l'enregistrement. Appliquée ici, sur les images que cette
+  // requête vient de créer — pas sur ce que renverrait l'aperçu.
+  const creees = new Set(images.map((i) => i.id));
+  for (const q of questions) {
+    if (q.imageId && q.imageAlt && creees.has(q.imageId)) await majAltImage(q.imageId, q.imageAlt.slice(0, 300));
+  }
   return {
     ...base,
     etape: r.questions.length ? "apercu" : "saisie",

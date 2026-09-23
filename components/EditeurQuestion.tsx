@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { bilanPreparation } from "@/content/preparation-image";
+import { preparerChamp } from "./preparerImage";
 import type { EtatFormulaireQuestion } from "@/app/admin/questions/import-etat";
 import type { Legende } from "@/content/schema";
 import {
@@ -167,6 +169,16 @@ export function EditeurQuestion({
     im.src = url;
   };
 
+  // Préparée sur l'appareil dès le choix : une photo part réduite, sans ses
+  // métadonnées (`preparerImage`, repris du quiz de Flore).
+  const [preparationImage, setPreparationImage] = useState<{ enCours: boolean; bilan: string }>({ enCours: false, bilan: "" });
+  const preparerEtChoisir = async (input: HTMLInputElement) => {
+    setPreparationImage({ enCours: true, bilan: "Préparation de l'image…" });
+    const [faite] = await preparerChamp(input);
+    setPreparationImage({ enCours: false, bilan: faite ? bilanPreparation([faite]) : "" });
+    choisirImage(faite?.fichier ?? null);
+  };
+
   return (
     <form action={formAction} className="carte formulaire-question">
       {initiale?.id && <input type="hidden" name="id" value={initiale.id} />}
@@ -231,8 +243,8 @@ export function EditeurQuestion({
         />
       </label>
 
-      {/* Image : obligatoire pour un schéma, facultative en illustration d'un
-          QCM ou d'une QIM (décision du 19/09/2026). */}
+      {/* Image : obligatoire pour un schéma, facultative en illustration de
+          tout autre format (décisions du 19/09 et du 23/09/2026). */}
       <fieldset className="groupe">
         <legend className="champ-titre">
           {format === "SCH" ? "Image du schéma" : "Illustration (facultative)"}
@@ -244,7 +256,7 @@ export function EditeurQuestion({
               type="file"
               name="image"
               accept="image/png,image/jpeg"
-              onChange={(e) => choisirImage(e.target.files?.[0] ?? null)}
+              onChange={(e) => void preparerEtChoisir(e.currentTarget)}
             />
           </label>
           <label className="champ">
@@ -255,6 +267,13 @@ export function EditeurQuestion({
             <input type="text" name="imageAlt" maxLength={300} defaultValue={initiale?.imageAlt ?? ""} />
           </label>
         </div>
+        <p className="legende" role="status" aria-live="polite">
+          {preparationImage.bilan}
+        </p>
+        <p className="legende">
+          Photographie : aucune donnée de patient (étiquette nominative, ordonnance, écran de logiciel),
+          aucune personne reconnaissable sans son accord.
+        </p>
         {format !== "SCH" && image && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -532,7 +551,7 @@ export function EditeurQuestion({
       </label>
 
       <div className="actions">
-        <button type="submit" className="bouton" disabled={enCours}>
+        <button type="submit" className="bouton" disabled={enCours || preparationImage.enCours}>
           {enCours ? "Enregistrement…" : initiale?.id ? "Enregistrer les modifications" : "Créer la question"}
         </button>
         <Link href={`/admin/questions?module=${encodeURIComponent(moduleId)}`} className="bouton bouton--secondaire">

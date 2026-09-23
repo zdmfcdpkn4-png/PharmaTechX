@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ETAT_IMPORT_INITIAL, type EtatImport } from "@/app/admin/questions/import-etat";
 import type { ModuleChoix } from "./EditeurQuestion";
 import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
+import { bilanPreparation } from "@/content/preparation-image";
+import { preparerChamp } from "./preparerImage";
 
 type ActionImport = (prec: EtatImport, fd: FormData) => Promise<EtatImport>;
 
@@ -13,8 +15,10 @@ type ActionImport = (prec: EtatImport, fd: FormData) => Promise<EtatImport>;
  * (collé ou déposé en .txt, .md, .docx, .json) est analysé, l'aperçu montre
  * chaque question reconnue avec ses avertissements, puis l'ajout crée les
  * questions au statut « à vérifier ». Les images se déposent avec le texte :
- * celle d'un schéma s'apparie par nom, sinon par rang ; l'illustration d'un
- * QCM ou d'une QIM, par son nom seulement.
+ * celle d'un schéma s'apparie par nom, sinon par rang ; l'illustration de
+ * toute autre question, par son nom seulement. Elles sont préparées sur
+ * l'appareil dès leur choix (`preparerImage`) : une photo de téléphone part
+ * réduite, sans ses métadonnées.
  */
 export function ImportQuestions({
   modules,
@@ -29,6 +33,13 @@ export function ImportQuestions({
 }) {
   const [analyse, actionAnalyse, enAnalyse] = useActionState(analyser, ETAT_IMPORT_INITIAL);
   const [confirmation, actionConfirme, enConfirmation] = useActionState(confirmer, ETAT_IMPORT_INITIAL);
+  const [preparation, setPreparation] = useState<{ enCours: boolean; bilan: string }>({ enCours: false, bilan: "" });
+
+  const preparerImages = async (input: HTMLInputElement) => {
+    setPreparation({ enCours: true, bilan: "Préparation des images…" });
+    const faites = await preparerChamp(input);
+    setPreparation({ enCours: false, bilan: bilanPreparation(faites) });
+  };
 
   if (confirmation.etape === "fait") {
     return (
@@ -103,6 +114,9 @@ export function ImportQuestions({
                 )}
               </div>
               <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
+              {q.imageAlt && (
+                <p className="legende">Description de l&apos;image : {q.imageAlt}</p>
+              )}
               {q.format === "SCH" ? (
                 <p className="legende">
                   {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} :{" "}
@@ -197,11 +211,25 @@ export function ImportQuestions({
         </label>
         <label className="champ">
           <span>Images des schémas et illustrations (PNG ou JPEG)</span>
-          <input type="file" name="images" accept="image/png,image/jpeg" multiple />
+          <input
+            type="file"
+            name="images"
+            accept="image/png,image/jpeg"
+            multiple
+            onChange={(e) => void preparerImages(e.currentTarget)}
+          />
         </label>
       </div>
+      <p className="legende" role="status" aria-live="polite" data-preparation={preparation.enCours ? "en-cours" : "prete"}>
+        {preparation.bilan}
+      </p>
+      <p className="legende">
+        Photographies : aucune donnée de patient (étiquette nominative, ordonnance, écran de logiciel),
+        aucune personne reconnaissable sans son accord. Une photo est réduite à 2 000 px et débarrassée
+        de ses métadonnées (lieu, appareil, date) avant l&apos;envoi.
+      </p>
       <div className="actions">
-        <button type="submit" className="bouton" disabled={enAnalyse}>
+        <button type="submit" className="bouton" disabled={enAnalyse || preparation.enCours}>
           {enAnalyse ? "Analyse…" : "Analyser"}
         </button>
       </div>
