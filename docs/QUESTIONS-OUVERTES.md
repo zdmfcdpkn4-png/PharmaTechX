@@ -376,6 +376,18 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+61. **Accès rapide : position et ouverture** — demandé le 23/09/2026 :
+    « pour le menu d'accès rapide, revoit le positionnement et le mode
+    d'ouverture pour qu'il limite la gêne de la lecture de la fenêtre en
+    dessous ». Existant : sur poste (à partir de 62 rem de large), panneau
+    de 34 rem centré en haut de l'écran, sur un voile qui assombrit toute la
+    page (38 %), le panneau lui-même en verre flouté ; sur téléphone, tiroir
+    à gauche. Dans les deux cas, la tabulation reste dans le panneau et
+    Échap le ferme (`docs/ACCES-RAPIDE.md`). Posée le 23/09/2026 : tiroir à
+    gauche partout, à la place du volet, sans voile sur la colonne de
+    lecture (a) ; panneau déroulant sous le bouton Menu, sans voile, fermé
+    au clic dehors (b) ; panneau centré gardé, sans voile ni flou (c).
+
 60. **Signalement d'une fiche de synthèse défectueuse** — demandé le
     23/09/2026 : « idem pour les fiches de synthèse, pouvoir les signaler si
     défaut ». Existant : le signalement ne porte que sur une question — motif
