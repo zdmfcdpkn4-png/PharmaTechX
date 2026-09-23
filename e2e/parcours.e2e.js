@@ -2667,6 +2667,136 @@ Justification : cf. procédure interne.`,
       (baseAvant ? "base identique avant et après, table par table et séquence par séquence" : "base NON comparée (DATABASE_URL absente)"),
   );
 
+  // 14d ter. quatre heures sans activité (23/09/2026) : la session et le rattachement de
+  //          l'apprenant tombent ; il faut retaper son code d'accès, et l'apprenant le sien.
+  //          Quatre heures ne s'attendent pas : le scénario signe, avec le secret du serveur,
+  //          des jetons datés d'avant, et avance l'horloge d'un navigateur.
+  const { createHmac } = require("node:crypto");
+  // Même repli que `secretEffectif` (lib/jeton-web.ts) : serveur et scénario partagent l'environnement.
+  const secretServeur =
+    process.env.AUTH_SECRET && process.env.AUTH_SECRET.length >= 16
+      ? process.env.AUTH_SECRET
+      : "developpement-non-securise-definir-AUTH_SECRET";
+  const maintenant = () => Math.floor(Date.now() / 1000);
+  const lireJeton = async (c, nom) => {
+    const v = (await c.cookies(BASE)).find((k) => k.name === nom)?.value;
+    return v ? JSON.parse(Buffer.from(v.split(".")[0], "base64url").toString()) : null;
+  };
+  const poserCookie = async (c, nom, valeur) => {
+    await c.addCookies([{ name: nom, value: valeur, url: BASE, httpOnly: true, sameSite: "Lax" }]);
+    assert.equal((await c.cookies(BASE)).filter((k) => k.name === nom).length, 1, "un seul cookie " + nom);
+  };
+  const poserJeton = (c, nom, charge) => {
+    const b = Buffer.from(JSON.stringify(charge)).toString("base64url");
+    return poserCookie(c, nom, `${b}.${createHmac("sha256", secretServeur).update(b).digest("base64url")}`);
+  };
+  /** Attend que le signal d'activité de la page ait écrit un cookie qui satisfait `condition`. */
+  const attendreActivite = async (c, condition) => {
+    for (let i = 0; i < 50; i++) {
+      const a = await lireJeton(c, "fp_activite");
+      if (a && condition(a)) return a;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("cookie d'activité attendu : " + JSON.stringify(await lireJeton(c, "fp_activite")));
+  };
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "AG-002");
+  await page.fill("#progression input[name=code]", "5678");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/progression=ok/);
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  const sessionOuverte = await lireJeton(ctx, "fp_session");
+  const rattache = await lireJeton(ctx, "fp_progression");
+  assert.ok(sessionOuverte.sid && Math.abs(sessionOuverte.vu - maintenant()) < 300, "session : identifiant et activité à l'ouverture");
+  assert.ok(rattache.sid && rattache.sid !== sessionOuverte.sid && Math.abs(rattache.vu - maintenant()) < 300, "rattachement : identifiant propre et activité");
+  // Ouvrir une page est une activité : le cookie d'activité se lie à la session et au rattachement.
+  // Rechargements par `reload` : un `goto` vers la même adresse à ancre ne recharge pas la page.
+  await page.goto(BASE + "/");
+  await attendreActivite(ctx, (a) => a.sids.includes(sessionOuverte.sid) && a.sids.includes(rattache.sid) && maintenant() - a.vu < 60);
+  // Rattachement inactif seul : l'apprenant ressaisit, la session reste.
+  const jetonRattache = (await ctx.cookies(BASE)).find((k) => k.name === "fp_progression").value;
+  await poserJeton(ctx, "fp_progression", { ...rattache, sid: "rattachement-ancien", vu: maintenant() - 4 * 3600 - 60 });
+  await page.reload();
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  assert.equal(await page.locator("button[aria-label$='quitter']").count(), 1, "rattachement inactif : la session, elle, reste ouverte");
+  await poserCookie(ctx, "fp_progression", jetonRattache);
+  await page.reload();
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  // Session ouverte il y a cinq heures, entretenue depuis par l'activité : elle vaut.
+  await poserJeton(ctx, "fp_session", { ...sessionOuverte, vu: maintenant() - 5 * 3600 });
+  await page.goto(BASE + "/admin");
+  await page.waitForSelector("h1");
+  // Le signal d'activité de la page doit être rentré avant qu'on écrive le cookie qu'il écrit.
+  await page.waitForLoadState("networkidle");
+  assert.equal(new URL(page.url()).pathname, "/admin", "session entretenue par l'activité : elle vaut malgré son ouverture ancienne");
+  // Une activité notée pour une autre session ne compte pas : fermée, avec son motif et la page demandée.
+  await poserJeton(ctx, "fp_activite", { vu: maintenant(), sids: ["une-autre-session"], exp: maintenant() + 3600 });
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForURL(/\/connexion\?erreur=inactivite&suite=%2Fadmin%2Fjournal$/);
+  await page.waitForSelector("[role=alert]:has-text('quatre heures sans activité')");
+  assert.deepEqual(
+    (await ctx.cookies(BASE)).map((k) => k.name).filter((n) => /^fp_(session|progression|activite)$/.test(n)),
+    [],
+    "session, rattachement et activité effacés",
+  );
+  // Le code retapé ramène à la page demandée ; l'apprenant, lui, ressaisit le sien.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin\/journal$/);
+  await page.goto(BASE + "/#progression");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  assert.equal(await page.locator("#progression code:has-text('AG-002')").count(), 0, "rattachement levé avec la session");
+  await page.waitForLoadState("networkidle");
+  // En API : refus motivé, cookies effacés. La page est quittée d'abord : son signal
+  // d'activité ne doit pas entretenir la session pendant qu'on la vieillit.
+  const sessionReprise = await lireJeton(ctx, "fp_session");
+  assert.notEqual(sessionReprise.sid, sessionOuverte.sid, "nouvelle session, nouvel identifiant");
+  await page.goto("about:blank");
+  await ctx.clearCookies({ name: "fp_activite" });
+  await poserJeton(ctx, "fp_session", { ...sessionReprise, vu: maintenant() - 4 * 3600 - 60 });
+  const refusInactif = await page.request.get(BASE + "/api/activite");
+  assert.equal(refusInactif.status(), 401, "API : session inactive refusée");
+  assert.equal((await refusInactif.json()).code, "inactivite", "API : refus motivé");
+  assert.equal(await lireJeton(ctx, "fp_session"), null, "API : session effacée");
+  await page.goto(BASE + "/connexion");
+  // Un onglet laissé ouvert : l'horloge du navigateur avance de quatre heures.
+  const ctx3 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  surveillerTiers(ctx3);
+  const page3 = await ctx3.newPage();
+  page3.on("pageerror", (e) => console.log("ERREUR PAGE:", page3.url(), e.message));
+  await page3.clock.install();
+  await page3.goto(BASE + "/connexion");
+  await page3.fill("input[name=code]", codeAdmin);
+  await page3.click("button:has-text('Entrer')");
+  await page3.waitForURL(/\/admin$/);
+  await page3.goto(BASE + "/admin/pilotage");
+  await page3.waitForSelector("h1");
+  await page3.waitForLoadState("networkidle");
+  const session3 = await lireJeton(ctx3, "fp_session");
+  await attendreActivite(ctx3, (a) => a.sids.includes(session3.sid));
+  // Quatre heures sans geste dans cet onglet, mais une session entretenue ailleurs : il reste.
+  await Promise.all([
+    page3.waitForResponse((r) => r.url() === BASE + "/api/activite" && r.request().method() === "GET" && r.status() === 200),
+    page3.clock.fastForward("04:00:30"),
+  ]);
+  await page3.waitForTimeout(1000);
+  assert.equal(new URL(page3.url()).pathname, "/admin/pilotage", "session entretenue ailleurs : l'onglet reste");
+  // La même session, sans activité depuis plus de quatre heures : l'onglet se remet seul à la connexion.
+  await ctx3.clearCookies({ name: "fp_activite" });
+  await poserJeton(ctx3, "fp_session", { ...session3, vu: maintenant() - 4 * 3600 - 60 });
+  await page3.clock.fastForward("04:00:30");
+  await page3.waitForURL(/\/connexion\?erreur=inactivite&suite=%2Fadmin%2Fpilotage$/);
+  await page3.waitForSelector("[role=alert]:has-text('quatre heures sans activité')");
+  await ctx3.close();
+  ok(
+    "quatre heures sans activité : session et rattachement fermés, code retapé et retour à la page demandée, " +
+      "activité liée à ses seuls jetons, refus motivé en API ; onglet laissé ouvert remis seul à la connexion, " +
+      "entretenu ailleurs il reste",
+  );
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

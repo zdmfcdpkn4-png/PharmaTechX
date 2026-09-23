@@ -32,16 +32,30 @@ function egal(a: string, b: string): boolean {
   return d === 0;
 }
 
-/** Signature exacte et échéance non passée ; rien d'autre n'est lu. */
-export async function jetonValide(jeton: string, secretEnv: string | undefined, maintenant = Date.now()): Promise<boolean> {
+/**
+ * Charge d'un jeton à la signature exacte et à l'échéance non passée ; null
+ * sinon. Seuls les nombres et les chaînes ASCII s'y lisent sûrement : `atob`
+ * rend des octets, pas de l'UTF-8, et un libellé accentué en sort altéré —
+ * le filtre d'entrée n'y lit que l'échéance et l'activité.
+ */
+export async function lireJetonWeb(
+  jeton: string,
+  secretEnv: string | undefined,
+  maintenant = Date.now(),
+): Promise<Record<string, unknown> | null> {
   const [charge, sig, ...reste] = jeton.split(".");
-  if (!charge || !sig || reste.length > 0) return false;
+  if (!charge || !sig || reste.length > 0) return null;
   const attendue = await signerWeb(charge, secretEffectif(secretEnv));
-  if (!egal(sig, attendue)) return false;
+  if (!egal(sig, attendue)) return null;
   try {
-    const s = JSON.parse(atob(charge.replace(/-/g, "+").replace(/_/g, "/"))) as { exp?: unknown };
-    return typeof s.exp === "number" && s.exp >= Math.floor(maintenant / 1000);
+    const s = JSON.parse(atob(charge.replace(/-/g, "+").replace(/_/g, "/"))) as Record<string, unknown>;
+    return typeof s.exp === "number" && s.exp >= Math.floor(maintenant / 1000) ? s : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/** Signature exacte et échéance non passée. */
+export async function jetonValide(jeton: string, secretEnv: string | undefined, maintenant = Date.now()): Promise<boolean> {
+  return (await lireJetonWeb(jeton, secretEnv, maintenant)) !== null;
 }

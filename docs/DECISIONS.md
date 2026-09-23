@@ -2658,6 +2658,71 @@ statut « Ouvert » puis « Traité », le module nommé, l'étiquette de la lis
 l'encart de la fiche ; elle dépose ensuite, par l'API, un signalement « À
 mettre à jour » sur une question du code, en lit l'énoncé et le rejette.
 
+## Déconnexion après quatre heures sans activité (23/09/2026)
+
+**Demande.** « Prévoit une déconnexion auto de l'utilisateur avec resaisie de
+mot de passe au bout de 4 h d'inactivité. » Sans question : le délai est dit,
+et le mot de passe est ici le code — code d'accès pour la session, code
+personnel pour l'apprenant rattaché.
+
+**Ce qui est fait.**
+- Quatre heures sans activité ferment la session de rôle **et** le
+  rattachement de l'apprenant : il faut retaper son code d'accès, et
+  l'apprenant son identifiant et son code personnel. Fermer la seule session
+  laisserait au suivant l'identifiant de l'apprenant, puisque le rattachement
+  survit à la déconnexion (section « Utilisateur test »). La limite de douze
+  heures demeure.
+- Activité : un clic, une touche, la molette, un toucher, l'ouverture d'une
+  page. Le navigateur la signale au serveur au plus une fois par minute
+  (`components/VeilleInactivite.tsx`, `/api/activite`). Le défilement seul
+  n'est pas écouté : le site en produit lui-même.
+- Le serveur tient l'activité dans un cookie signé à part, `fp_activite`, lié
+  par un identifiant aléatoire (`sid`) à la session et au rattachement qu'il
+  entretient (`lib/inactivite.ts`). Il ne réécrit jamais la session ni le
+  rattachement : sa réponse, arrivée après celle d'un « quitter » ou d'un
+  « Se détacher », les rétablirait. Une activité notée pour un autre jeton ne
+  compte pas.
+- Contrôle : le filtre d'entrée (`middleware.ts`) refuse une session
+  inactive — page renvoyée à `/connexion?erreur=inactivite` avec la page
+  demandée, API en 401 motivé — et efface les trois cookies. Pages, actions
+  et API le revérifient (`etatSession`, `rattachement`).
+- Onglet laissé ouvert : sans geste depuis quatre heures, il demande au
+  serveur où en est la session ; fermée, il se remet de lui-même à la
+  connexion, avec la page où il était — l'écran d'un poste abandonné ne reste
+  pas affiché. Entretenue par un autre onglet, il reste.
+- Le code retapé ramène à la page demandée. L'évaluation en cours d'un
+  apprenant rattaché est sauvegardée au fil des réponses : elle se reprend
+  une fois rattaché de nouveau. Sans rattachement, elle vivait dans la page
+  et elle est perdue.
+- Mode test : l'activité du testeur n'entretient pas le rattachement laissé
+  sur le poste.
+
+**Limites.**
+- La fermeture pour inactivité n'est pas journalisée : le filtre d'entrée n'a
+  pas la base. La reconnexion, elle, l'est.
+- Au déploiement de cette version, les sessions et les rattachements ouverts
+  avant elle, sans identifiant d'activité, tombent quatre heures après leur
+  ouverture, même utilisés — une fois.
+- Un geste que la mise en veille de l'ordinateur empêche d'envoyer, dans la
+  minute et demie qui le suit, est signalé au réveil comme une activité
+  présente.
+- « Quitter » ferme la session sans lever le rattachement : comportement
+  antérieur, inchangé ici.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (251 tests), `npm run build`,
+deux passes de bout en bout de 81 étapes, sans erreur de page ni erreur
+serveur. Quatre heures ne s'attendent pas : l'étape ajoutée signe, avec le
+secret du serveur de test, des jetons datés d'avant — session et
+rattachement portent leur identifiant et leur activité ; le cookie
+d'activité se lie aux deux ; un rattachement inactif tombe seul, la session
+restant ouverte ; une session ouverte il y a cinq heures et entretenue vaut ;
+une activité notée pour une autre session ne compte pas — renvoi à la
+connexion avec le motif et la page demandée, trois cookies effacés, retour à
+la page après le code, apprenant à rattacher de nouveau ; refus motivé en
+API. Dans un second navigateur, l'horloge avancée de quatre heures : l'onglet
+dont la session est entretenue ailleurs reste, celui dont la session est
+inactive se remet seul à la connexion.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

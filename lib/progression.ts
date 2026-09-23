@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { decoderJeton, encoderJeton, getSession, hacherCode, verifierCode } from "./auth";
+import { decoderJeton, encoderJeton, getSession, hacherCode, lireActivite, nouveauSid, verifierCode } from "./auth";
+import { inactif } from "./inactivite";
 import { baseConfiguree, requete, sql } from "./db";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import { normaliserEtatEnCours, type EtatEnCours } from "@/content/en-cours";
@@ -14,7 +15,8 @@ import { normaliserEtatEnCours, type EtatEnCours } from "@/content/en-cours";
  * code personnel de 4 à 8 chiffres, choisi par lui à la première fois et
  * conservé haché (scrypt, comme les codes d'accès) ; un tuteur peut le
  * réinitialiser. Le rattachement est un cookie signé de douze heures, distinct
- * de la session de rôle. Tant qu'il est posé :
+ * de la session de rôle, qui tombe après quatre heures sans activité
+ * (23/09/2026, `lib/inactivite.ts`). Tant qu'il est posé :
  *   - chaque évaluation corrigée est conservée avec son résultat scellé ;
  *   - la fin d'un entraînement et la lecture d'un module sont notées ;
  *   - l'évaluation en cours est sauvegardée pour être reprise ;
@@ -25,6 +27,9 @@ import { normaliserEtatEnCours, type EtatEnCours } from "@/content/en-cours";
 export interface Rattachement {
   agentId: number;
   identifiant: string;
+  /** Identifiant aléatoire auquel se lie le cookie d'activité, et activité au rattachement. */
+  sid?: string;
+  vu?: number;
   exp: number;
 }
 
@@ -43,13 +48,20 @@ export async function rattachement(): Promise<Rattachement | null> {
   // apprenant est ignoré, sans quoi le test écrirait dans sa progression.
   if ((await getSession())?.essai) return null;
   const jeton = (await cookies()).get(COOKIE)?.value;
-  return jeton ? decoderJeton<Rattachement>(jeton) : null;
+  const r = jeton ? decoderJeton<Rattachement>(jeton) : null;
+  // Quatre heures sans activité : l'apprenant ressaisit son identifiant et son
+  // code personnel. Un rattachement d'avant cette version, sans `vu`, est daté
+  // de sa pose (échéance moins sa durée).
+  if (!r || inactif({ sid: r.sid, vu: r.vu, debut: r.exp - DUREE_HEURES * 3600 }, await lireActivite())) return null;
+  return r;
 }
 
 export async function rattacher(agent: { id: number; identifiant: string }): Promise<void> {
   const r: Rattachement = {
     agentId: agent.id,
     identifiant: agent.identifiant,
+    sid: nouveauSid(),
+    vu: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + DUREE_HEURES * 3600,
   };
   (await cookies()).set(COOKIE, encoderJeton(r), {

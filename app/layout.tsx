@@ -13,6 +13,7 @@ import { ModeZone } from "@/components/ModeZone";
 import { PageAnimee } from "@/components/PageAnimee";
 import { VoletConnexion } from "@/components/VoletConnexion";
 import { IndicateurNavigation } from "@/components/IndicateurNavigation";
+import { VeilleInactivite } from "@/components/VeilleInactivite";
 import { TutorielProvider } from "@/components/Tutoriel";
 import { etapesTutoriel } from "@/content/tutoriel";
 import { fileNonVide, itemsAFaire, AUCUN_COMPTE } from "@/content/acces-rapide";
@@ -243,6 +244,8 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <IndicateurNavigation />
         </Suspense>
+        {/* Quatre heures sans activité ferment la session (23/09/2026). */}
+        {session && <VeilleInactivite />}
 
         <SessionFormation
           initialResultats={evaluations}

@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   baseConfiguree,
   codesActifs,
@@ -13,6 +13,7 @@ import {
   type Role,
 } from "./db";
 import { etatDeSession, type EtatAcces } from "./session-etat";
+import { inactif, type Activite } from "./inactivite";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 import { genererCode, hacherCode, normaliserCode, verifierCode } from "./codes";
@@ -53,6 +54,14 @@ export interface Session {
   acces?: number | null;
   /** Ouverture, en secondes epoch : une révocation postérieure ferme la session. */
   debut?: number;
+  /**
+   * Quatre heures sans activité (23/09/2026, `lib/inactivite.ts`) : identifiant
+   * aléatoire auquel se lie le cookie d'activité, et activité connue à
+   * l'ouverture. Sans eux (session d'avant cette version), l'ouverture fait
+   * foi.
+   */
+  sid?: string;
+  vu?: number;
   /** Échéance, en secondes epoch. */
   exp: number;
   /**
@@ -63,6 +72,7 @@ export interface Session {
 }
 
 const COOKIE = "fp_session";
+const COOKIE_ACTIVITE = "fp_activite";
 const DUREE_HEURES = 12;
 
 function secret(): string {
@@ -143,7 +153,10 @@ export interface EtatSession {
  */
 export async function etatSession(): Promise<EtatSession> {
   const jeton = (await cookies()).get(COOKIE)?.value;
-  const decodee = jeton ? decoder(jeton) : null;
+  const signee = jeton ? decoder(jeton) : null;
+  // Quatre heures sans activité : le filtre d'entrée l'a refusée avec son
+  // motif ; ici, à la seconde près, elle ne vaut simplement plus.
+  const decodee = signee && !inactif(signee, await lireActivite()) ? signee : null;
   if (!decodee || !baseConfiguree()) return etatDeSession(decodee, baseConfiguree(), undefined);
   const acces = decodee.acces ? await etatAcces(decodee.acces) : undefined;
   return etatDeSession(decodee, true, acces);
@@ -157,6 +170,8 @@ export async function ouvrirSession(s: Omit<Session, "exp">): Promise<void> {
   const session: Session = {
     ...s,
     debut: Date.now() / 1000,
+    sid: nouveauSid(),
+    vu: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + DUREE_HEURES * 3600,
   };
   (await cookies()).set(COOKIE, encoder(session), {
@@ -187,6 +202,41 @@ export async function remplacerSession(s: Session): Promise<void> {
     path: "/",
     maxAge: reste,
   });
+}
+
+// ──────────────────────────────────────────────── activité (quatre heures)
+
+/** Identifiant aléatoire d'une session ou d'un rattachement, auquel l'activité se lie. */
+export function nouveauSid(): string {
+  return randomBytes(12).toString("base64url");
+}
+
+/** Cookie d'activité, signé : dernière activité et jetons qu'elle entretient. Null s'il manque ou ne vaut rien. */
+export async function lireActivite(): Promise<Activite | null> {
+  const jeton = (await cookies()).get(COOKIE_ACTIVITE)?.value;
+  return jeton ? decoderJeton<Activite & { exp: number }>(jeton) : null;
+}
+
+/**
+ * Note l'activité de l'utilisateur pour les jetons nommés — session et, s'il
+ * vaut, rattachement. Seul ce cookie est écrit : réécrire la session ou le
+ * rattachement ici pourrait rétablir ce qu'un « quitter » ou un « Se
+ * détacher » concurrent vient d'effacer (`lib/inactivite.ts`).
+ */
+export async function noterActivite(sids: (string | undefined)[]): Promise<void> {
+  const maintenant = Math.floor(Date.now() / 1000);
+  const liste = sids.filter((x): x is string => typeof x === "string" && x.length > 0);
+  (await cookies()).set(
+    COOKIE_ACTIVITE,
+    encoderJeton({ vu: maintenant, sids: liste, exp: maintenant + DUREE_HEURES * 3600 }),
+    {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: DUREE_HEURES * 3600,
+    },
+  );
 }
 
 // ────────────────────────────────────────────────────────────── connexion

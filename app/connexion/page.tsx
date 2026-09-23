@@ -13,6 +13,8 @@ const MESSAGES: Record<string, string> = {
   "non-configure": "Le contrôle d'accès n'est pas encore actif : la base de données n'est pas branchée.",
   "session-fermee":
     "Votre session a été fermée : le code d'accès qui l'avait ouverte a été révoqué, remplacé ou supprimé. Entrez un code en cours de validité.",
+  inactivite:
+    "Session fermée après quatre heures sans activité : entrez de nouveau votre code d'accès. Un apprenant rattaché ressaisit aussi son identifiant et son code personnel.",
 };
 
 export default async function Connexion({
