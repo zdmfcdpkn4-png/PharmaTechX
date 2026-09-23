@@ -3405,6 +3405,110 @@ page ni erreur serveur.
   97 px du haut sur poste et à 81 px sur téléphone, l'en-tête s'étant
   effacé au défilement.
 
+## Accès rapide en tiroir, à toutes les tailles (23/09/2026, question 61, choix a)
+
+**Demande.** « Pour le menu d'accès rapide, revoit le positionnement et le
+mode d'ouverture pour qu'il limite la gêne de la lecture de la fenêtre en
+dessous. »
+
+**Constaté avant le travail.**
+- Sur poste (62 rem et plus), l'accès rapide s'ouvrait en panneau de
+  `min(34rem, 92vw)`, centré à 12 vh du haut, sur un voile
+  `rgba(16, 24, 32, 0.38)` qui assombrissait toute la page ; le panneau, en
+  verre flouté, masquait le milieu de la colonne de lecture.
+- Sous 62 rem, c'était déjà un tiroir à gauche de `min(19rem, 86vw)`, sur le
+  même voile.
+
+**Tranché.** Question 61, **a** (réponse « question 61 : a ») : un tiroir à
+gauche partout ; sur poste, à la place de la barre latérale, sur toute la
+hauteur ; la page de lecture découverte, ni assombrie ni floutée ; un clic sur
+la page ferme ; Tab et Échap comme avant. Écartés : un panneau déroulant sous
+le bouton Menu (b) ; le panneau centré gardé, sans voile ni flou (c).
+
+**Ce qui est fait** (`app/globals.css` ; le balisage et le script de
+`components/AccesRapide.tsx` sont inchangés, seuls leurs commentaires suivent).
+- **Un seul tiroir.** Les règles du tiroir de téléphone deviennent celles de
+  toutes les tailles : pleine hauteur, entrée par la gauche en 260 ms.
+- **Sur poste, la place du volet.** Le tiroir part du bord de l'écran et
+  s'arrête dans la gouttière, 12 px après le volet et 8 px avant la colonne
+  de lecture ; son contenu s'aligne sur la colonne du volet. Sa largeur se
+  calcule sur celles du cadre, du volet et de la barre rose : 273 px jusqu'à
+  1 377 px de large, davantage au-delà, où il couvre aussi la marge gauche.
+  Qu'une de ces largeurs change sans ce calcul, et le parcours e2e échoue.
+- **Plus de voile visible, à aucune taille.** Le calque demeure, transparent :
+  il reçoit le clic qui ferme, et ce clic ne suit pas le lien qui se trouvait
+  dessous. Le bord du tiroir porte seul la séparation d'avec la page : un
+  filet gris et une ombre courte, qui ne s'étend pas sur le texte.
+- **Sur poste, la page défile sous le tiroir ouvert.** Le défilement du corps
+  n'y a jamais été verrouillé ; il le reste sous 62 rem.
+- **Inchangés** : tabulation enfermée ; Échap, puis focus rendu au bouton
+  Menu ; focus posé sur le champ au pointeur, sur le tiroir au doigt ; zones
+  et ordre des items.
+- **Ajusté au passage.** Dans une colonne de 228 px, la réserve laissée au
+  rappel « ⌘K » tronquait l'invite du champ (« Rechercher un écra ») : elle
+  passe de 3,5 à 1,625 rem sur poste, et à 0,75 rem en mode zone, où le
+  rappel est masqué. En mode zone, sur poste, l'invite en 18 px perd encore
+  ses points de suspension : Chrome garde la place du bouton d'effacement du
+  champ, même vide. Le bouton est conservé ; seule l'invite est rognée.
+- **Spécification** (`docs/ACCES-RAPIDE.md`) révisée : § 4.1, 4.3, 5.2 et 7,
+  critère 10 ajouté au § 8.
+
+**Mesures** (un module ouvert, code d'administration) :
+
+| Écran | Tiroir | Volet | Colonne de lecture | Page, tiroir ouvert |
+|---|---|---|---|---|
+| Poste 1 920 × 1 080 | 0 → 545 px | 301 → 533 px | dès 553 px | défile |
+| Poste 1 280 × 900 | 0 → 273 px | 29 → 261 px | dès 281 px | défile |
+| Poste 992 × 800 | 0 → 273 px | 29 → 261 px | dès 281 px | défile |
+| iPad paysage 1 080 × 810 | 0 → 273 px | 29 → 261 px | dès 281 px | défile |
+| iPad portrait 768 × 1 024 | 0 → 304 px | masqué | recouverte à gauche | figée |
+| iPhone 390 × 664 | 0 → 304 px | masqué | recouverte à gauche | figée |
+
+Partout, le calque est transparent et sans flou ; un clic, ou un appui, hors
+du tiroir le ferme sans changer d'adresse, et le focus revient au bouton Menu.
+Aucun défilement horizontal.
+
+**Conséquences et limites.**
+- **Sous 62 rem, le tiroir recouvre toujours la page** : il n'y a pas de
+  colonne de volet à prendre. Sa largeur est celle d'avant ; seule la page
+  visible à côté n'est plus assombrie — lecture littérale de « partout » et de
+  « sans voile ». L'assombrissement se rétablirait en une ligne, sous 62 rem
+  seulement, si l'usage le réclame.
+- **Le calque est invisible mais présent** : tant que le tiroir est ouvert, un
+  clic sur la page ne fait que le fermer.
+- **Sur très grand écran**, le tiroir couvre aussi la marge gauche, vide ; le
+  contenu reste dans la colonne du volet.
+- **Le tiroir recouvre la gauche de l'en-tête**, bouton Menu compris, comme
+  sur téléphone : on le ferme par ×, Échap ou un clic sur la page.
+
+**Constaté, hors périmètre, non corrigé.**
+- Sur iPad en paysage (pointeur tactile au-delà de 62 rem), les lignes du
+  tiroir restent à 32 px, quand celles du volet passent à 44 px depuis le
+  22/09 ; le panneau centré avait la même limite. 32 px satisfont le minimum
+  AA de 24 px (WCAG 2.2, critère 2.5.8), pas la cible de 44 px retenue pour
+  le tactile.
+- Le § 4.1 de la spécification annonce, sous `prefers-reduced-motion`,
+  « opacité seule, 90 ms » ; la règle générale du site ramène toute
+  transition à 0,001 ms : le tiroir apparaît sans transition.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (318 tests), `npm run build`,
+deux passes de bout en bout de 88 étapes, sans erreur de page ni erreur
+serveur.
+- **Critère 10, nouveau** (étape 12h bis, à 1 280 px) : tiroir collé au bord
+  gauche sur toute la hauteur ; il recouvre le volet et s'arrête avant la
+  colonne de lecture ; calque transparent, sans flou ; un clic sur un lien de
+  la page ferme le tiroir, l'adresse ne change pas, le focus revient au
+  bouton Menu.
+- **À 390 px** (étape 12h) : calque transparent aussi.
+- **Critères 5 et 6 inchangés** : Échap ferme et rend le focus au bouton
+  Menu ; vingt-cinq tabulations restent dans le tiroir.
+- **Mesures et captures** hors parcours, aux six tailles du tableau et à
+  360 px : les bords ci-dessus, le défilement de la page tiroir ouvert sur
+  poste, la fermeture au clic ou à l'appui. Sans processeur graphique, la
+  transition démarre en retard sur grand écran (le flou se peint
+  lentement) : les mesures attendent la fin de l'animation, pas un délai
+  fixe.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

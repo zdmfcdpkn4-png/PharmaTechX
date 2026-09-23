@@ -7,8 +7,9 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
  *
  * Avant ce paquet, le hamburger ouvrait le volet de navigation en tiroir sous
  * 62 rem et disparaissait au-dessus. Il ouvre désormais **une seule surface**,
- * l'accès rapide (`components/AccesRapide.tsx`), à toutes les tailles : tiroir
- * à gauche sous 62 rem, panneau centré au-dessus. Le volet, lui, redevient ce
+ * l'accès rapide (`components/AccesRapide.tsx`), à toutes les tailles : un
+ * tiroir à gauche, posé sur le volet au-dessus de 62 rem (question 61,
+ * choix a). Le volet, lui, redevient ce
  * qu'il n'aurait jamais dû cesser d'être — une barre latérale permanente,
  * présente au-dessus de 62 rem et rien d'autre.
  *

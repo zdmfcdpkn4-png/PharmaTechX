@@ -482,6 +482,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     gauche partout, à la place du volet, sans voile sur la colonne de
     lecture (a) ; panneau déroulant sous le bouton Menu, sans voile, fermé
     au clic dehors (b) ; panneau centré gardé, sans voile ni flou (c).
+    Tranchée le même jour (choix a, réponse « question 61 : a ») et mise en
+    œuvre : sur poste, le tiroir couvre la colonne du volet sur toute la
+    hauteur et s'arrête 8 px avant la colonne de lecture ; le voile ne voile
+    plus rien, à aucune taille ; un clic sur la page ferme le tiroir sans
+    suivre le lien qu'il touche ; Tab et Échap inchangés. Détail dans
+    `DECISIONS.md`.
 
 60. **Signalement d'une fiche de synthèse défectueuse** — demandé le
     23/09/2026 : « idem pour les fiches de synthèse, pouvoir les signaler si

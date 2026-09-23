@@ -18,10 +18,12 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * chose à y faire : c'est le compteur qui supprime le déplacement à vide, pas
  * le raccourci.
  *
- * Une seule surface pour les deux tailles d'écran : sous 62 rem elle se pose
- * en tiroir à gauche (le volet permanent est alors masqué), au-dessus elle
- * s'ouvre en panneau centré. La feuille de style décide ; le balisage, les
- * intitulés et l'ordre sont les mêmes.
+ * Une seule surface, un tiroir à gauche à toutes les tailles (question 61,
+ * choix a) : sous 62 rem, le volet permanent est masqué et le tiroir le
+ * remplace ; au-dessus, il se pose sur la colonne du volet et laisse la page
+ * découverte, ni assombrie ni floutée — le panneau centré sur un voile gênait
+ * la lecture. Un clic sur la page le ferme. La feuille de style décide ; le
+ * balisage, les intitulés et l'ordre sont les mêmes.
  *
  * Écart assumé avec le § 5.2 de la spécification, qui annonçait un panneau
  * « qui ne répète pas la navigation » sur poste : « Aller à » y figure quand

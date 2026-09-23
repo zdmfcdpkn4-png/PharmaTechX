@@ -1069,8 +1069,8 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
 }
 
 /* Déclencheur de l'accès rapide (paquet A, 21/09/2026). Présent à toutes les
-   tailles : sous 62 rem il ouvre le tiroir, au-dessus le panneau centré. Il
-   était masqué sur poste tant que le volet lui servait de tiroir. */
+   tailles, il ouvre le même tiroir à gauche (question 61, choix a). Il était
+   masqué sur poste tant que le volet lui servait de tiroir. */
 .bouton-menu {
   position: relative;
   display: inline-flex;
@@ -1101,37 +1101,52 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
 }
 
 /* =============================================================================
- * Accès rapide — tiroir sous 62 rem, panneau centré au-dessus
+ * Accès rapide — tiroir à gauche à toutes les tailles (question 61, choix a)
  * ========================================================================== */
 
+/* Le voile ne voile plus rien (question 61, choix a) : la page reste lisible,
+   ni assombrie ni floutée. Il demeure, transparent, pour qu'un clic sur la page
+   ferme le tiroir sans suivre le lien qui se trouvait sous le pointeur. */
 .ar-voile {
   position: fixed;
   inset: 0;
   z-index: 65;
-  background: rgba(16, 24, 32, 0.38);
-  opacity: 0;
+  background: transparent;
   pointer-events: none;
-  transition: opacity 0.18s ease;
 }
-.ar-voile--visible { opacity: 1; pointer-events: auto; }
+.ar-voile--visible { pointer-events: auto; }
 
 .acces-rapide {
   position: fixed;
   z-index: 70;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(19rem, 86vw);
   display: flex;
   flex-direction: column;
   background: var(--verre-fort);
   backdrop-filter: var(--verre-flou-fort);
   -webkit-backdrop-filter: var(--verre-flou-fort);
-  border: 1px solid var(--verre-bord);
-  box-shadow: var(--ombre-haute);
+  /* Sans voile, le bord du tiroir porte seul la séparation d'avec la page :
+     un filet franc et une ombre courte, qui ne s'étend pas sur le texte. */
+  border: 0;
+  border-right: 1px solid var(--bord);
+  box-shadow: 6px 0 16px -8px rgba(16, 24, 32, 0.24);
   /* Fermé : hors de l'ordre de tabulation et non annoncé. */
   visibility: hidden;
   opacity: 0;
+  transform: translateX(-102%);
+  transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s 0.26s;
 }
 .acces-rapide:focus { outline: none; }
 .acces-rapide:focus-visible { outline: 3px solid var(--marque-anneau); outline-offset: -3px; }
-.acces-rapide--ouvert { visibility: visible; opacity: 1; }
+.acces-rapide--ouvert {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s;
+}
 
 .ar-entete {
   display: flex;
@@ -1256,42 +1271,31 @@ button.ar-groupe { cursor: pointer; }
 .ar-item--nul .ar-compte { background: var(--surface-douce); color: var(--texte-doux); }
 .ar-vide { margin: 0.25rem 0.125rem; font-size: 0.8125rem; color: var(--texte-doux); }
 
+/* Sur poste, le tiroir prend la place du volet (question 61, choix a) : il part
+   du bord de l'écran et s'arrête dans la gouttière, 8 px avant la colonne de
+   lecture, qu'il ne recouvre jamais ; son contenu s'aligne sur la colonne du
+   volet. Mesures tirées de la barre rose du `body` (5 px), de `.cadre` (centré,
+   `var(--largeur) + 252px` au plus, marges de 1,5 rem) et de `.rail` (232 px) :
+   l'une changée, reprendre ce calcul — le parcours e2e mesure l'écart. */
 @media (min-width: 62rem) {
   .acces-rapide {
-    top: 12vh;
-    left: 50%;
-    width: min(34rem, 92vw);
-    max-height: 72vh;
-    border-radius: var(--rayon-xl);
-    /* Le regard part du haut : ancré à 12 vh, pas centré verticalement. */
-    transform: translate(-50%, 8px);
-    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s 0.18s;
+    --ar-marge: max(0px, (100% - 5px - var(--largeur) - 252px) / 2);
+    width: calc(5px + var(--ar-marge) + 1.5rem + 232px + 0.75rem);
+    padding-left: calc(5px + var(--ar-marge) + 0.5rem);
   }
-  .acces-rapide--ouvert {
-    transform: translate(-50%, 0);
-    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0s;
-  }
+  /* Champ de 228 px : la réserve de 3,5 rem laissée au raccourci tronquait
+     l'invite (« Rechercher un écra »). 1,625 rem suffisent à « ⌘K ». En mode
+     zone, le raccourci est masqué et la réserve tombe à 0,75 rem ; l'invite,
+     en 18 px, y perd encore ses points de suspension : Chrome garde la place
+     du bouton d'effacement, même champ vide. */
+  .ar-recherche input { padding-right: 1.625rem; }
+  html[data-zone="1"] .ar-recherche input { padding-right: 0.75rem; }
 }
 
 @media (max-width: 61.9375rem) {
   .cadre { display: block; }
   /* Le volet n'est plus le tiroir : l'accès rapide le porte. */
   .rail { display: none; }
-  .acces-rapide {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: min(19rem, 86vw);
-    max-height: none;
-    border-radius: 0;
-    border-left: 0;
-    transform: translateX(-102%);
-    transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s 0.26s;
-  }
-  .acces-rapide--ouvert {
-    transform: none;
-    transition: transform 0.26s ease, opacity 0.26s ease, visibility 0s;
-  }
   /* Le doigt remplace le pointeur : cible pleine. */
   .ar-item,
   .ar-groupe { min-height: var(--cible); }

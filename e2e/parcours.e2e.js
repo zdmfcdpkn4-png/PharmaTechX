@@ -1432,6 +1432,11 @@ Justification : justification deux.`;
   await page.waitForSelector(".acces-rapide--ouvert", { state: "visible" });
   assert.equal(await page.locator("button.bouton-menu").getAttribute("aria-expanded"), "true");
   await page.waitForSelector(".acces-rapide a[href='/#modules']", { state: "visible" });
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.querySelector(".ar-voile")).backgroundColor),
+    "rgba(0, 0, 0, 0)",
+    "sur téléphone non plus, la page n'est pas assombrie (question 61, choix a)",
+  );
   // « Aller à » en accordéon (choix b du 23/09/2026) : seul le groupe de la
   // page est ouvert, un appui ouvre les autres, l'onglet RGPD reste direct.
   const enteteGroupe = (titre) => page.locator(`.acces-rapide button.ar-groupe:has-text("${titre}")`);
@@ -1556,6 +1561,63 @@ Justification : justification deux.`;
     "bouton-menu",
     "le focus revient au déclencheur",
   );
+
+  // Question 61 (choix a) : sur poste, un tiroir à gauche à la place du volet,
+  // sur toute la hauteur ; la colonne de lecture n'est ni recouverte, ni
+  // assombrie, ni floutée, et un clic sur la page ferme le tiroir sans suivre
+  // le lien qui se trouvait sous le pointeur.
+  await page.click("button.bouton-menu");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  // Fin de la transition, et non un délai : sans processeur graphique, le
+  // premier cadre du flou tarde, d'autant plus que l'écran est grand.
+  await page.waitForFunction(() => document.querySelector(".acces-rapide").getAnimations().length === 0);
+  const geometrie = await page.evaluate(() => {
+    const r = (s) => document.querySelector(s).getBoundingClientRect();
+    const t = r(".acces-rapide");
+    const voile = getComputedStyle(document.querySelector(".ar-voile"));
+    return {
+      gauche: t.left,
+      haut: t.top,
+      bas: t.bottom,
+      droite: t.right,
+      hauteur: window.innerHeight,
+      voletDroite: r("#volet-principal").right,
+      lecture: r("main#contenu").left,
+      fond: voile.backgroundColor,
+      flou: voile.backdropFilter,
+    };
+  });
+  assert.ok(
+    Math.abs(geometrie.gauche) < 1 && geometrie.haut === 0 && Math.abs(geometrie.bas - geometrie.hauteur) < 1,
+    `tiroir collé au bord gauche, sur toute la hauteur (${JSON.stringify(geometrie)})`,
+  );
+  assert.ok(geometrie.droite >= geometrie.voletDroite, "le tiroir recouvre le volet");
+  assert.ok(
+    geometrie.droite <= geometrie.lecture,
+    `la colonne de lecture reste découverte (${geometrie.droite} ≤ ${geometrie.lecture})`,
+  );
+  assert.equal(geometrie.fond, "rgba(0, 0, 0, 0)", "la page n'est pas assombrie");
+  assert.equal(geometrie.flou, "none", "la page n'est pas floutée");
+  const lienDeLaPage = await page.evaluate((bord) => {
+    for (const a of document.querySelectorAll("main#contenu a[href]")) {
+      const b = a.getBoundingClientRect();
+      if (b.width && b.left > bord && b.top > 0 && b.bottom < window.innerHeight) {
+        return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+      }
+    }
+    return null;
+  }, geometrie.droite);
+  assert.ok(lienDeLaPage, "un lien de la page est visible à côté du tiroir");
+  const adresseAvantClic = page.url();
+  await page.mouse.click(lienDeLaPage.x, lienDeLaPage.y);
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  assert.equal(page.url(), adresseAvantClic, "le clic sur la page ferme le tiroir sans suivre le lien");
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.className),
+    "bouton-menu",
+    "le focus revient au déclencheur après un clic sur la page",
+  );
+  ok("tiroir sur poste (question 61, choix a) : à la place du volet, pleine hauteur, lecture découverte, ni assombrie ni floutée, fermé au clic sur la page sans suivre le lien");
 
   // pastilles chiffrées du volet : présentes quand il y a quelque chose,
   // absentes à zéro — le volet est la carte, pas la file

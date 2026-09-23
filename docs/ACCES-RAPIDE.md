@@ -9,6 +9,12 @@ un quatrième était faux : voir le § 9, réécrit en conséquence. Le reste es
 implémenté tel qu'écrit, et les huit critères d'acceptation du § 8 sont
 vérifiés par le parcours de bout en bout (`e2e/parcours.e2e.js`).
 
+**Révisée le 23/09/2026** (question 61, choix a) : sur poste, le panneau
+centré sur un voile devient le tiroir des autres tailles, posé sur la colonne
+du volet, et le voile ne voile plus rien, à aucune taille. Réécrits en
+conséquence : § 4.1 (animation, fond), § 4.3, § 5.2 et § 7 ; critère 10
+ajouté au § 8, vérifié de bout en bout.
+
 ---
 
 ## 1. Le problème que ce composant règle — et celui qu'il ne règle pas
@@ -176,10 +182,10 @@ explicitement** pour que personne ne l'attende.
 | Aspect | Spécification |
 |---|---|
 | Déclencheurs | clic sur le hamburger ; `Ctrl+K` / `⌘K` ; `/` quand aucun champ n'a le focus |
-| Animation | translation de 8 px + opacité 0 → 1, **180 ms**, `ease-out` |
+| Animation | translation depuis la gauche + opacité 0 → 1, **260 ms**, à toutes les tailles (question 61, choix a ; sur poste, auparavant 8 px et 180 ms) |
 | Mouvement réduit | sous `prefers-reduced-motion: reduce`, opacité seule, **90 ms** |
 | Focus à l'ouverture | **poste** : le champ de recherche. **Tactile** : le panneau lui-même (`tabindex="-1"`) — donner le focus à un champ y déclenche le clavier virtuel, qui mange la moitié de l'écran avant qu'on ait rien demandé |
-| Fond | voile `rgba(16,24,32,.38)`, défilement du corps verrouillé |
+| Fond | **aucun voile visible** : la page n'est ni assombrie ni floutée (question 61, choix a ; auparavant `rgba(16,24,32,.38)`). Un calque transparent reçoit le clic qui ferme. Défilement du corps verrouillé sous 62 rem ; sur poste, la page défile sous le tiroir ouvert |
 
 ### 4.2 Pendant
 
@@ -195,7 +201,8 @@ explicitement** pour que personne ne l'attende.
 
 ### 4.3 Fermeture
 
-`Échap`, clic sur le voile, clic sur le `×`, suivi d'un lien, changement de
+`Échap`, clic sur la page hors du tiroir — il ferme, sans suivre le lien qui se
+trouvait sous le pointeur —, clic sur le `×`, suivi d'un lien, changement de
 route. **Dans tous les cas, le focus revient au hamburger** — sans quoi la
 tabulation repart du haut du document, et l'utilisateur au clavier est perdu
 (WCAG 2.4.3).
@@ -229,19 +236,21 @@ et « À faire » s'insérant au-dessus de « Aller à ».
 
 ### 5.2 Au-dessus de 62 rem — poste de travail
 
-Le volet est permanent : le hamburger est aujourd'hui **masqué**. Il
-**réapparaît**, et ouvre une surface différente : un **panneau centré** de
-`min(34rem, 92vw)`, ancré à 12 vh du haut.
+Le volet est permanent : le hamburger était **masqué**. Il **réapparaît**, et
+ouvre **le même tiroir** qu'en deçà (question 61, choix a, 23/09/2026), posé
+sur la colonne du volet, sur toute la hauteur de la fenêtre.
 
-Pourquoi pas le tiroir sur poste : il doublerait un volet déjà visible. Le
-panneau centré, lui, ne répète pas la navigation — il porte le contexte et la
-file d'attente, que le volet ne montre pas.
+Pourquoi le tiroir, finalement : le panneau centré du 21/09 —
+`min(34rem, 92vw)` à 12 vh du haut, sur un voile qui assombrissait toute la
+page — masquait la page qu'on était en train de lire. Le tiroir ne recouvre
+que le volet, qu'il reprend et complète (« Aller à » y figure, § 9.1,
+point 3) ; la colonne de lecture reste découverte, ni assombrie ni floutée.
 
 | Aspect | Valeur |
 |---|---|
-| Largeur | `min(34rem, 92vw)` |
-| Hauteur | `max-height: 72vh`, zones « Reprendre » et « À faire » **jamais** dans la partie défilante |
-| Position | centré horizontalement, 12 vh du haut — pas verticalement centré : le regard part du haut |
+| Largeur | du bord de l'écran jusqu'à 12 px au-delà du volet : 273 px jusqu'à 1 377 px de large ; au-delà, la moitié de l'excédent en plus, le contenu restant aligné sur la colonne du volet (228 px utiles) |
+| Hauteur | toute la hauteur de la fenêtre ; zones « Reprendre » et « À faire » **jamais** dans la partie défilante |
+| Position | à gauche, sur le volet ; son bord s'arrête 8 px avant la colonne de lecture |
 | Cible | 32 px par item, comme le volet sur poste |
 | Raccourci annoncé | `⌘K` en gris à droite du champ, une fois |
 
@@ -283,7 +292,7 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 | `role="dialog"`, `aria-modal="true"`, `aria-labelledby` | ARIA Authoring Practices, *Dialog (Modal)* |
 | Tabulation enfermée, `Échap` sort toujours | WCAG 2.1.2 *No Keyboard Trap* (A) |
 | Focus rendu au déclencheur à la fermeture | WCAG 2.4.3 *Focus Order* (A) |
-| Focus jamais masqué par le voile | WCAG 2.4.11 *Focus Not Obscured (Minimum)* (AA, WCAG 2.2) |
+| Focus jamais masqué : le tiroir est au premier plan, et la tabulation y reste | WCAG 2.4.11 *Focus Not Obscured (Minimum)* (AA, WCAG 2.2) |
 | Cible ≥ 24 px ; **44 px retenus en tactile** | WCAG 2.5.8 *Target Size (Minimum)* (AA, WCAG 2.2) |
 | Compteur dans le nom accessible : « Signalements, 3 en attente » | WCAG 4.1.2 *Name, Role, Value* (A) |
 | Contraste ≥ 4,5:1, y compris les items à zéro en gris | WCAG 1.4.3 *Contrast (Minimum)* (AA) |
@@ -312,6 +321,7 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 | 7 | L'ordre des items ne dépend d'aucun historique | test unitaire sur le module de composition |
 | 8 | Le panneau n'apparaît pas à l'impression | test de feuille d'impression |
 | 9 | Ouverture perçue < 100 ms, aucun appel réseau | les compteurs voyagent avec la page |
+| 10 | Sur poste, le tiroir recouvre le volet et laisse la colonne de lecture découverte, ni assombrie ni floutée ; un clic sur la page le ferme sans suivre le lien (question 61) | e2e à 1 280 px : bords du tiroir, du volet et de la colonne mesurés ; calque transparent ; clic sur un lien de la page → adresse inchangée, focus au hamburger |
 
 ---
 
@@ -332,7 +342,9 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 3. **« Aller à » figure aussi dans le panneau de poste**, là où le § 5.2
    annonçait un panneau « qui ne répète pas la navigation ». Un lanceur dont la
    recherche n'atteint pas les écrans n'est pas un lanceur, et la main n'a pas
-   à quitter le clavier pour rejoindre le volet.
+   à quitter le clavier pour rejoindre le volet. Depuis la question 61
+   (choix a), le tiroir de poste recouvre le volet le temps de son
+   ouverture : « Aller à » y tient la place du volet.
 
 ### 9.2 Une affirmation de cette note était fausse
 
