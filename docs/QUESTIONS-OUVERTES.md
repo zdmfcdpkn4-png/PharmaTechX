@@ -376,6 +376,19 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+60. **Signalement d'une fiche de synthèse défectueuse** — demandé le
+    23/09/2026 : « idem pour les fiches de synthèse, pouvoir les signaler si
+    défaut ». Existant : le signalement ne porte que sur une question — motif
+    fermé, note libre, rien qui désigne la personne ; il se traite dans
+    l'écran Signalements ; un signalement ouvert sur une question du tirage
+    verrouille les visas du rapport, parce que la note peut en dépendre. Une
+    fiche, elle, est montrée après la correction : elle ne pèse pas sur la
+    note. Posée le 23/09/2026 : même circuit que les questions, sans effet
+    sur les rapports — bouton sous chaque fiche, motifs propres, écran
+    Signalements, mention sur la fiche (a) ; a, et un signalement ouvert
+    verrouille les visas des rapports qui citent la fiche (b) ; a, et la
+    fiche est retirée aux apprenants tant que le signalement est ouvert (c).
+
 59. **Fiche de synthèse et validation du module** — demandé le 23/09/2026 :
     « pouvoir intégrer à la validation du module une fiche de synthèse que
     l'on pourrait déposer dans la banque et relier à la validation du
@@ -390,7 +403,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     citée par le rapport (a) ; la validation par l'apprenant — fiche montrée
     dès le dépôt, lecture attestée par l'apprenant, citée par le rapport avec
     l'attestation (b) ; les deux (c). Le signalement d'une fiche défectueuse
-    viendra ensuite.
+    viendra ensuite. Tranchée le même jour (choix a, réponse « À » lue
+    comme a) ; mise en œuvre avec la question 60.
 
 58. **Dépôt de questions : QIM et QCM mêlés** — suite de la question 57,
     même demande (« attention, possibilité de mélange QIM / QCM »). Vérifié
