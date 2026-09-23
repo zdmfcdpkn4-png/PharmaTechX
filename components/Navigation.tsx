@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
-import { relevePage } from "@/lib/rail";
+import { groupePorteLaPage, relevePage, type IdGroupe } from "@/lib/rail";
 
 export interface LienRail {
   href: string;
@@ -35,7 +35,7 @@ export interface SousGroupeRail {
 
 export interface GroupeRail {
   /** Sert à décider quel groupe s'ouvre selon la page courante. */
-  id: "formation" | "reperes" | "administration" | "rgpd";
+  id: IdGroupe;
   titre: string;
   liens?: LienRail[];
   sous?: SousGroupeRail[];
@@ -82,14 +82,10 @@ export function Navigation({
   /**
    * Le groupe qui contient la page courante s'ouvre de lui-même. C'est ce qui
    * répond à l'objection du 19/09 : replié par défaut, le groupe
-   * d'administration cachait le dépôt de questions à qui le cherchait.
+   * d'administration cachait le dépôt de questions à qui le cherchait. Même
+   * règle dans le Menu (`lib/rail.ts`).
    */
-  const porteLaPage = (id: GroupeRail["id"]) => {
-    if (id === "administration") return chemin.startsWith("/admin");
-    if (id === "reperes") return chemin.startsWith("/reperes");
-    if (id === "rgpd") return chemin.startsWith("/donnees-personnelles");
-    return chemin === "/" || chemin.startsWith("/module");
-  };
+  const porteLaPage = (id: GroupeRail["id"]) => groupePorteLaPage(id, chemin);
 
   const [choisis, setChoisis] = useState<Record<string, boolean>>({});
   const estOuvert = (id: GroupeRail["id"]) => choisis[id] ?? porteLaPage(id);

@@ -1154,6 +1154,28 @@ Justification : justification deux.`;
   await page.waitForSelector(".acces-rapide--ouvert", { state: "visible" });
   assert.equal(await page.locator("button.bouton-menu").getAttribute("aria-expanded"), "true");
   await page.waitForSelector(".acces-rapide a[href='/#modules']", { state: "visible" });
+  // « Aller à » en accordéon (choix b du 23/09/2026) : seul le groupe de la
+  // page est ouvert, un appui ouvre les autres, l'onglet RGPD reste direct.
+  const enteteGroupe = (titre) => page.locator(`.acces-rapide button.ar-groupe:has-text("${titre}")`);
+  assert.equal(await enteteGroupe("Formation").getAttribute("aria-expanded"), "true", "groupe de la page ouvert");
+  assert.equal(await enteteGroupe("Repères").getAttribute("aria-expanded"), "false", "autre groupe replié");
+  assert.equal(
+    await page.locator(".acces-rapide a[href='/reperes#dispositif']").isVisible(),
+    false,
+    "les liens d'un groupe replié ne s'affichent pas",
+  );
+  assert.equal(
+    await page.locator(".acces-rapide a[href='/donnees-personnelles']").isVisible(),
+    true,
+    "l'onglet RGPD reste une entrée directe",
+  );
+  await enteteGroupe("Repères").click();
+  await page.waitForSelector(".acces-rapide a[href='/reperes#dispositif']", { state: "visible" });
+  assert.equal(await enteteGroupe("Repères").getAttribute("aria-expanded"), "true");
+  await page.fill(".ar-recherche input", "rgpd");
+  assert.equal(await page.locator(".acces-rapide button.ar-groupe").count(), 0, "pendant une recherche, les intitulés ne se replient pas");
+  await page.fill(".ar-recherche input", "");
+  ok("Menu en accordéon : groupe de la page ouvert, autres repliés, ouverture d'un appui, RGPD en entrée directe");
   // Le volet permanent étant masqué à cette largeur, le panneau doit porter le
   // bouton de la visite guidée, sans quoi il deviendrait inatteignable.
   assert.equal(

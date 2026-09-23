@@ -2147,6 +2147,45 @@ question comme en correction.
 - Photo HEIC d'iPhone : le sélecteur d'iOS remet un JPEG quand le champ
   n'accepte que PNG et JPEG `[à vérifier sur iPhone]`.
 
+## Menu en accordéon (23/09/2026, choix b)
+
+Constat sur une capture d'iPhone : dans « Aller à », l'intitulé de groupe
+(« FORMATION ») était en capitales grises de 11 px, plus petit que les liens
+de 14 px qu'il coiffe — le niveau supérieur paraissait le moins important.
+Mesures de la liste sur iPhone 15 : 656 px pour un poste (10 liens), 1 584 px
+pour l'administration (27 liens, près de six hauteurs d'écran).
+
+Retenu (b) : **accordéon, intitulés accentués**. Chaque groupe devient un
+bandeau (fond `--marque-clair`, filet rose, texte `--marque` à 6,9:1) qui se
+replie ; ses liens se rangent en retrait sous un filet gris. Seul le groupe de
+la page courante s'ouvre de lui-même — la règle de la barre latérale du
+19/09, désormais écrite une fois dans `lib/rail.ts` (`groupePorteLaPage`) et
+testée, pour que la barre et le Menu ouvrent le même groupe. Un groupe ouvert
+ou fermé à la main le reste jusqu'au rechargement. Pendant une recherche, tous
+les groupes qui ont un résultat sont ouverts et leurs intitulés ne se replient
+plus. L'onglet RGPD reste une entrée directe. Les flèches et Entrée ne
+parcourent que les liens affichés ; Entrée sur un intitulé le replie, sur un
+lien l'ouvre (auparavant, Entrée partait toujours vers le lien présélectionné,
+quel que soit l'élément qui avait le focus). Cible de 44 px au doigt, 52 px en
+mode zone. Mesuré sur iPhone 15 après réalisation : pour un poste, la liste
+« Aller à » fait 365 px et tient sans défiler (zone de 549 px) ; pour
+l'administration, elle passe de 1 584 à 643 px — six bandeaux, le groupe de la
+page ouvert.
+
+Corrigés en même temps, annoncés avec la question : sur écran tactile, le
+survol restait « collé » après un appui et teintait le lien en bleu foncé
+(règle `a:hover` du site, que le bloc `hover: none` ne neutralisait pas pour
+`.ar-item`) ; et la présélection prévue pour le clavier surlignait le premier
+lien sans qu'aucun clavier ne serve. Elle ne s'affiche plus qu'avec un
+pointeur fin, ou dès qu'on tape ou qu'on use des flèches. Dans les deux cas,
+un lien semblait être la page en cours sans l'être.
+
+Écartés : (a) hiérarchie accentuée seule, tout déplié — un seul appui pour
+tout, mais la liste s'allongeait encore (1 761 px pour l'administration) ;
+(c) second niveau (les groupes, puis les liens du groupe touché) — toujours
+deux appuis, plus de vue d'ensemble, et la solution la plus lourde (retour,
+focus, recherche).
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

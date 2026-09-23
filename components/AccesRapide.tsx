@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ContexteMenu } from "./Menu";
 import type { GroupeRail } from "./Navigation";
 import { nomAccessible, type ItemAttente } from "@/content/acces-rapide";
+import { groupePorteLaPage, relevePage } from "@/lib/rail";
 import { DERNIER, type DernierModule } from "./LectureModule";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
 
@@ -26,6 +27,13 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * « qui ne répète pas la navigation » sur poste : « Aller à » y figure quand
  * même. Un lanceur dont la recherche n'atteint pas les écrans n'est pas un
  * lanceur, et la main n'a pas à quitter le clavier pour rejoindre le volet.
+ *
+ * « Aller à » en accordéon (choix b du 23/09/2026) : chaque groupe est un
+ * bandeau qui se replie, et seul celui de la page courante s'ouvre de lui-même
+ * — la règle de la barre latérale (`lib/rail.ts`). Un groupe ouvert ou fermé à
+ * la main le reste jusqu'au rechargement de la page. Pendant une recherche,
+ * tous les groupes qui ont un résultat sont ouverts. L'onglet RGPD reste une
+ * entrée directe.
  */
 
 export interface ReprisePossible {
@@ -45,13 +53,15 @@ interface Entree {
   nombre?: number;
   /** Intitulé du groupe, pour « Aller à ». */
   groupe?: string;
+  /** Groupe repliable de « Aller à » ; absent pour une entrée directe (onglet RGPD). */
+  repli?: { cle: string; porteLaPage: boolean };
 }
 
 const sansAccent = (s: string) =>
   s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 /** Aplatit le volet en une liste de liens, groupe par groupe, dans l'ordre du volet. */
-function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null): Entree[] {
+function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null, chemin: string): Entree[] {
   const out: Entree[] = [];
   // Même ordre que le volet : les onglets (RGPD) ferment la liste.
   const ordre = [
@@ -60,10 +70,21 @@ function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null
     ...groupes.filter((g) => g.onglet),
   ];
   for (const g of ordre) {
+    if (g.onglet) {
+      // Entrée directe, comme l'onglet du volet : l'intitulé du groupe, puis
+      // celui de la page. Les deux restent dans le texte que filtre la recherche.
+      const l = g.liens?.[0];
+      if (l) out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: g.titre, detail: l.libelle, href: l.href, groupe: l.libelle });
+      continue;
+    }
+    const repli = { cle: g.id, porteLaPage: groupePorteLaPage(g.id, chemin) };
     for (const l of g.liens ?? []) {
-      out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: l.libelle, href: l.href, groupe: g.titre });
+      out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: l.libelle, href: l.href, groupe: g.titre, repli });
     }
     for (const s of g.sous ?? []) {
+      // Un sous-menu d'administration est un groupe du Menu, ouvert s'il porte
+      // la page courante — la règle des sous-menus de la barre latérale.
+      const repliSous = { cle: `${g.id}/${s.titre}`, porteLaPage: s.liens.some((l) => relevePage(chemin, l.href)) };
       for (const l of s.liens) {
         out.push({
           cle: `${g.id}:${s.titre}:${l.href}`,
@@ -71,6 +92,7 @@ function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null
           libelle: l.libelle,
           href: l.href,
           groupe: `${g.titre} · ${s.titre}`,
+          repli: repliSous,
         });
       }
     }
@@ -98,11 +120,18 @@ export function AccesRapide({
 }) {
   const menu = useContext(ContexteMenu);
   const router = useRouter();
+  const chemin = usePathname();
   const ouvert = menu?.ouvert ?? false;
   const panneau = useRef<HTMLDivElement>(null);
   const champ = useRef<HTMLInputElement>(null);
   const [filtre, setFiltre] = useState("");
   const [choisi, setChoisi] = useState(0);
+  // La présélection sert le clavier (flèches, Entrée) : sur écran tactile, elle
+  // surlignait un lien que personne n'avait choisi, comme s'il était la page
+  // en cours. Elle ne s'affiche qu'avec un pointeur fin, ou dès qu'on tape.
+  const [presel, setPresel] = useState(false);
+  // Groupes ouverts ou fermés à la main ; les autres suivent la page courante.
+  const [replis, setReplis] = useState<Record<string, boolean>>({});
   // Repère de lecture : local au poste, lu à l'ouverture seulement — jamais au
   // premier rendu, qui doit être identique côté serveur et côté navigateur.
   const [lecture, setLecture] = useState<ReprisePossible | null>(null);
@@ -123,14 +152,23 @@ export function AccesRapide({
       href: i.href,
       nombre: i.nombre,
     }));
-    return [...r, ...f, ...entreesDuVolet(groupes, administration)];
-  }, [lecture, reprises, items, groupes, administration]);
+    return [...r, ...f, ...entreesDuVolet(groupes, administration, chemin)];
+  }, [lecture, reprises, items, groupes, administration, chemin]);
 
+  const recherche = filtre.trim() !== "";
   const visibles = useMemo(() => {
     const q = sansAccent(filtre.trim());
     if (!q) return toutes;
     return toutes.filter((e) => sansAccent(`${e.libelle} ${e.groupe ?? ""}`).includes(q));
   }, [toutes, filtre]);
+
+  // Pendant une recherche, tout groupe qui a un résultat est ouvert.
+  const groupeOuvert = (r: NonNullable<Entree["repli"]>) => recherche || (replis[r.cle] ?? r.porteLaPage);
+  // Les flèches et Entrée ne parcourent que les liens affichés.
+  const navigables = useMemo(
+    () => visibles.filter((e) => !e.repli || recherche || (replis[e.repli.cle] ?? e.repli.porteLaPage)),
+    [visibles, recherche, replis],
+  );
 
   // Le panneau s'ouvre : état remis à zéro, focus posé, défilement du corps figé.
   useEffect(() => {
@@ -156,6 +194,7 @@ export function AccesRapide({
     // Sur tactile, donner le focus au champ ouvre le clavier virtuel, qui mange
     // la moitié de l'écran avant qu'on ait rien demandé : on vise le panneau.
     const tactile = window.matchMedia("(pointer: coarse)").matches;
+    setPresel(!tactile);
     const cible = tactile ? panneau.current : champ.current;
     cible?.focus({ preventScroll: true });
     document.body.classList.add("menu-ouvert");
@@ -190,15 +229,20 @@ export function AccesRapide({
       }
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
+        setPresel(true);
         setChoisi((i) => {
-          const n = visibles.length;
+          const n = navigables.length;
           if (n === 0) return 0;
           return e.key === "ArrowDown" ? (i + 1) % n : (i - 1 + n) % n;
         });
         return;
       }
       if (e.key === "Enter") {
-        const cible = visibles[choisi] ?? visibles[0];
+        // Entrée sur un lien ou un bouton du panneau (un intitulé de groupe)
+        // garde son effet propre : ouvrir ce lien, replier ce groupe.
+        const surCible = (e.target as HTMLElement | null)?.closest?.("a[href], button");
+        if (surCible && panneau.current?.contains(surCible)) return;
+        const cible = navigables[choisi] ?? navigables[0];
         if (!cible) return;
         e.preventDefault();
         menu?.fermer();
@@ -226,7 +270,7 @@ export function AccesRapide({
     };
     document.addEventListener("keydown", auClavier);
     return () => document.removeEventListener("keydown", auClavier);
-  }, [ouvert, menu, visibles, choisi, router]);
+  }, [ouvert, menu, navigables, choisi, router]);
 
   if (!menu) return null;
 
@@ -234,8 +278,29 @@ export function AccesRapide({
   const reprendre = zone("reprendre");
   const aFaire = zone("faire");
   const allerA = zone("aller");
-  const rang = (e: Entree) => visibles.indexOf(e);
-  const classe = (e: Entree) => `ar-item${rang(e) === choisi ? " ar-item--choisi" : ""}`;
+  const rang = (e: Entree) => navigables.indexOf(e);
+  const classe = (e: Entree) => `ar-item${presel && rang(e) === choisi ? " ar-item--choisi" : ""}`;
+
+  // « Aller à » : liens consécutifs d'un même groupe réunis sous son intitulé.
+  const blocs: { cle: string; titre: string; repli?: Entree["repli"]; entrees: Entree[] }[] = [];
+  for (const e of allerA) {
+    const cle = e.repli?.cle ?? e.cle;
+    const dernier = blocs[blocs.length - 1];
+    if (dernier && dernier.cle === cle) dernier.entrees.push(e);
+    else blocs.push({ cle, titre: e.groupe ?? "", repli: e.repli, entrees: [e] });
+  }
+  const lienAller = (e: Entree) => (
+    <Link
+      key={e.cle}
+      href={e.href}
+      className={classe(e)}
+      onClick={suivre}
+      onMouseEnter={() => setChoisi(rang(e))}
+    >
+      <span className="ar-libelle">{e.libelle}</span>
+      {e.detail ? <span className="ar-detail">{e.detail}</span> : null}
+    </Link>
+  );
 
   const suivre = () => menu.fermer();
 
@@ -270,6 +335,7 @@ export function AccesRapide({
             onChange={(e) => {
               setFiltre(e.target.value);
               setChoisi(0);
+              setPresel(true);
             }}
             placeholder="Rechercher un écran…"
             aria-label="Rechercher un écran"
@@ -335,21 +401,35 @@ export function AccesRapide({
             {allerA.length === 0 ? (
               <p className="ar-vide">Aucun écran ne correspond à « {filtre} ».</p>
             ) : (
-              allerA.map((e, i) => (
-                <div key={e.cle}>
-                  {e.groupe && e.groupe !== allerA[i - 1]?.groupe ? (
-                    <span className="ar-groupe">{e.groupe}</span>
-                  ) : null}
-                  <Link
-                    href={e.href}
-                    className={classe(e)}
-                    onClick={suivre}
-                    onMouseEnter={() => setChoisi(rang(e))}
-                  >
-                    <span className="ar-libelle">{e.libelle}</span>
-                  </Link>
-                </div>
-              ))
+              blocs.map((b) => {
+                const repli = b.repli;
+                if (!repli) return b.entrees.map(lienAller);
+                const deplie = groupeOuvert(repli);
+                const idListe = `${titreId}-${b.cle.replace(/[^a-z0-9]+/gi, "-")}`;
+                return (
+                  <div key={b.cle} className="ar-bloc">
+                    {/* Pendant une recherche, les groupes restent ouverts :
+                        l'intitulé n'est plus qu'un titre. */}
+                    {recherche ? (
+                      <span className="ar-groupe">{b.titre}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="ar-groupe"
+                        aria-expanded={deplie}
+                        aria-controls={idListe}
+                        onClick={() => setReplis((r) => ({ ...r, [repli.cle]: !deplie }))}
+                      >
+                        <span className="ar-groupe-titre">{b.titre}</span>
+                        <span className="ar-chevron" aria-hidden="true" />
+                      </button>
+                    )}
+                    <div id={idListe} className="ar-groupe-liens" hidden={!deplie}>
+                      {b.entrees.map(lienAller)}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </section>
 
