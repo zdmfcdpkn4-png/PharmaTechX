@@ -376,6 +376,29 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+58. **Dépôt de questions : QIM et QCM mêlés** — suite de la question 57,
+    même demande (« attention, possibilité de mélange QIM / QCM »). Vérifié
+    par un essai le 23/09/2026 :
+    - un dépôt écrit au format — mot-clé « QCM n. » ou « QIM n. » devant
+      chaque question, comme l'écrivent les deux prompts — est déjà lu
+      question par question ;
+    - sans mot-clé, toutes les questions prennent le format par défaut ; les
+      intertitres « QCM » et « QIM » sont ignorés ;
+    - un QCM « lesquelles sont fausses ? » déposé en QIM garde pour vraies
+      ses lettres à cocher, qui sont les propositions fausses : son corrigé
+      est lu à l'envers, sans avertissement ;
+    - une QIM déposée en QCM est notée tout ou rien, et s'affiche en boutons
+      radio si son énoncé ne dit pas « plusieurs » ; l'analyse n'avertit que
+      si elle a plusieurs propositions vraies, ou aucune ;
+    - un intertitre collé à la dernière proposition, sans ligne vide,
+      s'ajoute au texte de cette proposition.
+    Posée le 23/09/2026. Dans tous les cas : format de chaque question
+    affiché et modifiable dans l'aperçu, mot-clé exigé sur chaque question
+    par le prompt de mise en forme. En plus : intertitre reconnu et énoncé
+    lu — format proposé d'après l'énoncé quand ni mot-clé ni intertitre ne
+    le disent, contradiction signalée sinon (a) ; intertitre seulement (b) ;
+    rien de plus (c).
+
 57. **Dépôt de questions : module de chaque question, plusieurs modules par
     dépôt** — demandé le 23/09/2026 : « détection de module lors du dépôt,
     possibilité d'avoir plusieurs modules concernés par le même dépôt
@@ -389,7 +412,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     de chaque question est reconnu — ligne « Module : » écrite dans le texte,
     puis proposition du site d'après les mots du titre, confirmée dans
     l'aperçu (a) ; ligne seulement, sinon module par défaut (b) ; proposition
-    seulement (c). Le mélange QIM / QCM viendra ensuite.
+    seulement (c). Le mélange QIM / QCM viendra ensuite. Tranchée le même
+    jour (choix a) ; mise en œuvre avec la question 58. Lecture retenue,
+    sans objection : une question reste rattachée à un seul module, un dépôt
+    en sert plusieurs.
 
 56. **Ordre « à la carte pour un utilisateur »** — suite de la question 55,
     posée et tranchée le 23/09/2026 (choix a) : un ordre propre à un
