@@ -376,6 +376,22 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+65. **Niveaux : renommer un code, régler l'ordre** — demandé le 23/09/2026 :
+    « Revoir pour l'apparence des prérequis replace N2Restreint par N2R
+    (dépôt) — pouvoir organiser l'ordre des niveaux. » Existant : un code de
+    niveau sert d'identifiant et ne se renomme pas ; les cinq niveaux de la
+    fiche passaient toujours en tête, les niveaux ajoutés après, par leur
+    rang entre eux. Posée le 23/09/2026 pour le renommage, sans numéro :
+    à la main — ajouter N2R, supprimer le dépôt N2RESTREINT, reprendre ce
+    que liste l'encart « niveau inconnu » (a, recommandé si le niveau est
+    récent et peu cité) ; une fonction « Renommer le code », reportée
+    partout, codes d'accès compris (b). La question de l'ordre n'avait pas
+    été posée. Tranchée par délégation le même jour (« Pour les 3 prends
+    les recommandations ») : renommage à la main (a), l'encart couvrant
+    désormais les codes d'accès actifs et les plafonds du barème ; ordre
+    par le rang, fiche comprise (10, 20…), métier par métier. Détail et
+    procédure dans `DECISIONS.md`.
+
 64. **Banque en arborescence** — demandé le 23/09/2026 : « dans la
     présentation de la banque de questions, proposer l'alternative d'une
     présentation en arbre dépliable comme le quiz de Flore — Arborescence ».

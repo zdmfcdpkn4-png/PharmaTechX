@@ -2448,6 +2448,79 @@ Justification : cf. procédure interne.`,
   await carteAide.waitFor({ state: "detached" });
   ok("métiers : filière de l'aide déposée, code préfixé AP-, préfixe d'un autre métier refusé, casse de N1a gardée, métier d'une filière à niveaux figé, filière désactivée sans effet sur ses niveaux");
 
+  // Ordre des niveaux et renommage à la main (tâche 66, recommandations retenues
+  // le 23/09/2026). Un rang de 45 glisse S1 entre N2 et N3, sur tous les écrans.
+  await page.goto(BASE + "/admin/referentiel");
+  assert.equal(await carteNiveau("N2").locator(".niveau-rang").innerText(), "rang 40", "rang d'un niveau de la fiche");
+  assert.equal(await carteNiveau("S1").locator(".niveau-rang").innerText(), "sans rang", "niveau ajouté, sans rang");
+  await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("S1").locator("input[name=rang]").fill("45");
+  await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=niveau/);
+  await carteNiveau("S1").locator(".niveau-rang", { hasText: "rang 45" }).waitFor();
+  const ordrePrerequis = await page
+    .locator("form", { hasText: "Ajouter un niveau" })
+    .locator("input[name=prerequis]")
+    .evaluateAll((l) => l.map((i) => i.value));
+  assert.deepEqual(ordrePrerequis.slice(0, 6), ["N1a", "N1b", "N1c", "N2", "S1", "N3"], "prérequis : S1 entre N2 et N3 — " + ordrePrerequis);
+  await page.goto(BASE + "/reperes#niveaux");
+  const cartesReperes = await page.locator("section#niveaux li.carte").allTextContents();
+  const placeReperes = (debut) => cartesReperes.findIndex((t) => t.includes(debut));
+  assert.ok(
+    placeReperes("N2 — routine") < placeReperes("S1 — stérilisation") && placeReperes("S1 — stérilisation") < placeReperes("N3 — référent"),
+    "Repères : S1 entre N2 et N3",
+  );
+  // Un niveau supprimé laisse dans l'encart ce qui le citait, code d'accès et
+  // plafond du barème compris ; l'encart s'éteint une fois chaque ligne reprise.
+  await page.goto(BASE + "/admin/referentiel");
+  const ajoutTemoin = page.locator("form", { hasText: "Ajouter un niveau" });
+  await ajoutTemoin.locator("input[name=code]").fill("T9");
+  await ajoutTemoin.locator("input[name=libelle]").fill("T9 — niveau témoin");
+  await ajoutTemoin.locator("select[name=filiereId]").selectOption("sterilisation");
+  await ajoutTemoin.locator('button:has-text("Ajouter le niveau")').click();
+  await page.waitForURL(/ok=niveau/);
+  await codeNiveau("T9").waitFor({ state: "attached" });
+  await page.goto(BASE + "/admin/bareme");
+  await page.selectOption("select[name='plafond-T9']", "initial");
+  await page.click("button:has-text('Enregistrer le barème')");
+  await page.waitForURL(/ok=/);
+  await page.goto(BASE + "/admin");
+  await page.selectOption("select[name=role]", "poste");
+  await page.fill("input[name=libelle]", "Poste témoin T9");
+  await page.selectOption("select[name=niveau]", "T9");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=/);
+  await page.goto(BASE + "/admin/referentiel");
+  await carteNiveau("T9").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("T9").locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/niveau-supprime/);
+  const encartInconnu = page.locator(".encart--attention", { hasText: "niveau inconnu" });
+  await encartInconnu.waitFor();
+  const lignesInconnues = await encartInconnu.locator("li").allInnerTexts();
+  assert.ok(
+    lignesInconnues.some((t) => t.includes("Code d'accès") && t.includes("Poste témoin T9") && t.includes("T9")),
+    "code d'accès du niveau supprimé signalé — " + lignesInconnues,
+  );
+  assert.ok(
+    lignesInconnues.some((t) => t.includes("Barème") && t.includes("T9")),
+    "plafond du niveau supprimé signalé — " + lignesInconnues,
+  );
+  await page.goto(BASE + "/admin/bareme");
+  await page.click("button:has-text('Rétablir les valeurs par défaut')");
+  await page.waitForURL(/ok=defaut/);
+  await page.goto(BASE + "/admin");
+  const carteTemoin = page.locator("li.carte", { hasText: "Poste témoin T9" });
+  await carteTemoin.locator("button:has-text('Révoquer')").click();
+  await carteTemoin.locator("text=révoqué").waitFor();
+  await page.goto(BASE + "/admin/referentiel");
+  assert.equal(await page.locator(".encart--attention:has-text('niveau inconnu')").count(), 0, "encart éteint, chaque ligne reprise");
+  // S1 revient sans rang : la suite du parcours le retrouve après N3.
+  await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("S1").locator("input[name=rang]").fill("0");
+  await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
+  await carteNiveau("S1").locator(".niveau-rang", { hasText: "sans rang" }).waitFor();
+  ok("ordre des niveaux : rang de la fiche lu, S1 au rang 45 entre N2 et N3 (prérequis, Repères) ; niveau supprimé : code d'accès et plafond du barème signalés, encart éteint après reprise");
+
   // arborescence de la banque : filière → niveau → module, avec les comptes
   await page.goto(BASE + "/admin/questions");
   await page.waitForSelector("text=Couverture de la banque");

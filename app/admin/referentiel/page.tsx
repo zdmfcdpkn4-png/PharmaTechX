@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes, niveauxOrphelins } from "@/content/referentiel-db";
-import { filieres as filieresFiche, metiers, metierOuDefaut, parMetier } from "@/content/habilitation";
+import { filieres as filieresFiche, metiers, metierOuDefaut, niveaux as niveauxFiche, parMetier } from "@/content/habilitation";
+import { rangEffectif, rappelRangsFiche } from "@/content/ordre-niveaux";
 import { Badge } from "@/components/Badge";
 import { ChoixBadge } from "@/components/ChoixBadge";
 import {
@@ -31,6 +32,9 @@ const ERREURS: Record<string, string> = {
   "metier-filiere":
     "Cette filière porte des niveaux : elle garde son métier. Supprimez d'abord ses niveaux déposés, ou ajoutez une autre filière.",
 };
+
+/** Codes des niveaux de la fiche : leur place fixe le rang par défaut (10, 20…). */
+const CODES_FICHE = niveauxFiche.map((n) => String(n.code));
 
 /** Préfixes des codes par métier, rappelés sous le champ « Code » (question 46, choix a). */
 const RAPPEL_PREFIXES = metiers
@@ -106,11 +110,13 @@ export default async function Referentiel({
                 : `${orphelins.length} rattachements citent un niveau inconnu`}
               .
             </strong>{" "}
-            L&apos;échelle du préparateur a été corrigée le 22/09/2026 :{" "}
-            <code>P1</code> et <code>P2</code> ont laissé place à <code>N1b</code>, la
-            fiche officielle ne connaissant ni ces codes ni de référent préparatoire.
-            Rien n&apos;a été supprimé — ces lignes sont listées pour être reprises à la
-            main, ou laissées telles quelles.
+            Un niveau supprimé, ou renommé par l&apos;ajout d&apos;un nouveau code, laisse ici
+            tout ce qui le citait. Rien n&apos;a été effacé : chaque ligne se reprend à la main
+            — cocher le nouveau niveau à la place, régler son plafond au Barème puis
+            l&apos;enregistrer, remplacer un code d&apos;accès par un code du nouveau niveau et
+            révoquer l&apos;ancien — ou se laisse telle quelle. L&apos;échelle du préparateur a
+            aussi été corrigée le 22/09/2026 : <code>P1</code> et <code>P2</code> ont
+            laissé place à <code>N1b</code>.
           </p>
           <ul className="liste-nue">
             {orphelins.map((o) => (
@@ -263,6 +269,12 @@ export default async function Referentiel({
           <h2 style={{ fontSize: "1.15rem" }}>Niveaux</h2>
           <span className="compte">{niveaux.length}</span>
         </div>
+        {/* L'ordre se règle ici et vaut pour tous les écrans (tâche 66). */}
+        <p id="rangs-niveaux" className="legende">
+          Ordre : chaque métier range ses niveaux par rang croissant, sur tous les écrans. Ceux de la
+          fiche valent {rappelRangsFiche(CODES_FICHE)} : un rang de 45 place un niveau entre N2 et N3.
+          Au rang 0, un niveau ajouté vient après ceux qui ont un rang.
+        </p>
         <ul className="liste-nue">
           {metiers.flatMap((m) => [
             <li key={`metier-${m.id}`}>
@@ -278,12 +290,14 @@ export default async function Referentiel({
             </li>,
             ...tousNiveaux.filter((n) => memeMetier(n.metier, m.id)).map((n) => {
             const d = depotN.get(n.code);
+            const rang = rangEffectif(n.code, d?.rang, CODES_FICHE);
             return (
               <li key={n.code} className="carte">
                 <div className="etape-tete">
                   <span className="etiquette etiquette--neutre">{n.code}</span>
                   <strong>{n.libelle}</strong>
                   <span className="legende">{n.filiere}</span>
+                  <span className="legende niveau-rang">{rang === null ? "sans rang" : `rang ${rang}`}</span>
                   <span className={`etiquette ${n.origine === "base" ? "etiquette--ok" : "etiquette--site"}`}>
                     {n.origine === "base" ? (d?.actif === false ? "Déposé, inactif" : "Déposé") : "Fiche"}
                   </span>
@@ -320,7 +334,9 @@ export default async function Referentiel({
                         </label>
                         <label className="champ">
                           <span>Rang</span>
-                          <input name="rang" type="number" min={0} max={999} defaultValue={d?.rang ?? 0} />
+                          {/* Le rang effectif, et non 0 : enregistrer une correction
+                              d'un niveau de la fiche ne le déplace pas. */}
+                          <input name="rang" type="number" min={0} max={999} defaultValue={rang ?? 0} aria-describedby="rangs-niveaux" />
                         </label>
                       </div>
                       <label className="champ">
@@ -395,7 +411,7 @@ export default async function Referentiel({
               </label>
               <label className="champ">
                 <span>Rang</span>
-                <input name="rang" type="number" min={0} max={999} defaultValue={0} />
+                <input name="rang" type="number" min={0} max={999} defaultValue={0} aria-describedby="rangs-niveaux" />
               </label>
             </div>
             <p id="rappel-prefixes" className="legende" style={{ margin: 0 }}>

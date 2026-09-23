@@ -8,6 +8,8 @@ import {
   type Filiere,
   type Niveau,
 } from "./habilitation";
+import { ordonnerNiveaux } from "./ordre-niveaux";
+import { lireBareme } from "@/lib/bareme-db";
 
 /**
  * Référentiel : filières et niveaux, fiche versionnée **plus** dépôts en base.
@@ -205,12 +207,23 @@ export async function getReferentiel(): Promise<Referentiel> {
     });
   }
 
-  // Les niveaux déposés rattachés à une filière la complètent.
+  // Ordre réglable par le rang, fiche comprise (tâche 66) : chaque écran qui
+  // lit le référentiel reçoit les niveaux rangés par métier, puis par rang.
+  const ordonnes = ordonnerNiveaux(
+    niveaux,
+    new Map(nd.map((n) => [n.code, n.rang])),
+    NIVEAUX_CODE.map((n) => String(n.code)),
+  );
+  const place = new Map(ordonnes.map((n, i) => [String(n.code), i]));
+  const selonPlace = (a: string, b: string) =>
+    (place.get(a) ?? Number.MAX_SAFE_INTEGER) - (place.get(b) ?? Number.MAX_SAFE_INTEGER);
+
+  // Les niveaux déposés rattachés à une filière la complètent, dans le même ordre.
   for (const f of filieres) {
-    const propres = niveaux.filter((n) => n.filiere === f.id).map((n) => n.code);
-    f.niveaux = [...new Set([...f.niveaux, ...propres])];
+    const propres = ordonnes.filter((n) => n.filiere === f.id).map((n) => n.code);
+    f.niveaux = [...new Set([...f.niveaux, ...propres])].sort((a, b) => selonPlace(String(a), String(b)));
   }
-  return { filieres, niveaux };
+  return { filieres, niveaux: ordonnes };
 }
 
 /** Filières servies aux écrans (raccourci le plus courant). */
@@ -347,7 +360,10 @@ export interface NiveauOrphelin {
  * Utile après une **correction de l'échelle** : le 22/09/2026, `P1` et `P2`
  * ont disparu au profit de `N1b`, la fiche officielle ne connaissant ni
  * référent préparatoire ni ces deux codes. Une ligne déposée avant cette
- * correction peut encore les citer.
+ * correction peut encore les citer. Utile aussi pour **renommer** un niveau,
+ * qui se fait à la main (tâche 66, recommandation retenue le 23/09/2026) :
+ * nouveau code ajouté, ancien dépôt supprimé, cette liste dit tout ce qui
+ * citait l'ancien — codes d'accès et plafonds du barème compris.
  *
  * Rien n'est supprimé sur ce constat, et c'est le point : un rattachement
  * orphelin se **signale**. L'effacer en silence ferait disparaître un
@@ -370,7 +386,7 @@ export async function niveauxOrphelins(): Promise<NiveauOrphelin[]> {
     if (codes.length > 0) orphelins.push({ origine, cle, codes });
   };
 
-  const [modules, reglages, depots, deposes] = await Promise.all([
+  const [modules, reglages, depots, deposes, codes, bareme] = await Promise.all([
     sql<{ id: string; titre: string; niveaux: unknown }>`
       SELECT id, titre, niveaux FROM modules_deposes`.catch(() => ({ rows: [] })),
     sql<{ module_id: string; niveaux: unknown }>`
@@ -379,11 +395,20 @@ export async function niveauxOrphelins(): Promise<NiveauOrphelin[]> {
       SELECT id, titre, niveaux FROM depots`.catch(() => ({ rows: [] })),
     sql<{ code: string; prerequis: unknown }>`
       SELECT code, prerequis FROM niveaux_deposes`.catch(() => ({ rows: [] })),
+    // Un code d'accès ne change pas de niveau : il se remplace. Les codes
+    // révoqués ne comptent pas, ils n'ouvrent plus de session.
+    sql<{ libelle: string; niveau: string }>`
+      SELECT libelle, niveau FROM acces WHERE actif AND niveau IS NOT NULL`.catch(() => ({ rows: [] })),
+    lireBareme().catch(() => null),
   ]);
 
   for (const l of modules.rows) pousser("Module déposé", l.titre || l.id, inconnus(l.niveaux));
   for (const l of reglages.rows) pousser("Réglage de module", l.module_id, inconnus(l.niveaux));
   for (const l of depots.rows) pousser("Document déposé", l.titre || String(l.id), inconnus(l.niveaux));
   for (const l of deposes.rows) pousser("Prérequis d'un niveau déposé", l.code, inconnus(l.prerequis));
+  for (const l of codes.rows) pousser("Code d'accès", l.libelle, inconnus([l.niveau]));
+  // Un niveau cible sans plafond tombe sur « avancé » : un plafond resté sous
+  // l'ancien code d'un niveau renommé laisserait le nouveau tirer sans limite.
+  if (bareme) pousser("Barème, plafond par niveau cible", "barème", inconnus(Object.keys(bareme.plafonds)));
   return orphelins;
 }

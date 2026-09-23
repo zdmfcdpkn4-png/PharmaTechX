@@ -2485,8 +2485,9 @@ question ». Laissés tels quels.
   tranchée le même jour (ci-dessous) ; l'axe métier est défini dans
   `content/habilitation.ts`, mais aucun écran ne le lit.
 - L'ordre des niveaux ne se règle pas : la fiche d'abord, les dépôts ensuite.
+  Réglé le même jour (« Ordre des niveaux et renommage à la main », plus bas).
 - Un code de niveau ne se renomme pas (N2RESTREINT → N2R, question posée le
-  23/09/2026, en attente).
+  23/09/2026). Tranché le même jour : à la main, même section.
 - « Programme complet », dans les Repères, reste la fiche — critères et
   niveau de la fiche, sans les réglages ni les modules déposés — et le dit.
 
@@ -3540,6 +3541,99 @@ serveur. Étape nouvelle, dans la banque : au survol, le lien et le bouton
 secondaires gardent un texte à 4,5:1 au moins. Mesures hors parcours, survol
 forcé par le protocole de Chrome, sur poste et en contexte tactile : liens et
 boutons secondaires de la banque, lien discret de la liste des rapports.
+
+## Ordre des niveaux et renommage à la main (23/09/2026, tâche 66, recommandations retenues)
+
+**Demande.** « Revoir pour l'apparence des prérequis replace N2Restreint par
+N2R (dépôt) — pouvoir organiser l'ordre des niveaux. » La capture montrait la
+liste « Prérequis » du Référentiel, N2RESTREINT après N3.
+
+**Constaté.**
+- Un code de niveau est son identifiant. Modules, réglages, documents,
+  prérequis, codes d'accès, ordres de profil et d'apprenant, plafonds du
+  barème le citent tel quel. Le site ne sait pas le renommer, et la base en
+  ligne n'est pas joignable d'ici.
+- Les cinq niveaux de la fiche passaient toujours en tête, les niveaux
+  ajoutés après, rangés entre eux : rien ne plaçait N2RESTREINT entre N2 et
+  N3. Le champ « Rang » d'un niveau de la fiche était sans effet.
+- L'encart « … citent un niveau inconnu » ne voyait ni les codes d'accès ni
+  les plafonds du barème. Or un niveau cible sans plafond tombe sur
+  « avancé » : renommé à la main, N2R aurait tiré des questions de tout
+  niveau sans que rien ne le signale.
+- L'ordre des niveaux ne joue aucun rôle dans le tirage : le plafond se lit
+  au barème, code par code.
+
+**Tranché** par délégation (« Pour les 3 prends les recommandations ») :
+- renommage **à la main**, choix a de la question posée le 23/09 ; écarté,
+  une fonction « Renommer le code » (b) ;
+- ordre **par le rang, fiche comprise**. La question n'avait pas été posée :
+  c'est la recommandation que je retiens ici. Écartés, des flèches ou un
+  glisser-déposer, qui déplacent un niveau à la fois pour le même résultat.
+
+**Ce qui est fait.**
+- **Ordre** (`content/ordre-niveaux.ts`, pur, appliqué par `getReferentiel`).
+  - Chaque métier range ses niveaux par rang croissant ; les métiers se
+    suivent dans l'ordre de `metiers` (préparateur, pharmacien, aide, agent
+    d'entretien), leurs rangs ne se mêlent pas.
+  - Les niveaux de la fiche valent 10, 20, 30, 40 et 50 ; un rang déposé
+    positif l'emporte, pour eux aussi.
+  - Au rang 0, un niveau ajouté vient après ceux qui ont un rang : c'est la
+    place qu'avaient tous les niveaux ajoutés, l'ordre existant ne bouge pas.
+  - Tous les écrans qui lisent le référentiel suivent : prérequis, Repères,
+    filtres, réglage des modules, codes d'accès, barème, ordonnancement,
+    arborescence de la banque.
+- **Référentiel.** Chaque niveau affiche son rang (« rang 40 », « sans
+  rang ») ; le formulaire est prérempli du rang effectif, si bien que
+  corriger un niveau de la fiche ne le déplace plus ; un paragraphe donne la
+  clé de lecture (N1a 10 … N3 50, « 45 place un niveau entre N2 et N3 »).
+- **Encart « niveau inconnu ».** Il couvre aussi les codes d'accès actifs et
+  les plafonds du barème, et dit comment reprendre chaque ligne. Les ordres
+  de profil et d'apprenant n'y figurent pas : l'écran d'ordonnancement les
+  marque déjà « profil retiré du référentiel » et ne permet pas de les
+  supprimer ; une ligne qu'on ne peut pas reprendre n'y serait qu'une alarme
+  permanente.
+
+**Renommer N2RESTREINT en N2R** — sur le site en ligne, avec un code
+d'administration :
+1. Référentiel, niveau N2RESTREINT, « Modifier » : noter le libellé, la
+   filière, la condition d'obtention et les prérequis.
+2. « Ajouter un niveau » : code N2R, mêmes champs, rang 45 pour le placer
+   entre N2 et N3.
+3. Revenir à N2RESTREINT : « Modifier », puis « Supprimer le dépôt ».
+4. L'encart « … citent un niveau inconnu », en haut du Référentiel, liste
+   tout ce qui citait N2RESTREINT. Reprendre chaque ligne :
+   - module déposé, réglage de module, document, prérequis d'un niveau :
+     cocher N2R à la place ;
+   - barème : régler le plafond de N2R, puis « Enregistrer le barème » ;
+     l'ancien code en sort ;
+   - code d'accès : un code ne change pas de niveau. En créer un au niveau
+     N2R, le remettre à la personne, révoquer l'ancien.
+5. Ordonnancement : un ordre fixé pour N2RESTREINT y figure « profil retiré
+   du référentiel » ; le refaire sous N2R.
+6. L'encart disparaît quand plus rien ne cite N2RESTREINT. Les rapports déjà
+   émis gardent N2RESTREINT : ils sont scellés.
+
+**Limites.**
+- Le renommage reste un geste manuel en plusieurs endroits ; le journal
+  montrera un ajout puis une suppression, pas un renommage.
+- Un code d'accès se remplace : la personne qui l'utilisait reçoit un
+  nouveau code.
+- Les ordres fixés sous l'ancien code restent en base, inertes.
+- L'ordre des filières ne change pas : la fiche d'abord, les dépôts par rang.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (326 tests, 8 de plus :
+`test/ordre-niveaux.test.ts`), `npm run build`, deux passes de bout en bout
+de 90 étapes, sans erreur de page ni erreur serveur.
+- **Tests purs** : rangs de la fiche, rang déposé ou nul, ordre existant
+  inchangé sans rang, 45 entre N2 et N3, niveau de la fiche déplacé, métiers
+  qui ne se mêlent pas, ordre d'arrivée à rang égal.
+- **Étape 12k, prolongée** : N2 lu au rang 40, S1 sans rang ; S1 au rang 45
+  s'affiche entre N2 et N3 dans les prérequis et dans les Repères. Un niveau
+  témoin T9, cité par un code d'accès et par un plafond du barème, puis
+  supprimé : l'encart signale les deux ; barème rétabli et code révoqué, il
+  s'éteint. S1 revient ensuite sans rang.
+- **Contrôle à l'écran** (1 280 px) : rangs affichés, rang prérempli à 40
+  pour N2, paragraphe de lecture des rangs.
 
 ## Non fait
 
