@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  LONGUEUR_CODE_NIVEAU,
   METIER_PAR_DEFAUT,
+  codeConnu,
+  codePourMetier,
   criteres,
   criteresDuBloc,
   criteresDuMetier,
@@ -13,6 +16,7 @@ import {
   niveauPour,
   niveaux,
   obligatoirePour,
+  parMetier,
 } from "../content/habilitation";
 import { NIVEAUX_FICHE } from "../content/types";
 
@@ -111,6 +115,57 @@ test("les quatre métiers de l'unité sont déclarés ; trois attendent leur fic
   for (const m of metiers) {
     assert.equal(m.fiche, "[à compléter]", `${m.id} : référence de fiche non inventée`);
   }
+});
+
+// ── Codes par métier (question 46, choix a ; échelles saisies au Référentiel, question 53, choix b)
+
+test("chaque autre métier a son préfixe, le préparateur n'en a pas", () => {
+  assert.deepEqual(
+    metiers.map((m) => [m.id, m.prefixe]),
+    [["preparateur", ""], ["pharmacien", "PH-"], ["aide", "AP-"], ["agent-entretien", "AE-"]],
+  );
+});
+
+test("le préfixe du métier s'ajoute s'il manque, une seule fois", () => {
+  assert.deepEqual(codePourMetier("N1", "aide"), { code: "AP-N1" });
+  assert.deepEqual(codePourMetier("AP-N1", "aide"), { code: "AP-N1" });
+  assert.deepEqual(codePourMetier("N2", "pharmacien"), { code: "PH-N2" });
+  assert.deepEqual(codePourMetier("N2", METIER_PAR_DEFAUT), { code: "N2" });
+  // un métier inconnu retombe sur le préparateur, sans préfixe
+  assert.deepEqual(codePourMetier("S1", "mecanicien"), { code: "S1" });
+});
+
+test("le préfixe d'un autre métier est refusé, un code trop long ou vide aussi", () => {
+  assert.deepEqual(codePourMetier("PH-N1", "aide"), { refus: "prefixe" });
+  assert.deepEqual(codePourMetier("AE-N1", METIER_PAR_DEFAUT), { refus: "prefixe" });
+  assert.deepEqual(codePourMetier("N1234567890", "aide"), { refus: "longueur" });
+  assert.deepEqual(codePourMetier("AP-", "aide"), { refus: "vide" });
+  assert.ok(LONGUEUR_CODE_NIVEAU >= "AP-N1".length);
+});
+
+test("un code saisi en capitales retrouve la casse du code connu", () => {
+  const connus = ["N1a", "N1b", "N2", "AP-N1"];
+  assert.equal(codeConnu("N1A", connus), "N1a", "« Modifier » N1a ne crée plus N1A");
+  assert.equal(codeConnu("N1B", connus), "N1b", "prérequis N1b coché, enregistré N1b");
+  assert.equal(codeConnu("N2", connus), "N2");
+  assert.equal(codeConnu("AP-N1", connus), "AP-N1");
+  assert.equal(codeConnu("S1", connus), "S1", "un code nouveau reste tel quel");
+});
+
+test("rangement par métier : ordre des métiers, métiers vides omis, inconnu au préparateur", () => {
+  const groupes = parMetier(
+    [
+      { code: "AP-N1", metier: "aide" },
+      { code: "N1a", metier: undefined },
+      { code: "PH-N1", metier: "pharmacien" },
+      { code: "X", metier: "inconnu" },
+    ],
+    (x) => x.metier,
+  );
+  assert.deepEqual(
+    groupes.map((g) => [g.metier.id, g.liste.map((x) => x.code)]),
+    [["preparateur", ["N1a", "X"]], ["pharmacien", ["PH-N1"]], ["aide", ["AP-N1"]]],
+  );
 });
 
 test("un critère ne se rattache qu'aux métiers déclarés", () => {

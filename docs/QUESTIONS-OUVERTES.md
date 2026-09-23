@@ -371,6 +371,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+53. **Source des échelles des trois autres métiers** — posée le 23/09/2026
+    sous le libellé « 47 bis », tranchée le même jour (choix b, après un
+    premier choix a retiré avant tout travail) : saisies au Référentiel. Le
+    métier est porté par la filière déposée et hérité par ses niveaux, dont
+    le code reçoit le préfixe du métier (question 46). Rien des fiches
+    n'entre dans le dépôt. Détail dans `DECISIONS.md`.
+
 47. **Périmètre du site dans la chaîne d'habilitation** — tranché le
     22/09/2026 (choix a) : le site reste aux étapes 1 et 2. Le portfolio —
     étapes 3 et 4, trois états Vu / En cours / Acquis, double colonne

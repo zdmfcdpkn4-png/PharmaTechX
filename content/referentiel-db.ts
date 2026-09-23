@@ -2,6 +2,8 @@ import "server-only";
 import { baseConfiguree, sql } from "@/lib/db";
 import {
   filieres as FILIERES_CODE,
+  METIER_PAR_DEFAUT,
+  metierOuDefaut,
   niveaux as NIVEAUX_CODE,
   type Filiere,
   type Niveau,
@@ -35,6 +37,8 @@ export interface FiliereDeposee {
   blocs: number[];
   rang: number;
   actif: boolean;
+  /** Métier du profil de poste (question 53, choix b). */
+  metierId: string;
 }
 
 export interface NiveauDepose {
@@ -55,6 +59,7 @@ interface LigneFiliere {
   blocs: unknown;
   rang: number;
   actif: boolean;
+  metier_id: string | null;
 }
 
 interface LigneNiveau {
@@ -96,7 +101,7 @@ export function normaliserCode(brut: string): string {
 export async function listerFilieresDeposees(toutes = false): Promise<FiliereDeposee[]> {
   if (!baseConfiguree()) return [];
   const r = await sql<LigneFiliere>`
-    SELECT id, libelle, description, badge, blocs, rang, actif
+    SELECT id, libelle, description, badge, blocs, rang, actif, metier_id
     FROM filieres_deposees ORDER BY rang, libelle`;
   return r.rows
     .filter((l) => toutes || l.actif)
@@ -108,6 +113,7 @@ export async function listerFilieresDeposees(toutes = false): Promise<FiliereDep
       blocs: nombres(l.blocs),
       rang: l.rang,
       actif: l.actif,
+      metierId: metierOuDefaut(l.metier_id).id,
     }));
 }
 
@@ -139,24 +145,24 @@ export interface Referentiel {
  * dépôts actifs. Sans base, ce sont les listes de la fiche, inchangées.
  */
 export async function getReferentiel(): Promise<Referentiel> {
-  const [fd, nd] = await Promise.all([
-    listerFilieresDeposees().catch(() => [] as FiliereDeposee[]),
+  // Tous les dépôts de filières, inactifs compris, en une lecture : le retrait
+  // d'une filière de la fiche ne dépend plus de l'existence d'un dépôt actif,
+  // et un niveau garde le métier d'une filière désactivée.
+  const [toutesFd, nd] = await Promise.all([
+    listerFilieresDeposees(true).catch(() => [] as FiliereDeposee[]),
     listerNiveauxDeposes().catch(() => [] as NiveauDepose[]),
   ]);
+  const fd = toutesFd.filter((f) => f.actif);
   const parId = new Map(fd.map((f) => [f.id, f]));
-  const retires = new Set<string>();
-  if (fd.length > 0) {
-    // Une filière de la fiche explicitement déposée en « inactif » disparaît.
-    const inactives = await listerFilieresDeposees(true)
-      .then((l) => l.filter((x) => !x.actif).map((x) => x.id))
-      .catch(() => []);
-    for (const id of inactives) retires.add(id);
-  }
+  // Une filière de la fiche explicitement déposée en « inactif » disparaît.
+  const retires = new Set(toutesFd.filter((f) => !f.actif).map((f) => f.id));
+  // Les filières de la fiche sont celles du préparateur : un dépôt qui les
+  // corrige n'en change pas le métier.
   const filieres: Filiere[] = FILIERES_CODE.filter((f) => !retires.has(f.id)).map((f) => {
     const d = parId.get(f.id);
     return d
-      ? { ...f, libelle: d.libelle, description: d.description, badge: d.badge || f.badge, blocs: d.blocs.length > 0 ? d.blocs : f.blocs, origine: "base" as const }
-      : { ...f, origine: "code" as const };
+      ? { ...f, libelle: d.libelle, description: d.description, badge: d.badge || f.badge, blocs: d.blocs.length > 0 ? d.blocs : f.blocs, origine: "base" as const, metier: METIER_PAR_DEFAUT }
+      : { ...f, origine: "code" as const, metier: METIER_PAR_DEFAUT };
   });
   const connues = new Set(FILIERES_CODE.map((f) => f.id));
   for (const d of fd) {
@@ -169,15 +175,21 @@ export async function getReferentiel(): Promise<Referentiel> {
       niveaux: [],
       badge: d.badge,
       origine: "base",
+      metier: d.metierId,
     });
   }
+  // Un niveau porte le métier de sa filière (question 53, choix b), que
+  // celle-ci soit servie ou désactivée ; la fiche reste au préparateur.
+  const metierDeFiliere = new Map(toutesFd.map((f) => [f.id, f.metierId]));
+  for (const f of FILIERES_CODE) metierDeFiliere.set(f.id, METIER_PAR_DEFAUT);
+  const metierDuNiveau = (filiere: string) => metierDeFiliere.get(filiere) ?? METIER_PAR_DEFAUT;
 
   const parCode = new Map(nd.map((n) => [n.code, n]));
   const niveaux: Niveau[] = NIVEAUX_CODE.map((n) => {
     const d = parCode.get(n.code);
     return d
-      ? { ...n, libelle: d.libelle, filiere: d.filiereId, condition: d.condition, prerequis: d.prerequis, origine: "base" as const }
-      : { ...n, origine: "code" as const };
+      ? { ...n, libelle: d.libelle, filiere: d.filiereId, condition: d.condition, prerequis: d.prerequis, origine: "base" as const, metier: metierDuNiveau(d.filiereId) }
+      : { ...n, origine: "code" as const, metier: metierDuNiveau(n.filiere) };
   });
   const codesConnus = new Set(NIVEAUX_CODE.map((n) => n.code));
   for (const d of nd) {
@@ -189,6 +201,7 @@ export async function getReferentiel(): Promise<Referentiel> {
       condition: d.condition,
       prerequis: d.prerequis,
       origine: "base",
+      metier: metierDuNiveau(d.filiereId),
     });
   }
 
@@ -228,6 +241,16 @@ export async function identifiantsConnus(): Promise<{ filieres: string[]; niveau
   };
 }
 
+/**
+ * Métier d'une filière, servie ou désactivée (question 53, choix b) : c'est
+ * lui qui donne son préfixe au code d'un niveau. La fiche est au préparateur.
+ */
+export async function metierDeLaFiliere(id: string): Promise<string> {
+  if (FILIERES_CODE.some((f) => f.id === id)) return METIER_PAR_DEFAUT;
+  const deposees = await listerFilieresDeposees(true).catch(() => [] as FiliereDeposee[]);
+  return deposees.find((f) => f.id === id)?.metierId ?? METIER_PAR_DEFAUT;
+}
+
 export async function enregistrerFiliere(f: {
   id: string;
   libelle: string;
@@ -236,15 +259,17 @@ export async function enregistrerFiliere(f: {
   blocs: number[];
   rang: number;
   actif: boolean;
+  metierId: string;
 }, par: string): Promise<void> {
   await sql`
-    INSERT INTO filieres_deposees (id, libelle, description, badge, blocs, rang, actif, modifie_par)
+    INSERT INTO filieres_deposees (id, libelle, description, badge, blocs, rang, actif, metier_id, modifie_par)
     VALUES (${f.id}, ${f.libelle}, ${f.description}, ${f.badge},
-            ${JSON.stringify(f.blocs)}::jsonb, ${f.rang}, ${f.actif}, ${par})
+            ${JSON.stringify(f.blocs)}::jsonb, ${f.rang}, ${f.actif}, ${f.metierId}, ${par})
     ON CONFLICT (id) DO UPDATE SET
       libelle = EXCLUDED.libelle, description = EXCLUDED.description,
       badge = EXCLUDED.badge, blocs = EXCLUDED.blocs, rang = EXCLUDED.rang,
-      actif = EXCLUDED.actif, modifie_le = NOW(), modifie_par = EXCLUDED.modifie_par`;
+      actif = EXCLUDED.actif, metier_id = EXCLUDED.metier_id,
+      modifie_le = NOW(), modifie_par = EXCLUDED.modifie_par`;
 }
 
 export async function enregistrerNiveau(n: {

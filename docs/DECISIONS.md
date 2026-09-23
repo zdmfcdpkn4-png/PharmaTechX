@@ -2540,6 +2540,75 @@ trois métiers — reprises des fiches ou saisies au Référentiel ; quelle
 version de la fiche pharmacien fait foi ; les profils de poste (filières) de
 chaque métier ; l'axe métier dans les écrans, qui ne le lisent pas encore.
 
+## Échelles des autres métiers : saisies au Référentiel (23/09/2026, question 53, choix b)
+
+**Question** (posée sous le libellé « 47 bis »). D'où viennent les niveaux du
+pharmacien/interne, de l'aide en pharmacie et de l'agent d'entretien ? a)
+repris des fiches, dans le code, comme ceux du préparateur ; b) saisis au
+Référentiel, avec un champ « Métier ».
+
+**Tranché : b**, après un premier choix a retiré le même jour, avant tout
+travail. Rien des fiches n'entre dans le dépôt, toujours public (question
+43), et l'unité garde la main sur le texte. Coût assumé : sept à neuf niveaux
+et leurs conditions à saisir, une saisie tracée au journal seulement, et des
+niveaux que les Repères disent « Ajouté par l'unité ». La version de la fiche
+pharmacien qui fait foi se tranche à la saisie, par l'unité.
+
+**Ce qui est fait.**
+- Le métier est porté par la **filière** (`filieres_deposees.metier_id`,
+  préparateur par défaut) ; un niveau prend celui de sa filière. Un seul
+  champ, et non deux qui pourraient se contredire. Les quatre filières de la
+  fiche restent au préparateur.
+- Le code d'un niveau reçoit le préfixe du métier de sa filière s'il ne l'a
+  pas : `n1` sous une filière de l'aide devient `AP-N1`. Le préfixe d'un
+  autre métier est refusé. « Modifier » ne change pas un niveau de métier :
+  sa liste de filières se limite au sien, et garde la sienne même inactive.
+- Une filière qui porte des niveaux déposés garde son métier : le changer
+  est refusé, leurs codes ayant le préfixe de l'ancien. Désactivée, elle
+  laisse à ses niveaux leur métier.
+- Référentiel : filières et niveaux rangés par métier ; un métier sans
+  filière ou sans niveau le dit ; le champ « Code » rappelle les préfixes.
+- Repères, « Conditions d'obtention des niveaux » : un intitulé par métier
+  dès qu'un autre que le préparateur a des niveaux, leurs codes ne se
+  comparant pas.
+- Accueil : l'invite « Choisir une filière… » cite les filières du
+  référentiel, et non plus trois noms écrits en dur.
+
+**Défaut corrigé au passage** (constaté le 23/09/2026 sur la base d'essai).
+Le Référentiel met les codes en capitales, et ceux de la fiche ont des
+minuscules : « Modifier » N1a enregistrait un second niveau, « N1A », N1a
+restant inchangé ; un prérequis N1a coché s'enregistrait « N1A », inconnu.
+Le code retrouve désormais la casse du code connu (`codeConnu`,
+`content/habilitation.ts`). Une base qui aurait déjà reçu de tels
+enregistrements les garde : un niveau « N1A » s'y voit au Référentiel, à
+supprimer ; un prérequis « N1A » figure dans l'encart des rattachements
+orphelins, à recocher.
+
+**Second défaut corrigé au passage** (relevé à la relecture, antérieur à
+cette question). Une filière de la fiche désactivée ne sortait des listes
+que si un autre dépôt de filière restait actif : seule déposée, elle restait
+proposée. Le référentiel lit désormais tous les dépôts de filières en une
+fois (`getReferentiel`, `content/referentiel-db.ts`). Contrôlé le 23/09/2026
+sur une base neuve : « Parcours Préparatoire » désactivée, seul dépôt, ne
+figure plus dans la liste des filières de l'accueil.
+
+**Ce qui n'est pas fait.** Les listes des autres écrans — accueil, accès,
+modules, documents, pilotage — restent à plat : les codes préfixés s'y
+distinguent. Un agent d'un autre métier ne voit, à son niveau, que les
+modules rattachés à ce niveau ; le réglage d'un module de la fiche accepte
+désormais les niveaux déposés, mais les critères propres à chaque métier
+restent à trancher.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (244 tests), `npm run build`,
+deux passes de bout en bout de 79 étapes, sans erreur de page ni erreur
+serveur. L'étape ajoutée dépose une filière de l'aide, y ajoute « n1 »
+enregistré `AP-N1`, voit refuser `PH-N9`, modifie N1a sans créer « N1A »,
+coche le prérequis N1a enregistré N1a sans rattachement orphelin, lit
+l'intitulé du métier dans les Repères et la filière dans l'invite de
+l'accueil, voit refuser le changement de métier de la filière, la
+désactive, modifie AP-N1 sous son code et le retrouve sous l'intitulé de
+l'aide dans les Repères, puis rend la base à son état d'avant.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

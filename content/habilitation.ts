@@ -49,6 +49,8 @@ export interface Niveau {
   prerequis: NiveauHabilitation[];
   /** `base` pour un niveau déposé, `code` (ou absent) pour la fiche versionnée. */
   origine?: "code" | "base";
+  /** Métier, celui de la filière de rattachement ; absent : le préparateur. */
+  metier?: string;
 }
 
 export const niveaux: Niveau[] = [
@@ -115,6 +117,12 @@ export interface Filiere {
   badge?: string;
   /** `base` pour une filière déposée, `code` (ou absent) pour la fiche versionnée. */
   origine?: "code" | "base";
+  /**
+   * Métier du profil de poste (question 53, choix b) : choisi au dépôt d'une
+   * filière, et porté par ses niveaux. Absent : le préparateur, seul métier
+   * dont la fiche est transcrite.
+   */
+  metier?: string;
 }
 
 export const filieres: Filiere[] = [
@@ -164,19 +172,23 @@ export const filieres: Filiere[] = [
  * quatre fois et révisé quatre fois.
  *
  * ⚠ Les **échelles de niveaux ne sont pas communes**, et les codes se
- * répètent d'une fiche à l'autre avec un autre sens : la fiche pharmacien
- * nomme `N1a` une sous-catégorie (validation pharmaceutique seule) qui n'a
- * rien du socle `N1a` du préparateur. Tant que les trois autres échelles ne
- * sont pas versées, leur liste reste vide : le conflit de codes n'est pas
- * tranché, et il ne doit pas l'être en silence.
+ * répètent d'une fiche à l'autre avec un autre sens : N2 vaut « routine »
+ * chez le préparateur, « référent » chez l'aide en pharmacie. Tranché le
+ * 23/09/2026 (question 46, choix a) : les niveaux des trois autres métiers
+ * portent un préfixe, le préparateur garde ses codes. Leurs échelles se
+ * saisissent au Référentiel (question 53, choix b) : une filière déposée
+ * porte son métier, ses niveaux en héritent. `niveaux` ne liste donc ici que
+ * ceux de la fiche transcrite, celle du préparateur.
  */
 export interface Metier {
   id: string;
   libelle: string;
   /** Référence de la fiche d'habilitation qui fait foi pour ce métier. */
   fiche: string;
-  /** Codes de niveaux de **ce** métier, du plus bas au plus haut. */
+  /** Codes de niveaux de **ce** métier transcrits de sa fiche, du plus bas au plus haut. */
   niveaux: NiveauHabilitation[];
+  /** Préfixe des codes de niveau de ce métier ; vide pour le préparateur (question 46, choix a). */
+  prefixe: string;
 }
 
 /** Métier dont la fiche a été transcrite : tout critère du vivier le porte. */
@@ -188,14 +200,63 @@ export const metiers: Metier[] = [
     libelle: "Préparateur en pharmacie",
     fiche: A_COMPLETER,
     niveaux: ["N1a", "N1b", "N1c", "N2", "N3"],
+    prefixe: "",
   },
-  { id: "pharmacien", libelle: "Pharmacien / interne", fiche: A_COMPLETER, niveaux: [] },
-  { id: "aide", libelle: "Aide en pharmacie", fiche: A_COMPLETER, niveaux: [] },
-  { id: "agent-entretien", libelle: "Agent d'entretien", fiche: A_COMPLETER, niveaux: [] },
+  { id: "pharmacien", libelle: "Pharmacien / interne", fiche: A_COMPLETER, niveaux: [], prefixe: "PH-" },
+  { id: "aide", libelle: "Aide en pharmacie", fiche: A_COMPLETER, niveaux: [], prefixe: "AP-" },
+  { id: "agent-entretien", libelle: "Agent d'entretien", fiche: A_COMPLETER, niveaux: [], prefixe: "AE-" },
 ];
 
 export function getMetier(id: string): Metier | undefined {
   return metiers.find((m) => m.id === id);
+}
+
+/** Le métier de cet identifiant, ou le préparateur : celui de la fiche transcrite. */
+export function metierOuDefaut(id: string | null | undefined): Metier {
+  return getMetier(id ?? "") ?? metiers[0];
+}
+
+/** Longueur maximale d'un code de niveau, préfixe compris. */
+export const LONGUEUR_CODE_NIVEAU = 12;
+
+/**
+ * Code d'un niveau dans son métier (question 46, choix a) : le préfixe du
+ * métier est ajouté s'il manque. Un code qui porte le préfixe d'un autre
+ * métier est refusé, pas corrigé : il contredit la filière choisie.
+ */
+export function codePourMetier(
+  code: string,
+  metierId: string,
+): { code: string } | { refus: "prefixe" | "longueur" | "vide" } {
+  const metier = metierOuDefaut(metierId);
+  if (metiers.some((m) => m.prefixe && m.id !== metier.id && code.startsWith(m.prefixe))) {
+    return { refus: "prefixe" };
+  }
+  const complet = metier.prefixe && !code.startsWith(metier.prefixe) ? metier.prefixe + code : code;
+  if (complet.length <= metier.prefixe.length) return { refus: "vide" };
+  return complet.length > LONGUEUR_CODE_NIVEAU ? { refus: "longueur" } : { code: complet };
+}
+
+/**
+ * Le code tel qu'il est connu, casse comprise. Les formulaires mettent les
+ * codes en capitales, ceux de la fiche ont des minuscules : sans ce retour,
+ * « Modifier » N1a enregistrait un niveau « N1A », et un prérequis N1a coché
+ * s'enregistrait « N1A », inconnu (constaté le 23/09/2026).
+ */
+export function codeConnu(code: string, connus: Iterable<string>): string {
+  const cle = code.toUpperCase();
+  for (const c of connus) if (c.toUpperCase() === cle) return c;
+  return code;
+}
+
+/** Éléments rangés par métier, dans l'ordre de `metiers` ; les métiers sans élément sont omis. */
+export function parMetier<T>(
+  liste: readonly T[],
+  metierDe: (x: T) => string | null | undefined,
+): { metier: Metier; liste: T[] }[] {
+  return metiers
+    .map((m) => ({ metier: m, liste: liste.filter((x) => metierOuDefaut(metierDe(x)).id === m.id) }))
+    .filter((g) => g.liste.length > 0);
 }
 
 /**

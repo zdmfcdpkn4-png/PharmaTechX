@@ -1835,15 +1835,13 @@ Justification : cf. procédure interne.`,
   await ligneReglage().locator('input[name=filieres][value="sterilisation"]').check();
   await ligneReglage().locator("button:has-text('Régler')").click();
   await page.waitForURL(/ok=seuil/);
-  assert.equal(await ligneReglage().locator('input[name=niveaux][value="S1"]').isChecked(), true, "niveau déposé gardé au réglage");
-  assert.equal(
-    await ligneReglage().locator('input[name=filieres][value="sterilisation"]').isChecked(),
-    true,
-    "filière déposée gardée au réglage",
-  );
+  // la page redessinée porte les cases cochées ; sans elles, l'attente échoue
+  await ligneReglage().locator('input[name=niveaux][value="S1"]:checked').waitFor({ state: "attached" });
+  await ligneReglage().locator('input[name=filieres][value="sterilisation"]:checked').waitFor({ state: "attached" });
   await page.click("summary:has-text('réglé(s)')");
   await ligneReglage().locator("button:has-text('Rétablir la fiche')").click();
-  await page.waitForURL(/ok=seuil/);
+  // l'adresse est déjà « ok=seuil » : c'est la case décochée qui dit la fiche rétablie
+  await ligneReglage().locator('input[name=niveaux][value="S1"]:checked').waitFor({ state: "detached" });
   await page.goto(BASE + "/reperes#niveaux");
   const niveauDepose = page.locator("section#niveaux li.carte", { hasText: "S1 — stérilisation (base)" });
   assert.equal(await niveauDepose.count(), 1, "niveau déposé lu dans les conditions des niveaux");
@@ -1855,6 +1853,118 @@ Justification : cf. procédure interne.`,
     "niveau de la fiche non corrigé : aucune mention",
   );
   ok("écrans reliés : réglage d'un module de la fiche avec niveau et filière déposés ; Repères au référentiel");
+
+  // Métier d'une filière déposée (question 53, choix b) ; code d'un niveau
+  // (question 46, choix a) : le préfixe du métier s'ajoute, celui d'un autre
+  // est refusé ; la casse des codes de la fiche tient — « Modifier » N1a
+  // enregistrait un niveau « N1A », un prérequis N1a coché « N1A » (23/09/2026).
+  await page.goto(BASE + "/admin/referentiel");
+  const ajoutFiliereAide = page.locator("form", { hasText: "Ajouter une filière" });
+  await ajoutFiliereAide.locator("input[name=libelle]").fill("Aide en pharmacie");
+  await ajoutFiliereAide.locator("input[name=id]").fill("aide-pharmacie");
+  await ajoutFiliereAide.locator("select[name=metier]").selectOption("aide");
+  await ajoutFiliereAide.locator('button:has-text("Ajouter la filière")').click();
+  await page.waitForURL(/ok=filiere/);
+  const ajouterNiveau = async (code, filiere) => {
+    const f = page.locator("form", { hasText: "Ajouter un niveau" });
+    await f.locator("input[name=code]").fill(code);
+    await f.locator("input[name=libelle]").fill(`${code} — aide, routine`);
+    await f.locator("select[name=filiereId]").selectOption(filiere);
+    await f.locator("textarea[name=condition]").fill("Tous les critères obligatoires validés.");
+    await f.locator('button:has-text("Ajouter le niveau")').click();
+  };
+  // Après une action, l'adresse change avant que la page soit redessinée :
+  // chaque constat attend l'élément qui le prouve.
+  await ajouterNiveau("n1", "aide-pharmacie");
+  await page.waitForURL(/ok=niveau/);
+  const codeNiveau = (code) => page.locator(`li.carte .etiquette--neutre:text-is("${code}")`);
+  await codeNiveau("AP-N1").waitFor({ state: "attached" });
+  assert.equal(await codeNiveau("AP-N1").count(), 1, "préfixe de l'aide ajouté au code saisi « n1 »");
+  await ajouterNiveau("PH-N9", "aide-pharmacie");
+  await page.waitForURL(/erreur=prefixe/);
+  await page.locator("[role=alert]", { hasText: "préfixe d'un autre métier" }).waitFor();
+  assert.equal(await codeNiveau("PH-N9").count(), 0, "préfixe d'un autre métier refusé");
+  const carteNiveau = (code) =>
+    page.locator("li.carte", { has: page.locator(`.etiquette--neutre:text-is("${code}")`) });
+  await carteNiveau("N1a").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("N1a").locator("textarea[name=condition]").fill("Condition corrigée par l'unité.");
+  await carteNiveau("N1a").locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=niveau/);
+  await carteNiveau("N1a").locator("p.legende", { hasText: "Condition corrigée par l'unité." }).waitFor();
+  assert.equal(await codeNiveau("N1A").count(), 0, "« Modifier » N1a ne crée plus N1A");
+  await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("S1").locator('input[name=prerequis][value="N1a"]').check();
+  await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=niveau/);
+  // N1b et N1c affichent déjà « prérequis : N1a » : l'attente vise la carte de S1.
+  await carteNiveau("S1").locator(".legende", { hasText: "prérequis : N1a" }).waitFor();
+  assert.equal(await page.locator(".encart--attention:has-text('niveau inconnu')").count(), 0, "aucun rattachement orphelin");
+  await page.goto(BASE + "/reperes#niveaux");
+  assert.equal(
+    await page.locator("section#niveaux h3", { hasText: "Aide en pharmacie" }).count(),
+    1,
+    "Repères : un intitulé par métier dès qu'un autre que le préparateur a des niveaux",
+  );
+  assert.ok(
+    (await page.locator("section#niveaux li.carte", { hasText: "N1a — socle général" }).textContent()).includes("Modifié par l'unité"),
+    "Repères : N1a corrigé signalé",
+  );
+  await page.goto(BASE + "/");
+  await fermerVisite();
+  // Les filières déposées se rangent par rang puis par libellé : la place de
+  // celle-ci dans l'énumération dépend des autres dépôts, seule sa présence est vérifiée.
+  const invite = page.locator("#modules p.encart", { hasText: "Choisir une filière ci-dessus" });
+  assert.ok(
+    (await invite.textContent()).includes("Aide en pharmacie"),
+    "accueil : la filière déposée figure dans l'invite à choisir une filière",
+  );
+  // Une filière qui porte des niveaux garde son métier ; désactivée, ses
+  // niveaux gardent le leur, et « Modifier » AP-N1 ne se heurte plus au
+  // préfixe (le métier était lu sur les seules filières servies).
+  await page.goto(BASE + "/admin/referentiel");
+  const carteAide = page.locator("li.carte", { has: page.locator('code:text-is("aide-pharmacie")') });
+  await carteAide.locator("summary:has-text('Modifier')").click();
+  await carteAide.locator("select[name=metier]").selectOption("pharmacien");
+  await carteAide.locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/erreur=metier-filiere/);
+  await page.locator("[role=alert]", { hasText: "elle garde son métier" }).waitFor();
+  // rechargée : le formulaire ouvert garderait « pharmacien » choisi
+  await page.goto(BASE + "/admin/referentiel");
+  await carteAide.locator("summary:has-text('Modifier')").click();
+  await carteAide.locator("input[name=actif]").uncheck();
+  await carteAide.locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=filiere/);
+  await carteAide.locator(".etiquette", { hasText: "Déposée, inactive" }).waitFor();
+  await carteNiveau("AP-N1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("AP-N1").locator("textarea[name=condition]").fill("Condition sous filière inactive.");
+  await carteNiveau("AP-N1").locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=niveau/);
+  await carteNiveau("AP-N1").locator("p.legende", { hasText: "Condition sous filière inactive." }).waitFor();
+  assert.equal(await codeNiveau("AP-N1").count(), 1, "filière inactive : AP-N1 modifié sous son code");
+  await page.goto(BASE + "/reperes#niveaux");
+  assert.equal(
+    await page.locator("section#niveaux h3", { hasText: "Aide en pharmacie" }).count(),
+    1,
+    "Repères : AP-N1 reste à l'aide, sa filière désactivée",
+  );
+  // retour à l'état d'avant : dépôts de N1a, AP-N1 et de la filière supprimés, prérequis de S1 ôté
+  await page.goto(BASE + "/admin/referentiel");
+  await carteNiveau("AP-N1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("AP-N1").locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/niveau-supprime/);
+  await codeNiveau("AP-N1").waitFor({ state: "detached" });
+  await carteNiveau("N1a").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("N1a").locator("button:has-text('Supprimer le dépôt')").click();
+  await carteNiveau("N1a").locator("p.legende", { hasText: "Condition corrigée par l'unité." }).waitFor({ state: "detached" });
+  await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("S1").locator('input[name=prerequis][value="N1a"]').uncheck();
+  await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
+  await carteNiveau("S1").locator(".legende", { hasText: "prérequis : N1a" }).waitFor({ state: "detached" });
+  await carteAide.locator("summary:has-text('Modifier')").click();
+  await carteAide.locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/filiere-supprimee/);
+  await carteAide.waitFor({ state: "detached" });
+  ok("métiers : filière de l'aide déposée, code préfixé AP-, préfixe d'un autre métier refusé, casse de N1a gardée, métier d'une filière à niveaux figé, filière désactivée sans effet sur ses niveaux");
 
   // arborescence de la banque : filière → niveau → module, avec les comptes
   await page.goto(BASE + "/admin/questions");

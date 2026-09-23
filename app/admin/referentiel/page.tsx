@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes, niveauxOrphelins } from "@/content/referentiel-db";
+import { filieres as filieresFiche, metiers, metierOuDefaut, parMetier } from "@/content/habilitation";
 import { Badge } from "@/components/Badge";
 import { ChoixBadge } from "@/components/ChoixBadge";
 import {
@@ -23,7 +24,19 @@ const ERREURS: Record<string, string> = {
   identifiant: "L'identifiant doit faire au moins deux caractères une fois normalisé.",
   code: "Le code du niveau est obligatoire.",
   "filiere-manquante": "Un niveau se rattache à une filière.",
+  prefixe:
+    "Ce code porte le préfixe d'un autre métier que celui de la filière choisie (PH- pharmacien / interne, AP- aide en pharmacie, AE- agent d'entretien).",
+  longueur: "Le code dépasse douze caractères une fois le préfixe du métier ajouté.",
+  "metier-change": "Un niveau ne change pas de métier : ajoutez-en un autre dans la filière voulue.",
+  "metier-filiere":
+    "Cette filière porte des niveaux : elle garde son métier. Supprimez d'abord ses niveaux déposés, ou ajoutez une autre filière.",
 };
+
+/** Préfixes des codes par métier, rappelés sous le champ « Code » (question 46, choix a). */
+const RAPPEL_PREFIXES = metiers
+  .filter((m) => m.prefixe)
+  .map((m) => `${m.prefixe} ${m.libelle.toLowerCase()}`)
+  .join(", ");
 
 export default async function Referentiel({
   searchParams,
@@ -45,6 +58,22 @@ export default async function Referentiel({
   // référentiel servi : on l'affiche ici quand même, pour pouvoir le rouvrir.
   const inactivesF = deposeesF.filter((f) => !f.actif && !filieres.some((x) => x.id === f.id));
   const inactifsN = deposesN.filter((n) => !n.actif && !niveaux.some((x) => String(x.code) === n.code));
+  const idsFiche = new Set(filieresFiche.map((f) => f.id));
+  const toutesFilieres = [...filieres, ...inactivesF.map((f) => ({
+    id: f.id, libelle: f.libelle, description: f.description, blocs: f.blocs,
+    niveaux: [] as string[], badge: f.badge, origine: "base" as const, metier: f.metierId,
+  }))];
+  const metierDeFiliere = new Map(toutesFilieres.map((f) => [f.id, f.metier]));
+  const tousNiveaux = [...niveaux.map((n) => ({
+    code: String(n.code), libelle: n.libelle, filiere: n.filiere,
+    condition: n.condition, prerequis: n.prerequis.map(String), origine: n.origine ?? "code", metier: n.metier,
+  })), ...inactifsN.map((n) => ({
+    code: n.code, libelle: n.libelle, filiere: n.filiereId,
+    condition: n.condition, prerequis: n.prerequis, origine: "base" as const, metier: metierDeFiliere.get(n.filiereId),
+  }))];
+  // Même métier : un niveau ne change pas de métier en changeant de filière.
+  const memeMetier = (a: string | undefined, b: string | undefined) =>
+    metierOuDefaut(a).id === metierOuDefaut(b).id;
 
   return (
     <>
@@ -98,11 +127,19 @@ export default async function Referentiel({
           <h2 style={{ fontSize: "1.15rem" }}>Filières</h2>
           <span className="compte">{filieres.length}</span>
         </div>
+        {/* Rangées par métier (question 53, choix b) : un métier sans filière
+            le dit, c'est là que ses profils de poste se déposent. */}
         <ul className="liste-nue">
-          {[...filieres, ...inactivesF.map((f) => ({
-            id: f.id, libelle: f.libelle, description: f.description, blocs: f.blocs,
-            niveaux: [] as string[], badge: f.badge, origine: "base" as const,
-          }))].map((f) => {
+          {metiers.flatMap((m) => [
+            <li key={`metier-${m.id}`}>
+              <h3 style={{ fontSize: "1rem", margin: ".75rem 0 0" }}>{m.libelle}</h3>
+              {!toutesFilieres.some((f) => memeMetier(f.metier, m.id)) && (
+                <p className="legende" style={{ margin: ".25rem 0 0" }}>
+                  Aucune filière pour ce métier : l&apos;ajouter ci-dessous, avec ce métier.
+                </p>
+              )}
+            </li>,
+            ...toutesFilieres.filter((f) => memeMetier(f.metier, m.id)).map((f) => {
             const d = depotF.get(f.id);
             return (
               <li key={f.id} className="carte">
@@ -143,6 +180,17 @@ export default async function Referentiel({
                         <span>Description</span>
                         <textarea name="description" defaultValue={f.description} maxLength={400} rows={2} />
                       </label>
+                      {/* Une filière de la fiche reste au préparateur. */}
+                      {!idsFiche.has(f.id) && (
+                        <label className="champ">
+                          <span>Métier</span>
+                          <select name="metier" defaultValue={metierOuDefaut(f.metier).id}>
+                            {metiers.map((x) => (
+                              <option key={x.id} value={x.id}>{x.libelle}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                       <ChoixBadge nom="badge" defaut={f.badge} familles="pictogrammes" />
                       <label className="case-seule">
                         <input type="checkbox" name="actif" defaultChecked={d?.actif !== false} />
@@ -164,7 +212,8 @@ export default async function Referentiel({
                 )}
               </li>
             );
-          })}
+          }),
+          ])}
         </ul>
 
         {estAdmin && (
@@ -187,6 +236,14 @@ export default async function Referentiel({
                 <span>Rang</span>
                 <input name="rang" type="number" min={0} max={999} defaultValue={0} />
               </label>
+              <label className="champ">
+                <span>Métier</span>
+                <select name="metier" defaultValue={metiers[0].id}>
+                  {metiers.map((x) => (
+                    <option key={x.id} value={x.id}>{x.libelle}</option>
+                  ))}
+                </select>
+              </label>
             </div>
             <label className="champ">
               <span>Description</span>
@@ -207,13 +264,19 @@ export default async function Referentiel({
           <span className="compte">{niveaux.length}</span>
         </div>
         <ul className="liste-nue">
-          {[...niveaux.map((n) => ({
-            code: String(n.code), libelle: n.libelle, filiere: n.filiere,
-            condition: n.condition, prerequis: n.prerequis.map(String), origine: n.origine ?? "code",
-          })), ...inactifsN.map((n) => ({
-            code: n.code, libelle: n.libelle, filiere: n.filiereId,
-            condition: n.condition, prerequis: n.prerequis, origine: "base" as const,
-          }))].map((n) => {
+          {metiers.flatMap((m) => [
+            <li key={`metier-${m.id}`}>
+              <h3 style={{ fontSize: "1rem", margin: ".75rem 0 0" }}>
+                {m.libelle}
+                {m.prefixe && <span className="legende"> — codes {m.prefixe}…</span>}
+              </h3>
+              {!tousNiveaux.some((n) => memeMetier(n.metier, m.id)) && (
+                <p className="legende" style={{ margin: ".25rem 0 0" }}>
+                  Aucun niveau pour ce métier : l&apos;ajouter ci-dessous, dans l&apos;une de ses filières.
+                </p>
+              )}
+            </li>,
+            ...tousNiveaux.filter((n) => memeMetier(n.metier, m.id)).map((n) => {
             const d = depotN.get(n.code);
             return (
               <li key={n.code} className="carte">
@@ -236,6 +299,7 @@ export default async function Referentiel({
                     <summary className="legende">Modifier</summary>
                     <form action={actionEnregistrerNiveau} className="carte">
                       <input type="hidden" name="code" value={n.code} />
+                      <input type="hidden" name="existant" value="1" />
                       <div className="rangee">
                         <label className="champ">
                           <span>Libellé</span>
@@ -243,9 +307,14 @@ export default async function Referentiel({
                         </label>
                         <label className="champ">
                           <span>Filière</span>
+                          {/* Les filières de son métier seulement : un niveau n'en change pas.
+                              La sienne y figure même inactive, sans quoi l'enregistrement
+                              le rattacherait à la première de la liste. */}
                           <select name="filiereId" defaultValue={n.filiere}>
-                            {filieres.map((f) => (
-                              <option key={f.id} value={f.id}>{f.libelle}</option>
+                            {toutesFilieres.filter((f) => memeMetier(f.metier, n.metier)).map((f) => (
+                              <option key={f.id} value={f.id}>
+                                {`${f.libelle}${filieres.some((x) => x.id === f.id) ? "" : " (inactive)"}`}
+                              </option>
                             ))}
                           </select>
                         </label>
@@ -296,7 +365,8 @@ export default async function Referentiel({
                 )}
               </li>
             );
-          })}
+          }),
+          ])}
         </ul>
 
         {estAdmin && (
@@ -305,7 +375,7 @@ export default async function Referentiel({
             <div className="rangee">
               <label className="champ">
                 <span>Code</span>
-                <input name="code" maxLength={12} required placeholder="S1" />
+                <input name="code" maxLength={12} required placeholder="S1" aria-describedby="rappel-prefixes" />
               </label>
               <label className="champ">
                 <span>Libellé</span>
@@ -314,8 +384,12 @@ export default async function Referentiel({
               <label className="champ">
                 <span>Filière</span>
                 <select name="filiereId" defaultValue={filieres[0]?.id}>
-                  {filieres.map((f) => (
-                    <option key={f.id} value={f.id}>{f.libelle}</option>
+                  {parMetier(filieres, (f) => f.metier).map(({ metier, liste }) => (
+                    <optgroup key={metier.id} label={metier.libelle}>
+                      {liste.map((f) => (
+                        <option key={f.id} value={f.id}>{f.libelle}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </label>
@@ -324,6 +398,10 @@ export default async function Referentiel({
                 <input name="rang" type="number" min={0} max={999} defaultValue={0} />
               </label>
             </div>
+            <p id="rappel-prefixes" className="legende" style={{ margin: 0 }}>
+              Le code prend le préfixe du métier de la filière s&apos;il ne l&apos;a pas : {RAPPEL_PREFIXES}.
+              Le préparateur n&apos;en a pas.
+            </p>
             <label className="champ">
               <span>Condition d&apos;obtention</span>
               <textarea name="condition" maxLength={600} rows={2} />

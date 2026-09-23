@@ -376,6 +376,9 @@ export const SCHEMA: string[] = [
      modifie_par TEXT NOT NULL DEFAULT ''
    )`,
   `CREATE INDEX IF NOT EXISTS niveaux_deposes_filiere ON niveaux_deposes (filiere_id)`,
+  // Métier d'une filière déposée (question 53, choix b, 23/09/2026) : les
+  // échelles des autres métiers se saisissent ici, leurs niveaux en héritent.
+  `ALTER TABLE filieres_deposees ADD COLUMN IF NOT EXISTS metier_id TEXT NOT NULL DEFAULT 'preparateur'`,
 
   // ── programmes à la carte : le parcours dégradé (question 50, 22/09/2026) ─
   // Composés à la main, validés par un code de tutorat ou d'administration,

@@ -269,6 +269,13 @@ function GroupesModules({
 /** Repli des grands modules, gardé le temps de la session, sur ce poste. */
 const CLE_GROUPES = "fp-groupes-ouverts";
 
+/** « A, B ou C » : les filières proposées, dites dans une phrase. */
+function enumerer(libelles: string[]): string {
+  return libelles.length <= 1
+    ? (libelles[0] ?? "")
+    : `${libelles.slice(0, -1).join(", ")} ou ${libelles[libelles.length - 1]}`;
+}
+
 function nombre(n: number): string {
   return String(Math.round(n * 100) / 100).replace(".", ",");
 }
@@ -682,7 +689,8 @@ export function TableauDeBord({
         <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
       ) : (
         <p className="encart">
-          Choisir une filière ci-dessus — Chimiothérapie, Préparatoire ou Encadrement — pour
+          {/* Liste lue au référentiel : une filière déposée y figure aussi. */}
+          Choisir une filière ci-dessus — {enumerer(postes.map((p) => p.libelle))} — pour
           afficher les critères qui s&apos;y rattachent.
         </p>
       )}

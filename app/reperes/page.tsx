@@ -17,6 +17,7 @@ import {
   etapes,
   maintien,
   niveaux as niveauxFiche,
+  parMetier,
 } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
 
@@ -121,6 +122,7 @@ export default async function Reperes() {
     if (!f) return "Ajouté par l'unité";
     return f.libelle !== n.libelle || f.condition !== n.condition ? "Modifié par l'unité" : null;
   };
+  const groupesNiveaux = parMetier(niveaux, (n) => n.metier);
 
   return (
     <>
@@ -256,28 +258,37 @@ export default async function Reperes() {
             ? ", complété ou corrigé par l'unité : ce qui ne vient pas de la fiche est signalé."
             : "."}
         </p>
-        <ul className="liste-nue">
-          {niveaux.map((n) => {
-            const ecart = ecartFiche(n);
-            return (
-              <li key={n.code} className="carte">
-                <span className="etiquette etiquette--code">{n.code}</span>{" "}
-                <strong>{n.libelle}</strong>
-                {ecart && (
-                  <>
-                    {" "}
-                    <span className="etiquette etiquette--neutre">{ecart}</span>
-                  </>
-                )}
-                {n.condition && (
-                  <p className="legende" style={{ margin: ".375rem 0 0" }}>
-                    {n.condition}
-                  </p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        {/* Un intitulé par métier dès qu'un autre que le préparateur a des
+            niveaux (question 53, choix b) : leurs codes ne se comparent pas. */}
+        {groupesNiveaux.map(({ metier, liste }) => (
+          <div key={metier.id}>
+            {groupesNiveaux.length > 1 && (
+              <h3 style={{ fontSize: "1rem", margin: "1rem 0 .5rem" }}>{metier.libelle}</h3>
+            )}
+            <ul className="liste-nue">
+              {liste.map((n) => {
+                const ecart = ecartFiche(n);
+                return (
+                  <li key={n.code} className="carte">
+                    <span className="etiquette etiquette--code">{n.code}</span>{" "}
+                    <strong>{n.libelle}</strong>
+                    {ecart && (
+                      <>
+                        {" "}
+                        <span className="etiquette etiquette--neutre">{ecart}</span>
+                      </>
+                    )}
+                    {n.condition && (
+                      <p className="legende" style={{ margin: ".375rem 0 0" }}>
+                        {n.condition}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </section>
 
       {/* ────────────────────────────────────────────────────── questions */}

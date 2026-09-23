@@ -7,13 +7,23 @@ import { journaliser } from "@/lib/journal";
 import {
   enregistrerFiliere,
   enregistrerNiveau,
+  identifiantsConnus,
+  listerNiveauxDeposes,
+  metierDeLaFiliere,
   normaliserCode,
   normaliserIdentifiant,
   supprimerFiliereDeposee,
   supprimerNiveauDepose,
 } from "@/content/referentiel-db";
 import { BADGES } from "@/components/Badge";
-import { filieres as FILIERES_CODE, niveaux as NIVEAUX_CODE } from "@/content/habilitation";
+import {
+  codeConnu,
+  codePourMetier,
+  filieres as FILIERES_CODE,
+  METIER_PAR_DEFAUT,
+  metierOuDefaut,
+  niveaux as NIVEAUX_CODE,
+} from "@/content/habilitation";
 
 /**
  * Référentiel : filières et niveaux (décision du 19/09/2026, question 38,
@@ -47,6 +57,18 @@ export async function actionEnregistrerFiliere(formData: FormData) {
     .filter((n) => Number.isFinite(n) && n >= 1 && n <= 99)
     .slice(0, 20);
 
+  // Une filière de la fiche reste au préparateur ; une filière ajoutée prend
+  // le métier choisi (question 53, choix b).
+  const metierId = FILIERES_CODE.some((f) => f.id === id)
+    ? METIER_PAR_DEFAUT
+    : metierOuDefaut(texte(formData, "metier", 40)).id;
+  // Une filière qui porte des niveaux garde son métier : leurs codes en ont
+  // le préfixe, et un niveau ne change pas de métier.
+  const [metierAvant, niveauxDeposes] = await Promise.all([metierDeLaFiliere(id), listerNiveauxDeposes(true)]);
+  if (metierId !== metierAvant && niveauxDeposes.some((n) => n.filiereId === id)) {
+    redirect("/admin/referentiel?erreur=metier-filiere");
+  }
+
   await enregistrerFiliere(
     {
       id,
@@ -56,26 +78,41 @@ export async function actionEnregistrerFiliere(formData: FormData) {
       blocs,
       rang: entier(formData, "rang"),
       actif: formData.get("actif") !== null,
+      metierId,
     },
     s.libelle,
   );
-  await journaliser(s, "referentiel:filiere", id, { libelle });
+  await journaliser(s, "referentiel:filiere", id, { libelle, metier: metierId });
   revalidatePath("/");
   redirect("/admin/referentiel?ok=filiere");
 }
 
 export async function actionEnregistrerNiveau(formData: FormData) {
   const s = await sessionRequise("admin");
-  const code = normaliserCode(texte(formData, "code", 12));
-  if (code.length < 1) redirect("/admin/referentiel?erreur=code");
+  const saisi = normaliserCode(texte(formData, "code", 12));
+  if (saisi.length < 1) redirect("/admin/referentiel?erreur=code");
   const libelle = texte(formData, "libelle", 120);
   if (!libelle) redirect("/admin/referentiel?erreur=libelle");
   const filiereId = normaliserIdentifiant(texte(formData, "filiereId", 40));
   if (!filiereId) redirect("/admin/referentiel?erreur=filiere-manquante");
 
+  // Le niveau prend le métier de sa filière, même désactivée, et le préfixe
+  // de ce métier (question 46, choix a) ; puis la casse du code déjà connu.
+  const [metierId, connus] = await Promise.all([metierDeLaFiliere(filiereId), identifiantsConnus()]);
+  const prefixe = codePourMetier(saisi, metierId);
+  if ("refus" in prefixe) {
+    redirect(`/admin/referentiel?erreur=${prefixe.refus === "vide" ? "code" : prefixe.refus}`);
+  }
+  const code = codeConnu(prefixe.code, connus.niveaux);
+  // « Modifier » ne change pas un niveau de métier : ce serait un autre code,
+  // donc un autre niveau, et l'ancien resterait tel quel.
+  if (formData.get("existant") !== null && code.toUpperCase() !== saisi) {
+    redirect("/admin/referentiel?erreur=metier-change");
+  }
+
   const prerequis = formData
     .getAll("prerequis")
-    .map((x) => normaliserCode(String(x)))
+    .map((x) => codeConnu(normaliserCode(String(x)), connus.niveaux))
     .filter((x) => x.length > 0 && x !== code)
     .slice(0, 10);
 
@@ -91,7 +128,7 @@ export async function actionEnregistrerNiveau(formData: FormData) {
     },
     s.libelle,
   );
-  await journaliser(s, "referentiel:niveau", code, { libelle, filiere: filiereId });
+  await journaliser(s, "referentiel:niveau", code, { libelle, filiere: filiereId, metier: metierId });
   revalidatePath("/");
   redirect("/admin/referentiel?ok=niveau");
 }
