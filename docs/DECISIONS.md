@@ -232,6 +232,9 @@ serveur refuse sinon, journalisé. Réserve rappelée : un code désigne un
 profil, pas une personne ; deux codes distincts sont garantis par le site,
 deux personnes par la procédure interne. L'arbitrage et les visas ne sont
 pas couverts par cette question (`docs/QUESTIONS-OUVERTES.md`, D.33).
+Amendée le 23/09/2026 : un code d'administration valide aussi ses propres
+questions, validation tracée (section « Validation d'une question par son
+auteur administrateur »).
 
 **Accès aux documents déposés** (question 13, choix b, 18/09/2026) : les
 documents déposés — procédures internes, fiches réflexes, référentiels,
@@ -2829,6 +2832,53 @@ clos, fixe l'ordre de AG-002 sur Chimiothérapie · N1c et le relit ;
 rattaché, l'apprenant voit « dans votre ordre » et ses modules dans cet
 ordre, et le module suivant le suit ; détaché, les blocs reviennent ; la
 purge de sa progression emporte l'ordre ; le journal le trace.
+
+## Validation d'une question par son auteur administrateur (23/09/2026)
+
+**Demande.** « Permettre au même admin ou pharmacien de valider les
+questions » : la banque refusait à un code d'administration de valider une
+question qu'il avait écrite (« à valider par un autre code que admin ·
+PHARMACIEN »).
+
+**Lecture retenue.** Le code d'administration vaut pharmacien responsable
+(question 9) : c'est lui qui valide désormais aussi ses propres questions.
+Le tutorat reste aux quatre yeux : un code de tutorat ne valide toujours pas
+ce qu'il a écrit ou modifié en dernier. `[à préciser]` la même exception pour
+un code de tutorat détenu par un pharmacien : le site connaît des rôles, pas
+des métiers.
+
+**Ce qui est fait.**
+- Règle (`content/quatre-yeux.ts`) : `peutValider` admet l'administration
+  même quand elle est l'auteur courant ; `validationParAuteur` reconnaît ce
+  cas. Testé.
+- Trace : colonne `questions.valide_par_auteur`, posée à la validation,
+  remise à faux par toute modification (la question repart « à vérifier »).
+  Journal : `statut-question:valide-par-auteur` au lieu de
+  `statut-question:valide`.
+- Banque : « Valider » s'affiche à l'auteur administrateur, avec « vous en
+  êtes l'auteur : validation tracée comme telle » ; une question ainsi
+  validée porte l'étiquette « Validée par son auteur », et sa ligne comme sa
+  fiche « validée par … (son auteur) ».
+- Textes d'aide corrigés (éditeur, prompt de dépôt, refus à
+  l'enregistrement) : ils disaient qu'un autre code validerait toujours.
+
+**Ce que cela retire.** Pour les questions écrites par l'administration, le
+contrôle par un second code disparaît ; reste la trace. Une question validée
+ainsi entre dans les tirages, évaluations comprises, sans relecture par un
+autre code. La réserve de la question 12 vaut toujours : un code désigne un
+profil, pas une personne.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (259 tests), `npm run build`,
+deux passes de bout en bout de 83 étapes, sans erreur de page ni erreur
+serveur. L'étape de la banque montre à l'administrateur « Valider » et la
+mention avant le geste ; il valide sa propre question, qui porte « Validée
+par son auteur » et « (son auteur) », le journal
+`statut-question:valide-par-auteur` ; la question repart ensuite « à
+vérifier ». Le tutorat reste refusé sur la question qu'il a modifiée (étape
+inchangée). Une passe antérieure avait échoué sur une étape sans lien : le
+clic du tutorat sur « Terminer le test », dans l'en-tête masqué au
+défilement ; le test remonte désormais en haut de page avant ce clic, comme
+il le faisait déjà pour l'administrateur.
 
 ## Non fait
 

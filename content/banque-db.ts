@@ -59,6 +59,8 @@ export interface LigneQuestion {
   cree_le: string;
   valide_par: string | null;
   valide_le: string | null;
+  /** Validée par son auteur courant — l'administration seule le peut (23/09/2026). */
+  valide_par_auteur: boolean;
   edite_le: string;
   version: number;
   /** Règle des quatre yeux (question 12) : code créateur et dernier code éditeur. */
@@ -117,7 +119,7 @@ export function nouvelId(prefixe = "q"): string {
 const COLONNES = `
   q.id, q.module_id, q.situation_id, q.format, q.enonce, q.options, q.legendes,
   q.mode_reponse, q.image_id, q.justification, q.eliminatoire, q.reservee, q.niveau_question, q.refs, q.statut,
-  q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text,
+  q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text, q.valide_par_auteur,
   q.edite_le::text, q.version, q.cree_par_acces, q.edite_par, q.edite_par_acces,
   i.largeur AS image_largeur, i.hauteur AS image_hauteur, i.alt AS image_alt,
   s.titre AS situation_titre`;
@@ -277,6 +279,7 @@ export async function enregistrerQuestion(
       statut = EXCLUDED.statut,
       valide_par = CASE WHEN EXCLUDED.statut = 'valide' THEN EXCLUDED.valide_par ELSE NULL END,
       valide_le = CASE WHEN EXCLUDED.statut = 'valide' THEN NOW() ELSE NULL END,
+      valide_par_auteur = FALSE,
       edite_le = NOW(),
       version = questions.version + 1`;
   return ident;
@@ -286,12 +289,14 @@ export async function changerStatutQuestion(
   id: string,
   statut: StatutQuestion,
   acteur: { role: Role; libelle: string; acces?: number | null },
+  parAuteur = false,
 ): Promise<void> {
   const par = `${acteur.role} · ${acteur.libelle}`;
   await sql`
     UPDATE questions SET statut = ${statut},
       valide_par = CASE WHEN ${statut} = 'valide' THEN ${par} ELSE valide_par END,
       valide_le = CASE WHEN ${statut} = 'valide' THEN NOW() ELSE valide_le END,
+      valide_par_auteur = CASE WHEN ${statut} = 'valide' THEN ${parAuteur} ELSE valide_par_auteur END,
       edite_le = NOW()
     WHERE id = ${id}`;
 }

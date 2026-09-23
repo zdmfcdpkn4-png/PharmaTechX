@@ -522,8 +522,8 @@ export function EditeurQuestion({
       </div>
       <p className="legende">
         {initiale?.statut === "valide"
-          ? "Cette question est validée : enregistrer une modification la remet « à vérifier », et un autre code que le vôtre la validera (règle des quatre yeux)."
-          : "Une question créée ou modifiée part « à vérifier » : un autre code que son auteur la valide depuis la banque (règle des quatre yeux)."}
+          ? "Cette question est validée : enregistrer une modification la remet « à vérifier », et un autre code que le vôtre la validera — ou vous-même si votre code est d'administration, validation alors tracée (règle des quatre yeux)."
+          : "Une question créée ou modifiée part « à vérifier » : un autre code que son auteur la valide depuis la banque — ou son auteur s'il est d'administration, validation alors tracée (règle des quatre yeux)."}
       </p>
 
       <label className="champ" style={{ maxWidth: "26rem" }}>

@@ -11,7 +11,8 @@
  * fabrique une source produirait une question fausse que le dépôt ne saurait
  * pas distinguer d'une vraie. C'est aussi pourquoi toute question déposée
  * entre au statut « à vérifier » et attend la validation d'un autre code que
- * son auteur (règle des quatre yeux, question 12).
+ * son auteur (règle des quatre yeux, question 12) — ou de son auteur, s'il
+ * est un code d'administration (23/09/2026).
  *
  * `test/prompt-depot.test.ts` passe l'exemple dans l'analyseur réel : le
  * prompt et le format ne peuvent pas diverger sans que les tests tombent.

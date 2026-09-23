@@ -315,8 +315,6 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
   await page.waitForSelector("text=Question de test créée dans le formulaire");
   const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
-  assert.equal(await ligneCreee.locator("button:has-text('Valider')").count(), 0, "l'auteur ne valide pas");
-  await ligneCreee.locator("text=à valider par un autre code").waitFor();
   assert.equal(await ligneCreee.locator(".etiquette", { hasText: /^Intermédiaire$/i }).count(), 1, "niveau affiché dans la banque");
   await page.goto(BASE + "/admin/questions?module=comportement-zac&niveau=intermediaire");
   await page.waitForSelector("text=Question de test créée dans le formulaire");
@@ -326,7 +324,29 @@ Justification : cf. procédure interne.`,
     0,
     "le filtre de niveau écarte les autres paliers",
   );
-  ok("question QCM créée à vérifier, niveau intermédiaire enregistré et filtrable ; validation refusée à son auteur (quatre yeux)");
+  // Administration (23/09/2026) : elle valide aussi ses questions. L'écart aux quatre yeux se dit
+  // avant le geste, puis se lit sur la question et au journal. La question repart ensuite « à
+  // vérifier » : la suite du parcours garde ses comptes.
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  const ligneAuteur = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
+  await ligneAuteur.locator("text=vous en êtes l'auteur : validation tracée comme telle").waitFor();
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ligneAuteur.locator("form button:has-text('Valider')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  const ligneValidee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
+  await ligneValidee.locator(".etiquette:text-is('Validée par son auteur')").waitFor();
+  await ligneValidee.locator(".legende", { hasText: "(son auteur)" }).waitFor();
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ligneValidee.locator("form button:has-text('Remettre à vérifier')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" }).waitFor();
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:text-is('statut-question:valide-par-auteur')");
+  ok("question QCM créée à vérifier, niveau intermédiaire enregistré et filtrable ; validée par son auteur administrateur, dit avant le geste, marqué sur la question et au journal, puis remise à vérifier");
 
   // 3c. question réservée à l'évaluation (question 18, choix c) : créée par l'administrateur, validée à l'étape 5 par le tuteur
   const ENONCE_RESERVEE = "Question réservée à l'évaluation ?";
@@ -2770,6 +2790,10 @@ Justification : cf. procédure interne.`,
   await fermerVisite();
   await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
   assert.equal(await page.locator("button[aria-label='Utilisateur test — quitter']").count(), 1, "tutorat : vue apprenant");
+  // Le bandeau est dans l'en-tête, qui se masque au défilement descendant : on remonte d'abord,
+  // comme pour l'administrateur plus haut (échec observé le 23/09/2026, bouton hors écran).
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
   await page.click(".bandeau-essai button:has-text('Terminer le test')");
   await page.waitForURL(/\/admin$/);
   assert.equal(await page.locator(".bandeau-essai").count(), 0, "tutorat : bandeau retiré à la fin du test");

@@ -330,6 +330,9 @@ export const SCHEMA: string[] = [
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS cree_par_acces INTEGER`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par TEXT`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS edite_par_acces INTEGER`,
+  // Validation par son auteur, permise à l'administration seule (23/09/2026) :
+  // tracée sur la question, pour qu'elle se distingue d'une validation à deux codes.
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS valide_par_auteur BOOLEAN NOT NULL DEFAULT FALSE`,
   // séquence à ordonner et texte à trous (19/09/2026) : la contrainte de
   // format est refaite, une base en service ne l'aurait qu'aux trois anciens
   `ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_format_check`,

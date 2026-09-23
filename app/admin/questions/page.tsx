@@ -4,7 +4,7 @@ import { comptesParModule, listerQuestions, signalementsOuvertsParQuestion, type
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
-import { peutValider } from "@/content/quatre-yeux";
+import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
 import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
@@ -167,6 +167,10 @@ export default async function Questions({
                   <span className={`etiquette ${q.statut === "valide" ? "etiquette--ok" : q.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
                     {LIBELLES_STATUT[q.statut]}
                   </span>
+                  {/* Validation par son auteur, permise à l'administration seule (23/09/2026) : elle se distingue. */}
+                  {q.statut === "valide" && q.valide_par_auteur && (
+                    <span className="etiquette etiquette--neutre">Validée par son auteur</span>
+                  )}
                   {/* Question 54 (a + b) : le signalement se voit là où la question se corrige. */}
                   {(signales[q.id] ?? 0) > 0 && (
                     <span className="etiquette etiquette--attention">
@@ -184,7 +188,7 @@ export default async function Questions({
                   <span className="legende" style={{ marginLeft: "auto" }}>
                     v{q.version} · créée par {q.cree_par}
                     {q.edite_par && q.edite_par !== q.cree_par ? ` · modifiée par ${q.edite_par}` : ""}
-                    {q.valide_par ? ` · validée par ${q.valide_par}` : ""}
+                    {q.valide_par ? ` · validée par ${q.valide_par}${q.valide_par_auteur ? " (son auteur)" : ""}` : ""}
                   </span>
                 </div>
                 <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
@@ -209,12 +213,20 @@ export default async function Questions({
                   </Link>
                   {q.statut !== "valide" &&
                     (peutValider(q, session) ? (
-                      <form action={actionChangerStatutQuestion}>
-                        <input type="hidden" name="id" value={q.id} />
-                        <input type="hidden" name="statut" value="valide" />
-                        <input type="hidden" name="retour" value={retour} />
-                        <button type="submit" className="bouton bouton--compact">Valider</button>
-                      </form>
+                      <>
+                        <form action={actionChangerStatutQuestion}>
+                          <input type="hidden" name="id" value={q.id} />
+                          <input type="hidden" name="statut" value="valide" />
+                          <input type="hidden" name="retour" value={retour} />
+                          <button type="submit" className="bouton bouton--compact">Valider</button>
+                        </form>
+                        {/* L'écart aux quatre yeux se dit avant le geste, pas seulement après. */}
+                        {validationParAuteur(q, session) && (
+                          <span className="legende" style={{ alignSelf: "center" }}>
+                            vous en êtes l&apos;auteur : validation tracée comme telle
+                          </span>
+                        )}
+                      </>
                     ) : (
                       <span className="legende" style={{ alignSelf: "center" }}>
                         à valider par un autre code que {q.edite_par ?? q.cree_par}

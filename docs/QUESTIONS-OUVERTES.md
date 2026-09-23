@@ -96,7 +96,12 @@ telle. Ordre : ce qui change le déploiement en premier.
    (créateur ou dernier éditeur) ; la publication, le retrait et la
    modification d'un module publié sont réservés à l'administration. Réserve :
    deux codes distincts ne font pas deux personnes si des codes sont partagés,
-   `[à préciser]` dans la procédure interne (un code par tuteur).
+   `[à préciser]` dans la procédure interne (un code par tuteur). Amendé le
+   23/09/2026, à la demande : un code d'administration valide aussi les
+   questions qu'il a écrites, validation tracée (`valide_par_auteur`,
+   journal) ; le tutorat reste aux quatre yeux. `[à préciser]` la même
+   exception pour un code de tutorat détenu par un pharmacien : le site
+   connaît des rôles, pas des métiers.
 7. **Accès au site et aux documents déposés** — tranché le 18/09/2026
    (question 13, choix b puis c) : tout le site est derrière un code de rôle
    dès qu'une base est configurée, les documents déposés compris ; seules la

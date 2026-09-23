@@ -22,7 +22,7 @@ export default async function ModifierQuestion({ params }: { params: Promise<{ i
         <h1>Modifier la question</h1>
         <p className="legende">
           {q.id} · version {q.version} · créée par {q.cree_par} le {new Date(q.cree_le).toLocaleDateString("fr-FR")}
-          {q.valide_par ? ` · validée par ${q.valide_par}` : ""}
+          {q.valide_par ? ` · validée par ${q.valide_par}${q.valide_par_auteur ? " (son auteur)" : ""}` : ""}
         </p>
       </section>
       {/* Question 54 (a + b) : le signalement se lit là où la question se corrige. */}

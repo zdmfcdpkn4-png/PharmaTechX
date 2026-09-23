@@ -1,7 +1,11 @@
 /**
  * Règle des quatre yeux (décision du 18/09/2026, question 12) :
  *   - une question se valide par un autre code d'accès que celui qui l'a
- *     écrite — l'auteur courant est le dernier code qui l'a créée ou modifiée ;
+ *     écrite — l'auteur courant est le dernier code qui l'a créée ou modifiée.
+ *     Exception demandée le 23/09/2026 : un code d'administration — le
+ *     pharmacien responsable, question 9 — valide aussi les siennes ; la
+ *     validation par l'auteur est alors tracée sur la question et au journal.
+ *     Le tutorat reste aux quatre yeux ;
  *   - un module déposé se publie, se retire ou repasse en brouillon en
  *     administration seulement (choix c), et un module publié ne se modifie
  *     qu'en administration.
@@ -37,7 +41,12 @@ export function memeCode(q: AuteurQuestion, acteur: CodeActeur): boolean {
   return auteur.libelle === `${acteur.role} · ${acteur.libelle}`;
 }
 
-/** Valider exige un autre code que l'auteur courant. */
+/** Valider exige un autre code que l'auteur courant, sauf pour l'administration. */
 export function peutValider(q: AuteurQuestion, acteur: CodeActeur): boolean {
-  return !memeCode(q, acteur);
+  return acteur.role === "admin" || !memeCode(q, acteur);
+}
+
+/** Validation par l'auteur courant lui-même : permise à l'administration seule, et tracée. */
+export function validationParAuteur(q: AuteurQuestion, acteur: CodeActeur): boolean {
+  return peutValider(q, acteur) && memeCode(q, acteur);
 }

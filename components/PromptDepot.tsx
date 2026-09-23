@@ -34,7 +34,8 @@ export function PromptDepot() {
           <strong>interdit d&apos;inventer</strong> un corrigé, une justification ou une source :
           ce que le texte source ne porte pas ne doit pas apparaître. Relisez la sortie avant de
           la coller — et de toute façon, chaque question déposée entre « à vérifier » et attend la
-          validation d&apos;un autre code que le vôtre.
+          validation d&apos;un autre code que le vôtre — ou la vôtre, tracée comme telle, si votre code
+          est d&apos;administration.
         </p>
         <p className="legende">
           L&apos;assistant est un service extérieur : ne lui confiez aucun texte ni aucune photo portant

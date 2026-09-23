@@ -61,7 +61,7 @@ créer ses propres codes, révoquer celui-ci, puis **supprimer la variable**.
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions, modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
+| **admin** | Tout : codes de tous rôles, banque de questions (valider aussi les siennes, validation tracée — 23/09/2026), modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
 | **tuteur** | Banque de questions (créer, déposer, valider les questions d'un autre code, retirer), **modules déposés** (créer, modifier en brouillon), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, code personnel d'un agent (réinitialisation), arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, lire les documents, exporter ou émettre son rapport, rattacher sa progression. Code requis pour tout le site dès qu'une base est configurée |
 
@@ -215,7 +215,11 @@ exclu.
 Cycle : `à vérifier` (hors tirage) → `validée` (posée) → `retirée`.
 **Règle des quatre yeux** (décision du 18/09/2026, question 12) : une
 question se valide par un autre code d'accès que celui qui l'a créée ou
-modifiée en dernier ; une question modifiée repart « à vérifier ». Une
+modifiée en dernier ; une question modifiée repart « à vérifier ». Exception
+(23/09/2026) : un code d'administration — le pharmacien responsable — valide
+aussi les siennes ; la question porte alors « validée par son auteur », et le
+journal `statut-question:valide-par-auteur`. Le tutorat reste aux quatre
+yeux. Une
 question déposée se rattache à n'importe quel critère, rédigé ou non : un
 module « à rédiger » devient évaluable dès qu'il a des questions validées. La
 banque versionnée avec le code (`content/modules/*.ts`) reste en place et se

@@ -11,7 +11,8 @@ import { promptGeneration, type TypeGeneration } from "@/content/prompt-depot";
  * Même règle que le prompt de mise en forme : le texte est affiché en clair,
  * le bouton ne fait que le copier, et le site n'appelle aucune IA. Ce qui
  * revient de l'assistant se colle dans le dépôt ci-dessous et entre au statut
- * « à vérifier » : un autre code que celui du déposant le valide.
+ * « à vérifier » : un autre code que celui du déposant le valide — ou le
+ * déposant lui-même s'il est d'administration, validation alors tracée.
  */
 export function PromptGeneration() {
   const [type, setType] = useState<TypeGeneration>("QIM");
