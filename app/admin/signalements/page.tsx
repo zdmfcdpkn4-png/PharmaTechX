@@ -4,7 +4,8 @@ import { LIBELLES_STATUT_SIGNALEMENT } from "@/content/signalements";
 import { getModule, getTousModulesAvecDeposes } from "@/content/store";
 import { banqueDuModule } from "@/content/types";
 import { actionRejeterSignalement, actionTraiterSignalement } from "../questions/actions";
-import { titreModule } from "../questions/commun";
+import { moduleOuvrable, titreModule } from "../questions/commun";
+import { LienModule } from "@/components/LienModule";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,8 @@ export default async function Signalements() {
               <span className={`etiquette ${s.statut === "ouvert" ? "etiquette--attention" : "etiquette--neutre"}`}>{LIBELLES_STATUT_SIGNALEMENT[s.statut]}</span>
               <strong>{s.motif}</strong>
               <span className="legende" style={{ marginLeft: "auto" }}>
-                {new Date(s.cree_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} · {titreModule(modules, s.module_id)}
+                {new Date(s.cree_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} ·{" "}
+                <LienModule id={moduleOuvrable(modules, s.module_id)}>{titreModule(modules, s.module_id)}</LienModule>
               </span>
             </div>
             {s.depot_id !== null ? (

@@ -8,6 +8,7 @@ import {
   actionRetirerFiche,
   actionValiderFiche,
 } from "./fiches-actions";
+import { LienModule } from "@/components/LienModule";
 
 /**
  * Fiches de synthèse dans la banque (questions 59 et 60, choix a,
@@ -19,12 +20,15 @@ export function SectionFiches({
   fiches,
   moduleId,
   titreModule,
+  ouvrable,
   session,
   retour,
 }: {
   fiches: LigneFiche[];
   moduleId?: string;
   titreModule: (id: string) => string;
+  /** Identifiant du module s'il s'ouvre encore, pour un lien (tâche 69). */
+  ouvrable: (id: string) => string | null;
   session: CodeActeur;
   retour: string;
 }) {
@@ -66,7 +70,12 @@ export function SectionFiches({
                 </a>
               </div>
               <p className="legende" style={{ margin: ".25rem 0" }}>
-                {moduleId ? "" : `${titreModule(f.module_id)} · `}
+                {moduleId ? "" : (
+                  <>
+                    <LienModule id={ouvrable(f.module_id)}>{titreModule(f.module_id)}</LienModule>
+                    {" · "}
+                  </>
+                )}
                 déposée le {date(f.depose_le)} par {f.depose_par}
                 {f.edite_par && f.edite_le ? ` · corrigée le ${date(f.edite_le)} par ${f.edite_par}` : ""}
                 {f.statut === "valide"

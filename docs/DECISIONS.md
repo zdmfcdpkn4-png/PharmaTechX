@@ -3635,6 +3635,83 @@ de 90 étapes, sans erreur de page ni erreur serveur.
 - **Contrôle à l'écran** (1 280 px) : rangs affichés, rang prérempli à 40
   pour N2, paragraphe de lecture des rangs.
 
+## Liens vers les modules (23/09/2026, tâche 69, recommandation retenue)
+
+**Demande.** « Ajoute des liens entre les sections, pouvoir cliquer sur un
+module pour l'ouvrir. »
+
+**Constaté** (inventaire des écrans, 23/09/2026). Une douzaine d'endroits
+ouvraient déjà un module : cartes et badges de l'accueil, « Reprendre »,
+module suivant, « voir le module » de la banque, « Voir » d'un module déposé.
+Environ vingt-quatre le nommaient sans lien : signalements, documents,
+situations, fiches à vérifier, rapports, personnel, programmes, réglage des
+modules, pilotage, Repères, résultats et progression de l'apprenant.
+
+**Tranché** par délégation (« Pour les 3 prends les recommandations ») :
+partout où un écran nomme un module, son nom l'ouvre, avec les exceptions
+ci-dessous. La question du périmètre n'avait pas été posée : c'est la
+recommandation que je retiens ici.
+
+**Ce qui est fait.** Un composant, `components/LienModule.tsx` : le nom,
+cliquable quand le module s'ouvre ; l'écran appelant décide s'il s'ouvre.
+- **Tutorat et administration** — le module s'ouvre s'il existe encore,
+  quel que soit son statut :
+  - Signalements, Documents, Situations, fiches « à vérifier » de la banque ;
+  - liste des rapports et titre d'un rapport (le titre scellé, le module
+    actuel) ;
+  - Personnel et progression d'un agent ;
+  - modules d'un programme, avec le programme s'il est validé, pour que
+    « Module suivant » suive son ordre ;
+  - réglage des modules du code ;
+  - Pilotage : rapports en attente — la requête lit désormais l'identifiant
+    du module —, ancienneté des quiz, module du périmètre filtré.
+- **Apprenant** — le module s'ouvre s'il lui est lisible, du code ou déposé
+  et publié :
+  - résultats de la session, à l'accueil, avec le programme ou le profil,
+    comme les cartes ;
+  - « Ma progression » ;
+  - Repères, programme complet : un critère rédigé ouvre son module ;
+  - barre de badges : un badge s'ouvre dès que son module est rédigé, comme
+    sa carte ; il lui fallait jusqu'ici des questions.
+
+**Laissés sans lien, et pourquoi.**
+- Listes de choix, cases à cocher, titres repliables de l'arborescence,
+  textes à copier (mention de preuve, prompt de dépôt) : un clic y fait déjà
+  autre chose.
+- La barre d'une évaluation en cours : le lien ferait abandonner la
+  passation.
+- La liste à ranger de l'ordonnancement et l'aperçu d'un dépôt : un clic
+  perdrait ce qui n'est pas enregistré.
+- Le rapport scellé et le journal : document archivé, trace d'audit.
+- La couverture de la banque et la confirmation d'un dépôt : leurs lignes
+  mènent déjà à la banque filtrée sur le module.
+- Le bilan par critère du pilotage : il ne connaît que le code du critère,
+  pas le module (défaut ci-dessous).
+- Un module inconnu, retiré ou non publié pour l'apprenant, un critère « À
+  rédiger » : le lien mènerait à une page vide ou introuvable.
+
+**Constaté, hors périmètre, non corrigé.** Pilotage, « Par critère » : le
+lien d'un critère porte son code (`/admin/pilotage?module=B1-01`), mais le
+filtre n'accepte qu'un identifiant de module et l'écarte sans rien dire ; la
+page se recharge sans filtre. Deux corrections possibles : résoudre le
+critère en son module, ou ajouter un filtre par critère.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (326 tests), `npm run build`,
+deux passes de bout en bout de 91 étapes, sans erreur de page ni erreur
+serveur.
+- **Étape 10f, prolongée** : la liste des rapports et le titre du rapport
+  clos ouvrent le module évalué ; l'ancienneté des quiz du pilotage aussi.
+  Vérifié là parce que le seul rapport du parcours est supprimé ensuite.
+- **Étape 14d quinquies, nouvelle** : les signalements ouvrent le module de
+  la question ; dans les Repères, un critère rédigé ouvre son module, et un
+  clic y mène ; aucun critère « À rédiger » ne porte de lien.
+- **Premier essai en échec, corrigé** : l'étape cliquait un critère resté
+  dans un grand module replié des Repères ; elle le déplie d'abord. Défaut du
+  test, pas du site.
+- **Contrôle à l'écran**, sur la base laissée par la chaîne : liens présents
+  dans les signalements, les documents, les fiches à vérifier, le réglage des
+  modules et les Repères (51 critères « À rédiger », aucun lien).
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

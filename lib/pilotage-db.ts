@@ -171,6 +171,8 @@ export async function questionsManquees(f: FiltrePilotage): Promise<QuestionManq
 export interface RapportEnAttente {
   id: string;
   numero: string;
+  /** Pour ouvrir le module depuis la ligne (tâche 69). */
+  module_id: string;
   module_titre: string;
   agent_identifiant: string;
   emis_le: string;
@@ -183,7 +185,7 @@ export interface RapportEnAttente {
 
 export async function rapportsEnAttente(f: FiltrePilotage): Promise<RapportEnAttente[]> {
   const r = await requete<RapportEnAttente>(
-    `SELECT r.id, r.numero, r.module_titre, r.agent_identifiant, r.emis_le::text, r.statut,
+    `SELECT r.id, r.numero, r.module_id, r.module_titre, r.agent_identifiant, r.emis_le::text, r.statut,
        (r.resultat->>'verdict') AS verdict_brut,
        (r.arbitrage IS NOT NULL) AS arbitre,
        EXISTS (

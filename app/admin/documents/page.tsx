@@ -6,7 +6,8 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { getReferentiel } from "@/content/referentiel-db";
 import { NATURES_DOCUMENT, libelleNature } from "@/content/types";
 import { actionDeposer, actionSupprimerDepot } from "@/app/actions";
-import { etiquetteModule, titreModule } from "../questions/commun";
+import { etiquetteModule, moduleOuvrable, titreModule } from "../questions/commun";
+import { LienModule } from "@/components/LienModule";
 
 export const dynamic = "force-dynamic";
 
@@ -146,7 +147,11 @@ export default async function Documents({
             </a>
             <br />
             <span className="legende">
-              {d.module_id ? titreModule(modules, d.module_id) : "document général"}
+              {d.module_id ? (
+                <LienModule id={moduleOuvrable(modules, d.module_id)}>{titreModule(modules, d.module_id)}</LienModule>
+              ) : (
+                "document général"
+              )}
               {d.filieres.length > 0 || d.niveaux.length > 0
                 ? ` · profils : ${[...d.filieres, ...d.niveaux].join(", ")}`
                 : d.module_id

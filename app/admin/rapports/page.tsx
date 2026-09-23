@@ -13,6 +13,9 @@ import {
 } from "@/lib/rapports";
 import { decisionEnregistree } from "@/lib/registre";
 import { actionPurgerAvant } from "./actions";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { moduleOuvrable } from "../questions/commun";
+import { LienModule } from "@/components/LienModule";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +49,12 @@ export default async function Rapports({
     );
   }
   const statut = STATUTS.includes(p.statut as StatutRapport) ? (p.statut as StatutRapport) : undefined;
-  const [rapports, comptes, session] = await Promise.all([listerRapports({ statut }), comptesRapports(), getSession()]);
+  const [rapports, comptes, session, modules] = await Promise.all([
+    listerRapports({ statut }),
+    comptesRapports(),
+    getSession(),
+    getTousModulesAvecDeposes(),
+  ]);
   const enService = miseEnService();
   const avant = p.avant && /^\d{4}-\d{2}-\d{2}$/.test(p.avant) ? p.avant : "";
   const purgeables = avant ? await compterPurgeables(new Date(`${avant}T00:00:00+02:00`)) : null;
@@ -107,7 +115,12 @@ export default async function Rapports({
                 <td><Link href={`/admin/rapports/${r.id}`}>{r.numero}</Link></td>
                 <td>{new Date(r.emis_le).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</td>
                 <td><code>{r.agent_identifiant}</code></td>
-                <td>{r.critere_id ?? "—"} <span className="legende">{r.module_titre.slice(0, 50)}</span></td>
+                <td>
+                  {r.critere_id ?? "—"}{" "}
+                  <span className="legende">
+                    <LienModule id={moduleOuvrable(modules, r.module_id)}>{r.module_titre.slice(0, 50)}</LienModule>
+                  </span>
+                </td>
                 <td>
                   {decision.score} % · {LIBELLES_COURTS_VERDICT[verdictFinal]}
                   {r.arbitrage ? <span className="legende"> (arbitré)</span> : null}

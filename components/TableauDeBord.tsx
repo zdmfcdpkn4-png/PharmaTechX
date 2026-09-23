@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSessionFormation, type ResultatSession } from "./SessionFormation";
+import { LienModule } from "./LienModule";
 import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { normaliserIdentifiant } from "@/lib/identifiant";
@@ -465,6 +466,13 @@ export function TableauDeBord({
       ? requeteProfil({ parcours, filiere: posteId, niveau: niveauCode })
       : "";
 
+  // Un résultat s'ouvre sur son module s'il est encore proposé à ce poste (tâche 69) :
+  // retiré ou dépublié depuis, il mènerait à une page introuvable.
+  const proposes = useMemo(
+    () => new Set([...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map((m) => m.id)),
+    [troncCommun, parPoste, aLaCarte],
+  );
+
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
   const acquis = resultats.filter((r) => r.reussi).length;
 
@@ -604,6 +612,7 @@ export function TableauDeBord({
           critereId: m.critereId,
           badge: m.badge,
           evaluable: m.nbQuestions > 0,
+          redige: m.redige,
         }))}
         requete={requeteCarte}
       />
@@ -889,7 +898,11 @@ export function TableauDeBord({
               return (
                 <li key={cleEmission(r)} className="ligne-rapport">
                   <div>
-                    <strong>{r.moduleTitre}</strong>
+                    <strong>
+                      <LienModule id={proposes.has(r.moduleId) ? r.moduleId : null} requete={requeteCarte}>
+                        {r.moduleTitre}
+                      </LienModule>
+                    </strong>
                     <br />
                     <span className="legende">
                       {r.critereId ? `${r.critereId} · ` : ""}

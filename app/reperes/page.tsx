@@ -20,6 +20,7 @@ import {
   parMetier,
 } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
+import { LienModule } from "@/components/LienModule";
 
 // Le barème est lu à chaque requête : la page annonce les règles en vigueur,
 // jamais celles figées à la construction. Les deux questions sur les données
@@ -227,7 +228,8 @@ export default async function Reperes() {
                   <div key={x.id} className="ligne-critere">
                     <span className="code">{x.id}</span>
                     <span className="libelle">
-                      {x.libelle}
+                      {/* Un critère rédigé ouvre son module (tâche 69) ; « À rédiger » reste du texte. */}
+                      <LienModule id={x.moduleId}>{x.libelle}</LienModule>
                       {x.sousSection ? ` — ${x.sousSection}` : ""}
                     </span>
                     <span className="etiquette etiquette--neutre">

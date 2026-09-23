@@ -49,6 +49,15 @@ export function titreModule(modules: Pick<Module, "id" | "titre" | "critereId" |
   return m ? `${etiquetteModule(m)} — ${m.titre}` : id;
 }
 
+/**
+ * L'identifiant d'un module qui s'ouvre encore, pour un lien (tâche 69) ; sinon
+ * `null`, et son nom reste du texte. En tutorat et en administration, un module
+ * déposé s'ouvre quel que soit son statut : la liste passée doit être complète.
+ */
+export function moduleOuvrable(modules: Pick<Module, "id">[], id: string | null | undefined): string | null {
+  return id && modules.some((x) => x.id === id) ? id : null;
+}
+
 export const LIBELLES_STATUT: Record<string, string> = {
   a_verifier: "À vérifier",
   valide: "Validée",

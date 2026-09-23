@@ -8,6 +8,7 @@ import { STATUTS_MODULE, lireReglagesModules, listerModulesDeposes } from "@/con
 import { getReferentiel } from "@/content/referentiel-db";
 import { ecartsDeLaFiche } from "@/content/reglages";
 import { FormulaireModule } from "./formulaire";
+import { LienModule } from "@/components/LienModule";
 import { actionEnregistrerModule, actionReglerSeuil, actionStatutModule, actionSupprimerModule } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -186,7 +187,7 @@ export default async function Modules({
                   <form key={m.id} action={actionReglerSeuil} className="ligne-critere" style={{ alignItems: "center", flexWrap: "wrap" }}>
                     <span className="code">{typeof m.critereId === "string" ? m.critereId : "—"}</span>
                     <span className="libelle">
-                      {m.titre.slice(0, 70)}{" "}
+                      <LienModule id={m.id}>{m.titre.slice(0, 70)}</LienModule>{" "}
                       <span className="legende">
                         — {ecarts.length > 0 ? `écart à la fiche : ${ecarts.join(" · ")}` : `fiche, seuil ${bareme.seuilDefaut} %`}
                       </span>

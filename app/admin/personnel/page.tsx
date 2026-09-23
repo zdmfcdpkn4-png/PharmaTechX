@@ -7,6 +7,9 @@ import { LIBELLES_STATUT_RAPPORT, repertoirePersonnel } from "@/lib/rapports";
 import { decisionEnregistree } from "@/lib/registre";
 import { actionBasculerAgent, actionCreerAgent, actionReinitialiserCode } from "./actions";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
+import { LienModule } from "@/components/LienModule";
+import { getTousModulesAvecDeposes } from "@/content/store";
+import { moduleOuvrable } from "../questions/commun";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +47,7 @@ export default async function Personnel({
       </>
     );
   }
-  const [toutes, agents] = await Promise.all([repertoirePersonnel(), listerAgents()]);
+  const [toutes, agents, modules] = await Promise.all([repertoirePersonnel(), listerAgents(), getTousModulesAvecDeposes()]);
   const saisie = (p.agent ?? "").trim();
   const filtre = normaliserIdentifiant(saisie) ?? saisie.toUpperCase();
   const lignes = filtre ? toutes.filter((l) => l.agent_identifiant.includes(filtre)) : toutes;
@@ -165,7 +168,12 @@ export default async function Personnel({
             return (
               <tr key={`${l.agent_identifiant}#${l.critere}`}>
                 <td><code>{l.agent_identifiant}</code>{l.agent_actif ? null : <span className="legende"> — clos</span>}</td>
-                <td>{l.critere} <span className="legende">{l.module_titre.slice(0, 50)}</span></td>
+                <td>
+                  {l.critere}{" "}
+                  <span className="legende">
+                    <LienModule id={moduleOuvrable(modules, l.resultat?.moduleId)}>{l.module_titre.slice(0, 50)}</LienModule>
+                  </span>
+                </td>
                 <td>
                   <Link href={`/admin/rapports/${l.id}`}>{l.numero}</Link>
                   <br />

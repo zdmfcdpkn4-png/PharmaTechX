@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Fragment } from "react";
+import { LienModule } from "@/components/LienModule";
 import { getSession } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
@@ -114,11 +116,13 @@ export default async function Pilotage({
   const seuils = (moduleId ? modules.filter((m) => m.id === moduleId) : retenus).map((m) => m.seuilReussite);
   const seuilRepere = seuils.length > 0 ? seuils.sort((a, b) => seuils.filter((s) => s === a).length - seuils.filter((s) => s === b).length)[seuils.length - 1] : null;
   const titreModule = moduleId ? modules.find((m) => m.id === moduleId)?.titre : null;
+  // Un module encore connu s'ouvre depuis la ligne qui le cite (tâche 69).
+  const ouvrable = (id: string) => (modules.some((m) => m.id === id) ? id : null);
   const perimetre = [
     filiere ? filieres.find((f) => f.id === filiere)?.libelle : null,
     niveau ? `niveau ${niveaux.find((n) => n.code === niveau)?.libelle ?? niveau}` : null,
     bloc !== null ? `bloc ${bloc}` : null,
-    titreModule,
+    titreModule && moduleId ? <LienModule id={moduleId}>{titreModule}</LienModule> : null,
     periode.libelle.toLowerCase(),
   ].filter(Boolean);
   const aucunFiltre = !filiere && !niveau && bloc === null && !moduleId && periode.cle === "tout";
@@ -189,7 +193,13 @@ export default async function Pilotage({
           </div>
         </div>
         <p className="legende" style={{ margin: 0 }}>
-          Périmètre : {perimetre.join(" · ")}
+          Périmètre :{" "}
+          {perimetre.map((x, i) => (
+            <Fragment key={i}>
+              {i > 0 ? " · " : ""}
+              {x}
+            </Fragment>
+          ))}
           {filtre.modules ? ` — ${filtre.modules.length} module${filtre.modules.length > 1 ? "s" : ""}` : ""}
         </p>
       </form>
@@ -357,7 +367,9 @@ export default async function Pilotage({
                         {r.verrouille ? "Verrouillé" : a ? LIBELLES_ATTENTE[a] : "—"}
                       </span>
                       <Link href={`/admin/rapports/${r.id}`}>{r.numero}</Link>
-                      <span className="legende">{r.module_titre}</span>
+                      <span className="legende">
+                        <LienModule id={ouvrable(r.module_id)}>{r.module_titre}</LienModule>
+                      </span>
                       <span className="legende" style={{ marginLeft: "auto" }}>
                         {r.agent_identifiant} · émis le {r.emis_le.slice(0, 10)}
                         {r.verrouille ? " · signalement ouvert sur le tirage" : ""}
@@ -400,7 +412,9 @@ export default async function Pilotage({
                         {libelleAnciennete(l.mois)}
                       </span>
                       <code>{l.agent_identifiant}</code>
-                      <span className="legende">{l.module_titre}</span>
+                      <span className="legende">
+                        <LienModule id={ouvrable(l.module_id)}>{l.module_titre}</LienModule>
+                      </span>
                       <span className="legende" style={{ marginLeft: "auto" }}>
                         {l.critere_id ?? "—"} · validé le {l.dernier_le.slice(0, 10)}
                       </span>

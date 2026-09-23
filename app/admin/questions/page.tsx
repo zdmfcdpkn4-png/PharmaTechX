@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { comptesParModule, listerQuestions, signalementsOuvertsParQuestion, type StatutQuestion } from "@/content/banque-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { etiquetteModule, titreModule as titreDe } from "./commun";
+import { etiquetteModule, moduleOuvrable, titreModule as titreDe } from "./commun";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
 import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
@@ -266,6 +266,7 @@ export default async function Questions({
         fiches={fiches}
         moduleId={moduleId}
         titreModule={titreModule}
+        ouvrable={(id) => moduleOuvrable(modules, id)}
         session={session}
         // Un geste sur une fiche garde la vue : l'arborescence ne renvoie pas à la liste.
         retour={vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour}

@@ -9,6 +9,8 @@ import { LIBELLES_STATUT_RAPPORT, contexteDecision, lireRapport } from "@/lib/ra
 import { QUALITES_VISA, ligneFichesRemises } from "@/lib/rapport";
 import { dataUri, lireSignature, signatureCourante } from "@/lib/signatures";
 import { actionAnnulerRapport, actionArbitrerRapport, actionPurgerRapport, actionViserRapport } from "../actions";
+import { moduleExiste } from "@/content/store";
+import { LienModule } from "@/components/LienModule";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,8 @@ export default async function Rapport({
   if (!r) notFound();
   const session = (await getSession())!;
   const ctx = await contexteDecision(r);
+  // Le titre est celui du sceau ; le module a pu être supprimé depuis.
+  const ouvrable = await moduleExiste(r.module_id).catch(() => false);
   const d = ctx.decision;
   const visaTuteur = r.visas.find((v) => v.qualite === "tuteur");
   const visaPharmacien = r.visas.find((v) => v.qualite === "pharmacien");
@@ -98,7 +102,9 @@ export default async function Rapport({
       </p>
       <section className="panneau-titre">
         <p className="sur-titre">{LIBELLES_STATUT_RAPPORT[r.statut]}</p>
-        <h1>{r.numero} — {r.module_titre}</h1>
+        <h1>
+          {r.numero} — <LienModule id={ouvrable ? r.module_id : null}>{r.module_titre}</LienModule>
+        </h1>
         <p>
           Agent <code>{r.agent_identifiant}</code> · émis le {date(r.emis_le, "long")} ·{" "}
           {r.tirage} · <strong>{d.score} %</strong> —{" "}

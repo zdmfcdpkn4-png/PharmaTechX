@@ -9,6 +9,8 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { listerOrdresAgents, type OrdreAgent } from "@/content/ordres-db";
 import { requeteProfil } from "@/content/ordres";
 import { actionPurgerProgression, actionReinitialiserCode } from "../actions";
+import { LienModule } from "@/components/LienModule";
+import { moduleOuvrable } from "../../questions/commun";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +75,9 @@ export default async function ProgressionAgent({
               <tr key={t.id}>
                 <td>{date(t.cree_le)}</td>
                 <td>{NATURES[t.nature] ?? t.nature}</td>
-                <td>{titre(t.module_id)}</td>
+                <td>
+                  <LienModule id={moduleOuvrable(modules, t.module_id)}>{titre(t.module_id)}</LienModule>
+                </td>
                 <td>
                   {t.nature === "evaluation" && t.score !== null
                     ? `${t.score} % · ${t.verdict ? LIBELLES_COURTS_VERDICT[t.verdict as Verdict] ?? t.verdict : ""}`

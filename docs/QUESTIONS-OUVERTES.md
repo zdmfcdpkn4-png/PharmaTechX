@@ -376,6 +376,17 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+66. **Liens vers les modules : périmètre** — demandé le 23/09/2026 :
+    « Ajoute des liens entre les sections, pouvoir cliquer sur un module
+    pour l'ouvrir. » Existant : une douzaine d'endroits ouvraient déjà un
+    module (cartes et badges de l'accueil, « Reprendre », module suivant,
+    banque) ; environ vingt-quatre le nommaient sans lien. La question du
+    périmètre n'avait pas été posée. Tranchée par délégation le même jour
+    (« Pour les 3 prends les recommandations ») : partout où un écran nomme
+    un module, son nom l'ouvre, sauf là où un clic ferait déjà autre chose,
+    perdrait un travail non enregistré ou mènerait à une page vide.
+    Détail dans `DECISIONS.md`.
+
 65. **Niveaux : renommer un code, régler l'ordre** — demandé le 23/09/2026 :
     « Revoir pour l'apparence des prérequis replace N2Restreint par N2R
     (dépôt) — pouvoir organiser l'ordre des niveaux. » Existant : un code de

@@ -10,6 +10,7 @@ import {
   modulesDuProgramme,
 } from "@/content/programmes";
 import { A_PRECISER } from "@/content/types";
+import { LienModule } from "@/components/LienModule";
 import { FormulaireProgramme } from "../formulaire";
 import { actionModifierProgramme, actionRetirerProgramme, actionValiderProgramme } from "../actions";
 
@@ -84,7 +85,11 @@ export default async function Programme({
           <ol className="programme-ordre">
             {presents.map((m) => (
               <li key={m.id}>
-                {typeof m.critereId === "string" && m.critereId !== A_PRECISER ? <strong>{m.critereId}</strong> : null} {m.titre}
+                {typeof m.critereId === "string" && m.critereId !== A_PRECISER ? <strong>{m.critereId}</strong> : null}{" "}
+                {/* Validé, le programme suit le module ouvert : « Module suivant » garde son ordre. */}
+                <LienModule id={m.id} requete={p.statut === "valide" ? `?programme=${p.id}` : ""}>
+                  {m.titre}
+                </LienModule>
               </li>
             ))}
           </ol>

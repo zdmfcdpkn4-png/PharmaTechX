@@ -29,6 +29,11 @@ export interface EtapeBadge {
   badge?: string;
   /** Module avec des questions : lui seul peut devenir acquis. */
   evaluable: boolean;
+  /**
+   * Texte du module rédigé : le badge s'ouvre alors, même sans question —
+   * la règle des cartes de l'accueil (tâche 69).
+   */
+  redige?: boolean;
 }
 
 export function BarreBadges({ etapes, requete = "" }: { etapes: EtapeBadge[]; requete?: string }) {
@@ -64,7 +69,7 @@ export function BarreBadges({ etapes, requete = "" }: { etapes: EtapeBadge[]; re
           );
           return (
             <li key={e.id} className={ok ? "est-acquis" : "est-grise"}>
-              {e.evaluable ? (
+              {e.evaluable || e.redige ? (
                 <Link href={`/module/${e.id}${requete}`} title={nom} className="barre-badge">
                   {contenu}
                 </Link>

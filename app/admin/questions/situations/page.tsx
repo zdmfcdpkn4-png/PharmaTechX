@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { listerSituations } from "@/content/banque-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { titreModule as titreDe } from "../commun";
+import { moduleOuvrable, titreModule as titreDe } from "../commun";
+import { LienModule } from "@/components/LienModule";
 import { actionEnregistrerSituation, actionSupprimerSituation } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +75,9 @@ export default async function Situations({
             <div className="etape-tete">
               <strong>{s.titre}</strong>
               <span className="etiquette etiquette--neutre">{s.nb_questions} question{s.nb_questions > 1 ? "s" : ""}</span>
-              <span className="legende" style={{ marginLeft: "auto" }}>{titreModule(s.module_id)}</span>
+              <span className="legende" style={{ marginLeft: "auto" }}>
+                <LienModule id={moduleOuvrable(modules, s.module_id)}>{titreModule(s.module_id)}</LienModule>
+              </span>
             </div>
             <details className="bloc">
               <summary>Modifier</summary>

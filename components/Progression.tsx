@@ -4,6 +4,7 @@ import { LIBELLES_COURTS_VERDICT, type Verdict } from "@/lib/decision";
 import { historique, statistiquesAgent, type LigneProgression, type Rattachement, type ResumeEntrainement } from "@/lib/progression";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { BoutonEnvoi } from "./BoutonEnvoi";
+import { LienModule } from "./LienModule";
 
 /**
  * « Ma progression » (décision du 18/09/2026, question 11, choix c) :
@@ -70,6 +71,10 @@ export async function Progression({
       getTousModulesAvecDeposes(),
     ]);
     const titre = (id: string) => modules.find((m) => m.id === id)?.titre ?? id;
+    // S'ouvre depuis le tableau le module que l'apprenant peut lire : du code, ou
+    // déposé et publié (tâche 69). Un brouillon ou un module retiré reste du texte.
+    const ouvrable = (id: string) =>
+      modules.some((m) => m.id === id && (m.origine !== "base" || m.statut === "publie")) ? id : null;
     const recentes = [...traces].reverse().slice(0, 40);
     return (
       <section id="progression" className="section">
@@ -98,7 +103,9 @@ export async function Progression({
                     <tr key={t.id}>
                       <td>{date(t.cree_le)}</td>
                       <td>{NATURES[t.nature]}</td>
-                      <td>{titre(t.module_id)}</td>
+                      <td>
+                        <LienModule id={ouvrable(t.module_id)}>{titre(t.module_id)}</LienModule>
+                      </td>
                       <td>
                         {t.nature === "evaluation" && t.score !== null
                           ? `${t.score} % · ${t.verdict ? LIBELLES_COURTS_VERDICT[t.verdict as Verdict] ?? t.verdict : ""}`

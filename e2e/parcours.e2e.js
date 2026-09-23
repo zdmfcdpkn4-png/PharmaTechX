@@ -889,6 +889,17 @@ Justification : cf. procédure interne.`,
     (await page.locator("table .mention-preuve button").count()) >= 1,
     "la liste propose la mention des rapports clos",
   );
+  // Tâche 69 : le module évalué s'ouvre depuis la liste, et depuis le rapport.
+  assert.ok(
+    (await page.locator("table.tableau tbody td a[href^='/module/']").count()) >= 1,
+    "rapports : le module évalué s'ouvre depuis la liste",
+  );
+  await page.goto(urlRapport);
+  assert.equal(
+    await page.locator(".panneau-titre h1 a[href^='/module/']").count(),
+    1,
+    "rapport : son titre ouvre le module évalué",
+  );
   ok("mention de preuve : composée sur le rapport clos, sans empreinte, proposée aussi dans la liste");
 
   // 10f. ancienneté des quiz validés (question 49, choix b) : un fait daté,
@@ -914,6 +925,10 @@ Justification : cf. procédure interne.`,
     (await anciennete.locator(".section-titre .compte").innerText()).trim().toLowerCase(),
     "0 de plus de 24 mois",
     "aucun quiz dépassé dans ce scénario",
+  );
+  assert.ok(
+    (await anciennete.locator("a[href^='/module/']").count()) >= 1,
+    "pilotage : le module d'un quiz validé s'ouvre (tâche 69)",
   );
   ok("ancienneté des quiz : dernier rapport clos daté, aucune échéance prononcée");
   const paquet = await page.request.get(urlRapport + "/paquet");
@@ -3577,11 +3592,37 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("#t-apprenants").count(), 0, "ordre propre purgé avec la progression");
   await page.goto(BASE + "/admin/journal");
   await page.waitForSelector("code:text-is('ordonnancement:apprenant')");
+  ok("ordre propre à un apprenant : identifiant inconnu ou clos refusé, ordre fixé et relu ; rattaché, il passe avant le profil et le module suivant le suit ; détaché, le profil reprend ; purgé avec sa progression ; journalisé");
+
+  // 14d quinquies. liens vers les modules (tâche 69, recommandation retenue le 23/09/2026) :
+  //                un module nommé s'ouvre d'un clic ; un critère « À rédiger » reste du texte.
+  //                Rapports et pilotage se vérifient à l'étape 10f : le seul rapport du
+  //                parcours est supprimé ensuite.
+  await page.goto(BASE + "/admin/signalements");
+  assert.ok(
+    (await page.locator("li.carte .etape-tete a[href^='/module/']").count()) > 0,
+    "signalements : le module de la question s'ouvre",
+  );
+  await page.goto(BASE + "/reperes#programme");
+  const lienCritere = page.locator("section#programme .ligne-critere a[href='/module/comportement-zac']");
+  assert.ok((await lienCritere.count()) > 0, "Repères : un critère rédigé ouvre son module");
+  assert.equal(
+    await page.locator("section#programme .ligne-critere:has(.etiquette--attention:text-is('À rédiger')) a").count(),
+    0,
+    "Repères : un critère à rédiger reste du texte",
+  );
+  // Les grands modules du programme complet sont repliés : on déplie celui du critère.
+  const blocCritere = page.locator("section#programme details:has(a[href='/module/comportement-zac'])").first();
+  if ((await blocCritere.getAttribute("open")) === null) await blocCritere.locator(":scope > summary").click();
+  await lienCritere.first().click();
+  await page.waitForURL(/\/module\/comportement-zac$/);
+  await page.waitForSelector("h1");
+  ok("liens vers les modules : signalements et Repères ouvrent le module ; un critère à rédiger reste du texte (rapports et pilotage : étape 10f)");
+
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("ordre propre à un apprenant : identifiant inconnu ou clos refusé, ordre fixé et relu ; rattaché, il passe avant le profil et le module suivant le suit ; détaché, le profil reprend ; purgé avec sa progression ; journalisé");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
