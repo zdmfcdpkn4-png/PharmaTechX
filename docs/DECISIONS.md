@@ -2477,10 +2477,10 @@ question ». Laissés tels quels.
 
 **Ce qui reste, et n'est pas un défaut de report.**
 - Les trois autres métiers — pharmacien/interne, aide en pharmacie, agent
-  d'entretien — n'ont ni niveau ni filière dans le site. Leur échelle attend
-  la question 46, les codes qui se répètent d'un métier à l'autre ; l'axe
-  métier est défini dans `content/habilitation.ts`, mais aucun écran ne le
-  lit.
+  d'entretien — n'ont ni niveau ni filière dans le site. Leur échelle
+  attendait la question 46, les codes qui se répètent d'un métier à l'autre,
+  tranchée le même jour (ci-dessous) ; l'axe métier est défini dans
+  `content/habilitation.ts`, mais aucun écran ne le lit.
 - L'ordre des niveaux ne se règle pas : la fiche d'abord, les dépôts ensuite.
 - Un code de niveau ne se renomme pas (N2RESTREINT → N2R, question posée le
   23/09/2026, en attente).
@@ -2493,6 +2493,52 @@ serveur. L'étape ajoutée — réglage d'un module de la fiche avec le niveau e
 la filière déposés, niveau déposé lu et signalé dans les Repères, aucun
 niveau du référentiel donné absent dans l'arborescence — reprend les trois
 défauts constatés au contrôle ci-dessus.
+
+## Codes de niveaux par métier : préfixe des seuls nouveaux métiers (23/09/2026, question 46, choix a)
+
+**Constat.** Les quatre fiches d'habilitation fournies le 22/09/2026
+réemploient les mêmes codes avec un autre sens, alors qu'un code de niveau
+est un identifiant unique dans le site : `niveaux_deposes.code` est une clé
+primaire, et modules, réglages, documents, codes d'accès et prérequis ne
+citent que le code.
+
+| Métier | Niveaux de la fiche |
+|---|---|
+| Préparateur | N1a général, N1b préparatoire, N1c chimiothérapie, N2 routine, N3 tuteur des nouveaux préparateurs |
+| Pharmacien / interne | N1 base, N2 routine, N3 référent ; la version de travail ajoute N1a « CHIMIO 3 seulement », sous-catégorie du N1, et N1b (N1 = N1a + N1b) |
+| Aide en pharmacie | N1 routine, N2 référent |
+| Agent d'entretien | N1 routine, N2 référent |
+
+N2 vaut « routine » chez le préparateur et le pharmacien, « référent » chez
+l'aide et l'agent d'entretien ; N1a et N1b n'ont pas le même sens chez le
+préparateur et dans la version de travail de la fiche pharmacien.
+
+**Options.** a) préfixe sur les seuls nouveaux métiers, le préparateur
+gardant ses codes ; b) préfixe sur tous, préparateur compris ; c) mêmes
+codes dans chaque métier, le métier affiché à côté.
+
+**Tranché : a.** Les niveaux des trois autres métiers portent un préfixe :
+`PH-` pharmacien/interne, `AP-` aide en pharmacie, `AE-` agent d'entretien —
+`PH-N1`, `AP-N2`… Le préparateur garde `N1a` à `N3`. Rien d'existant n'est
+renommé : codes d'accès, modules, réglages, documents, prérequis et rapports
+scellés restent valides. Le format tient dans celui des codes : majuscules,
+chiffres et tirets, douze caractères au plus (`normaliserCode`).
+
+**Coût assumé.** L'asymétrie — le préparateur, premier transcrit, est le seul
+métier sans préfixe — et des codes un peu plus longs à l'écran.
+
+**Écartés.** b) renommait partout les codes déjà cités — codes d'accès,
+modules, réglages, documents, prérequis —, et les rapports déjà émis,
+scellés, garderaient « N1a » : deux écritures du même niveau selon la date
+du rapport. c) était le plus fidèle aux fiches, mais un code ne désignerait
+plus un niveau à lui seul : chaque rattachement devrait porter le métier en
+plus, la refonte la plus lourde, et une pièce opposable citant « N2 » seul
+serait ambiguë.
+
+**Reste à trancher, une question à la fois.** D'où viennent les échelles des
+trois métiers — reprises des fiches ou saisies au Référentiel ; quelle
+version de la fiche pharmacien fait foi ; les profils de poste (filières) de
+chaque métier ; l'axe métier dans les écrans, qui ne le lisent pas encore.
 
 ## Non fait
 

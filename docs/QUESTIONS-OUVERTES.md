@@ -361,17 +361,15 @@ telle. Ordre : ce qui change le déploiement en premier.
     évaluable : une ancienneté ne se mesure pas par QCM. 58 critères → 53.
 
 46. **Codes de niveaux qui se répètent d'un métier à l'autre** — ouvert le
-    22/09/2026, conséquence du choix c en question 44. La fiche pharmacien
-    nomme `N1a` une sous-catégorie (validation pharmaceutique seule,
-    « CHIMIO 3 ») qui n'a rien du socle `N1a` du préparateur ; `N1b` s'y
-    répète aussi avec un autre sens. Les codes doivent donc être distingués
-    par métier, et `niveaux_deposes.code` est une clé primaire globale.
-    `[à préciser]` la forme : préfixe de métier sur tous les codes
-    (`PREP-N1a`, `PH-N1a`), ce qui casse les codes existants et les données
-    qui les citent ; ou préfixe sur les seuls nouveaux métiers, le
-    préparateur gardant les siens, ce qui est asymétrique mais n'invalide
-    rien. Tant que les trois autres échelles ne sont pas versées, leur liste
-    reste vide et le conflit ne se pose pas.
+    22/09/2026, conséquence du choix c en question 44 ; tranché le
+    23/09/2026 (choix a) : préfixe sur les seuls nouveaux métiers — `PH-`
+    pharmacien/interne, `AP-` aide en pharmacie, `AE-` agent d'entretien —,
+    le préparateur gardant `N1a` à `N3`. Rien d'existant n'est renommé.
+    Écartés : le préfixe partout, qui renommait les codes déjà cités
+    (codes d'accès, modules, réglages, documents, prérequis) quand les
+    rapports scellés garderaient l'ancien ; les mêmes codes dans chaque
+    métier, qui obligeait chaque rattachement à porter aussi le métier.
+    Détail dans `DECISIONS.md`.
 
 47. **Périmètre du site dans la chaîne d'habilitation** — tranché le
     22/09/2026 (choix a) : le site reste aux étapes 1 et 2. Le portfolio —
