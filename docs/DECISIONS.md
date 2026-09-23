@@ -2077,8 +2077,12 @@ Inter sur le site ; c) garder Google Fonts et le déclarer comme destinataire.
 - Hors périmètre : les maquettes `docs/maquettes/*.dc.html` appellent encore
   Google Fonts ; ce sont des documents de conception, que le site ne sert pas.
 
-**Effet réel** : seulement quand la branche `production` portera ce
-changement. D'ici là, le site en ligne continue d'appeler Google Fonts.
+**Effet réel** : au déploiement par Render. Pendant l'essai, le site en
+ligne suit la branche de travail (question 21, `docs/DEPLOIEMENT.md`) et
+prend donc ce changement à la poussée — sauf si la branche déployée a déjà été
+mise sur `production` dans le tableau de bord `[à vérifier]`. Contrôle :
+`/api/sante` donne le commit en ligne, qui doit être celui de cette version
+ou un suivant.
 
 ## Non fait
 
