@@ -376,6 +376,22 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+59. **Fiche de synthèse et validation du module** — demandé le 23/09/2026 :
+    « pouvoir intégrer à la validation du module une fiche de synthèse que
+    l'on pourrait déposer dans la banque et relier à la validation du
+    module ». Existant : une fiche de synthèse est un document de nature
+    « Fiche de synthèse », déposé depuis Administration → Documents et
+    rattaché à un module ; elle s'affiche en fin de test et en fin
+    d'entraînement, dès son dépôt, sans validation par un autre code ; le
+    rapport d'évaluation ne la cite pas ; la banque de questions n'offre pas
+    de dépôt de fiche. Posée le 23/09/2026 — ce que « validation du module »
+    désigne : la validation du contenu par le tutorat — fiche déposée depuis
+    la banque du module, « à vérifier », montrée seulement une fois validée,
+    citée par le rapport (a) ; la validation par l'apprenant — fiche montrée
+    dès le dépôt, lecture attestée par l'apprenant, citée par le rapport avec
+    l'attestation (b) ; les deux (c). Le signalement d'une fiche défectueuse
+    viendra ensuite.
+
 58. **Dépôt de questions : QIM et QCM mêlés** — suite de la question 57,
     même demande (« attention, possibilité de mélange QIM / QCM »). Vérifié
     par un essai le 23/09/2026 :
