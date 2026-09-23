@@ -27,6 +27,8 @@ import { dernierEnCours, emissionsDeLAgent, evaluationsDeLAgent, rattachement } 
 import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
+import { actionTerminerEssai } from "@/app/actions-essai";
+import { LIBELLE_ESSAI } from "@/lib/essai";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -256,7 +258,28 @@ export default async function RootLayout({
         >
           <TutorielProvider profil={profilVisite} etapes={etapesVisite}>
           <MenuProvider>
-            <Chrome>
+            <Chrome
+              annonce={
+                session?.essai ? (
+                  // Mode test (23/09/2026, choix a) : sur chaque page tant que
+                  // le test dure, avec sa sortie.
+                  <div className="bandeau-essai">
+                    <div className="bandeau-essai-interne">
+                      <p>
+                        <strong>Mode test</strong>
+                        <span className="bandeau-essai-detail"> — vue apprenant sous « {LIBELLE_ESSAI} »</span>
+                        &nbsp;: rien n&apos;est enregistré.
+                      </p>
+                      <form action={actionTerminerEssai}>
+                        <button type="submit" className="bouton bouton--compact">
+                          Terminer le test
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ) : null
+              }
+            >
               <BoutonMenu pastille={fileNonVide(itemsFile)} />
 
               <div className="logos">

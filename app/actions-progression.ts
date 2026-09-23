@@ -40,7 +40,8 @@ async function acteur() {
 
 export async function actionRattacher(formData: FormData) {
   if (!baseConfiguree() || !conservationActive()) retour("indisponible");
-  await sessionRequise("poste");
+  // Mode test : le rattachement écrirait au journal et au limiteur.
+  if ((await sessionRequise("poste")).essai) retour("essai");
   const minutes = await minutesDeBlocage();
   if (minutes > 0) retour("bloque", `&minutes=${minutes}`);
   const identifiant = normaliserIdentifiant(chaine(formData, "identifiant", 20));
@@ -67,7 +68,7 @@ export async function actionRattacher(formData: FormData) {
 
 export async function actionDefinirCode(formData: FormData) {
   if (!baseConfiguree() || !conservationActive()) retour("indisponible");
-  await sessionRequise("poste");
+  if ((await sessionRequise("poste")).essai) retour("essai");
   const minutes = await minutesDeBlocage();
   if (minutes > 0) retour("bloque", `&minutes=${minutes}`);
   const identifiant = normaliserIdentifiant(chaine(formData, "identifiant", 20));

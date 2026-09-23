@@ -255,11 +255,18 @@ export default async function Accueil({
           niveauInitial={niveauInitial}
           identifiantRattache={ratt?.identifiant ?? null}
           documentsReserves={documentsReserves}
+          essai={Boolean(session?.essai)}
         />
       </section>
 
       {conservation === "pseudonyme" && baseConfiguree() && (
-        <Progression rattache={ratt} message={params.progression} premiere={params.premiere} minutes={params.minutes} />
+        <Progression
+          rattache={ratt}
+          message={params.progression}
+          premiere={params.premiere}
+          minutes={params.minutes}
+          essai={Boolean(session?.essai)}
+        />
       )}
 
     </>

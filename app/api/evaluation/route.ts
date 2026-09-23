@@ -282,11 +282,15 @@ export async function POST(request: Request) {
       );
     }
     jugement = { par: `${LIBELLES_ROLE[c.role]} · ${c.libelle}`, role: c.role, le: maintenant.toISOString() };
-    await journaliser({ role: c.role, libelle: c.libelle }, "evaluation:jugement-tuteur", `module:${mod.id}`, {
-      caches: nbJuges,
-      questions: Object.keys(jugementsRetenus).length,
-      session: session ? `${session.role} · ${session.libelle}` : "sans code",
-    });
+    // Mode test (23/09/2026) : le code est vérifié comme d'ordinaire, limiteur
+    // compris, mais le jugement d'un test n'entre pas au journal.
+    if (!session?.essai) {
+      await journaliser({ role: c.role, libelle: c.libelle }, "evaluation:jugement-tuteur", `module:${mod.id}`, {
+        caches: nbJuges,
+        questions: Object.keys(jugementsRetenus).length,
+        session: session ? `${session.role} · ${session.libelle}` : "sans code",
+      });
+    }
   }
 
   const reponses = listeDeChaines(corps.reponses);

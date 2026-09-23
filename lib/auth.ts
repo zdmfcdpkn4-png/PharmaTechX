@@ -16,6 +16,7 @@ import { etatDeSession, type EtatAcces } from "./session-etat";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 import { genererCode, hacherCode, normaliserCode, verifierCode } from "./codes";
+import type { IdentiteTesteur } from "./essai";
 
 /**
  * Contrôle d'accès par rôle.
@@ -54,6 +55,11 @@ export interface Session {
   debut?: number;
   /** Échéance, en secondes epoch. */
   exp: number;
+  /**
+   * Mode test (23/09/2026) : identité du tuteur ou de l'administrateur qui
+   * parcourt le site en apprenant, rétablie à la fin du test (`lib/essai.ts`).
+   */
+  essai?: IdentiteTesteur;
 }
 
 const COOKIE = "fp_session";
@@ -164,6 +170,23 @@ export async function ouvrirSession(s: Omit<Session, "exp">): Promise<void> {
 
 export async function fermerSession(): Promise<void> {
   (await cookies()).delete(COOKIE);
+}
+
+/**
+ * Remplace la session en cours sans en changer l'ouverture ni l'échéance
+ * (mode test, 23/09/2026) : une révocation du code postérieure à l'ouverture
+ * doit toujours fermer la session, et entrer en test ne prolonge rien.
+ */
+export async function remplacerSession(s: Session): Promise<void> {
+  const reste = s.exp - Math.floor(Date.now() / 1000);
+  if (reste <= 0) return fermerSession();
+  (await cookies()).set(COOKIE, encoder(s), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: reste,
+  });
 }
 
 // ────────────────────────────────────────────────────────────── connexion

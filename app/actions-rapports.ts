@@ -11,6 +11,7 @@ import { rattachement } from "@/lib/progression";
 import { emettreRapport } from "@/lib/rapports";
 import { moduleExiste } from "@/content/store";
 import { refusEmissionEntrainement } from "@/content/jugement";
+import { IDENTIFIANT_ESSAI, numeroEssai } from "@/lib/essai";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import type { ReponseEmission } from "./types-rapports";
 
@@ -30,11 +31,15 @@ export async function actionEmettreRapport(entree: {
   if (!baseConfiguree() || !conservationActive()) {
     return { ok: false, erreur: "La conservation des rapports n'est pas activée sur ce site." };
   }
-  await sessionRequise("poste");
+  const essai = Boolean((await sessionRequise("poste")).essai);
   // Apprenant rattaché à son identifiant (question 11) : l'identifiant vient du
-  // rattachement, jamais du navigateur.
+  // rattachement, jamais du navigateur. En mode test, l'utilisateur test.
   const ratt = await rattachement();
-  const identifiant = ratt ? ratt.identifiant : normaliserIdentifiant(String(entree.identifiant ?? "").slice(0, 20));
+  const identifiant = essai
+    ? IDENTIFIANT_ESSAI
+    : ratt
+      ? ratt.identifiant
+      : normaliserIdentifiant(String(entree.identifiant ?? "").slice(0, 20));
   if (!identifiant) {
     return { ok: false, erreur: "Saisissez votre identifiant d'agent (AG-001, AG-002…), remis par votre tuteur." };
   }
@@ -54,6 +59,21 @@ export async function actionEmettreRapport(entree: {
     return {
       ok: false,
       erreur: `Tirage non concluant (${r.pointsTotal} question${r.pointsTotal > 1 ? "s" : ""}, ${r.minQuestions} requises) : aucun rapport d'habilitation ne peut être émis. Repassez un tirage d'habilitation.`,
+    };
+  }
+
+  if (essai) {
+    // Mode test (23/09/2026, choix a) : mêmes contrôles qu'une émission, puis
+    // rien n'est écrit — ni rapport, ni visa, ni journal — et aucun numéro de
+    // la séquence RAP n'est consommé.
+    const emisLe = new Date();
+    return {
+      ok: true,
+      id: IDENTIFIANT_ESSAI,
+      numero: numeroEssai(emisLe),
+      empreinte: empreinte({ ...sansJeton, agent: IDENTIFIANT_ESSAI }),
+      emisLe: emisLe.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short", timeZone: "Europe/Paris" }),
+      identifiant: IDENTIFIANT_ESSAI,
     };
   }
 

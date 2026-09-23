@@ -39,14 +39,29 @@ export async function Progression({
   message,
   premiere,
   minutes,
+  essai = false,
 }: {
   rattache: Rattachement | null;
   message?: string;
   premiere?: string;
   minutes?: string;
+  /** Mode test (23/09/2026) : ni rattachement ni trace, le formulaire n'est pas proposé. */
+  essai?: boolean;
 }) {
   const texte = message ? (message === "bloque" ? `Trop de tentatives : réessayez dans ${minutes ?? "quelques"} minutes.` : MESSAGES[message]) : null;
   const classe = message === "ok" ? "encart encart--ok" : "encart encart--attention";
+
+  if (essai) {
+    return (
+      <section id="progression" className="section">
+        <h2>Ma progression</h2>
+        <p className="encart encart--attention" role="status">
+          Mode test : l&apos;utilisateur test n&apos;a pas d&apos;identifiant d&apos;agent. Rien n&apos;est conservé —
+          ni évaluation, ni entraînement, ni lecture, ni évaluation en cours à reprendre.
+        </p>
+      </section>
+    );
+  }
 
   if (rattache) {
     const [stats, traces, modules] = await Promise.all([

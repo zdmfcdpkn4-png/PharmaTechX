@@ -6,6 +6,7 @@ import { useSessionFormation, type ResultatSession } from "./SessionFormation";
 import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { normaliserIdentifiant } from "@/lib/identifiant";
+import { IDENTIFIANT_ESSAI, LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
@@ -288,6 +289,7 @@ export function TableauDeBord({
   identifiantRattache = null,
   documentsReserves = 0,
   aLaCarte = null,
+  essai = false,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -312,6 +314,11 @@ export function TableauDeBord({
   documentsReserves?: number;
   /** Programme à la carte ouvert (question 50) : il remplace la composition par filière et niveau. */
   aLaCarte?: ProgrammeALaCarte | null;
+  /**
+   * Mode test (23/09/2026) : émission sous « Utilisateur test », numéro
+   * ESSAI-…, sans enregistrement ; chaque rapport porte le filigrane d'essai.
+   */
+  essai?: boolean;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -322,7 +329,7 @@ export function TableauDeBord({
   // et transmis ; aucun nom, ni ici ni en base (décision du 18/09/2026).
   const [nom, setNom] = useState("");
   const [qualite, setQualite] = useState("");
-  const [identifiant, setIdentifiant] = useState(identifiantRattache ?? "");
+  const [identifiant, setIdentifiant] = useState(essai ? IDENTIFIANT_ESSAI : (identifiantRattache ?? ""));
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   // Replis des grands modules : premier groupe ouvert par défaut, choix de
@@ -429,9 +436,11 @@ export function TableauDeBord({
     : `${parcoursTitre}${posteId ? ` — ${postes.find((p) => p.id === posteId)?.libelle}` : " — tronc commun"}`;
 
   const entete = (): EnTeteRapport =>
-    pseudonyme
-      ? { identifiant: normaliserIdentifiant(identifiant) ?? undefined, nom: "", qualite: "", parcours: parcoursLibelle }
-      : { nom, qualite, parcours: parcoursLibelle };
+    essai
+      ? { identifiant: IDENTIFIANT_ESSAI, nom: LIBELLE_ESSAI, qualite: "", parcours: parcoursLibelle }
+      : pseudonyme
+        ? { identifiant: normaliserIdentifiant(identifiant) ?? undefined, nom: "", qualite: "", parcours: parcoursLibelle }
+        : { nom, qualite, parcours: parcoursLibelle };
 
   const optionsDe = (r: ResultatSession) => {
     const e = emissions[cleEmission(r)];
@@ -442,14 +451,15 @@ export function TableauDeBord({
           conservation,
           procedure,
           miseEnService,
+          essai,
           visas: [{ qualite: "apprenant" as const, signataire: e.identifiant, date: e.emisLe }],
         }
-      : { conservation, procedure, miseEnService };
+      : { conservation, procedure, miseEnService, essai };
   };
 
   const emettre = async (r: ResultatSession) => {
     setErreur(null);
-    if (!normaliserIdentifiant(identifiant)) {
+    if (!essai && !normaliserIdentifiant(identifiant)) {
       setErreur("Saisissez votre identifiant d'agent (AG-001, AG-002…), remis par votre tuteur, pour émettre un rapport enregistré.");
       return;
     }
@@ -748,7 +758,12 @@ export function TableauDeBord({
           </p>
         )}
 
-        {pseudonyme ? (
+        {pseudonyme && essai ? (
+          <p className="encart encart--attention">
+            Mode test : les rapports s&apos;émettent sous « {LIBELLE_ESSAI} », numérotés ESSAI-…, sans enregistrement :
+            aucun visa de tuteur ni de pharmacien ne suivra. Chaque fichier porte en filigrane « {MENTION_ESSAI} ».
+          </p>
+        ) : pseudonyme ? (
           <div className="rangee">
             <label className="champ">
               <span>Identifiant d&apos;agent</span>
@@ -842,7 +857,7 @@ export function TableauDeBord({
                         disabled={enCours === cleEmission(r)}
                         onClick={() => void emettre(r)}
                       >
-                        {enCours === cleEmission(r) ? "Émission…" : "Émettre et enregistrer"}
+                        {enCours === cleEmission(r) ? "Émission…" : essai ? "Émettre (test)" : "Émettre et enregistrer"}
                       </button>
                     )}
                   </div>
@@ -857,7 +872,7 @@ export function TableauDeBord({
             type="button"
             className="bouton"
             disabled={resultats.length === 0}
-            onClick={() => void telechargerRapport(entete(), resultats, { conservation, procedure, miseEnService })}
+            onClick={() => void telechargerRapport(entete(), resultats, { conservation, procedure, miseEnService, essai })}
           >
             Télécharger le rapport de session
           </button>

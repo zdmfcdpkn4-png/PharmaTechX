@@ -68,7 +68,10 @@ export async function actionConnexion(formData: FormData) {
 
 export async function actionDeconnexion() {
   const s = await getSession();
-  if (s) await journaliser({ role: s.role, libelle: s.libelle }, "deconnexion");
+  // En mode test, c'est le testeur qui se déconnecte : l'utilisateur test
+  // n'entre jamais au journal.
+  const qui = s?.essai ?? s;
+  if (qui) await journaliser({ role: qui.role, libelle: qui.libelle }, "deconnexion");
   await fermerSession();
   redirect("/connexion");
 }

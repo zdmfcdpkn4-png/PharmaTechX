@@ -10,6 +10,8 @@ import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSup
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
+import { actionDemarrerEssai } from "@/app/actions-essai";
+import { LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +114,26 @@ export default async function Admin({
         Stockage des documents : {modeStockage() === "blob" ? "Vercel Blob" : modeStockage() === "base" ? "base de données" : "aucun"} ·
         conservation des rapports : {conservation === "pseudonyme" ? "pseudonyme (rapports enregistrés sous identifiant d'agent, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
       </p>
+
+      {/* Mode test (23/09/2026, choix a) : le parcours apprenant jusqu'au rapport
+          émis, sans rien écrire en base. */}
+      <section className="carte" aria-labelledby="t-essai">
+        <h2 id="t-essai">Tester le parcours apprenant</h2>
+        <p>
+          Parcourez le site comme un apprenant, sous « {LIBELLE_ESSAI} » : modules, entraînement, évaluation,
+          jusqu&apos;au rapport émis. Rien n&apos;est écrit en base — ni progression, ni rapport, ni visa, ni
+          journal. Le rapport porte un numéro ESSAI-…, hors de la séquence, et le filigrane « {MENTION_ESSAI} ».
+        </p>
+        <p className="legende">
+          Pendant le test, un signalement n&apos;est pas transmis, et un schéma à découvrir se juge comme en vrai,
+          avec le code d&apos;un autre tuteur. Les écrans d&apos;administration reviennent à la fin du test. Le
+          navigateur garde ses repères locaux (visite guidée vue, dernière lecture) : testez depuis votre propre
+          poste plutôt que depuis celui d&apos;un apprenant.
+        </p>
+        <form action={actionDemarrerEssai}>
+          <button type="submit" className="bouton">Démarrer un test</button>
+        </form>
+      </section>
 
       {/* ─────────────────────────────────────────────── codes d'accès */}
       <div className="section-titre">

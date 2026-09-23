@@ -1,6 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { decoderJeton, encoderJeton, hacherCode, verifierCode } from "./auth";
+import { decoderJeton, encoderJeton, getSession, hacherCode, verifierCode } from "./auth";
 import { baseConfiguree, requete, sql } from "./db";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import { normaliserEtatEnCours, type EtatEnCours } from "@/content/en-cours";
@@ -39,6 +39,9 @@ export function codePersonnelValide(v: unknown): v is string {
 
 export async function rattachement(): Promise<Rattachement | null> {
   if (!baseConfiguree()) return null;
+  // Mode test (23/09/2026) : un rattachement laissé sur ce poste par un
+  // apprenant est ignoré, sans quoi le test écrirait dans sa progression.
+  if ((await getSession())?.essai) return null;
   const jeton = (await cookies()).get(COOKIE)?.value;
   return jeton ? decoderJeton<Rattachement>(jeton) : null;
 }

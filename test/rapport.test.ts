@@ -174,3 +174,26 @@ test("les logos incorporés remplacent les adresses ; sans eux, l'adresse du sit
   const sans = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat], { baseUrl: "https://site" });
   assert.ok(sans.includes('src="https://site/hdv.png"') && sans.includes('src="https://site/pharmaco-web.png"'));
 });
+
+test("mode test : filigrane, numéro ESSAI, rien d'enregistré — y compris après la mise en service", () => {
+  const html = construireRapport({ identifiant: "ESSAI", nom: "Utilisateur test", qualite: "", parcours: "" }, [resultat], {
+    numero: "ESSAI-20260923-230509",
+    empreinte: "abcdef0123456789",
+    visas: [{ qualite: "apprenant", signataire: "ESSAI", date: "23 septembre 2026 à 23:05" }],
+    conservation: "pseudonyme",
+    miseEnService: "2026-10-01",
+    essai: true,
+  });
+  assert.ok(html.includes('<div class="filigrane" aria-hidden="true">ESSAI — sans valeur de preuve</div>'));
+  assert.ok(html.includes("Mode test : rapport émis par un tuteur ou un administrateur pour éprouver le parcours."));
+  assert.ok(html.includes("Rapport d'essai émis en mode test sous le n° ESSAI-20260923-230509, sans enregistrement"));
+  assert.ok(html.includes("<strong>ESSAI — sans valeur de preuve</strong> · procédure"));
+  assert.ok(!html.includes("Rapport enregistré par l'application"));
+  assert.ok(!html.includes("Document qualité"), "un rapport de test ne se dit jamais document qualité");
+});
+
+test("hors mode test, ni filigrane ni bandeau de test", () => {
+  const html = construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat], { miseEnService: "2026-10-01" });
+  assert.ok(!html.includes('class="filigrane"'));
+  assert.ok(!html.includes("Mode test"));
+});

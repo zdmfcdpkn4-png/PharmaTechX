@@ -14,8 +14,12 @@ import { useEffect, useRef } from "react";
  *    dans `--decalage` — l'en-tête passe sur deux lignes sous 1000 px, une
  *    valeur en dur masquerait le haut de page ;
  *  - `prefers-reduced-motion` neutralise le défilement animé.
+ *
+ * `annonce` : bande pleine largeur au-dessus de la ligne d'en-tête (bandeau du
+ * mode test). Dans l'en-tête, elle est comptée dans la cale et suit son
+ * masquage.
  */
-export function Chrome({ children }: { children: React.ReactNode }) {
+export function Chrome({ children, annonce }: { children: React.ReactNode; annonce?: React.ReactNode }) {
   const jauge = useRef<HTMLDivElement>(null);
   const entete = useRef<HTMLElement>(null);
   const cale = useRef<HTMLDivElement>(null);
@@ -114,6 +118,7 @@ export function Chrome({ children }: { children: React.ReactNode }) {
       </a>
 
       <header className="entete" ref={entete} tabIndex={-1}>
+        {annonce}
         <div className="entete-interne">{children}</div>
       </header>
       <div className="cale-entete" ref={cale} aria-hidden="true" />

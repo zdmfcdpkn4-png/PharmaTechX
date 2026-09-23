@@ -2699,3 +2699,30 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
   animation: rond-attente 0.7s linear infinite;
 }
 @keyframes rond-attente { to { transform: rotate(360deg); } }
+
+/* Mode test (23/09/2026, choix a) : bande en tête de l'en-tête, sur chaque
+   page tant que le test dure. Elle suit l'en-tête — masquée à la descente,
+   rétablie à la montée — comme le bouton « Quitter ». Couleurs d'alerte :
+   5,4:1. */
+.bandeau-essai {
+  background: var(--alerte-fond);
+  color: var(--alerte);
+  border-bottom: 1px solid rgba(138, 90, 0, 0.3);
+}
+.bandeau-essai-interne {
+  max-width: var(--largeur);
+  margin: 0 auto;
+  padding: 0.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  flex-wrap: wrap;
+}
+.bandeau-essai-interne p { margin: 0; flex: 1 1 10rem; font-size: 0.875rem; }
+@media (min-width: 62rem) {
+  .bandeau-essai-interne { max-width: calc(var(--largeur) + 252px); }
+}
+@media (max-width: 40rem) {
+  .bandeau-essai-interne { padding: 0.25rem 1rem; }
+  .bandeau-essai-detail { display: none; }
+}

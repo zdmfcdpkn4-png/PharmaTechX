@@ -9,6 +9,7 @@ import {
   type Verdict,
 } from "./decision";
 import { STATUT_DISPOSITIF, STATUT_ESSAI, dateMiseEnServiceLisible, libelleProcedure } from "./statut";
+import { MENTION_ESSAI } from "./essai";
 
 /**
  * Rapport d'évaluation — document A4 imprimable, repris de la maquette
@@ -84,6 +85,12 @@ export interface OptionsRapport {
   procedure?: string | null;
   /** Date de mise en service (AAAA-MM-JJ) ; absente, le rapport porte « Phase d'essai — ne vaut pas preuve ». */
   miseEnService?: string | null;
+  /**
+   * Mode test (23/09/2026) : rapport d'un « Utilisateur test », numéroté hors
+   * séquence et jamais enregistré. Filigrane sur chaque page imprimée, y
+   * compris après la mise en service, quand le bandeau de phase d'essai a disparu.
+   */
+  essai?: boolean;
 }
 
 function decisionParDefaut(r: ResultatRapport): DecisionImprimable {
@@ -353,8 +360,9 @@ export function construireRapport(
   // Décisions du 18/09/2026 : pas de purge automatique, conservation jusqu'à
   // purge manuelle par l'administrateur ; aucun nom enregistré, rattachement
   // par identifiant d'agent, nom porté à l'édition seulement.
-  const conservation =
-    options.conservation === "pseudonyme"
+  const conservation = options.essai
+    ? `Rapport d'essai émis en mode test${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""}, sans enregistrement : l'application n'en conserve rien.`
+    : options.conservation === "pseudonyme"
       ? `Rapport enregistré par l'application${options.numero ? ` sous le n° ${echapper(options.numero)}` : ""} sous l'identifiant d'agent${entete.identifiant ? ` ${echapper(entete.identifiant)}` : ""}, sans nom — ${
           options.dureeConservationMois
             ? `conservation ${options.dureeConservationMois} mois, purge manuelle par l'administrateur`
@@ -366,12 +374,20 @@ export function construireRapport(
   // marqueur [à compléter] tant qu'elle ne l'est pas.
   const enService = options.miseEnService ? dateMiseEnServiceLisible(options.miseEnService) : null;
   const procedure = echapper(libelleProcedure(options.procedure));
-  const statut = enService
-    ? `<strong>${STATUT_DISPOSITIF.court}</strong> · en service depuis le ${echapper(enService)} · procédure ${procedure}`
-    : `<strong>${STATUT_ESSAI.court}</strong> · procédure ${procedure}`;
+  // Un rapport de test ne se dit jamais « document qualité », même après la
+  // mise en service : le pied de chaque page reprend la mention du filigrane.
+  const statut = options.essai
+    ? `<strong>${echapper(MENTION_ESSAI)}</strong> · procédure ${procedure}`
+    : enService
+      ? `<strong>${STATUT_DISPOSITIF.court}</strong> · en service depuis le ${echapper(enService)} · procédure ${procedure}`
+      : `<strong>${STATUT_ESSAI.court}</strong> · procédure ${procedure}`;
   const bandeauEssai = enService
     ? ""
     : `<div class="essai">Phase d'essai : ce rapport ne vaut pas preuve. La mise en service du dispositif n'est pas prononcée.</div>`;
+  const bandeauTest = options.essai
+    ? `<div class="essai">Mode test : rapport émis par un tuteur ou un administrateur pour éprouver le parcours. Il ne vaut pas preuve et rien n'a été enregistré.</div>
+<div class="filigrane" aria-hidden="true">${echapper(MENTION_ESSAI)}</div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -429,6 +445,8 @@ export function construireRapport(
   .petit { font-size: 9pt; color: #566370; }
   .encadre { border: 1px solid #8a5a00; background: #fdf3e0; padding: 10px 14px; margin: 14px 0; font-size: 10.5pt; line-height: 1.5; }
   .essai { border: 2pt solid #99271f; color: #99271f; font-weight: 700; text-align: center; padding: 8px 12px; margin: 0 0 12px; font-size: 11pt; }
+  /* Filigrane du mode test : en position fixe, il se répète sur chaque page imprimée. */
+  .filigrane { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-32deg); font-size: 44pt; font-weight: 800; letter-spacing: .04em; white-space: nowrap; color: rgba(153, 39, 31, .14); pointer-events: none; z-index: 10; }
   .detail { margin: 0 0 12px; padding: 0 0 10px 12px; border-left: 3px solid #7b8792; border-bottom: 1px solid #d8dde2; }
   .detail-tete { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 4px; }
   .detail-tete .num { font-size: 9.5pt; font-weight: 700; color: #003f65; }
@@ -458,6 +476,7 @@ export function construireRapport(
 <body>
 <div class="actions"><button type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button></div>
 <div class="feuille">
+${bandeauTest}
 ${bandeauEssai}
 <table class="page">
   <thead><tr><td>

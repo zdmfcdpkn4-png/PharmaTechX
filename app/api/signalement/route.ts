@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { refusApiSansSession } from "@/lib/auth";
+import { getSession, refusApiSansSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { enregistrerSignalement } from "@/content/banque-db";
 import { MOTIFS_SIGNALEMENT } from "@/content/signalements";
@@ -35,6 +35,11 @@ export async function POST(request: Request) {
   const mod = await getModuleComplet(moduleId);
   if (!mod || !banqueDuModule(mod).some((q) => q.id === questionId)) {
     return NextResponse.json({ erreur: "Question inconnue." }, { status: 404 });
+  }
+  // Mode test (23/09/2026) : rien n'est écrit. Un signalement ouvert bloquerait
+  // les visas de tous les rapports réels dont le tirage contient la question.
+  if ((await getSession())?.essai) {
+    return NextResponse.json({ ok: false, essai: true }, { headers: { "Cache-Control": "no-store" } });
   }
   await enregistrerSignalement({ questionId, moduleId, motif, note });
   return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

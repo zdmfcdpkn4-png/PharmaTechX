@@ -337,10 +337,18 @@ function RecapitulatifValidation({
 function Signaler({ questionId, moduleId }: { questionId: string; moduleId: string }) {
   const [motif, setMotif] = useState<string>(MOTIFS_SIGNALEMENT[0]);
   const [note, setNote] = useState("");
-  const [etat, setEtat] = useState<"repos" | "envoi" | "fait" | "erreur">("repos");
+  const [etat, setEtat] = useState<"repos" | "envoi" | "fait" | "erreur" | "essai">("repos");
 
   if (etat === "fait") {
     return <p className="legende">Signalement transmis au tutorat. Merci.</p>;
+  }
+  if (etat === "essai") {
+    return (
+      <p className="encart encart--attention">
+        Mode test : le signalement n&apos;est pas transmis — il bloquerait les visas des rapports réels qui
+        contiennent cette question. Notez-la, et signalez-la en dehors du mode test.
+      </p>
+    );
   }
   return (
     <details className="signaler">
@@ -372,7 +380,8 @@ function Signaler({ questionId, moduleId }: { questionId: string; moduleId: stri
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ questionId, moduleId, motif, note }),
                 });
-                setEtat(r.ok ? "fait" : "erreur");
+                const corps = (await r.json().catch(() => ({}))) as { essai?: boolean };
+                setEtat(corps.essai ? "essai" : r.ok ? "fait" : "erreur");
               } catch {
                 setEtat("erreur");
               }

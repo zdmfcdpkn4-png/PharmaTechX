@@ -2294,6 +2294,165 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/connexion/);
   ok("illustrations : banque proposée au dépôt, proposée d'après le titre, remplacée au choix, retrait définitif");
 
+  // 14d bis. utilisateur test (23/09/2026, choix a) : l'administrateur parcourt le site en
+  //          apprenant jusqu'au rapport émis, et la base n'en garde aucune trace — ni ligne,
+  //          ni modification, ni numéro consommé. Un apprenant rattaché sur le poste (AG-002)
+  //          n'en reçoit rien : c'est le piège du rattachement qui survit à la déconnexion.
+  /** Empreinte de toute la base : contenu de chaque table, ordonné, et état de chaque séquence. */
+  const empreinteBase = async () => {
+    const { Client } = require("pg");
+    const c = new Client({ connectionString: process.env.DATABASE_URL });
+    await c.connect();
+    try {
+      const e = {};
+      const tables = await c.query(
+        "SELECT table_name AS t FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1",
+      );
+      for (const { t } of tables.rows) {
+        const r = await c.query(
+          `SELECT count(*)::int AS n, md5(coalesce(string_agg(ligne_e2e::text, E'\\n' ORDER BY ligne_e2e::text), '')) AS h FROM "${t}" ligne_e2e`,
+        );
+        e[t] = `${r.rows[0].n} lignes ${r.rows[0].h}`;
+      }
+      const sequences = await c.query(
+        "SELECT sequence_name AS s FROM information_schema.sequences WHERE sequence_schema = 'public' ORDER BY 1",
+      );
+      for (const { s } of sequences.rows) {
+        const r = await c.query(`SELECT last_value, is_called FROM "${s}"`);
+        e[s] = `${r.rows[0].last_value} ${r.rows[0].is_called}`;
+      }
+      return e;
+    } finally {
+      await c.end();
+    }
+  };
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "AG-002");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/premiere=AG-002/);
+  await page.fill("input[name=nouveauCode]", "5678");
+  await page.fill("input[name=confirmation]", "5678");
+  await page.click("button:has-text('Choisir ce code')");
+  await page.waitForURL(/progression=ok/);
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  const ecrireProgression = (corps) =>
+    page.evaluate(
+      async (c) =>
+        (await fetch("/api/progression", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(c) })).json(),
+      corps,
+    );
+  // Témoin : hors test, la même écriture est acceptée pour l'apprenant rattaché. Sans lui,
+  // le refus observé pendant le test ne prouverait pas que c'est le test qui l'a produit.
+  assert.equal(
+    (await ecrireProgression({ nature: "lecture", moduleId: "comportement-zac" })).ok,
+    true,
+    "témoin : lecture notée pour AG-002 hors test",
+  );
+  const baseAvant = process.env.DATABASE_URL ? await empreinteBase() : null;
+  await page.goto(BASE + "/admin");
+  await page.click("button:has-text('Démarrer un test')");
+  await page.waitForURL((u) => u.pathname === "/");
+  await fermerVisite();
+  await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
+  await capture("15-mode-test-bandeau", page.locator(".entete"));
+  assert.equal(
+    await page.locator("button[aria-label='Utilisateur test — quitter']").count(),
+    1,
+    "le site est parcouru sous « Utilisateur test »",
+  );
+  await page.waitForSelector("#progression .encart:has-text('Mode test')");
+  assert.equal(await page.locator("#progression code:has-text('AG-002')").count(), 0, "rattachement du poste ignoré");
+  assert.equal(await page.locator("a[href='/#progression']:has-text('AG-002')").count(), 0, "volet : aucun identifiant rattaché");
+  await page.goto(BASE + "/admin");
+  assert.ok(!new URL(page.url()).pathname.startsWith("/admin"), "administration fermée pendant le test");
+  await page.waitForSelector(".bandeau-essai");
+  // Écritures de progression appelées comme le ferait la page : le cookie de rattachement
+  // d'AG-002 est toujours là, le serveur l'ignore.
+  for (const corps of [
+    { nature: "lecture", moduleId: "comportement-zac" },
+    { nature: "entrainement", moduleId: "comportement-zac", justes: 1, total: 1, points: 1, tirage: "e2e" },
+    { nature: "en_cours", moduleId: "comportement-zac", etat: null },
+  ]) {
+    assert.equal((await ecrireProgression(corps)).raison, "non-rattache", "progression écrite pendant le test : " + corps.nature);
+  }
+  // évaluation complète, corrigée par le serveur, puis signalement retenu
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.check("input[name=difficulte] >> nth=2"); // Complet
+  await page.check("input[name=mode] >> nth=0"); // évaluation
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  // une réponse au moins : sans elle, « Valider l'évaluation » reste inactif
+  await page.locator("fieldset.question").filter({ has: page.locator("label.option") }).first()
+    .locator("label.option input").first().check();
+  await validerEvaluation();
+  await page.waitForSelector(".resultat-entete");
+  await page.locator("details.signaler summary").first().click();
+  await page.locator("details.signaler select").first().selectOption("Ambigu");
+  await page.locator("details.signaler button:has-text('Transmettre')").first().click();
+  await page.waitForSelector("text=le signalement n'est pas transmis");
+  // émission : mêmes contrôles qu'en vrai, numéro ESSAI hors séquence, rien d'enregistré
+  await page.click("a:has-text('Rapport de session')");
+  // #rapport est l'intitulé de la section : l'encart et le formulaire sont dans la carte qui le suit.
+  const carteRapport = page.locator("#rapport + section.carte");
+  await carteRapport.locator(".encart:has-text('Mode test')").waitFor();
+  assert.equal(await carteRapport.locator("input[name=identifiant]").count(), 0, "aucun identifiant d'agent à saisir");
+  await page.click("button:has-text('Émettre (test)')");
+  await page.waitForSelector("text=émis sous le n° ESSAI-");
+  await capture("16-mode-test-emission", carteRapport);
+  const numeroTest = /ESSAI-\d{8}-\d{6}/.exec(await page.locator(".ligne-rapport").first().innerText())[0];
+  const [dlTest] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator(".ligne-rapport button:has-text('Télécharger')").first().click(),
+  ]);
+  const rapportTest = fs.readFileSync(await dlTest.path(), "utf8");
+  assert.ok(rapportTest.includes('<div class="filigrane" aria-hidden="true">ESSAI — sans valeur de preuve</div>'), "filigrane du rapport de test");
+  assert.ok(rapportTest.includes(numeroTest), "numéro ESSAI porté par le rapport");
+  assert.ok(rapportTest.includes("sans enregistrement : l'application n'en conserve rien"), "rapport de test déclaré non enregistré");
+  assert.ok(!rapportTest.includes("Document qualité"), "un rapport de test ne se dit pas document qualité");
+  // fin du test : l'administrateur retrouve sa session, la base est celle d'avant
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click(".bandeau-essai button:has-text('Terminer le test')");
+  await page.waitForURL(/\/admin$/);
+  await page.waitForSelector("text=Administrateur initial");
+  assert.equal(await page.locator(".bandeau-essai").count(), 0, "bandeau retiré à la fin du test");
+  if (baseAvant) {
+    const baseApres = await empreinteBase();
+    const ecarts = Object.keys({ ...baseAvant, ...baseApres }).filter((k) => baseAvant[k] !== baseApres[k]);
+    assert.deepEqual(ecarts, [], "le test a laissé une trace en base : " + ecarts.join(", "));
+  }
+  await page.goto(BASE + "/#progression");
+  await page.click("#progression button:has-text('Se détacher')");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  // le tutorat démarre et termine un test de la même façon
+  await page.fill("input[name=code]", codeTuteur);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.click("button:has-text('Démarrer un test')");
+  await page.waitForURL((u) => u.pathname === "/");
+  await fermerVisite();
+  await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
+  assert.equal(await page.locator("button[aria-label='Utilisateur test — quitter']").count(), 1, "tutorat : vue apprenant");
+  await page.click(".bandeau-essai button:has-text('Terminer le test')");
+  await page.waitForURL(/\/admin$/);
+  assert.equal(await page.locator(".bandeau-essai").count(), 0, "tutorat : bandeau retiré à la fin du test");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok(
+    `utilisateur test : parcours apprenant jusqu'au rapport ${numeroTest} (filigrane), signalement retenu, ` +
+      "rattachement du poste ignoré, administration fermée pendant le test, tutorat compris ; " +
+      (baseAvant ? "base identique avant et après, table par table et séquence par séquence" : "base NON comparée (DATABASE_URL absente)"),
+  );
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

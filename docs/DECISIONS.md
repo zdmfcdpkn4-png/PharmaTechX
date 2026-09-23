@@ -2186,6 +2186,99 @@ tout, mais la liste s'allongeait encore (1 761 px pour l'administration) ;
 deux appuis, plus de vue d'ensemble, et la solution la plus lourde (retour,
 focus, recherche).
 
+## Utilisateur test (23/09/2026, choix a)
+
+Demande : que l'administrateur et le tuteur puissent tester le parcours
+jusqu'au rapport « au travers de la création d'un utilisateur test qui ne
+laisse pas de trace dans la base ».
+
+Retenu (a) : **jusqu'au rapport émis, aucune écriture**. L'utilisateur test
+n'est pas créé en base — ni code d'accès, ni identifiant d'agent : il n'existe
+que dans la session. « Démarrer un test », sur la page Accès de
+l'administration (tutorat et administration), remplace la session par une vue
+d'apprenant — rôle de poste, libellé « Utilisateur test », sans filière ni
+niveau — et garde l'identité du testeur dans le cookie signé (`lib/essai.ts`,
+`remplacerSession` dans `lib/auth.ts`). L'ouverture et l'échéance de la
+session ne changent pas : la révocation du code du testeur ferme toujours la
+session, et entrer en test ne prolonge rien. « Terminer le test » rétablit
+l'identité et ramène à l'administration ; « Quitter » ferme la session comme
+d'ordinaire, et c'est le testeur qui est journalisé.
+
+Neutralisé là où l'écriture se fait :
+- **rattachement** : `rattachement()` ne rend rien pendant un test. Un
+  rattachement laissé sur le poste par un apprenant survit à la déconnexion ;
+  sans cette règle, le test écrirait dans sa progression (lecture,
+  entraînement, évaluation en cours, évaluation corrigée). Le formulaire de
+  rattachement n'est pas proposé, et ses deux actions refusent ;
+- **émission** : mêmes contrôles qu'en vrai (sceau, module, entraînement
+  refusé, tirage non concluant), puis retour sans écriture — ni rapport, ni
+  visa, ni journal. Le numéro `ESSAI-AAAAMMJJ-HHMMSS` (heure de Paris) ne
+  consomme aucun numéro RAP : une séquence PostgreSQL ne rend jamais un numéro
+  pris ;
+- **signalement** : non transmis, et l'écran le dit — un signalement ouvert
+  bloquerait les visas de tous les rapports réels dont le tirage contient la
+  question ;
+- **jugement d'un schéma à découvrir** : le code d'un autre tuteur reste exigé
+  et vérifié, limiteur compris, pour que le test montre le vrai
+  comportement ; seule l'entrée au journal est omise.
+
+Le rapport de test porte sur chaque page imprimée le filigrane « ESSAI — sans
+valeur de preuve », un bandeau « Mode test », la mention « sans
+enregistrement : l'application n'en conserve rien » et, en pied de page, la
+même mention à la place de « Document qualité — preuve de l'étape 2 » : il ne
+se dit jamais document qualité, y compris après la mise en service, quand le
+bandeau de phase d'essai aura disparu.
+
+Pendant le test, un bandeau « Mode test : rien n'est enregistré », avec
+« Terminer le test », ouvre l'en-tête de chaque page. Il suit l'en-tête —
+masqué au défilement descendant, rétabli au montant, comme le bouton
+« Quitter » : c'est l'écart avec le « bandeau permanent » annoncé dans la
+question. Un bandeau fixé en bas aurait couvert la barre de passation de
+l'évaluation, fixée en bas elle aussi.
+
+Mesuré en haut de page, hauteur de l'en-tête sans puis avec le bandeau :
+77 → 130 px sur PC (1 366 px) et sur iPad en portrait, texte sur une ligne ;
+61 → 116 px sur iPhone 15, où le texte se réduit à « Mode test : rien n'est
+enregistré. » sur deux lignes, bouton à côté ; 61 → 141 px à 320 px de large
+(iPhone SE de première génération), où le bouton passe sous le texte — un
+quart d'un écran de 568 px, le temps du test. Le bandeau ne crée aucun
+débordement horizontal. À 320 px, l'accueil déborde déjà de 6 px sans lui
+(grille de cartes) : défaut antérieur, hors de ce changement.
+
+Reste écrit, comme pour toute session, ce qui concerne le testeur et non
+l'utilisateur test : sa connexion au journal, la date d'usage de son code, et
+le limiteur s'il se trompe de code — garde-fou gardé exprès.
+
+Vérifié de bout en bout (étape 14d bis de `e2e/parcours.e2e.js`) : un
+apprenant, AG-002, est rattaché sur le poste, et une écriture de lecture est
+acceptée pour lui hors test (témoin). Pendant le test, les écritures de
+progression sont refusées, l'administration est fermée, l'évaluation est
+corrigée, le signalement retenu, le rapport émis sous ESSAI-… et téléchargé
+avec son filigrane. À la fin du test, l'empreinte de toute la base — contenu
+de chaque table, ordonné, et état de chaque séquence — est identique à celle
+d'avant. Le tutorat démarre et termine un test de la même façon.
+
+Limites :
+- le test ne couvre ni le rattachement, ni « Ma progression » et
+  « Reprendre », ni l'arbitrage, les visas et la clôture, ni le registre et le
+  pilotage. L'écriture elle-même n'est pas exercée par le test ; la chaîne de
+  bout en bout l'exerce ;
+- l'administration reste fermée pendant le test : le site la réserve au
+  tutorat, et y aller mène à la page de connexion, où le bandeau demeure.
+  Se reconnecter avec son code termine aussi le test ;
+- « aucune trace » vaut pour la base. Le navigateur garde, comme après toute
+  visite, ses repères locaux : visite guidée du profil apprenant marquée vue,
+  dernière lecture, consultations. Mieux vaut tester depuis son propre poste
+  que depuis celui d'un apprenant.
+
+Écartés : (b) rapport visé et clos, sans écriture — une maquette de l'écran de
+visa, dont les règles recodées à côté des vraies pourraient s'en écarter sans
+que rien le montre ; (c) rapport visé et clos par les vrais écrans, avec un
+agent de test effacé à la fin — « aucune trace » non tenu (lignes présentes
+pendant le test, puis dans les sauvegardes jusqu'à leur rotation), et une
+vingtaine de requêtes (registre, pilotage, personnel, compteurs, exports) à
+filtrer, plus toutes celles à venir.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
