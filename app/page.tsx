@@ -15,6 +15,8 @@ import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
 import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
+import { chronologie, cleProfil, lireProfilDemande, requeteProfil } from "@/content/ordres";
+import { ordresDuParcours } from "@/content/ordres-db";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -46,7 +48,15 @@ function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
 export default async function Accueil({
   searchParams,
 }: {
-  searchParams: Promise<{ parcours?: string; programme?: string; progression?: string; premiere?: string; minutes?: string }>;
+  searchParams: Promise<{
+    parcours?: string;
+    programme?: string;
+    progression?: string;
+    premiere?: string;
+    minutes?: string;
+    filiere?: string;
+    niveau?: string;
+  }>;
 }) {
   const params = await searchParams;
   const parcoursId: TypeParcours =
@@ -91,8 +101,20 @@ export default async function Accueil({
     };
   }
   // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
-  const filiereInitiale = filieres.some((f) => f.id !== "socle" && f.id === session?.filiere) ? session!.filiere! : "";
-  const niveauInitial = niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "";
+  // Au retour d'une page de module entrée par un profil (question 55), c'est ce
+  // profil qui se rouvre.
+  const demande = lireProfilDemande(params);
+  const profilDemande =
+    demande && filieres.some((f) => f.id !== "socle" && f.id === demande.filiere) && niveaux.some((n) => n.code === demande.niveau)
+      ? demande
+      : null;
+  const filiereInitiale =
+    profilDemande?.filiere ?? (filieres.some((f) => f.id !== "socle" && f.id === session?.filiere) ? session!.filiere! : "");
+  const niveauInitial = profilDemande?.niveau ?? (niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "");
+  // Ordres des profils de ce parcours (question 55, choix a) : un profil qui a
+  // le sien voit ses modules numérotés dans cet ordre.
+  const ordresProfil: Record<string, string[]> =
+    baseConfiguree() && !programmeOuvert ? await ordresDuParcours(parcoursId).catch(() => ({})) : {};
 
   const troncCommun = programme.troncCommun.map((m) => resumer(m, enBase));
   const parPoste: Record<string, ModuleResume[]> = {};
@@ -121,7 +143,8 @@ export default async function Accueil({
 
   // « Reprendre ma formation » (22/09/2026) : le programme de référence est
   // celui qui s'affiche à l'arrivée — le programme à la carte, ou le socle et
-  // la filière du code de poste, au niveau du code — dans l'ordre de la fiche.
+  // la filière du code de poste, au niveau du code — dans l'ordre de la fiche,
+  // ou dans celui du profil s'il en a un (question 55).
   const auNiveau = (liste: ModuleResume[]) =>
     niveauInitial ? liste.filter((m) => m.niveaux.includes(niveauInitial)) : liste;
   const etape = (m: ModuleResume): EtapeReprise => ({
@@ -131,8 +154,10 @@ export default async function Accueil({
     redige: m.redige,
     badge: m.badge,
   });
+  const profilArrivee = [...auNiveau(troncCommun), ...auNiveau(filiereInitiale ? (parPoste[filiereInitiale] ?? []) : [])];
+  const ordreArrivee = filiereInitiale && niveauInitial ? ordresProfil[cleProfil(filiereInitiale, niveauInitial)] : undefined;
   const programmeArrivee: EtapeReprise[] = (
-    aLaCarte ? aLaCarte.modules : [...auNiveau(troncCommun), ...auNiveau(filiereInitiale ? (parPoste[filiereInitiale] ?? []) : [])]
+    aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee) : profilArrivee
   ).map(etape);
   const catalogue: EtapeReprise[] = [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
   // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base.
@@ -172,7 +197,13 @@ export default async function Accueil({
           evaluation={evaluationEnCours}
           programme={programmeArrivee}
           catalogue={catalogue}
-          requete={aLaCarte ? `?programme=${aLaCarte.id}` : ""}
+          requete={
+            aLaCarte
+              ? `?programme=${aLaCarte.id}`
+              : ordreArrivee
+                ? requeteProfil({ parcours: parcoursId, filiere: filiereInitiale, niveau: niveauInitial })
+                : ""
+          }
         />
         <div className="actions" style={{ marginTop: 0 }}>
           <a href="#modules" className="bouton bouton--secondaire">
@@ -253,6 +284,8 @@ export default async function Accueil({
           documents={documents}
           filiereInitiale={filiereInitiale}
           niveauInitial={niveauInitial}
+          parcours={parcoursId}
+          ordresProfil={ordresProfil}
           identifiantRattache={ratt?.identifiant ?? null}
           documentsReserves={documentsReserves}
           essai={Boolean(session?.essai)}

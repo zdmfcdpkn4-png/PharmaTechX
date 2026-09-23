@@ -25,7 +25,8 @@ import {
   sessionRequise,
 } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
-import { moduleExiste } from "@/content/store";
+import { moduleExiste, modulesDuParcours } from "@/content/store";
+import { lireOrdreSaisi } from "@/content/ordres";
 import { lireIdProgramme } from "@/content/programmes";
 import { lireProgramme } from "@/content/programmes-db";
 import { filtrerProfils } from "@/content/modules-db";
@@ -253,16 +254,15 @@ export async function actionSupprimerDepot(formData: FormData) {
 
 export async function actionOrdonner(formData: FormData) {
   const s = await sessionRequise("tuteur");
-  const parcours = String(formData.get("parcours") ?? "integration");
-  const entrees = String(formData.get("ordre") ?? "")
-    .split(",")
-    .map((x) => x.trim())
-    .filter(Boolean);
+  const parcours = formData.get("parcours") === "maintien" ? "maintien" : "integration";
+  // Liste rangée à l'écran (question 55) : les modules du parcours, dans
+  // l'ordre affiché ; rien d'étranger au parcours n'est retenu.
+  const entrees = lireOrdreSaisi(formData.getAll("modules"), (await modulesDuParcours(parcours)).map((m) => m.id));
   for (let i = 0; i < entrees.length; i++) {
     await ecrireRang(entrees[i], parcours, i);
   }
   await journaliser(s, "ordonnancement", parcours, { n: entrees.length });
   revalidatePath("/admin/ordonnancement");
   revalidatePath("/");
-  redirect("/admin/ordonnancement?ok=enregistre");
+  redirect(`/admin/ordonnancement?ok=enregistre&parcours=${parcours}`);
 }

@@ -1764,6 +1764,122 @@ Justification : cf. procédure interne.`,
   await rebrancher(codeAdmin);
   ok("programme à la carte : brouillon invisible, validé par le tuteur, proposé marqué « dégradé », ordre du programme et module suivant tenus, code de poste ouvert d'office, modifié il repasse en brouillon");
 
+  // 12j ter bis. ordonnancement par profil de poste et niveau cible (question 55, choix a) :
+  //              seuls les modules du profil, rangés au numéro, à la flèche et au glisser ;
+  //              l'accueil du profil les numérote dans cet ordre et « suivant » le suit ; un
+  //              profil sans ordre garde les blocs ; retour à l'ordre général, journalisé.
+  const deplacerId = (l, de, vers) => {
+    const c = [...l];
+    const [x] = c.splice(de, 1);
+    c.splice(vers, 0, x);
+    return c;
+  };
+  const lignesOrdre = page.locator(".liste-ordonnable li");
+  const idsOrdre = () => lignesOrdre.locator("input[type=hidden][name=modules]").evaluateAll((es) => es.map((e) => e.value));
+  const titresOrdre = () =>
+    lignesOrdre
+      .locator(".ordonnable-poignee")
+      .evaluateAll((bs) => bs.map((b) => /« (.*) »/.exec(b.getAttribute("aria-label"))[1]));
+  // Mouvement réduit le temps de l'étape : le site défile en douceur, et un défilement
+  // encore en cours après la mesure des positions ferait saisir la ligne voisine au glisser.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(BASE + "/admin/ordonnancement");
+  await page.waitForSelector("h2:has-text('Ordre général — Intégration')");
+  assert.equal(await page.locator("input[name=ordre]").count(), 0, "plus de saisie d'identifiants séparés par des virgules");
+  // Ordre général : rangé, relu, puis rétabli tel qu'il était — les étapes suivantes lisent l'ordre de la fiche.
+  const generalAvant = await idsOrdre();
+  await lignesOrdre.last().locator("input.ordonnable-rang").fill("1");
+  await lignesOrdre.last().locator("input.ordonnable-rang").press("Enter");
+  assert.deepEqual(await idsOrdre(), deplacerId(generalAvant, generalAvant.length - 1, 0), "ordre général : numéro saisi");
+  await page.click("button:has-text(\"Enregistrer l'ordre général\")");
+  await page.waitForURL(/ok=enregistre/);
+  await page.waitForSelector("text=Ordre général enregistré");
+  assert.deepEqual(await idsOrdre(), deplacerId(generalAvant, generalAvant.length - 1, 0), "ordre général relu");
+  await lignesOrdre.first().locator("input.ordonnable-rang").fill(String(generalAvant.length));
+  await lignesOrdre.first().locator("input.ordonnable-rang").press("Enter");
+  // Même adresse qu'au premier enregistrement : on attend la réponse de l'action, puis
+  // on relit une page neuve — sans quoi la page rafraîchie par l'action arrive après coup.
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.click("button:has-text(\"Enregistrer l'ordre général\")"),
+  ]);
+  await page.goto(BASE + "/admin/ordonnancement?parcours=integration");
+  await page.waitForSelector("h2:has-text('Ordre général — Intégration')");
+  assert.deepEqual(await idsOrdre(), generalAvant, "ordre général rétabli");
+  // Profil : les niveaux proposés sont ceux de la filière choisie.
+  await page.selectOption("select[name=filiere]", "chimiotherapie");
+  const niveauxChimio = await page.locator("select[name=niveau] option").evaluateAll((os) => os.map((o) => o.value));
+  assert.ok(niveauxChimio.includes("N1c") && niveauxChimio.includes("N2"), "niveaux de la filière proposés : " + niveauxChimio);
+  assert.ok(!niveauxChimio.includes("N1b"), "pas ceux d'une autre filière");
+  await page.selectOption("select[name=niveau]", "N1c");
+  await page.click("button:has-text('Afficher les modules')");
+  await page.waitForURL(/filiere=chimiotherapie&niveau=N1c/);
+  await page.waitForSelector("text=Pas encore d'ordre propre");
+  const profilAvant = await idsOrdre();
+  assert.ok(profilAvant.length >= 4, "au moins quatre modules à ranger dans le profil");
+  let attenduProfil = deplacerId(profilAvant, profilAvant.length - 1, 0);
+  await lignesOrdre.last().locator("input.ordonnable-rang").fill("1");
+  await lignesOrdre.last().locator("input.ordonnable-rang").press("Enter");
+  assert.deepEqual(await idsOrdre(), attenduProfil, "numéro saisi : le dernier passe en tête");
+  attenduProfil = deplacerId(attenduProfil, 2, 1);
+  await lignesOrdre.nth(2).locator("button[aria-label^='Monter']").click();
+  assert.deepEqual(await idsOrdre(), attenduProfil, "flèche : le troisième monte d'un rang");
+  attenduProfil = deplacerId(attenduProfil, 3, 0);
+  await lignesOrdre.nth(1).evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+  const poigneeOrdre = await lignesOrdre.nth(3).locator(".ordonnable-poignee").boundingBox();
+  const teteOrdre = await lignesOrdre.nth(0).boundingBox();
+  await page.mouse.move(poigneeOrdre.x + poigneeOrdre.width / 2, poigneeOrdre.y + poigneeOrdre.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(poigneeOrdre.x + poigneeOrdre.width / 2, teteOrdre.y + 4, { steps: 12 });
+  await page.mouse.up();
+  assert.deepEqual(await idsOrdre(), attenduProfil, "glisser : le quatrième posé en tête");
+  const titresAttendus = await titresOrdre();
+  await page.click("button:has-text(\"Enregistrer l'ordre de ce profil\")");
+  await page.waitForURL(/ok=profil/);
+  await page.waitForSelector("text=Ordre propre de ce profil, fixé le");
+  assert.deepEqual(await idsOrdre(), attenduProfil, "ordre du profil relu après enregistrement");
+  await page.waitForSelector("#t-ordres + ul a:has-text('Parcours Chimiothérapie')");
+  // Accueil du profil : une seule chronologie numérotée, dans cet ordre.
+  await page.goto(BASE + "/");
+  await page.locator("#composer select").nth(0).selectOption("chimiotherapie");
+  await page.locator("#composer select").nth(1).selectOption("N1c");
+  await page.waitForSelector("h2:has-text('Modules du profil')");
+  assert.equal(await page.locator("h2:has-text('Socle transversal')").count(), 0, "chronologie unique : plus de blocs pour ce profil");
+  assert.deepEqual(await page.locator("#modules .grille .carte--module h3").allInnerTexts(), titresAttendus, "accueil dans l'ordre du profil");
+  assert.equal((await page.locator("#modules .grille .carte--module").first().locator(".meta-module li").first().textContent()).trim(), "n° 1");
+  assert.equal(await page.locator(".tuile .valeur").first().innerText(), String(attenduProfil.length), "même nombre de modules qu'à l'écran d'ordonnancement");
+  // Le module suivant suit la chronologie, et le retour rouvre le profil.
+  const lienProfil = await page.locator("#modules .grille a.carte-lien").first().getAttribute("href");
+  assert.match(lienProfil, /\?parcours=integration&filiere=chimiotherapie&niveau=N1c$/, "l'adresse du module garde le profil");
+  const idLien = /\/module\/([^?]+)/.exec(lienProfil)[1];
+  const rangLien = attenduProfil.indexOf(idLien);
+  await page.goto(BASE + lienProfil);
+  const positionProfil = await page.locator("p.legende:has-text('Parcours :')").innerText();
+  assert.ok(positionProfil.includes(`module ${rangLien + 1} sur ${attenduProfil.length}`), "rang dans la chronologie : " + positionProfil);
+  if (rangLien + 1 < attenduProfil.length) {
+    assert.ok(positionProfil.includes(`suivant : ${titresAttendus[rangLien + 1]}`), "suivant dans la chronologie : " + positionProfil);
+  }
+  await page.click("a:has-text('Retour au programme')");
+  await page.waitForURL(/\/\?parcours=integration&filiere=chimiotherapie&niveau=N1c$/);
+  await page.waitForSelector("h2:has-text('Modules du profil')");
+  // Un profil sans ordre propre garde les blocs.
+  await page.locator("#composer select").nth(1).selectOption("N2");
+  await page.waitForSelector("h2:has-text('Socle transversal')");
+  assert.equal(await page.locator("h2:has-text('Modules du profil')").count(), 0, "profil sans ordre : blocs");
+  // Retour à l'ordre général, journalisé.
+  await page.goto(BASE + "/admin/ordonnancement?parcours=integration&filiere=chimiotherapie&niveau=N1c");
+  await page.click("button:has-text(\"Revenir à l'ordre général\")");
+  await page.waitForURL(/ok=retire/);
+  await page.waitForSelector("text=Pas encore d'ordre propre");
+  assert.equal(await page.locator("#t-ordres").count(), 0, "plus aucun profil n'a son ordre");
+  await page.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N1c");
+  await page.waitForSelector("h2:has-text('Socle transversal')");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:text-is('ordonnancement:profil')");
+  await page.waitForSelector("code:text-is('ordonnancement:profil-retire')");
+  await page.emulateMedia({ reducedMotion: null });
+  ok("ordonnancement par profil : modules du seul profil, rangés au numéro, à la flèche et au glisser ; accueil numéroté dans cet ordre, module suivant et retour tenus ; profil sans ordre en blocs ; ordre général rangé de même ; retour à l'ordre général journalisé");
+
   // 12j quater. barres de progression (22/09/2026) : dans le test, une pastille par
   //             question, grisée puis en couleur une fois renseignée ; dans le parcours,
   //             les badges des modules, en couleur quand le critère est acquis, grisés

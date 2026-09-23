@@ -2723,12 +2723,74 @@ API. Dans un second navigateur, l'horloge avancée de quatre heures : l'onglet
 dont la session est entretenue ailleurs reste, celui dont la session est
 inactive se remet seul à la connexion.
 
+## Ordonnancement par profil de poste et niveau cible (23/09/2026, question 55, choix a)
+
+**Demande.** « Prévoir un ordonnancement par profil de poste et par niveau
+cible. Possibilité de réaliser un ordonnancement à la carte pour un
+utilisateur. Après sélection du profil et du type de parcours, choix limité
+de modules accessibles pour ordonnancement, soit en glissant de haut en bas,
+soit par numérotation chronologique. » Existant : un seul ordre par parcours
+(Intégration, Maintien), pour toutes les filières et tous les niveaux, saisi
+comme une liste d'identifiants séparés par des virgules ; à l'accueil, les
+modules sont regroupés par bloc et l'ordre ne joue qu'à l'intérieur d'un
+bloc.
+
+**Tranché : a** — pour un profil qui a son ordre, l'accueil affiche une
+chronologie unique numérotée, socle et filière mêlés, comme un programme à
+la carte ; les profils sans ordre propre gardent le regroupement par bloc.
+Écartés : les blocs conservés, l'ordre ne jouant qu'à l'intérieur de chacun
+(b) ; les blocs numérotés, dont les numéros sautent d'un bloc à l'autre (c).
+Accepté en contrepartie : plus de défilement sur téléphone pour ces profils
+(le regroupement par bloc avait été choisi pour cela, question 37).
+
+**Ce qui est fait.**
+- Un ordre par filière, niveau cible et parcours (table `ordres_profil`). Il
+  porte sur les seuls modules du profil : socle et filière, au niveau cible,
+  exactement ceux que l'accueil montre pour ce choix.
+- Écran Ordre (`/admin/ordonnancement`) : parcours, profil de poste, puis
+  niveau cible, dont la liste suit la filière choisie ; tutorat et
+  administration. Les modules se rangent en glissant la poignée (souris ou
+  doigt : le glisser-déposer natif ne marche pas au doigt sur iPad), avec les
+  flèches ↑ ↓ ou les touches fléchées, ou en tapant leur numéro
+  (`components/ListeOrdonnable.tsx`). Chaque déplacement est annoncé aux
+  lecteurs d'écran ; près d'un bord, la page défile sans animation, pour ne
+  pas traîner derrière le doigt. « Revenir à l'ordre général » retire l'ordre propre. Les
+  profils qui ont leur ordre sont listés, avec qui l'a fixé et quand.
+- L'ordre général du parcours se range de la même façon : la saisie
+  d'identifiants a disparu. Il vaut pour les profils sans ordre propre et
+  sert de point de départ à l'ordre d'un profil.
+- Accueil : le profil choisi qui a son ordre voit « Modules du profil »,
+  numérotés dans cet ordre ; la barre de badges et « Reprendre » le suivent.
+  L'adresse d'un module garde le profil (`?parcours=…&filiere=…&niveau=…`,
+  comme `?programme=` pour un programme à la carte) : la page du module et la
+  fin de test enchaînent sur le module suivant de la chronologie, et
+  « Retour au programme » rouvre le même profil.
+- Un ordre ne se périme pas en silence : un module entré depuis dans le
+  profil se range après les autres, marqué « nouveau, à ranger » à l'écran ;
+  un module qui en est sorti n'y paraît plus.
+- Journal : `ordonnancement:profil`, `ordonnancement:profil-retire`.
+
+**Reste à trancher.** L'ordre « à la carte pour un utilisateur » (question
+56).
+
+**Vérifié le 23/09/2026.** `npm run verifier` (257 tests), `npm run build`,
+deux passes de bout en bout de 82 étapes, sans erreur de page ni erreur
+serveur. L'étape ajoutée range l'ordre général au numéro, le relit, puis le
+rétablit ; choisit Chimiothérapie, dont seuls les niveaux N1c et N2 sont
+proposés ; range le profil N1c au numéro, à la flèche et au glisser, l'enregistre
+et le relit ; retrouve à l'accueil les modules numérotés dans cet ordre, en
+même nombre ; suit le module suivant et revient au profil ; trouve les blocs
+pour N2, sans ordre ; retire l'ordre et lit le journal. Le glisser s'y joue
+en mouvement réduit : le site défile en douceur, et un défilement encore en
+cours après la mesure faisait saisir au robot la ligne voisine.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
   module déposé porte une présentation courte seulement.
 - Purge automatique des rapports à l'échéance de conservation.
-- Glisser-déposer pour l'ordonnancement des modules.
+- ~~Glisser-déposer pour l'ordonnancement des modules~~ — fait le
+  23/09/2026 (question 55), au doigt comme à la souris.
 - Mode sombre (décision antérieure : plus tard).
 - ~~Test de bout en bout navigateur (Playwright)~~ — fait depuis :
   `e2e/parcours.e2e.js` couvre les parcours apprenant, tutorat et

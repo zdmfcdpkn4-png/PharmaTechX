@@ -73,7 +73,8 @@ jamais seulement par l'affichage.
 
 ## 4. Ce qui est stocké, et ce qui ne l'est pas
 
-**Stocké** (configuration du site) : `acces` (codes hachés), `ordonnancement`,
+**Stocké** (configuration du site) : `acces` (codes hachés), `ordonnancement`
+(ordre général) et `ordres_profil` (ordre d'un profil de poste à un niveau cible),
 `depots` (index des documents, avec leurs profils ; fichiers en Blob ou dans
 `fichiers`), `questions` / `situations` / `images` / `depots_questions`
 (banque déposée), `modules_deposes` (modules ajoutés depuis
@@ -361,7 +362,9 @@ code (décision du 18/09/2026, question 10).
 
 ## 12. Limites connues
 
-- L'ordonnancement se saisit comme une liste d'identifiants.
+- L'ordonnancement se fixe par profil de poste, niveau cible et parcours
+  (question 55), en glissant, aux flèches ou au numéro ; pas encore d'ordre
+  propre à une personne.
 - Pas de purge automatique des rapports (décision) : purge manuelle par
   l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
   annulés seulement.

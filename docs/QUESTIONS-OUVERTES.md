@@ -371,6 +371,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+56. **Ordre « à la carte pour un utilisateur »** — suite de la question 55,
+    posée le 23/09/2026. Trois lectures : un ordre propre à un apprenant,
+    attaché à son identifiant, sur les modules de son profil, sans mention
+    « dégradé » (a) ; le programme à la carte de la question 50 ouvert sur un
+    identifiant plutôt que sur un code de poste (b) ; rien de plus, un code
+    de poste par personne (c).
+
 55. **Ordonnancement par profil de poste et niveau cible** — demandé le
     23/09/2026 : « un ordonnancement par profil de poste et par niveau cible ;
     à la carte pour un utilisateur ; après sélection du profil et du type de
@@ -379,10 +386,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     (Intégration, Maintien), saisi en liste d'identifiants ; à l'accueil, les
     modules sont regroupés par bloc de la fiche et l'ordre ne joue qu'à
     l'intérieur d'un bloc ; les programmes à la carte (question 50) sont
-    affichés en liste numérotée. Posée le 23/09/2026 : ce que l'accueil
-    montre d'un profil qui a son ordre — chronologie unique numérotée (a),
-    blocs conservés (b), blocs numérotés (c). L'ordre « pour un
-    utilisateur » viendra ensuite.
+    affichés en liste numérotée. Posée et tranchée le 23/09/2026 (choix a) :
+    un profil qui a son ordre voit à l'accueil une chronologie unique
+    numérotée, socle et filière mêlés ; les autres gardent les blocs. Ordre
+    fixé par filière, niveau cible et parcours, en glissant, aux flèches ou
+    au numéro. Détail dans `DECISIONS.md`. L'ordre « pour un utilisateur »
+    reste à trancher.
 
 54. **Signalement des questions erronées ou à réviser** — demandé le
     23/09/2026 « s'il n'existe pas » ; vérifié : il existe (question 30).

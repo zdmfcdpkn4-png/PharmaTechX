@@ -10,6 +10,8 @@ import { IDENTIFIANT_ESSAI, LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
+import { chronologie, cleProfil, requeteProfil } from "@/content/ordres";
+import type { TypeParcours } from "@/content/types";
 import { BarreBadges } from "./BarreBadges";
 import { Badge } from "./Badge";
 import {
@@ -297,6 +299,8 @@ export function TableauDeBord({
   documentsReserves = 0,
   aLaCarte = null,
   essai = false,
+  parcours = "integration",
+  ordresProfil = {},
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -326,6 +330,14 @@ export function TableauDeBord({
    * ESSAI-…, sans enregistrement ; chaque rapport porte le filigrane d'essai.
    */
   essai?: boolean;
+  /** Parcours affiché : il entre dans l'adresse des modules d'un profil qui a son ordre. */
+  parcours?: TypeParcours;
+  /**
+   * Ordres des profils de ce parcours (question 55, choix a), par clé
+   * « filière|niveau » : le profil choisi qui a le sien voit ses modules
+   * numérotés dans cet ordre, socle et filière mêlés.
+   */
+  ordresProfil?: Record<string, string[]>;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -412,9 +424,15 @@ export function TableauDeBord({
   const socle = parNiveau(troncCommun);
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
+  const ordreProfil = !aLaCarte && posteId && niveauCode ? ordresProfil[cleProfil(posteId, niveauCode)] : undefined;
   const programme = useMemo(
-    () => (aLaCarte ? aLaCarte.modules : [...socle, ...modulesPoste]),
-    [aLaCarte, socle, modulesPoste],
+    () =>
+      aLaCarte
+        ? aLaCarte.modules
+        : ordreProfil
+          ? chronologie([...socle, ...modulesPoste], ordreProfil)
+          : [...socle, ...modulesPoste],
+    [aLaCarte, socle, modulesPoste, ordreProfil],
   );
   const groupesSocle = useMemo(() => grouperParBloc(socle, blocs, "socle"), [socle, blocs]);
   const groupesPoste = useMemo(
@@ -431,7 +449,11 @@ export function TableauDeBord({
   const titreBloc = (numero: string) => blocs.find((b) => b.numero === numero)?.titre ?? "";
   const blocsPresents = blocs.filter((b) => programme.some((m) => m.bloc === b.numero));
   const trouves = actifs ? filtrerModules(programme, filtres, etatDe, titreBloc) : [];
-  const requeteCarte = aLaCarte ? `?programme=${aLaCarte.id}` : "";
+  const requeteCarte = aLaCarte
+    ? `?programme=${aLaCarte.id}`
+    : ordreProfil
+      ? requeteProfil({ parcours, filiere: posteId, niveau: niveauCode })
+      : "";
 
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
   const acquis = resultats.filter((r) => r.reussi).length;
@@ -573,7 +595,7 @@ export function TableauDeBord({
           badge: m.badge,
           evaluable: m.nbQuestions > 0,
         }))}
-        requete={aLaCarte ? `?programme=${aLaCarte.id}` : ""}
+        requete={requeteCarte}
       />
 
       {/* Recherche et filtres (22/09/2026) : texte, bloc, avancement, dans le
@@ -663,6 +685,24 @@ export function TableauDeBord({
           <div className="grille">
             {aLaCarte.modules.map((m, i) => (
               <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={`?programme=${aLaCarte.id}`} />
+            ))}
+          </div>
+        </>
+      ) : ordreProfil ? (
+        <>
+          {/* Profil qui a son ordre (question 55, choix a) : une seule
+              chronologie, socle et filière mêlés, numérotée comme un
+              programme à la carte ; le regroupement par bloc reste aux
+              profils sans ordre propre. */}
+          <div className="section-titre">
+            <h2>Modules du profil</h2>
+            <span className="compte">
+              {programme.length} module{programme.length > 1 ? "s" : ""}, dans l&apos;ordre fixé par le tutorat
+            </span>
+          </div>
+          <div className="grille">
+            {programme.map((m, i) => (
+              <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={requeteCarte} />
             ))}
           </div>
         </>

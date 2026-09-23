@@ -12,6 +12,8 @@ import { lireModuleDepose, lireReglagesModules, listerModulesDeposes, versModule
 import { appliquerReglage } from "./reglages";
 import { lireProgramme } from "./programmes-db";
 import { libelleProgramme, modulesDuProgramme } from "./programmes";
+import { lireOrdreProfil } from "./ordres-db";
+import { chronologie, modulesDuProfil } from "./ordres";
 
 /**
  * Accès au contenu — serveur uniquement.
@@ -157,7 +159,7 @@ export interface Programme {
  * sont [à préciser] : filtrer sur une donnée non renseignée masquerait des
  * modules au lieu de signaler que l'information manque.
  */
-export async function composerProgramme(parcoursId: TypeParcours): Promise<Programme> {
+async function parcoursOrdonne(parcoursId: TypeParcours) {
   const avecBase = baseConfiguree();
   const deposes = avecBase ? (await listerModulesDeposes("publie").catch(() => [])).map(versModule) : [];
   const rangs: Record<string, number> = avecBase ? await lireOrdonnancement(parcoursId).catch(() => ({})) : {};
@@ -168,12 +170,37 @@ export async function composerProgramme(parcoursId: TypeParcours): Promise<Progr
       .map((m, i) => ({ m, cle: rangs[m.id] ?? 1_000_000 + i }))
       .sort((a, b) => a.cle - b.cle)
       .map((x) => x.m);
+  return { duParcours, ordonner };
+}
+
+export async function composerProgramme(parcoursId: TypeParcours): Promise<Programme> {
+  const { duParcours, ordonner } = await parcoursOrdonne(parcoursId);
   const parFiliere: Record<string, Module[]> = {};
   for (const f of await listeFilieres()) {
     if (f.id === "socle") continue;
     parFiliere[f.id] = ordonner(duParcours.filter((m) => m.affectation === "poste" && m.postes.includes(f.id)));
   }
   return { troncCommun: ordonner(duParcours.filter((m) => m.affectation === "tronc-commun")), parFiliere };
+}
+
+/**
+ * Tous les modules d'un parcours, dans l'ordre général enregistré puis celui
+ * de la fiche : la liste que range l'ordre général (`/admin/ordonnancement`).
+ */
+export async function modulesDuParcours(parcoursId: TypeParcours): Promise<Module[]> {
+  const { duParcours, ordonner } = await parcoursOrdonne(parcoursId);
+  return ordonner(duParcours);
+}
+
+/**
+ * Modules d'un profil de poste à un niveau cible (question 55, choix a) :
+ * socle et filière au niveau, dans l'ordre par défaut — ordre général du
+ * parcours, puis fiche. L'ordre propre du profil s'applique par-dessus
+ * (`content/ordres.ts`).
+ */
+export async function modulesDuProfilDeParcours(parcoursId: TypeParcours, filiere: string, niveau: string): Promise<Module[]> {
+  const p = await composerProgramme(parcoursId);
+  return modulesDuProfil(p.troncCommun, p.parFiliere[filiere] ?? [], niveau);
 }
 
 export interface PositionParcours {
@@ -204,6 +231,28 @@ export async function positionDansParcours(parcoursId: TypeParcours, moduleId: s
     if (v) return { liste, libelle, ...v };
   }
   return null;
+}
+
+/**
+ * Place d'un module dans la chronologie d'un profil qui a son ordre (question
+ * 55, choix a) : le précédent et le suivant dans cet ordre. `null` sans ordre
+ * propre, ou si le module n'est pas du profil — la page retombe alors sur le
+ * parcours d'intégration.
+ */
+export async function positionDansProfil(
+  parcoursId: TypeParcours,
+  filiere: string,
+  niveau: string,
+  moduleId: string,
+): Promise<PositionParcours | null> {
+  if (!baseConfiguree()) return null;
+  const ordre = await lireOrdreProfil(filiere, niveau, parcoursId).catch(() => null);
+  if (!ordre) return null;
+  const liste = chronologie(await modulesDuProfilDeParcours(parcoursId, filiere, niveau), ordre.modules);
+  const v = voisins(liste, moduleId);
+  if (!v) return null;
+  const libelleFiliere = (await listeFilieres()).find((f) => f.id === filiere)?.libelle ?? filiere;
+  return { liste: `profil-${filiere}-${niveau}`, libelle: `${libelleFiliere} · ${niveau}`, ...v };
 }
 
 /**

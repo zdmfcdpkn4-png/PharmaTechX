@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansParcours, positionDansProgramme } from "@/content/store";
+import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
+import { lireProfilDemande, requeteProfil } from "@/content/ordres";
 import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER, libelleNature } from "@/content/types";
 import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db";
@@ -20,7 +21,7 @@ export default async function PageModule({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ programme?: string }>;
+  searchParams: Promise<{ programme?: string; parcours?: string; filiere?: string; niveau?: string }>;
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   // Un module déposé non publié n'est lisible qu'en tutorat ou en administration.
@@ -42,8 +43,11 @@ export default async function PageModule({
   // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
   const idProgramme = lireIdProgramme(sp.programme);
   const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id) : null;
-  const position = dansProgramme ?? (await positionDansParcours("integration", mod.id));
-  const requete = dansProgramme ? `?programme=${idProgramme}` : "";
+  // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa chronologie.
+  const profil = dansProgramme ? null : lireProfilDemande(sp);
+  const dansProfil = profil ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id) : null;
+  const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
+  const requete = dansProgramme ? `?programme=${idProgramme}` : dansProfil && profil ? requeteProfil(profil) : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
 
   const contenu = (
@@ -161,7 +165,7 @@ export default async function PageModule({
               Module suivant
             </Link>
           )}
-          <Link href={dansProgramme ? `/?programme=${idProgramme}` : "/"} className="bouton bouton--secondaire">
+          <Link href={`/${requete}`} className="bouton bouton--secondaire">
             Retour au programme
           </Link>
         </div>
@@ -194,7 +198,7 @@ export default async function PageModule({
     <article>
       <NoterConsultation module={mod.id} titre={mod.titre} />
       <p className="fil">
-        <Link href={dansProgramme ? `/?programme=${idProgramme}` : "/"}>Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
+        <Link href={`/${requete}`}>Programme</Link> › {typeof mod.critereId === "string" && mod.critereId !== A_PRECISER ? mod.critereId : mod.titre}
       </p>
 
       <section className="panneau-titre">

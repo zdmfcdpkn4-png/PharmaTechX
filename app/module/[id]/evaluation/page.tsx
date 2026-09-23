@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansParcours, positionDansProgramme } from "@/content/store";
+import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
+import { lireProfilDemande, requeteProfil } from "@/content/ordres";
 import { syntheseDuModule } from "@/lib/synthese";
 import { lireEnCours, rattachement } from "@/lib/progression";
 import { A_PRECISER, banquePublique } from "@/content/types";
@@ -18,7 +19,7 @@ export default async function PageEvaluation({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ programme?: string }>;
+  searchParams: Promise<{ programme?: string; parcours?: string; filiere?: string; niveau?: string }>;
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   // Un module déposé non publié ne s'évalue qu'en tutorat ou en administration.
@@ -26,15 +27,18 @@ export default async function PageEvaluation({
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
   const idProgramme = lireIdProgramme(sp.programme);
-  const [bareme, syntheses, dansProgramme, ratt] = await Promise.all([
+  const profil = idProgramme ? null : lireProfilDemande(sp);
+  const [bareme, syntheses, dansProgramme, dansProfil, ratt] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
+    profil ? positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id) : Promise.resolve(null),
     rattachement(),
   ]);
-  // Programme à la carte (question 50) : le module suivant est celui du programme.
-  const position = dansProgramme ?? (await positionDansParcours("integration", mod.id));
-  const requete = dansProgramme ? `?programme=${idProgramme}` : "";
+  // Programme à la carte (question 50) ou profil qui a son ordre (question 55) :
+  // le module suivant est celui de leur ordre.
+  const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
+  const requete = dansProgramme ? `?programme=${idProgramme}` : dansProfil && profil ? requeteProfil(profil) : "";
   const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
   // Un document de synthèse déposé est réservé aux sessions ouvertes par un code (question 13, choix b).
   const synthesesVisibles = session ? syntheses : syntheses.filter((d) => !d.url.startsWith("/api/fichiers/"));

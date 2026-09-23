@@ -46,6 +46,7 @@ export const TABLES = [
   "filieres_deposees",
   "niveaux_deposes",
   "programmes",
+  "ordres_profil",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -398,6 +399,19 @@ export const SCHEMA: string[] = [
      valide_le    TIMESTAMPTZ
    )`,
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS programme_id INTEGER REFERENCES programmes(id) ON DELETE SET NULL`,
+
+  // ── ordre d'un profil de poste à un niveau cible (question 55, 23/09/2026) ─
+  // Chronologie des modules du profil, par identifiant ; sans ligne, le
+  // profil suit l'ordre général du parcours (table ordonnancement), puis la fiche.
+  `CREATE TABLE IF NOT EXISTS ordres_profil (
+     filiere_id  TEXT NOT NULL,
+     niveau      TEXT NOT NULL,
+     parcours    TEXT NOT NULL CHECK (parcours IN ('integration','maintien')),
+     modules     JSONB NOT NULL DEFAULT '[]'::jsonb,
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     PRIMARY KEY (filiere_id, niveau, parcours)
+   )`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

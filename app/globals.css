@@ -2226,6 +2226,58 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
  * entrée de page. Voir `docs/ACCES-RAPIDE.md` et `docs/DECISIONS.md`.
  * ========================================================================== */
 
+/* ── liste à ranger : ordonnancement (question 55) ───────────────────────── */
+/* Une ligne par module : poignée, numéro, intitulé, flèches. La poignée
+   refuse le défilement tactile (`touch-action: none`), sans quoi le doigt
+   ferait défiler la page au lieu de glisser la ligne. */
+.liste-ordonnable ol { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.375rem; }
+.ordonnable {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+}
+.ordonnable--glisse { border-color: var(--marque); box-shadow: var(--ombre-haute); }
+.ordonnable-poignee {
+  flex: none;
+  min-width: var(--cible);
+  min-height: var(--cible);
+  border: 0;
+  border-radius: var(--rayon-sm);
+  background: transparent;
+  color: var(--texte-doux);
+  font-size: 1.25rem;
+  cursor: grab;
+  touch-action: none;
+}
+.ordonnable-poignee:focus-visible { outline: 3px solid var(--marque-anneau); outline-offset: -3px; }
+.ordonnable--glisse .ordonnable-poignee { cursor: grabbing; color: var(--marque); }
+.ordonnable-rang {
+  flex: none;
+  width: 4.5rem;
+  min-height: var(--cible);
+  padding: 0 0.5rem;
+  font: inherit;
+  font-size: 1rem;
+  text-align: center;
+  border: 1px solid var(--bord-fort);
+  border-radius: var(--rayon-sm);
+  background: var(--surface);
+  color: var(--texte);
+}
+.ordonnable-texte { flex: 1 1 12rem; min-width: 0; }
+.ordonnable-texte code { margin-right: 0.25rem; }
+.ordonnable-texte .etiquette { margin-left: 0.5rem; }
+.ordonnable-fleches { flex: none; display: flex; gap: 0.25rem; }
+.ordonnable-fleches [aria-disabled="true"] { opacity: 0.4; cursor: default; }
+@media (max-width: 40rem) {
+  .ordonnable { flex-wrap: wrap; }
+  .ordonnable-texte { flex-basis: 100%; order: 3; padding: 0 0.25rem 0.25rem; }
+}
+
 /* ── texte réservé aux lecteurs d'écran ──────────────────────────────────── */
 /* Ni `display:none` ni `visibility:hidden` : les deux retirent le texte de
    l'arbre d'accessibilité, c'est-à-dire exactement ce qu'on veut éviter. */
