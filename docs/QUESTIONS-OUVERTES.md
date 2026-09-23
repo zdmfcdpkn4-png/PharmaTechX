@@ -376,6 +376,33 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+64. **Banque en arborescence** — demandé le 23/09/2026 : « dans la
+    présentation de la banque de questions, proposer l'alternative d'une
+    présentation en arbre dépliable comme le quiz de Flore — Arborescence ».
+    Existant, mesuré sur la base d'essai (57 modules) : en tête de la
+    banque, l'arbre « Couverture » range les modules par filière puis par
+    niveau d'habilitation ; il est toujours déplié — seul l'étage filière se
+    replie, jamais celui du niveau — et occupe environ 4 200 px sur poste
+    (près de cinq écrans) et 8 800 px sur téléphone ; un module rattaché à
+    deux niveaux y figure deux fois (5 sur 57). Il mène à la liste, où
+    chaque question est une carte de 190 à 300 px (énoncé, propositions,
+    boutons), groupée par module. Chez Flore, l'arborescence de l'écran
+    « à la carte » suit le contenu — UE, matière, chapitre —, chaque rangée
+    avec son chevron et son décompte, et une bascule « Arborescence |
+    Diagramme ». Posée le 23/09/2026. Dans tous les cas : chevrons, décompte
+    à chaque rangée, « Tout déplier / Tout replier », mêmes filtres (statut,
+    niveau, obligatoires), branche rouverte après un geste (Valider,
+    Retirer). Vue « Arborescence » à côté de la vue « Liste », par le
+    contenu : grand module de la fiche (blocs 1 à 7, modules déposés à
+    part), module, question — chaque question une fois, dépliée pour ses
+    propositions et ses boutons, la répartition par niveau de question à la
+    rangée du module ; la couverture par filière et niveau reste dans la vue
+    Liste (a) ; même bascule, par le profil : filière, niveau
+    d'habilitation, module, question — un module rattaché à deux niveaux, et
+    ses questions, sous chacun (b) ; pas de seconde vue : la couverture
+    actuelle devient dépliable à chaque étage, repliée par défaut, la liste
+    inchangée (c).
+
 63. **Tirage : questions obligatoires, part aléatoire et répétitions** — suite
     de la question 62. Réponse du 23/09/2026 : « À mais définir un minimum
     pour la validité du test avec des questions taggées obligatoires pour la
