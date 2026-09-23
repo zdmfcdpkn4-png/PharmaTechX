@@ -10,7 +10,7 @@ import { IDENTIFIANT_ESSAI, LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
-import { chronologie, cleProfil, requeteProfil } from "@/content/ordres";
+import { chronologie, cleProfil, ordreApplicable, requeteProfil } from "@/content/ordres";
 import type { TypeParcours } from "@/content/types";
 import { BarreBadges } from "./BarreBadges";
 import { Badge } from "./Badge";
@@ -301,6 +301,7 @@ export function TableauDeBord({
   essai = false,
   parcours = "integration",
   ordresProfil = {},
+  ordresApprenant = {},
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -338,6 +339,11 @@ export function TableauDeBord({
    * numérotés dans cet ordre, socle et filière mêlés.
    */
   ordresProfil?: Record<string, string[]>;
+  /**
+   * Ordres propres à l'apprenant rattaché (question 56, choix a), par la même
+   * clé : ils passent avant ceux des profils.
+   */
+  ordresApprenant?: Record<string, string[]>;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -424,7 +430,9 @@ export function TableauDeBord({
   const socle = parNiveau(troncCommun);
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);
 
-  const ordreProfil = !aLaCarte && posteId && niveauCode ? ordresProfil[cleProfil(posteId, niveauCode)] : undefined;
+  const cleChoisie = !aLaCarte && posteId && niveauCode ? cleProfil(posteId, niveauCode) : "";
+  const ordreChoisi = cleChoisie ? ordreApplicable(ordresApprenant[cleChoisie], ordresProfil[cleChoisie]) : null;
+  const ordreProfil = ordreChoisi?.ordre;
   const programme = useMemo(
     () =>
       aLaCarte
@@ -697,7 +705,8 @@ export function TableauDeBord({
           <div className="section-titre">
             <h2>Modules du profil</h2>
             <span className="compte">
-              {programme.length} module{programme.length > 1 ? "s" : ""}, dans l&apos;ordre fixé par le tutorat
+              {programme.length} module{programme.length > 1 ? "s" : ""},{" "}
+              {ordreChoisi?.propre ? "dans votre ordre, fixé par le tutorat" : "dans l'ordre fixé par le tutorat"}
             </span>
           </div>
           <div className="grille">

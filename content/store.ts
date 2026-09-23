@@ -12,8 +12,8 @@ import { lireModuleDepose, lireReglagesModules, listerModulesDeposes, versModule
 import { appliquerReglage } from "./reglages";
 import { lireProgramme } from "./programmes-db";
 import { libelleProgramme, modulesDuProgramme } from "./programmes";
-import { lireOrdreProfil } from "./ordres-db";
-import { chronologie, modulesDuProfil } from "./ordres";
+import { lireOrdreAgent, lireOrdreProfil } from "./ordres-db";
+import { chronologie, modulesDuProfil, ordreApplicable } from "./ordres";
 
 /**
  * Accès au contenu — serveur uniquement.
@@ -235,20 +235,26 @@ export async function positionDansParcours(parcoursId: TypeParcours, moduleId: s
 
 /**
  * Place d'un module dans la chronologie d'un profil qui a son ordre (question
- * 55, choix a) : le précédent et le suivant dans cet ordre. `null` sans ordre
- * propre, ou si le module n'est pas du profil — la page retombe alors sur le
- * parcours d'intégration.
+ * 55, choix a) — ou dans celle de l'apprenant rattaché, s'il a la sienne sur
+ * ce profil (question 56, choix a) : le précédent et le suivant dans cet
+ * ordre. `null` sans ordre propre, ou si le module n'est pas du profil — la
+ * page retombe alors sur le parcours d'intégration.
  */
 export async function positionDansProfil(
   parcoursId: TypeParcours,
   filiere: string,
   niveau: string,
   moduleId: string,
+  agentId: number | null = null,
 ): Promise<PositionParcours | null> {
   if (!baseConfiguree()) return null;
-  const ordre = await lireOrdreProfil(filiere, niveau, parcoursId).catch(() => null);
+  const [propre, duProfil] = await Promise.all([
+    agentId ? lireOrdreAgent(agentId, filiere, niveau, parcoursId).catch(() => null) : Promise.resolve(null),
+    lireOrdreProfil(filiere, niveau, parcoursId).catch(() => null),
+  ]);
+  const ordre = ordreApplicable(propre?.modules, duProfil?.modules);
   if (!ordre) return null;
-  const liste = chronologie(await modulesDuProfilDeParcours(parcoursId, filiere, niveau), ordre.modules);
+  const liste = chronologie(await modulesDuProfilDeParcours(parcoursId, filiere, niveau), ordre.ordre);
   const v = voisins(liste, moduleId);
   if (!v) return null;
   const libelleFiliere = (await listeFilieres()).find((f) => f.id === filiere)?.libelle ?? filiere;

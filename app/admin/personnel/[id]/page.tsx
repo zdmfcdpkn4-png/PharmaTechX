@@ -6,6 +6,8 @@ import { LIBELLES_COURTS_VERDICT, type Verdict } from "@/lib/decision";
 import { lireAgent } from "@/lib/agents";
 import { historique, statistiquesAgent, type ResumeEntrainement } from "@/lib/progression";
 import { getTousModulesAvecDeposes } from "@/content/store";
+import { listerOrdresAgents, type OrdreAgent } from "@/content/ordres-db";
+import { requeteProfil } from "@/content/ordres";
 import { actionPurgerProgression, actionReinitialiserCode } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +30,12 @@ export default async function ProgressionAgent({
   if (!conservationActive()) notFound();
   const agent = await lireAgent(Number(id));
   if (!agent) notFound();
-  const [stats, traces, modules] = await Promise.all([statistiquesAgent(agent.id), historique(agent.id), getTousModulesAvecDeposes()]);
+  const [stats, traces, modules, ordres] = await Promise.all([
+    statistiquesAgent(agent.id),
+    historique(agent.id),
+    getTousModulesAvecDeposes(),
+    listerOrdresAgents(agent.id).catch((): OrdreAgent[] => []),
+  ]);
   const titre = (mid: string) => modules.find((m) => m.id === mid)?.titre ?? mid;
 
   return (
@@ -83,6 +90,26 @@ export default async function ProgressionAgent({
         </tbody>
       </table>
 
+      {/* Ordres de modules propres à cet apprenant (question 56) : fixés à l'écran
+          Ordre, purgés avec sa progression. */}
+      {ordres.length > 0 && (
+        <section className="carte" style={{ marginTop: "1rem" }} aria-labelledby="t-ordres-agent">
+          <h2 id="t-ordres-agent">Ordre propre des modules</h2>
+          <ul className="liste-nue">
+            {ordres.map((o) => (
+              <li key={`${o.parcours}-${o.filiere}-${o.niveau}`}>
+                <Link href={`/admin/ordonnancement${requeteProfil(o)}&agent=${encodeURIComponent(agent.identifiant)}`}>
+                  {o.filiere} · {o.niveau} — {o.parcours === "maintien" ? "Maintien d'habilitation" : "Intégration"}
+                </Link>{" "}
+                <span className="legende">
+                  {o.modules.length} module{o.modules.length > 1 ? "s" : ""}, fixé le {date(o.modifieLe)} par {o.modifiePar}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="carte" style={{ marginTop: "1rem" }}>
         <div className="actions" style={{ marginTop: 0 }}>
           {agent.code_defini && (
@@ -92,7 +119,7 @@ export default async function ProgressionAgent({
             </form>
           )}
         </div>
-        {session?.role === "admin" && traces.length > 0 && (
+        {session?.role === "admin" && (traces.length > 0 || ordres.length > 0) && (
           <form action={actionPurgerProgression} style={{ marginTop: ".75rem" }}>
             <input type="hidden" name="id" value={agent.id} />
             <div className="rangee">
@@ -102,7 +129,15 @@ export default async function ProgressionAgent({
               </label>
             </div>
             <div className="actions">
-              <button type="submit" className="bouton bouton--compact bouton--discret">Purger les {traces.length} trace{traces.length > 1 ? "s" : ""}</button>
+              <button type="submit" className="bouton bouton--compact bouton--discret">
+                Purger{" "}
+                {[
+                  traces.length > 0 ? `les ${traces.length} trace${traces.length > 1 ? "s" : ""}` : "",
+                  ordres.length > 0 ? `l'ordre propre` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" et ")}
+              </button>
               <span className="legende">Journalisé. Les rapports émis ne sont pas touchés.</span>
             </div>
           </form>

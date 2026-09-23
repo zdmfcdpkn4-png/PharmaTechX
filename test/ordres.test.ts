@@ -8,6 +8,7 @@ import {
   lireOrdreSaisi,
   lireProfilDemande,
   modulesDuProfil,
+  ordreApplicable,
   requeteProfil,
 } from "../content/ordres";
 
@@ -66,4 +67,13 @@ test("profil dans l'adresse : filière et niveau exigés, bien formés ; parcour
   const p = { parcours: "integration" as const, filiere: "chimiotherapie", niveau: "N1a" };
   assert.equal(requeteProfil(p), "?parcours=integration&filiere=chimiotherapie&niveau=N1a");
   assert.deepEqual(lireProfilDemande(Object.fromEntries(new URLSearchParams(requeteProfil(p)))), p, "aller-retour");
+});
+
+// ── Question 56 (choix a, 23/09/2026) : ordre propre à un apprenant
+
+test("ordre applicable : celui de l'apprenant rattaché d'abord, puis celui du profil, sinon aucun", () => {
+  assert.deepEqual(ordreApplicable(["b", "a"], ["a", "b"]), { ordre: ["b", "a"], propre: true });
+  assert.deepEqual(ordreApplicable(undefined, ["a", "b"]), { ordre: ["a", "b"], propre: false });
+  assert.equal(ordreApplicable(undefined, undefined), null, "ni l'un ni l'autre : ordre général, en blocs");
+  assert.deepEqual(ordreApplicable([], undefined), { ordre: [], propre: true }, "un ordre vide reste celui de l'apprenant");
 });

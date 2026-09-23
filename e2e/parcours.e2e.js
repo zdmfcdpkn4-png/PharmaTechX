@@ -2913,6 +2913,82 @@ Justification : cf. procédure interne.`,
       "entretenu ailleurs il reste",
   );
 
+  // 14d quater. ordre propre à un apprenant (question 56, choix a) : fixé pour AG-002 sur le
+  //             profil Chimiothérapie · N1c ; rattaché, il le voit avant l'ordre du profil,
+  //             et le module suivant le suit ; détaché, le profil reprend ; la purge de sa
+  //             progression l'emporte. Identifiant clos ou inconnu refusé.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/admin$/);
+  await page.goto(BASE + "/admin/ordonnancement");
+  await page.selectOption("select[name=filiere]", "chimiotherapie");
+  await page.selectOption("select[name=niveau]", "N1c");
+  await page.fill("input[name=agent]", "AG-999");
+  await page.click("button:has-text('Afficher les modules')");
+  await page.waitForSelector("[role=alert]:has-text('Identifiant d\\'apprenant inconnu')");
+  assert.equal(await lignesOrdre.count(), 0, "identifiant inconnu : aucune liste à ranger");
+  await page.goto(BASE + "/admin/ordonnancement?parcours=integration&filiere=chimiotherapie&niveau=N1c&agent=ag%201");
+  await page.waitForSelector("[role=alert]:has-text('Identifiant clos')");
+  await page.goto(BASE + "/admin/ordonnancement");
+  await page.selectOption("select[name=filiere]", "chimiotherapie");
+  await page.selectOption("select[name=niveau]", "N1c");
+  await page.fill("input[name=agent]", "ag 2");
+  await page.click("button:has-text('Afficher les modules')");
+  await page.waitForURL(/agent=ag/i);
+  await page.waitForSelector("text=Pas encore d'ordre propre à AG-002");
+  const apprenantAvant = await idsOrdre();
+  const attenduApprenant = deplacerId(apprenantAvant, apprenantAvant.length - 1, 0);
+  await lignesOrdre.last().locator("input.ordonnable-rang").fill("1");
+  await lignesOrdre.last().locator("input.ordonnable-rang").press("Enter");
+  assert.deepEqual(await idsOrdre(), attenduApprenant, "ordre de l'apprenant : numéro saisi");
+  const titresApprenant = await titresOrdre();
+  await page.click("button:has-text(\"Enregistrer l'ordre de AG-002\")");
+  await page.waitForURL(/ok=apprenant/);
+  await page.waitForSelector("text=Ordre propre à AG-002 sur ce profil, fixé le");
+  assert.deepEqual(await idsOrdre(), attenduApprenant, "ordre de l'apprenant relu");
+  await page.waitForSelector("#t-apprenants + ul a:has-text('AG-002')");
+  // Rattaché, l'apprenant voit son ordre, avant celui du profil (qui n'en a pas ici).
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "AG-002");
+  await page.fill("#progression input[name=code]", "5678");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/progression=ok/);
+  await page.locator("#composer select").nth(0).selectOption("chimiotherapie");
+  await page.locator("#composer select").nth(1).selectOption("N1c");
+  await page.waitForSelector("#modules .compte:has-text('dans votre ordre, fixé par le tutorat')");
+  assert.deepEqual(await page.locator("#modules .grille .carte--module h3").allInnerTexts(), titresApprenant, "accueil dans l'ordre de l'apprenant");
+  const lienApprenant = await page.locator("#modules .grille a.carte-lien").first().getAttribute("href");
+  const rangApprenant = attenduApprenant.indexOf(/\/module\/([^?]+)/.exec(lienApprenant)[1]);
+  await page.goto(BASE + lienApprenant);
+  const positionApprenant = await page.locator("p.legende:has-text('Parcours :')").innerText();
+  assert.ok(positionApprenant.includes(`module ${rangApprenant + 1} sur ${attenduApprenant.length}`), "rang dans l'ordre de l'apprenant : " + positionApprenant);
+  if (rangApprenant + 1 < attenduApprenant.length) {
+    assert.ok(positionApprenant.includes(`suivant : ${titresApprenant[rangApprenant + 1]}`), "suivant dans l'ordre de l'apprenant : " + positionApprenant);
+  }
+  // Détaché, le profil reprend : sans ordre de profil, les blocs.
+  await page.goto(BASE + "/#progression");
+  await page.click("#progression button:has-text('Se détacher')");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  await page.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N1c");
+  await page.waitForSelector("h2:has-text('Socle transversal')");
+  assert.equal(await page.locator("#modules .compte:has-text('dans votre ordre')").count(), 0, "détaché : plus d'ordre propre");
+  // La purge de la progression de l'apprenant emporte son ordre.
+  await page.goto(BASE + "/admin/personnel");
+  await page.locator("tr:has(code:has-text('AG-002')) a[href^='/admin/personnel/']").click();
+  await page.waitForSelector("h2:has-text('Ordre propre des modules')");
+  await page.fill("input[name=confirmation]", "AG-002");
+  await page.click("button:has-text('Purger')");
+  await page.waitForURL(/ok=purge/);
+  await page.goto(BASE + "/admin/ordonnancement");
+  assert.equal(await page.locator("#t-apprenants").count(), 0, "ordre propre purgé avec la progression");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:text-is('ordonnancement:apprenant')");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("ordre propre à un apprenant : identifiant inconnu ou clos refusé, ordre fixé et relu ; rattaché, il passe avant le profil et le module suivant le suit ; détaché, le profil reprend ; purgé avec sa progression ; journalisé");
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

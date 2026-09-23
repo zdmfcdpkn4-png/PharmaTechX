@@ -28,13 +28,16 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   const idProgramme = lireIdProgramme(sp.programme);
   const profil = idProgramme ? null : lireProfilDemande(sp);
-  const [bareme, syntheses, dansProgramme, dansProfil, ratt] = await Promise.all([
+  const [bareme, syntheses, dansProgramme, ratt] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
-    profil ? positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id) : Promise.resolve(null),
     rattachement(),
   ]);
+  // L'apprenant rattaché suit son ordre propre sur ce profil, s'il en a un (question 56).
+  const dansProfil = profil
+    ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)
+    : null;
   // Programme à la carte (question 50) ou profil qui a son ordre (question 55) :
   // le module suivant est celui de leur ordre.
   const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));

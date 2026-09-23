@@ -81,5 +81,86 @@ export async function ecrireOrdreProfil(
 export async function supprimerOrdreProfil(filiere: string, niveau: string, parcours: TypeParcours): Promise<boolean> {
   const r = await sql`
     DELETE FROM ordres_profil WHERE filiere_id = ${filiere} AND niveau = ${niveau} AND parcours = ${parcours}`;
-  return (r.rowCount ?? 0) > 0;
+  return r.rowCount > 0;
+}
+
+// ─────────────────────────────── ordre propre à un apprenant (question 56)
+
+/** Ordre propre à un apprenant sur un profil : il passe avant celui du profil quand l'apprenant est rattaché. */
+export interface OrdreAgent extends OrdreProfil {
+  agentId: number;
+  /** Identifiant pseudonyme (AG-…), lu dans `agents`. */
+  identifiant: string;
+}
+
+interface LigneOrdreAgent extends LigneOrdre {
+  agent_id: number;
+  identifiant: string;
+}
+
+function versOrdreAgent(l: LigneOrdreAgent): OrdreAgent {
+  return { ...versOrdre(l), agentId: l.agent_id, identifiant: l.identifiant };
+}
+
+/** Ordres propres à des apprenants, tous ou ceux d'un seul, pour les écrans d'ordonnancement et du personnel. */
+export async function listerOrdresAgents(agentId?: number): Promise<OrdreAgent[]> {
+  const r = agentId
+    ? await sql<LigneOrdreAgent>`
+        SELECT o.agent_id, a.identifiant, o.filiere_id, o.niveau, o.parcours, o.modules, o.modifie_par, o.modifie_le::text
+        FROM ordres_agent o JOIN agents a ON a.id = o.agent_id
+        WHERE o.agent_id = ${agentId} ORDER BY o.parcours, o.filiere_id, o.niveau`
+    : await sql<LigneOrdreAgent>`
+        SELECT o.agent_id, a.identifiant, o.filiere_id, o.niveau, o.parcours, o.modules, o.modifie_par, o.modifie_le::text
+        FROM ordres_agent o JOIN agents a ON a.id = o.agent_id
+        ORDER BY a.identifiant, o.parcours, o.filiere_id, o.niveau`;
+  return r.rows.map(versOrdreAgent);
+}
+
+/** Ordres d'un apprenant dans un parcours, par clé de profil : ce que son accueil applique quand il est rattaché. */
+export async function ordresDeLAgent(agentId: number, parcours: TypeParcours): Promise<Record<string, string[]>> {
+  const r = await sql<LigneOrdre>`
+    SELECT filiere_id, niveau, parcours, modules, modifie_par, modifie_le::text
+    FROM ordres_agent WHERE agent_id = ${agentId} AND parcours = ${parcours}`;
+  return Object.fromEntries(r.rows.map(versOrdre).map((o) => [cleProfil(o.filiere, o.niveau), o.modules]));
+}
+
+export async function lireOrdreAgent(
+  agentId: number,
+  filiere: string,
+  niveau: string,
+  parcours: TypeParcours,
+): Promise<OrdreProfil | null> {
+  const r = await sql<LigneOrdre>`
+    SELECT filiere_id, niveau, parcours, modules, modifie_par, modifie_le::text
+    FROM ordres_agent
+    WHERE agent_id = ${agentId} AND filiere_id = ${filiere} AND niveau = ${niveau} AND parcours = ${parcours}`;
+  return r.rows[0] ? versOrdre(r.rows[0]) : null;
+}
+
+export async function ecrireOrdreAgent(
+  agentId: number,
+  filiere: string,
+  niveau: string,
+  parcours: TypeParcours,
+  modules: string[],
+  par: string,
+): Promise<void> {
+  await sql`
+    INSERT INTO ordres_agent (agent_id, filiere_id, niveau, parcours, modules, modifie_par)
+    VALUES (${agentId}, ${filiere}, ${niveau}, ${parcours}, ${JSON.stringify(modules)}::jsonb, ${par})
+    ON CONFLICT (agent_id, filiere_id, niveau, parcours) DO UPDATE SET
+      modules = EXCLUDED.modules, modifie_par = EXCLUDED.modifie_par, modifie_le = NOW()`;
+}
+
+/** Retour à l'ordre du profil : vrai si un ordre propre existait. */
+export async function supprimerOrdreAgent(
+  agentId: number,
+  filiere: string,
+  niveau: string,
+  parcours: TypeParcours,
+): Promise<boolean> {
+  const r = await sql`
+    DELETE FROM ordres_agent
+    WHERE agent_id = ${agentId} AND filiere_id = ${filiere} AND niveau = ${niveau} AND parcours = ${parcours}`;
+  return r.rowCount > 0;
 }

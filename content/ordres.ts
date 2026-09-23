@@ -124,3 +124,18 @@ export function lireProfilDemande(sp: { parcours?: unknown; filiere?: unknown; n
 export function requeteProfil(p: ProfilDemande): string {
   return `?parcours=${p.parcours}&filiere=${encodeURIComponent(p.filiere)}&niveau=${encodeURIComponent(p.niveau)}`;
 }
+
+/**
+ * Ordre qui s'applique à un profil (question 56, choix a) : celui de
+ * l'apprenant rattaché, s'il en a un pour ce profil, passe avant celui du
+ * profil ; null sans l'un ni l'autre — le profil suit alors l'ordre général,
+ * regroupé par bloc. `propre` dit si c'est l'ordre de l'apprenant.
+ */
+export function ordreApplicable(
+  apprenant: readonly string[] | undefined,
+  profil: readonly string[] | undefined,
+): { ordre: readonly string[]; propre: boolean } | null {
+  if (apprenant) return { ordre: apprenant, propre: true };
+  if (profil) return { ordre: profil, propre: false };
+  return null;
+}

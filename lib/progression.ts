@@ -214,11 +214,15 @@ export async function statistiquesAgent(agentId: number): Promise<StatistiquesAg
   return out;
 }
 
-/** Purge par l'administrateur : traces et session en cours de l'agent ; nombre de lignes effacées. */
+/**
+ * Purge par l'administrateur : traces, session en cours et ordres de modules
+ * propres à l'agent (question 56) ; nombre de lignes effacées.
+ */
 export async function purgerProgression(agentId: number): Promise<number> {
   const a = await sql`DELETE FROM progression WHERE agent_id = ${agentId}`;
   const b = await sql`DELETE FROM en_cours WHERE agent_id = ${agentId}`;
-  return a.rowCount + b.rowCount;
+  const c = await sql`DELETE FROM ordres_agent WHERE agent_id = ${agentId}`;
+  return a.rowCount + b.rowCount + c.rowCount;
 }
 
 // ─────────────────────────────────────────────────────── session en cours

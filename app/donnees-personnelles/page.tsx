@@ -41,7 +41,7 @@ export default function DonneesPersonnelles() {
           <dt>Enregistré</dt>
           <dd>
             Les rapports que vous émettez et leurs visas ; votre progression si vous la rattachez (code personnel
-            haché) ; le journal d&apos;administration ; une empreinte de l&apos;adresse de connexion, pour limiter les
+            haché), et l&apos;ordre de modules que le tutorat vous fixe ; le journal d&apos;administration ; une empreinte de l&apos;adresse de connexion, pour limiter les
             tentatives. Jamais votre nom — la correspondance est tenue hors du site.
           </dd>
           <dt>Pourquoi</dt>

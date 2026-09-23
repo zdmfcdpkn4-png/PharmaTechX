@@ -7,6 +7,7 @@ import { getCritere, blocsCompetence } from "@/content/habilitation";
 import { A_PRECISER, libelleNature } from "@/content/types";
 import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { rattachement } from "@/lib/progression";
 import { STATUTS_MODULE } from "@/content/modules-db";
 import { Corps } from "@/components/Corps";
 import { Badge } from "@/components/Badge";
@@ -43,9 +44,13 @@ export default async function PageModule({
   // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
   const idProgramme = lireIdProgramme(sp.programme);
   const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id) : null;
-  // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa chronologie.
+  // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa
+  // chronologie — celle de l'apprenant rattaché, s'il a la sienne (question 56).
   const profil = dansProgramme ? null : lireProfilDemande(sp);
-  const dansProfil = profil ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id) : null;
+  const ratt = profil ? await rattachement() : null;
+  const dansProfil = profil
+    ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)
+    : null;
   const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
   const requete = dansProgramme ? `?programme=${idProgramme}` : dansProfil && profil ? requeteProfil(profil) : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));

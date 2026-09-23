@@ -5,19 +5,26 @@ import { useState } from "react";
 /**
  * Choix du profil à ranger (question 55, choix a) : parcours, profil de
  * poste, niveau cible. Les niveaux proposés sont ceux de la filière choisie ;
- * sans filière, c'est l'ordre général du parcours qu'on range. Formulaire en
- * GET : avant l'hydratation, il marche tel quel.
+ * sans filière, c'est l'ordre général du parcours qu'on range. Un identifiant
+ * d'apprenant, facultatif, range son ordre propre sur ce profil (question 56,
+ * choix a). Formulaire en GET : avant l'hydratation, il marche tel quel.
  */
 export function ChoixProfil({
   parcours,
   filiere,
   niveau,
   postes,
+  agent,
+  apprenants,
 }: {
   parcours: "integration" | "maintien";
   filiere: string;
   niveau: string;
   postes: { id: string; libelle: string; niveaux: { code: string; libelle: string }[] }[];
+  /** Identifiant d'apprenant saisi, tel quel. */
+  agent: string;
+  /** Progression conservée sous identifiant : sans elle, pas d'ordre propre à un apprenant. */
+  apprenants: boolean;
 }) {
   const [choisie, setChoisie] = useState(filiere);
   const niveaux = postes.find((p) => p.id === choisie)?.niveaux ?? [];
@@ -54,6 +61,12 @@ export function ChoixProfil({
             ))}
           </select>
         </label>
+        {apprenants && (
+          <label className="champ">
+            <span>Apprenant (facultatif)</span>
+            <input type="text" name="agent" defaultValue={agent} placeholder="AG-001" autoComplete="off" maxLength={20} />
+          </label>
+        )}
       </div>
       <div className="actions">
         <button type="submit" className="bouton">

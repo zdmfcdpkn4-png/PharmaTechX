@@ -15,8 +15,8 @@ import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
 import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
-import { chronologie, cleProfil, lireProfilDemande, requeteProfil } from "@/content/ordres";
-import { ordresDuParcours } from "@/content/ordres-db";
+import { chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
+import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -113,8 +113,15 @@ export default async function Accueil({
   const niveauInitial = profilDemande?.niveau ?? (niveaux.some((n) => n.code === session?.niveau) ? session!.niveau! : "");
   // Ordres des profils de ce parcours (question 55, choix a) : un profil qui a
   // le sien voit ses modules numérotés dans cet ordre.
-  const ordresProfil: Record<string, string[]> =
-    baseConfiguree() && !programmeOuvert ? await ordresDuParcours(parcoursId).catch(() => ({})) : {};
+  // L'apprenant rattaché suit son ordre propre sur un profil, s'il en a un
+  // (question 56, choix a) : il passe avant celui du profil.
+  const [ordresProfil, ordresApprenant]: Record<string, string[]>[] =
+    baseConfiguree() && !programmeOuvert
+      ? await Promise.all([
+          ordresDuParcours(parcoursId).catch(() => ({})),
+          ratt ? ordresDeLAgent(ratt.agentId, parcoursId).catch(() => ({})) : Promise.resolve({}),
+        ])
+      : [{}, {}];
 
   const troncCommun = programme.troncCommun.map((m) => resumer(m, enBase));
   const parPoste: Record<string, ModuleResume[]> = {};
@@ -155,9 +162,10 @@ export default async function Accueil({
     badge: m.badge,
   });
   const profilArrivee = [...auNiveau(troncCommun), ...auNiveau(filiereInitiale ? (parPoste[filiereInitiale] ?? []) : [])];
-  const ordreArrivee = filiereInitiale && niveauInitial ? ordresProfil[cleProfil(filiereInitiale, niveauInitial)] : undefined;
+  const cleArrivee = filiereInitiale && niveauInitial ? cleProfil(filiereInitiale, niveauInitial) : "";
+  const ordreArrivee = cleArrivee ? ordreApplicable(ordresApprenant[cleArrivee], ordresProfil[cleArrivee]) : null;
   const programmeArrivee: EtapeReprise[] = (
-    aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee) : profilArrivee
+    aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee.ordre) : profilArrivee
   ).map(etape);
   const catalogue: EtapeReprise[] = [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
   // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base.
@@ -286,6 +294,7 @@ export default async function Accueil({
           niveauInitial={niveauInitial}
           parcours={parcoursId}
           ordresProfil={ordresProfil}
+          ordresApprenant={ordresApprenant}
           identifiantRattache={ratt?.identifiant ?? null}
           documentsReserves={documentsReserves}
           essai={Boolean(session?.essai)}

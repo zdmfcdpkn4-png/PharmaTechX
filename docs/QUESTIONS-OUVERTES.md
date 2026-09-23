@@ -372,11 +372,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     Détail dans `DECISIONS.md`.
 
 56. **Ordre « à la carte pour un utilisateur »** — suite de la question 55,
-    posée le 23/09/2026. Trois lectures : un ordre propre à un apprenant,
-    attaché à son identifiant, sur les modules de son profil, sans mention
-    « dégradé » (a) ; le programme à la carte de la question 50 ouvert sur un
-    identifiant plutôt que sur un code de poste (b) ; rien de plus, un code
-    de poste par personne (c).
+    posée et tranchée le 23/09/2026 (choix a) : un ordre propre à un
+    apprenant, attaché à son identifiant, sur les modules de son profil, sans
+    mention « dégradé » ; il passe avant l'ordre du profil quand l'apprenant
+    est rattaché, et se purge avec sa progression. Écartés : le programme à
+    la carte ouvert sur un identifiant (b), un code de poste par personne
+    (c). Détail dans `DECISIONS.md`.
 
 55. **Ordonnancement par profil de poste et niveau cible** — demandé le
     23/09/2026 : « un ordonnancement par profil de poste et par niveau cible ;
@@ -390,8 +391,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     un profil qui a son ordre voit à l'accueil une chronologie unique
     numérotée, socle et filière mêlés ; les autres gardent les blocs. Ordre
     fixé par filière, niveau cible et parcours, en glissant, aux flèches ou
-    au numéro. Détail dans `DECISIONS.md`. L'ordre « pour un utilisateur »
-    reste à trancher.
+    au numéro. Détail dans `DECISIONS.md`. L'ordre « pour un utilisateur » :
+    question 56.
 
 54. **Signalement des questions erronées ou à réviser** — demandé le
     23/09/2026 « s'il n'existe pas » ; vérifié : il existe (question 30).

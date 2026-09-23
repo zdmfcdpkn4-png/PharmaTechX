@@ -82,7 +82,8 @@ l'administration), `reglages_modules` (seuil réglé d'un module du code),
 `parametres` (barème réglé), `progression` et `en_cours` (progression
 rattachée à un identifiant d'agent, décision du 18/09/2026, question 11 :
 évaluations scellées, entraînements, lectures, évaluation interrompue),
-`signalements` (sans identité), `journal` (rôle et libellé de profil),
+`ordres_agent` (ordre des modules fixé par le tutorat pour un apprenant,
+question 56, purgé avec sa progression), `signalements` (sans identité), `journal` (rôle et libellé de profil),
 `tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
 au niveau des lignes sans politique et les rôles de l'API de données de
 Supabase n'y ont aucun droit : la base n'est lisible que par le service.
@@ -363,8 +364,9 @@ code (décision du 18/09/2026, question 10).
 ## 12. Limites connues
 
 - L'ordonnancement se fixe par profil de poste, niveau cible et parcours
-  (question 55), en glissant, aux flèches ou au numéro ; pas encore d'ordre
-  propre à une personne.
+  (question 55), en glissant, aux flèches ou au numéro ; un apprenant peut
+  avoir le sien sur un profil (question 56), suivi seulement quand il est
+  rattaché.
 - Pas de purge automatique des rapports (décision) : purge manuelle par
   l'administrateur, rapport par rapport ou par date, sur les rapports clos ou
   annulés seulement.

@@ -47,6 +47,7 @@ export const TABLES = [
   "niveaux_deposes",
   "programmes",
   "ordres_profil",
+  "ordres_agent",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -411,6 +412,19 @@ export const SCHEMA: string[] = [
      modifie_par TEXT NOT NULL,
      modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
      PRIMARY KEY (filiere_id, niveau, parcours)
+   )`,
+  // ── ordre propre à un apprenant, sur un profil (question 56, 23/09/2026) ──
+  // Passe avant l'ordre du profil quand l'apprenant est rattaché ; purgé avec
+  // sa progression (purgerProgression, lib/progression.ts).
+  `CREATE TABLE IF NOT EXISTS ordres_agent (
+     agent_id    INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+     filiere_id  TEXT NOT NULL,
+     niveau      TEXT NOT NULL,
+     parcours    TEXT NOT NULL CHECK (parcours IN ('integration','maintien')),
+     modules     JSONB NOT NULL DEFAULT '[]'::jsonb,
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     PRIMARY KEY (agent_id, filiere_id, niveau, parcours)
    )`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────

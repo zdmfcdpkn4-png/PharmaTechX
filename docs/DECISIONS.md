@@ -2770,8 +2770,8 @@ Accepté en contrepartie : plus de défilement sur téléphone pour ces profils
   un module qui en est sorti n'y paraît plus.
 - Journal : `ordonnancement:profil`, `ordonnancement:profil-retire`.
 
-**Reste à trancher.** L'ordre « à la carte pour un utilisateur » (question
-56).
+**Suite.** L'ordre « à la carte pour un utilisateur » : question 56,
+section suivante.
 
 **Vérifié le 23/09/2026.** `npm run verifier` (257 tests), `npm run build`,
 deux passes de bout en bout de 82 étapes, sans erreur de page ni erreur
@@ -2783,6 +2783,52 @@ même nombre ; suit le module suivant et revient au profil ; trouve les blocs
 pour N2, sans ordre ; retire l'ordre et lit le journal. Le glisser s'y joue
 en mouvement réduit : le site défile en douceur, et un défilement encore en
 cours après la mesure faisait saisir au robot la ligne voisine.
+
+## Ordre propre à un apprenant (23/09/2026, question 56, choix a)
+
+**Question.** Ce que veut dire « un ordonnancement à la carte pour un
+utilisateur » (demande de la question 55).
+
+**Tranché : a** — un ordre propre à un apprenant, attaché à son identifiant
+(AG-…), sur les modules de son profil : même contenu, rangé autrement pour
+lui ; pas de mention « dégradé ». Écartés : le programme à la carte de la
+question 50 ouvert sur un identifiant (b), qui ferait d'un simple changement
+d'ordre un parcours dégradé validé et motivé ; un code de poste par personne
+(c), qui contredit « un code par profil de poste ».
+
+**Ce qui est fait.**
+- Table `ordres_agent` : un ordre par apprenant, filière, niveau cible et
+  parcours.
+- Écran Ordre : un champ « Apprenant » facultatif, à côté du profil ;
+  identifiant inconnu ou clos refusé. La liste part de l'ordre de
+  l'apprenant s'il en a un, sinon de celui du profil, sinon de l'ordre
+  général. « Revenir à l'ordre du profil » retire l'ordre propre. Les
+  apprenants qui ont le leur sont listés.
+- Priorité (`ordreApplicable`, `content/ordres.ts`) : l'ordre de l'apprenant
+  rattaché passe avant celui du profil, qui passe avant l'ordre général.
+  Il ne vaut que rattaché — sur n'importe quel poste — et pas en mode test.
+  À l'accueil, « dans votre ordre, fixé par le tutorat » ; le module suivant
+  et « Reprendre » le suivent. L'adresse d'un module ne porte pas
+  l'identifiant : la page le lit dans le rattachement.
+- Personnel : la fiche de l'apprenant montre ses ordres propres ; la purge
+  de sa progression les emporte (`purgerProgression`), et le bouton le dit.
+- RGPD : l'ordre propre entre dans les données de la progression rattachée
+  (`docs/RGPD.md`, page « Vos données »), purgé avec elle. Il peut exister
+  sans que l'apprenant se soit jamais rattaché : c'est le tutorat qui le
+  fixe.
+- Journal : `ordonnancement:apprenant`, `ordonnancement:apprenant-retire`.
+
+**Limite.** Détaché, ou sur un autre profil que celui de son ordre,
+l'apprenant retrouve l'ordre du profil : l'ordre propre porte sur un profil,
+pas sur la personne en général.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (258 tests), `npm run build`,
+deux passes de bout en bout de 83 étapes, sans erreur de page ni erreur
+serveur. L'étape ajoutée refuse un identifiant inconnu et un identifiant
+clos, fixe l'ordre de AG-002 sur Chimiothérapie · N1c et le relit ;
+rattaché, l'apprenant voit « dans votre ordre » et ses modules dans cet
+ordre, et le module suivant le suit ; détaché, les blocs reviennent ; la
+purge de sa progression emporte l'ordre ; le journal le trace.
 
 ## Non fait
 

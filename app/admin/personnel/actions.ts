@@ -44,7 +44,7 @@ export async function actionReinitialiserCode(formData: FormData) {
   redirect(`/admin/personnel?ok=code&identifiant=${encodeURIComponent(agent.identifiant)}`);
 }
 
-/** Purge de la progression d'un agent (administration) : traces et session en cours ; les rapports émis restent. */
+/** Purge de la progression d'un agent (administration) : traces, session en cours et ordre propre des modules (question 56) ; les rapports émis restent. */
 export async function actionPurgerProgression(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = Number(formData.get("id"));
