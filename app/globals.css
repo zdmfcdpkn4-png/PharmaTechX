@@ -565,9 +565,13 @@ a.bouton--secondaire:hover,
 a.bouton--discret:hover { color: var(--marque-fonce); }
 .bouton:disabled { opacity: 0.45; cursor: not-allowed; }
 .bouton--secondaire { background: rgba(255, 255, 255, 0.7); color: var(--marque); }
-.bouton--secondaire:hover { background: var(--marque-clair); }
+/* `:not(:disabled)` hisse ces survols à la spécificité (0-3-0) de celui de la
+   variante pleine, écrit plus haut, qui l'emportait : fond bleu foncé sous un
+   texte bleu, contraste 1,00:1 sur un lien et 1,39:1 sur un bouton (mesuré
+   le 23/09/2026, défaut antérieur à l'import du 18/09). */
+.bouton--secondaire:hover:not(:disabled) { background: var(--marque-clair); }
 .bouton--discret { background: rgba(255, 255, 255, 0.7); color: var(--marque); border-color: var(--bord); }
-.bouton--discret:hover { border-color: var(--marque); background: var(--marque-clair); }
+.bouton--discret:hover:not(:disabled) { border-color: var(--marque); background: var(--marque-clair); }
 .bouton--compact { min-height: var(--cible); font-size: 0.8125rem; padding: 0 1rem; }
 
 .champ { display: flex; flex-direction: column; gap: 0.375rem; }
@@ -2515,9 +2519,11 @@ html[data-zone="1"] .ar-raccourci { display: none; }
   .ar-item--choisi:hover { background: var(--marque-clair); }
   .option:hover { border-color: var(--bord); background: rgba(255, 255, 255, 0.66); }
   .proposition .jugement label:hover { border-color: var(--bord); background: var(--surface); }
-  .bouton--secondaire:hover,
-  .bouton--discret:hover { background: rgba(255, 255, 255, 0.7); }
-  .bouton--discret:hover { border-color: var(--bord); }
+  /* Même spécificité que le survol de la variante pleine, sans quoi l'appui
+     laissait le fond bleu foncé sous le texte bleu. */
+  .bouton--secondaire:hover:not(:disabled),
+  .bouton--discret:hover:not(:disabled) { background: rgba(255, 255, 255, 0.7); }
+  .bouton--discret:hover:not(:disabled) { border-color: var(--bord); }
   a.carte-lien:hover .carte { border-color: var(--verre-bord); box-shadow: var(--ombre); }
 }
 

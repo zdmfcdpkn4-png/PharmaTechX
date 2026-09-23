@@ -1623,6 +1623,32 @@ Justification : justification deux.`;
   // absentes à zéro — le volet est la carte, pas la file
   await page.goto(BASE + "/admin/questions");
   await page.waitForSelector("#volet-principal a[href='/admin/questions']");
+
+  // Contraste au survol des variantes claires (23/09/2026) : le survol de la
+  // variante pleine, plus spécifique, leur donnait un fond bleu foncé sous un
+  // texte bleu — 1,00:1 mesuré sur « Déposer un texte ou un fichier ».
+  for (const selecteur of ["a.bouton--secondaire", "button.bouton--secondaire:not(:disabled)"]) {
+    const bouton = page.locator(selecteur).first();
+    await bouton.hover();
+    const contraste = await bouton.evaluate((n) => {
+      const cs = getComputedStyle(n);
+      const rgb = (s) => s.match(/[\d.]+/g).map(Number);
+      const lum = ([r, g, b]) => {
+        const c = [r, g, b].map((v) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      };
+      // Un fond translucide est composé sur blanc, ce qui majore le
+      // contraste ; au survol, le fond attendu est opaque.
+      const [r, g, b, a = 1] = rgb(cs.backgroundColor);
+      const fond = [r, g, b].map((v) => v * a + 255 * (1 - a));
+      const [clair, sombre] = [lum(rgb(cs.color)), lum(fond)].sort((x, y) => y - x);
+      return (clair + 0.05) / (sombre + 0.05);
+    });
+    assert.ok(contraste >= 4.5, `contraste au survol de ${selecteur} : ${contraste.toFixed(2)}:1, minimum 4,5:1`);
+  }
+  await page.mouse.move(0, 0);
+  ok("survol des boutons secondaires : contraste du texte au moins 4,5:1 (WCAG 1.4.3)");
+
   const pastilleQuestions = page.locator("#volet-principal a[href='/admin/questions'] .compte-attente");
   if (aVerifierPanneau > 0) {
     assert.equal(

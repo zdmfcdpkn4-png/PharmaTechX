@@ -3509,6 +3509,38 @@ serveur.
   lentement) : les mesures attendent la fin de l'animation, pas un délai
   fixe.
 
+## Contraste au survol des boutons clairs (23/09/2026)
+
+**Constaté** (en marge de la question 64). Au survol, les boutons
+secondaires et discrets prenaient le fond bleu foncé de la variante pleine :
+sa règle, `.bouton:hover:not(:disabled)`, est plus spécifique (0-3-0) que les
+leurs (0-2-0). Contraste mesuré : 1,00:1 sur un lien (« Déposer un texte ou un
+fichier »), 1,39:1 sur un bouton (« Filtrer », « Supprimer ») ; le minimum
+pour du texte est de 4,5:1 (WCAG 2.1, critère 1.4.3). Le défaut datait de
+l'import du 18/09. J'avais écrit qu'il épargnait les écrans tactiles : c'est
+faux dès que l'état de survol reste accroché après un appui, comme sur iPad.
+En forçant cet état, on retrouve 1,00:1 et 1,39:1.
+
+**Tranché.** La correction proposée, retenue par délégation (« Pour les 3
+prends les recommandations »).
+
+**Ce qui est fait** (`app/globals.css`). Les survols des variantes claires,
+et leur neutralisation sur écran tactile, prennent `:not(:disabled)` : de même
+spécificité que celui de la variante pleine, et écrits après lui, ils
+l'emportent. Un bouton clair désactivé ne change plus d'aspect au survol, comme
+la variante pleine.
+
+**Mesures après correction** : au survol sur poste, 9,56:1 sur un lien et
+6,86:1 sur un bouton ; sur tactile, l'état accroché garde l'aspect de repos,
+10,83:1 et 7,78:1.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (318 tests), `npm run build`,
+deux passes de bout en bout de 89 étapes, sans erreur de page ni erreur
+serveur. Étape nouvelle, dans la banque : au survol, le lien et le bouton
+secondaires gardent un texte à 4,5:1 au moins. Mesures hors parcours, survol
+forcé par le protocole de Chrome, sur poste et en contexte tactile : liens et
+boutons secondaires de la banque, lien discret de la liste des rapports.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
