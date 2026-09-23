@@ -371,6 +371,19 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+55. **Ordonnancement par profil de poste et niveau cible** — demandé le
+    23/09/2026 : « un ordonnancement par profil de poste et par niveau cible ;
+    à la carte pour un utilisateur ; après sélection du profil et du type de
+    parcours, choix limité aux modules accessibles, rangés en glissant ou par
+    numérotation chronologique ». Existant : un seul ordre par parcours
+    (Intégration, Maintien), saisi en liste d'identifiants ; à l'accueil, les
+    modules sont regroupés par bloc de la fiche et l'ordre ne joue qu'à
+    l'intérieur d'un bloc ; les programmes à la carte (question 50) sont
+    affichés en liste numérotée. Posée le 23/09/2026 : ce que l'accueil
+    montre d'un profil qui a son ordre — chronologie unique numérotée (a),
+    blocs conservés (b), blocs numérotés (c). L'ordre « pour un
+    utilisateur » viendra ensuite.
+
 54. **Signalement des questions erronées ou à réviser** — demandé le
     23/09/2026 « s'il n'existe pas » ; vérifié : il existe (question 30).
     Tranché le même jour (choix a + b) : écran du tutorat corrigé (statut
