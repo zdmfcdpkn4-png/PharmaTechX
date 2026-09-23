@@ -376,6 +376,37 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+63. **Tirage : questions obligatoires, part aléatoire et répétitions** — suite
+    de la question 62. Réponse du 23/09/2026 : « À mais définir un minimum
+    pour la validité du test avec des questions taggées obligatoires pour la
+    partie initiale et une part aléatoire pour permettre de répéter le test ;
+    pour les répétitions le classement par niveau vaut pour équivalence. Ces
+    tests sont un complément à la formation pratique et à l'évaluation du
+    tuteur ». Existant :
+    - le minimum pour conclure est au barème, 10 questions par défaut ; en
+      dessous, le résultat ne peut pas être porté à un rapport ;
+    - deux étiquettes seulement : éliminatoire (toujours posée, une erreur
+      invalide le module) et réservée (jamais en entraînement ni en
+      Découverte, tirée en priorité) ; aucune ne rend une question
+      obligatoire sans effet sur la note ;
+    - l'application ne sait qu'une évaluation est une répétition que pour un
+      apprenant rattaché par son identifiant d'agent (mode pseudonyme) ;
+    - les questions versionnées avec le code n'ont pas de niveau : tant qu'il
+      n'est pas renseigné, une composition par niveau n'a rien à composer.
+    Posée le 23/09/2026. Dans tous les cas : étiquette « obligatoire » dans
+    l'éditeur, la banque et le dépôt, sans effet sur la note ; les
+    obligatoires sont posées dans les tirages qui peuvent conclure, sous le
+    plafond de niveau ; elles comptent dans le minimum du barème, et une
+    évaluation qui ne l'atteint pas reste non concluante ; une obligatoire au
+    signalement ouvert est remplacée par une question du même niveau, et le
+    rapport le dit. Socle d'obligatoires à chaque évaluation, part aléatoire
+    de même composition par niveau à chaque passation, réglée au barème selon
+    le niveau cible (a) ; socle à la première évaluation seulement, chaque
+    obligatoire remplacée aux répétitions par une question du même niveau
+    tirée au hasard, même composition par niveau (b) ; socle à chaque
+    évaluation, part aléatoire sous le seul plafond, sans composition par
+    niveau (c).
+
 62. **Tirage : niveau cible du profil et questions signalées** — demandé le
     23/09/2026 : « piocher dans les questions de la banque un nombre de
     questions à définir dans le barème, piochées au hasard, correspondant à
@@ -394,6 +425,11 @@ telle. Ordre : ce qui change le déploiement en premier.
     niveau cible, réglé au barème, les questions « à préciser » tirées pour
     tous (a) ; répartition des niveaux selon le niveau cible, réglée au
     barème (b) ; aucun filtre de niveau, décision du 22/09 maintenue (c).
+    Tranchée le même jour (choix a, réponse « À » lue comme a), ce qui revient
+    sur la décision du 22/09/2026 (question 51), avec des compléments —
+    minimum de validité, questions obligatoires, part aléatoire, équivalence
+    des répétitions par niveau — qui font l'objet de la question 63. Mise en
+    œuvre après elle.
 
 61. **Accès rapide : position et ouverture** — demandé le 23/09/2026 :
     « pour le menu d'accès rapide, revoit le positionnement et le mode
