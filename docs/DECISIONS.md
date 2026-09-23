@@ -3273,6 +3273,135 @@ page ni erreur serveur.
   prérempli par le profil de l'adresse. Les libellés des plafonds, tronqués
   dans les listes du barème à trois colonnes, ont été raccourcis.
 
+## Banque en arborescence par profil (23/09/2026, question 64, choix b)
+
+**Demande.** « Dans la présentation de la banque de questions, proposer
+l'alternative d'une présentation en arbre dépliable comme le quiz de Flore —
+Arborescence. »
+
+**Constaté avant le travail** (base d'essai, 57 modules).
+- En tête de la banque, l'arbre « Couverture » du 19/09/2026 rangeait les
+  modules par filière, puis par niveau d'habilitation. Il était toujours
+  déplié : seul l'étage filière se repliait. Il occupait environ 4 200 px
+  sur poste et 8 800 px sur téléphone avant la première question ; la page
+  entière faisait 11 855 px sur poste.
+- Sous l'arbre, chaque question était une carte de 190 à 300 px de haut.
+- Chez Flore, l'arborescence de l'écran « à la carte » suit le contenu :
+  UE, matière, chapitre. Chaque rangée a son chevron et son décompte, et une
+  bascule passe d'« Arborescence » à « Diagramme ».
+
+**Tranché.** Question 64, **b** (réponse « B ») : une vue « Arborescence »
+à côté de la vue « Liste », rangée par profil — filière, niveau
+d'habilitation, module, question. Un module rattaché à deux niveaux figure
+sous chacun, avec ses questions. Écartés : l'arbre par contenu, bloc de la
+fiche puis module puis question (a), que je recommandais ; la seule
+couverture rendue dépliable, sans seconde vue (c).
+
+**Ce qui est fait.**
+- **Bascule « Liste | Arborescence »** en tête de la banque. La liste reste
+  la vue par défaut, inchangée. La vue tient dans l'adresse (`vue=arbre`) :
+  un favori la rouvre.
+- **Arborescence** (`content/arbre-banque.ts`, pur ;
+  `app/admin/questions/arborescence.tsx`).
+  - Ordre : tronc commun, puis les filières dans l'ordre du référentiel,
+    puis celles qu'un module cite encore sans qu'elles y soient. Dans
+    chacune : « Tous niveaux », puis les niveaux du référentiel, puis les
+    niveaux absents. Ce sont les rattachements de la couverture de la
+    liste : les deux vues ne se contredisent pas.
+  - Chaque rangée a son chevron, à gauche, et le décompte de la banque
+    entière : modules, validées, à vérifier, réservées, jauge. Un module sans
+    question est grisé.
+  - Une question repliée montre son format, son statut, ses étiquettes et
+    deux lignes d'énoncé. Dépliée, elle montre ses propositions, sa trace et
+    les mêmes boutons que dans la liste : l'affichage d'une question est
+    désormais partagé par les deux vues (`question-banque.tsx`).
+  - Un module qui figure sous plusieurs branches le dit (« figure aussi sous
+    Parcours Chimiothérapie › N2 ») ; sur la base d'essai, B5-04 à B5-08,
+    sous N1c et sous N2.
+  - Chaque module offre « Voir le module » et « Nouvelle question ici ».
+- **Repli.**
+  - Par défaut, les filières sont ouvertes et le reste replié, comme les UE
+    chez Flore.
+  - « Tout déplier » ouvre jusqu'aux modules, jamais les questions ; « Tout
+    replier » replie tout.
+  - Sous un filtre (statut, niveau, obligatoires, module), l'arbre ne garde
+    que les branches qui portent des questions retenues, ouvertes jusqu'aux
+    modules. Chaque rangée dit combien de questions elle montre ; son
+    décompte reste celui de la banque entière.
+  - Aucun script : des `<details>`, repliables au clavier.
+- **Retour à la branche après un geste.**
+  - Valider, remettre à vérifier, retirer, supprimer, et l'enregistrement
+    après « Modifier » ou « Nouvelle question ici » rouvrent la branche du
+    geste, ancêtres compris (`ouvrir`).
+  - La redirection d'une action serveur perd l'ancre de l'adresse, et la
+    page restait là où le formulaire l'avait laissée : un petit composant
+    (`components/RetourBranche.tsx`) y ramène la page et place le focus sur
+    le titre de la branche. Sans script, la branche est rouverte quand même ;
+    seul le défilement manque.
+- **Adresse de retour contrôlée** (`retourBanque`). Les actions de la banque
+  ne redirigent plus que vers la banque. En pratique, les formulaires ne leur
+  en envoyaient pas d'autre, mais rien ne le vérifiait. L'erreur « quatre
+  yeux » s'insère avant l'ancre, là où le serveur la lit.
+- **Corrigé au passage.** Après un geste dans la liste, les filtres
+  « Niveau » et « Obligatoires » se perdaient, faute d'être dans l'adresse
+  de retour ; ils y sont, comme le module et le statut.
+
+**Mesures** (même base, 57 modules). Hauteur de la page en vue
+Arborescence :
+
+| | Par défaut | Tout replié | Tout déplié |
+|---|---|---|---|
+| Poste, 1 280 px | 1 789 px | 1 390 px | 11 458 px |
+| Téléphone, 360 px | 2 940 px | 2 231 px | 19 775 px |
+
+En vue Liste, la page fait 11 855 px sur poste. Aucun défilement horizontal
+à 360 px, question dépliée comprise.
+
+**Conséquences et limites.**
+- **Doublons voulus.** Une question d'un module rattaché à deux niveaux
+  apparaît deux fois ; validée sous une branche, elle l'est sous l'autre. La
+  mention « figure aussi sous » le rappelle.
+- **Le rattachement, pas le contenu.** L'arbre suit les filières et niveaux
+  des modules, pas les blocs de la fiche. Pour retrouver un critère par son
+  bloc, restent la recherche de l'accueil et le filtre « Module ».
+- **Questions en base seulement.** Comme la liste, l'arbre ne montre pas la
+  banque versionnée avec le site.
+- **Rien n'est retenu d'une visite à l'autre.** Le repli tient dans
+  l'adresse : revenir à la banque par le menu la rouvre en vue Liste.
+- **Sans JavaScript**, la branche du geste est rouverte, mais la page n'y
+  défile pas.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (318 tests, 10 de plus),
+`npm run build`, deux passes de bout en bout de 87 étapes, sans erreur de
+page ni erreur serveur.
+- **Arbre pur** (`test/arbre-banque.test.ts`) : ordre des branches ; la
+  filière « socle » n'est jamais une branche ; niveaux et filières absents du
+  référentiel visibles ; doublons et « aussi sous » ; chemins encodés ;
+  élagage sans toucher l'arbre d'origine ; états de repli ; seule la branche
+  du geste est rouverte ; adresse de retour refusée hors de la banque, erreur
+  placée avant l'ancre ; ancres injectives.
+- **Étape 14a ter, nouvelle.**
+  - La liste reste la vue par défaut ; la bascule ouvre l'arborescence, sans
+    la couverture.
+  - Par défaut, filières ouvertes et niveaux repliés ; « Tout déplier »
+    ouvre jusqu'aux modules, pas les questions ; « Tout replier » replie
+    tout. Un module rattaché à deux niveaux le dit.
+  - Une question déposée par « Nouvelle question ici », puis validée,
+    modifiée, retirée et supprimée depuis l'arbre : à chaque geste, la
+    branche est rouverte, en vue, avec le focus sur son titre. Le fil
+    d'Ariane de l'éditeur ramène à l'arbre.
+  - Un filtre garde la vue et ne laisse que les questions retenues, avec leur
+    décompte.
+  - À 360 px, arbre déplié et question ouverte, aucun défilement horizontal.
+- **Relu entre deux passes.** Un geste sur une fiche de synthèse, depuis
+  l'arbre, ramenait à la liste, comme le lien « fiches à vérifier » ; corrigé,
+  puis la chaîne entière relancée. Ce retour est contrôlé sur la page
+  (adresse de retour portant `vue=arbre`), pas par un geste de bout en bout.
+- **Rendu.** Captures à 1 280 et 360 px : vue par défaut, tout déplié,
+  question ouverte, branche après un geste. La branche du geste s'affiche à
+  97 px du haut sur poste et à 81 px sur téléphone, l'en-tête s'étant
+  effacé au défilement.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

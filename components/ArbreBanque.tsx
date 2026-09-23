@@ -32,11 +32,11 @@ export interface CompteQuestions {
   reservees: number;
 }
 
-type Comptes = Record<string, CompteQuestions>;
+export type Comptes = Record<string, CompteQuestions>;
 
 const VIDE: CompteQuestions = { valides: 0, aVerifier: 0, reservees: 0 };
 
-function cumuler(modules: ModuleArbre[], comptes: Comptes): CompteQuestions {
+export function cumuler(modules: Pick<ModuleArbre, "id">[], comptes: Comptes): CompteQuestions {
   return modules.reduce(
     (t, m) => {
       const c = comptes[m.id] ?? VIDE;
@@ -51,7 +51,7 @@ function cumuler(modules: ModuleArbre[], comptes: Comptes): CompteQuestions {
 }
 
 /** Deux nombres et une jauge : la part validée, la part à vérifier. */
-function Compte({ c, modules }: { c: CompteQuestions; modules?: number }) {
+export function Compte({ c, modules }: { c: CompteQuestions; modules?: number }) {
   const total = c.valides + c.aVerifier;
   const pc = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
   return (

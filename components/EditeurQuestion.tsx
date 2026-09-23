@@ -103,12 +103,15 @@ export function EditeurQuestion({
   initiale,
   moduleInitial,
   action,
+  retour,
 }: {
   modules: ModuleChoix[];
   situations: SituationChoix[];
   initiale?: QuestionInitiale;
   moduleInitial?: string;
   action: (prec: EtatFormulaireQuestion, fd: FormData) => Promise<EtatFormulaireQuestion>;
+  /** Adresse de la banque où revenir après l'enregistrement (arborescence, question 64). */
+  retour?: string;
 }) {
   const [etat, formAction, enCours] = useActionState(action, {} as EtatFormulaireQuestion);
   const [moduleId, setModuleId] = useState(initiale?.moduleId ?? moduleInitial ?? modules[0]?.id ?? "");
@@ -184,6 +187,7 @@ export function EditeurQuestion({
   return (
     <form action={formAction} className="carte formulaire-question">
       {initiale?.id && <input type="hidden" name="id" value={initiale.id} />}
+      {retour && <input type="hidden" name="retour" value={retour} />}
       <input type="hidden" name="options" value={JSON.stringify(options)} />
       <input type="hidden" name="legendes" value={JSON.stringify(legendes)} />
 

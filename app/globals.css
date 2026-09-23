@@ -2115,6 +2115,68 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .jauge-part--ok { background: var(--succes); }
 .jauge-part--attente { background: var(--alerte); }
 
+/* ── vue « Arborescence » de la banque (question 64, choix b) ─────────────── */
+/* Bascule Liste | Arborescence : deux liens, l'actif plein, comme la bascule
+   Arborescence | Diagramme du quiz de Flore. Des liens et non des boutons :
+   la vue tient dans l'adresse, sans script. */
+.bascule-vue {
+  display: inline-flex; gap: 0.25rem; padding: 0.25rem; margin: 0 0 0.75rem;
+  border: 1px solid var(--bord); border-radius: 999px; background: var(--surface);
+}
+.bascule-vue a {
+  display: inline-flex; align-items: center; min-height: var(--cible); padding: 0 1rem;
+  border-radius: 999px; font-weight: 600; color: var(--texte-doux); text-decoration: none;
+}
+.bascule-vue a:hover { background: var(--marque-clair); color: var(--marque); }
+.bascule-vue a[aria-current="true"] { background: var(--marque); color: var(--marque-contraste); }
+.arbo-plis { margin: 0 0 0.5rem; font-size: 0.875rem; }
+/* Une branche rouverte après un geste s'affiche sous l'en-tête fixe, pas derrière. */
+.arbo-noeud { scroll-margin-top: var(--decalage); }
+.arbo-noeud > summary {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  min-height: var(--cible); padding: 0.375rem 0.625rem;
+  cursor: pointer; list-style: none; border-radius: var(--rayon-sm);
+}
+.arbo-noeud > summary::-webkit-details-marker { display: none; }
+/* Chevron à gauche, comme dans l'arborescence de Flore : vers la droite
+   replié, vers le bas déplié. */
+.arbo-noeud > summary::before {
+  content: ""; flex: none; width: 0.45rem; height: 0.45rem; margin: 0 0.25rem 0 0.125rem;
+  border-right: 2px solid var(--marque); border-bottom: 2px solid var(--marque);
+  transform: rotate(-45deg); transition: transform 0.18s ease;
+}
+.arbo-noeud[open] > summary::before { transform: rotate(45deg); }
+.arbo-noeud > summary:hover { background: var(--marque-clair); }
+.arbo-filiere { margin: 0.5rem 0; border: 1px solid var(--bord); border-radius: var(--rayon-sm); background: var(--surface); }
+.arbo-filiere > summary { font-weight: 650; background: var(--surface-douce); }
+/* Les enfants d'une branche sont tenus par un filet, comme les liens d'un
+   groupe du volet : ils se lisent comme ses enfants. */
+.arbo-enfants { margin: 0 0 0.25rem 1.125rem; padding-left: 0.5rem; border-left: 2px solid var(--bord); }
+.arbo-module > summary { border-top: 1px solid var(--bord); border-radius: 0; }
+/* Module sans question : en retrait par la couleur, comme dans la couverture. */
+.arbo-module--vide > summary .etiquette--site { background: var(--surface-douce); color: var(--texte-doux); }
+.arbo-module--vide > summary .arbre-titre { color: var(--texte-doux); }
+.arbo-liens { margin: 0.25rem 0 0.5rem; }
+.arbo-rien { margin: 0 0 0.5rem; }
+.arbo-affichees { white-space: nowrap; }
+.arbo-question { margin: 0.25rem 0; border: 1px solid var(--bord); border-radius: var(--rayon-sm); background: var(--surface); }
+.arbo-question > summary { font-size: 0.875rem; }
+/* Repliée, l'énoncé tient en deux lignes ; déplié, en entier. */
+.arbo-enonce {
+  flex: 1 1 100%; font-size: 0.9375rem; color: var(--texte);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.arbo-question[open] > summary .arbo-enonce { display: block; -webkit-line-clamp: unset; line-clamp: none; overflow: visible; }
+.arbo-corps { padding: 0 0.75rem 0.75rem 1.75rem; }
+.arbo-trace { margin: 0 0 0.375rem; }
+@media (max-width: 40rem) {
+  .arbo-enfants { margin-left: 0.5rem; padding-left: 0.375rem; }
+  .arbo-corps { padding-left: 0.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arbo-noeud > summary::before { transition: none; }
+}
+
 /* ── banque de badges : pictogrammes des domaines ─────────────────────────── */
 /* Dessinés dans `components/Badge.tsx`, en trait monochrome : ils héritent de
    la couleur du texte, restent lisibles en impression N&B et ne dépendent

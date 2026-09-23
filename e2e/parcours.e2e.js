@@ -2636,6 +2636,117 @@ Justification : cf. procédure interne.`,
   await rebrancher(codeTuteur);
   ok("tirage selon le niveau cible : plafonds du barème, obligatoire posée et étiquetée, niveau cible dans le résultat scellé, obligatoire omise ou question au-dessus du plafond refusées (400), question signalée écartée de tout tirage et dite sans remplaçante");
 
+  // 14a ter. banque en arborescence (question 64, choix b) : bascule Liste | Arborescence, filière → niveau →
+  //          module → question, repli par défaut, Tout déplier / Tout replier, module rattaché à deux niveaux
+  //          signalé, filtres gardés, et chaque geste — créer, valider, modifier, retirer, supprimer — ramène
+  //          à sa branche, rouverte, en vue et avec le focus. La question créée est supprimée à la fin.
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/admin/questions");
+  const bascule = page.locator("nav.bascule-vue");
+  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Liste", "la liste reste la vue par défaut");
+  await bascule.locator("a:has-text('Arborescence')").click();
+  await page.waitForURL(/vue=arbre/);
+  await page.waitForSelector("section.arborescence");
+  assert.equal(await page.locator("section.arbre").count(), 0, "la couverture laisse place à l'arborescence");
+  assert.ok((await page.locator("details.arbo-filiere").count()) >= 2, "tronc commun et filières");
+  assert.equal(await page.locator("details.arbo-filiere:not([open])").count(), 0, "par défaut, filières ouvertes");
+  assert.equal(await page.locator("details.arbo-niveau[open]").count(), 0, "par défaut, niveaux repliés");
+  await page.click("section.arborescence a:has-text('Tout déplier')");
+  await page.waitForURL(/plis=tout/);
+  assert.equal(await page.locator("details.arbo-module:not([open])").count(), 0, "Tout déplier ouvre jusqu'aux modules");
+  assert.equal(await page.locator("details.arbo-question[open]").count(), 0, "une question ne s'ouvre qu'à la demande");
+  assert.ok(
+    (await page.locator(".arbo-liens", { hasText: "figure aussi sous" }).count()) >= 2,
+    "un module rattaché à deux niveaux figure sous chacun et le dit",
+  );
+  await page.click("section.arborescence a:has-text('Tout replier')");
+  await page.waitForURL(/plis=aucun/);
+  assert.equal(await page.locator("details.arbo-noeud[open]").count(), 0, "Tout replier");
+  // Dépli à la main, puis dépôt d'une question depuis la branche du module.
+  const ID_BRANCHE = "#arb-_2a__2f_N1a_2f_comportement-zac";
+  await page.locator("#arb-_2a_ > summary").click();
+  await page.locator("#arb-_2a__2f_N1a > summary").click();
+  await page.locator(`${ID_BRANCHE} > summary`).click();
+  await page.locator(`${ID_BRANCHE} a:has-text('Nouvelle question ici')`).click();
+  await page.waitForURL(/\/admin\/questions\/nouvelle\?module=comportement-zac&retour=/);
+  assert.match(
+    await page.locator("p.fil a:has-text('Banque de questions')").getAttribute("href"),
+    /vue=arbre/,
+    "le fil d'Ariane ramène à l'arborescence",
+  );
+  const ENONCE_ARBRE = `Question déposée depuis l'arborescence (${Date.now()}) ?`;
+  await page.fill("textarea[name=enonce]", ENONCE_ARBRE);
+  const champsA = page.locator(".proposition--editeur input[type=text]");
+  await champsA.nth(0).fill("Oui");
+  await champsA.nth(1).fill("Non");
+  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+  await page.click("button:has-text('Créer la question')");
+  await page.waitForURL(/vue=arbre.*ok=creee/);
+  await page.waitForSelector("text=Question créée.");
+  /** La branche du geste : rouverte, avec le focus, et en vue. */
+  const brancheRevue = async (selecteur, message) => {
+    await page.waitForFunction(
+      (s) => {
+        const n = document.querySelector(s);
+        if (!n || !n.open) return false;
+        const haut = n.getBoundingClientRect().top;
+        return document.activeElement === n.querySelector(":scope > summary") && haut >= 0 && haut < window.innerHeight;
+      },
+      selecteur,
+      { timeout: 5000 },
+    ).catch(() => assert.fail(message));
+  };
+  await brancheRevue(ID_BRANCHE, "après création, la branche du module est rouverte et en vue");
+  const noeudArbre = page.locator("details.arbo-question", { hasText: ENONCE_ARBRE });
+  assert.equal(await noeudArbre.count(), 1, "la question créée est dans sa branche");
+  const idNoeud = `#${await noeudArbre.getAttribute("id")}`;
+  await noeudArbre.locator(":scope > summary").click();
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    noeudArbre.locator("button:has-text('Valider')").click(),
+  ]);
+  await page.locator(`${idNoeud} > summary .etiquette:text-is('Validée')`).waitFor();
+  await brancheRevue(idNoeud, "après Valider, la question est rouverte et en vue");
+  await page.locator(`${idNoeud} a:has-text('Modifier')`).click();
+  await page.waitForURL(/\/admin\/questions\/q-.*retour=/);
+  await page.fill("textarea[name=enonce]", ENONCE_ARBRE.replace("?", "(modifiée) ?"));
+  await page.click("button:has-text('Enregistrer les modifications')");
+  await page.waitForURL(/vue=arbre.*ok=modifiee/);
+  await page.locator(`${idNoeud} > summary .etiquette:text-is('À vérifier')`).waitFor();
+  await brancheRevue(idNoeud, "après Modifier, la question est rouverte et en vue");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.locator(`${idNoeud} button:has-text('Retirer')`).click(),
+  ]);
+  await page.locator(`${idNoeud} > summary .etiquette:text-is('Retirée')`).waitFor();
+  await brancheRevue(idNoeud, "après Retirer, la question est rouverte et en vue");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.locator(`${idNoeud} button:has-text('Supprimer')`).click(),
+  ]);
+  await page.locator(idNoeud).waitFor({ state: "detached" });
+  await brancheRevue(ID_BRANCHE, "après Supprimer, la branche du module est rouverte et en vue");
+  // Un filtre garde la vue et réduit l'arbre aux branches qui portent des questions retenues.
+  await page.selectOption("form.filtres select[name=statut]", "valide");
+  await page.click("form.filtres button:has-text('Filtrer')");
+  await page.waitForURL(/vue=arbre.*statut=valide/);
+  const affichees = await page.locator("details.arbo-module > summary .arbo-affichees").allTextContents();
+  assert.ok(affichees.length >= 1 && affichees.every((t) => /^\d+ questions? affichées?$/.test(t)), "décompte des questions retenues");
+  const statutsRestants = await page.locator("details.arbo-question > summary .etiquette:nth-child(2)").allTextContents();
+  assert.ok(statutsRestants.length >= 1 && statutsRestants.every((t) => t === "Validée"), "seules les questions validées restent");
+  // Téléphone : quatre étages sans défilement horizontal.
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto(BASE + "/admin/questions?vue=arbre&plis=tout");
+  await page.locator("details.arbo-question").first().locator(":scope > summary").click();
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    0,
+    "arborescence dépliée sans défilement horizontal à 360 px",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await rebrancher(codeTuteur);
+  ok("banque en arborescence : bascule Liste | Arborescence, repli par défaut, Tout déplier / Tout replier, module rattaché à deux niveaux signalé, filtres gardés, créer, valider, modifier, retirer et supprimer ramènent à la branche, rouverte, en vue et avec le focus ; rien ne déborde à 360 px");
+
   // 15. limiteur : 5 échecs bloquent
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);

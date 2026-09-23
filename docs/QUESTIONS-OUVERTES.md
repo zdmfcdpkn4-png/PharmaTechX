@@ -401,7 +401,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     d'habilitation, module, question — un module rattaché à deux niveaux, et
     ses questions, sous chacun (b) ; pas de seconde vue : la couverture
     actuelle devient dépliable à chaque étage, repliée par défaut, la liste
-    inchangée (c).
+    inchangée (c). Tranchée le même jour (choix b, réponse « B ») et mise en
+    œuvre : bascule « Liste | Arborescence », la liste restant la vue par
+    défaut ; arbre filière, niveau, module, question, filières ouvertes et
+    le reste replié par défaut ; un module rattaché à deux niveaux dit sous
+    quelles autres branches il figure ; sous un filtre, l'arbre ne garde que
+    les branches qui portent des questions retenues ; après chaque geste,
+    la branche est rouverte, et la page y revient. Détail dans
+    `DECISIONS.md`.
 
 63. **Tirage : questions obligatoires, part aléatoire et répétitions** — suite
     de la question 62. Réponse du 23/09/2026 : « À mais définir un minimum

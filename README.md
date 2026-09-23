@@ -200,6 +200,15 @@ caches réglables), **dépôt** d'un texte ou d'un fichier (`.txt`, `.md`,
 portant sa **justification** et ses sources, mises en situation,
 signalements des apprenants.
 
+Deux présentations de la même banque (23/09/2026, question 64, choix b) :
+la **Liste**, par défaut, précédée de la couverture (filière, niveau,
+module, avec les comptes) ; l'**Arborescence**, qui prolonge cette
+couverture jusqu'aux questions, en `<details>` repliables au clavier et
+sans script. Un module rattaché à deux niveaux y figure sous chacun et le
+dit ; les filtres valent pour les deux vues ; après un geste (valider,
+retirer, modifier, supprimer), l'arborescence rouvre la branche où il a été
+fait et y ramène.
+
 `/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
 à la manière des dépôts du Lecteur QIM · QCM) : le texte des 53 critères
 reste dans le code, mais un tuteur ou l'administrateur ajoute un module avec

@@ -11,6 +11,7 @@ import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, ty
 import { schemaPret, type Legende } from "@/content/schema";
 import { moduleExiste } from "@/content/store";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
+import { retourBanque } from "@/content/arbre-banque";
 import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
   changerStatutQuestion,
@@ -203,14 +204,17 @@ export async function actionEnregistrerQuestion(
   await journaliser(s, id ? "modification-question" : "creation-question", ident, { moduleId, format, statut });
   revalidatePath("/admin/questions");
   revalidatePath(`/module/${moduleId}`);
-  redirect(`/admin/questions?module=${encodeURIComponent(moduleId)}&ok=${id ? "modifiee" : "creee"}`);
+  // Venu de l'arborescence (question 64) : retour à la branche d'où l'on est parti.
+  const ok = id ? "modifiee" : "creee";
+  redirect(retourBanque(formData.get("retour"), { ok }) ?? `/admin/questions?module=${encodeURIComponent(moduleId)}&ok=${ok}`);
 }
 
 export async function actionChangerStatutQuestion(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = chaine(formData, "id", 80);
   const statut = chaine(formData, "statut", 12) as StatutQuestion;
-  const retour = chaine(formData, "retour", 200) || "/admin/questions";
+  // La banque seulement, ancre gardée : l'arborescence y rouvre la branche du geste.
+  const retour = retourBanque(formData.get("retour")) ?? "/admin/questions";
   if (!["a_verifier", "valide", "retire"].includes(statut)) redirect(retour);
   const q = await lireQuestion(id);
   if (!q) redirect(retour);
@@ -219,7 +223,7 @@ export async function actionChangerStatutQuestion(formData: FormData) {
   // la validation par l'auteur étant alors tracée sur la question et au journal.
   if (statut === "valide" && !peutValider(q, s)) {
     await journaliser(s, "statut-question:refus-quatre-yeux", id, { moduleId: q.module_id, auteur: q.edite_par ?? q.cree_par });
-    redirect(`${retour}${retour.includes("?") ? "&" : "?"}erreur=quatre-yeux`);
+    redirect(retourBanque(retour, { erreur: "quatre-yeux" }) ?? retour);
   }
   const parAuteur = statut === "valide" && validationParAuteur(q, s);
   await changerStatutQuestion(id, statut, s, parAuteur);
@@ -239,7 +243,8 @@ export async function actionSupprimerQuestion(formData: FormData) {
     revalidatePath(`/module/${q.module_id}`);
   }
   revalidatePath("/admin/questions");
-  redirect(q ? `/admin/questions?module=${encodeURIComponent(q.module_id)}` : "/admin/questions");
+  // Depuis l'arborescence, retour au module de la question supprimée ; depuis la liste, comme avant.
+  redirect(retourBanque(formData.get("retour")) ?? (q ? `/admin/questions?module=${encodeURIComponent(q.module_id)}` : "/admin/questions"));
 }
 
 export async function actionEnregistrerSituation(formData: FormData) {

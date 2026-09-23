@@ -4,11 +4,20 @@ import { lireQuestion, listerSituations, signalementsOuvertsDe } from "@/content
 import { EditeurQuestion } from "@/components/EditeurQuestion";
 import { actionEnregistrerQuestion } from "../actions";
 import { choixModules, versInitiale } from "../commun";
+import { retourBanque } from "@/content/arbre-banque";
 
 export const dynamic = "force-dynamic";
 
-export default async function ModifierQuestion({ params }: { params: Promise<{ id: string }> }) {
+export default async function ModifierQuestion({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ retour?: string }>;
+}) {
   const { id } = await params;
+  // Venu de l'arborescence (question 64) : on y revient, à la branche de la question.
+  const retour = retourBanque((await searchParams).retour) ?? undefined;
   const q = await lireQuestion(id);
   if (!q) notFound();
   const situations = (await listerSituations()).map((s) => ({ id: s.id, titre: s.titre, moduleId: s.module_id }));
@@ -16,7 +25,7 @@ export default async function ModifierQuestion({ params }: { params: Promise<{ i
   return (
     <>
       <p className="fil">
-        <Link href="/admin/questions">Banque de questions</Link> › {q.id}
+        <Link href={retour ?? "/admin/questions"}>Banque de questions</Link> › {q.id}
       </p>
       <section className="panneau-titre">
         <h1>Modifier la question</h1>
@@ -53,6 +62,7 @@ export default async function ModifierQuestion({ params }: { params: Promise<{ i
         situations={situations}
         initiale={versInitiale(q)}
         action={actionEnregistrerQuestion}
+        retour={retour}
       />
     </>
   );

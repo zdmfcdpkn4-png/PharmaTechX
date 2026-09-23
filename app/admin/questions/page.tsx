@@ -2,14 +2,16 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { comptesParModule, listerQuestions, signalementsOuvertsParQuestion, type StatutQuestion } from "@/content/banque-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
-import { LIBELLES_STATUT, etiquetteModule, titreModule as titreDe } from "./commun";
-import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
+import { etiquetteModule, titreModule as titreDe } from "./commun";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
 import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
 import { compterFichesAVerifier, listerFiches } from "@/lib/fiches-db";
+import { ancreDe, construireArbre, elaguer, lireChemin, lirePlis } from "@/content/arbre-banque";
+import { RetourBranche } from "@/components/RetourBranche";
 import { SectionFiches } from "./fiches";
+import { ArborescenceBanque } from "./arborescence";
+import { ActionsQuestion, ContenuQuestion, EtiquettesQuestion, TraceQuestion } from "./question-banque";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +40,21 @@ const ERREURS_FICHE: Record<string, string> = {
 export default async function Questions({
   searchParams,
 }: {
-  searchParams: Promise<{ module?: string; statut?: string; niveau?: string; obligatoires?: string; ok?: string; erreur?: string }>;
+  searchParams: Promise<{
+    module?: string;
+    statut?: string;
+    niveau?: string;
+    obligatoires?: string;
+    vue?: string;
+    plis?: string;
+    ouvrir?: string;
+    ok?: string;
+    erreur?: string;
+  }>;
 }) {
   const p = await searchParams;
+  // Vue « Arborescence » (question 64, choix b) : la liste reste la vue par défaut.
+  const vueArbre = p.vue === "arbre";
   const session = (await getSession())!;
   const modules = await getTousModulesAvecDeposes();
   const statut = (["a_verifier", "valide", "retire"] as const).includes(p.statut as StatutQuestion)
@@ -77,11 +91,50 @@ export default async function Questions({
     liste.push(q);
     parModule.set(q.module_id, liste);
   }
-  const retour = `/admin/questions?${new URLSearchParams({
-    ...(moduleId ? { module: moduleId } : {}),
-    ...(statut ? { statut } : {}),
-  }).toString()}`;
+  // Filtres gardés après chaque geste, dans les deux vues. Le niveau et les
+  // obligatoires, venus après l'adresse de retour, s'y perdaient.
+  const filtres: [string, string][] = [
+    ...(moduleId ? [["module", moduleId] as [string, string]] : []),
+    ...(statut ? [["statut", statut] as [string, string]] : []),
+    ...(filtreNiveau ? [["niveau", filtreNiveau] as [string, string]] : []),
+    ...(seulesObligatoires ? [["obligatoires", "1"] as [string, string]] : []),
+  ];
+  const retour = `/admin/questions?${new URLSearchParams(filtres).toString()}`;
   const titreModule = (id: string) => titreDe(modules, id);
+  const lienVue = (arbre: boolean) => {
+    const q = new URLSearchParams([...(arbre ? [["vue", "arbre"] as [string, string]] : []), ...filtres]).toString();
+    return `/admin/questions${q ? `?${q}` : ""}`;
+  };
+
+  // Arborescence : filière, niveau, module, question. Sous un filtre de
+  // question, elle ne garde que les branches qui en portent ; sous le seul
+  // filtre de module, les branches du module, même vide.
+  const plis = lirePlis(p.plis);
+  const ouvrir = vueArbre ? lireChemin(p.ouvrir) : null;
+  // Vue, filtres et repli, gardés par chaque lien et chaque geste de l'arborescence.
+  const parametresArbre: [string, string][] = [
+    ["vue", "arbre"],
+    ...filtres,
+    ...(plis === "defaut" ? [] : [["plis", plis] as [string, string]]),
+  ];
+  const filtreQuestions = Boolean(statut || filtreNiveau || seulesObligatoires);
+  const complet = vueArbre
+    ? construireArbre(
+        referentiel.filieres,
+        referentiel.niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle })),
+        modules.map((m) => ({
+          id: m.id,
+          titre: m.titre,
+          etiquette: etiquetteModule(m),
+          postes: m.postes ?? [],
+          niveaux: (m.niveaux ?? []).map(String),
+        })),
+      )
+    : [];
+  const arbre =
+    filtreQuestions || moduleId
+      ? elaguer(complet, (id) => (!moduleId || id === moduleId) && (!filtreQuestions || (parModule.get(id)?.length ?? 0) > 0))
+      : complet;
 
   return (
     <>
@@ -118,21 +171,34 @@ export default async function Questions({
         </p>
       )}
 
-      <ArbreBanque
-        filieres={referentiel.filieres}
-        niveaux={referentiel.niveaux}
-        modules={modules.map((m) => ({
-          id: m.id,
-          titre: m.titre,
-          etiquette: etiquetteModule(m),
-          postes: m.postes ?? [],
-          niveaux: (m.niveaux ?? []).map(String),
-        }))}
-        comptes={comptes}
-        moduleActif={moduleId}
-      />
+      {/* Deux présentations de la même banque (question 64, choix b) ; les filtres suivent. */}
+      <nav className="bascule-vue" aria-label="Présentation de la banque">
+        <Link href={lienVue(false)} aria-current={vueArbre ? undefined : "true"}>
+          Liste
+        </Link>
+        <Link href={lienVue(true)} aria-current={vueArbre ? "true" : undefined}>
+          Arborescence
+        </Link>
+      </nav>
+
+      {!vueArbre && (
+        <ArbreBanque
+          filieres={referentiel.filieres}
+          niveaux={referentiel.niveaux}
+          modules={modules.map((m) => ({
+            id: m.id,
+            titre: m.titre,
+            etiquette: etiquetteModule(m),
+            postes: m.postes ?? [],
+            niveaux: (m.niveaux ?? []).map(String),
+          }))}
+          comptes={comptes}
+          moduleActif={moduleId}
+        />
+      )}
 
       <form method="get" className="carte filtres">
+        {vueArbre && <input type="hidden" name="vue" value="arbre" />}
         <div className="rangee">
           <label className="champ">
             <span>Module</span>
@@ -187,7 +253,7 @@ export default async function Questions({
             {fichesAVerifier > 0 && (
               <>
                 {" · "}
-                <Link href="/admin/questions?statut=a_verifier#fiches">
+                <Link href={`/admin/questions?${vueArbre ? "vue=arbre&" : ""}statut=a_verifier#fiches`}>
                   {fichesAVerifier} fiche{fichesAVerifier > 1 ? "s" : ""} de synthèse à vérifier
                 </Link>
               </>
@@ -201,123 +267,55 @@ export default async function Questions({
         moduleId={moduleId}
         titreModule={titreModule}
         session={session}
-        retour={retour}
+        // Un geste sur une fiche garde la vue : l'arborescence ne renvoie pas à la liste.
+        retour={vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour}
       />
 
-      {questions.length === 0 && (
-        <p className="encart">Aucune question en base pour ce filtre. La banque versionnée avec le site n&apos;apparaît pas ici : elle se modifie dans <code>content/modules/</code>.</p>
-      )}
+      {vueArbre ? (
+        <>
+          <ArborescenceBanque
+            arbre={arbre}
+            parModule={parModule}
+            comptes={comptes}
+            signales={signales}
+            session={session}
+            etat={{ plis, ouvrir, filtre: filtreQuestions || Boolean(moduleId) }}
+            parametres={parametresArbre}
+          />
+          {/* La redirection d'une action perd l'ancre : on ramène à la branche du geste. */}
+          {ouvrir && <RetourBranche ancre={ancreDe(ouvrir)} />}
+        </>
+      ) : (
+        <>
+          {questions.length === 0 && (
+            <p className="encart">Aucune question en base pour ce filtre. La banque versionnée avec le site n&apos;apparaît pas ici : elle se modifie dans <code>content/modules/</code>.</p>
+          )}
 
-      {[...parModule.entries()].map(([mid, liste]) => (
-        <section key={mid} className="section">
-          <div className="section-titre">
-            <h2 style={{ fontSize: "1.15rem" }}>{titreModule(mid)}</h2>
-            <span className="compte">
-              <Link href={`/module/${mid}`}>voir le module</Link>
-            </span>
-          </div>
-          <ul className="liste-nue">
-            {liste.map((q) => (
-              <li key={q.id} className="carte question-ligne">
-                <div className="etape-tete">
-                  <span className="etiquette etiquette--site">{q.format === "SCH" ? "Schéma" : q.format}</span>
-                  <span className={`etiquette ${q.statut === "valide" ? "etiquette--ok" : q.statut === "retire" ? "etiquette--neutre" : "etiquette--attention"}`}>
-                    {LIBELLES_STATUT[q.statut]}
-                  </span>
-                  {/* Validation par son auteur, permise à l'administration seule (23/09/2026) : elle se distingue. */}
-                  {q.statut === "valide" && q.valide_par_auteur && (
-                    <span className="etiquette etiquette--neutre">Validée par son auteur</span>
-                  )}
-                  {/* Question 54 (a + b) : le signalement se voit là où la question se corrige. */}
-                  {(signales[q.id] ?? 0) > 0 && (
-                    <span className="etiquette etiquette--attention">
-                      {signales[q.id]} signalement{signales[q.id] > 1 ? "s" : ""} ouvert{signales[q.id] > 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {q.niveau_question ? (
-                    <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveau_question]}</span>
-                  ) : (
-                    <span className="etiquette etiquette--attention">Niveau à préciser</span>
-                  )}
-                  {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
-                  {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
-                  {q.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
-                  {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
-                  <span className="legende" style={{ marginLeft: "auto" }}>
-                    v{q.version} · créée par {q.cree_par}
-                    {q.edite_par && q.edite_par !== q.cree_par ? ` · modifiée par ${q.edite_par}` : ""}
-                    {q.valide_par ? ` · validée par ${q.valide_par}${q.valide_par_auteur ? " (son auteur)" : ""}` : ""}
-                  </span>
-                </div>
-                <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
-                {q.format === "SCH" ? (
-                  <p className="legende">
-                    {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : q.mode_reponse === "decouvrir" ? "découvrir avec le tuteur" : "écrire"}
-                    {q.image_id ? "" : " · image manquante"}
-                  </p>
-                ) : (
-                  <ul className="apercu-options">
-                    {q.options.map((o) => (
-                      <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
-                        <span className="num">{o.id.toUpperCase()}</span> {o.texte}{" "}
-                        <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="actions" style={{ marginTop: ".5rem" }}>
-                  <Link href={`/admin/questions/${q.id}`} className="bouton bouton--compact bouton--secondaire">
-                    Modifier
-                  </Link>
-                  {q.statut !== "valide" &&
-                    (peutValider(q, session) ? (
-                      <>
-                        <form action={actionChangerStatutQuestion}>
-                          <input type="hidden" name="id" value={q.id} />
-                          <input type="hidden" name="statut" value="valide" />
-                          <input type="hidden" name="retour" value={retour} />
-                          <button type="submit" className="bouton bouton--compact">Valider</button>
-                        </form>
-                        {/* L'écart aux quatre yeux se dit avant le geste, pas seulement après. */}
-                        {validationParAuteur(q, session) && (
-                          <span className="legende" style={{ alignSelf: "center" }}>
-                            vous en êtes l&apos;auteur : validation tracée comme telle
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="legende" style={{ alignSelf: "center" }}>
-                        à valider par un autre code que {q.edite_par ?? q.cree_par}
-                      </span>
-                    ))}
-                  {q.statut === "valide" && (
-                    <form action={actionChangerStatutQuestion}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <input type="hidden" name="statut" value="a_verifier" />
-                      <input type="hidden" name="retour" value={retour} />
-                      <button type="submit" className="bouton bouton--compact bouton--secondaire">Remettre à vérifier</button>
-                    </form>
-                  )}
-                  {q.statut !== "retire" && (
-                    <form action={actionChangerStatutQuestion}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <input type="hidden" name="statut" value="retire" />
-                      <input type="hidden" name="retour" value={retour} />
-                      <button type="submit" className="bouton bouton--compact bouton--secondaire">Retirer</button>
-                    </form>
-                  )}
-                  {session.role === "admin" && (
-                    <form action={actionSupprimerQuestion}>
-                      <input type="hidden" name="id" value={q.id} />
-                      <button type="submit" className="bouton bouton--compact bouton--discret">Supprimer</button>
-                    </form>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+          {[...parModule.entries()].map(([mid, liste]) => (
+            <section key={mid} className="section">
+              <div className="section-titre">
+                <h2 style={{ fontSize: "1.15rem" }}>{titreModule(mid)}</h2>
+                <span className="compte">
+                  <Link href={`/module/${mid}`}>voir le module</Link>
+                </span>
+              </div>
+              <ul className="liste-nue">
+                {liste.map((q) => (
+                  <li key={q.id} className="carte question-ligne">
+                    <div className="etape-tete">
+                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} />
+                      <TraceQuestion q={q} />
+                    </div>
+                    <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
+                    <ContenuQuestion q={q} />
+                    <ActionsQuestion q={q} session={session} retour={retour} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </>
+      )}
     </>
   );
 }
