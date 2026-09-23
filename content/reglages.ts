@@ -35,7 +35,7 @@ export function parcoursConnus(brut: unknown): TypeParcours[] | null {
   return listeConnue(brut, ["integration", "maintien"]) as TypeParcours[] | null;
 }
 
-/** Niveaux retenus parmi ceux de la fiche. */
+/** Niveaux retenus parmi les codes connus (fiche et référentiel déposé). */
 export function niveauxConnus(brut: unknown, connus: readonly string[]): NiveauHabilitation[] | null {
   return listeConnue(brut, connus) as NiveauHabilitation[] | null;
 }

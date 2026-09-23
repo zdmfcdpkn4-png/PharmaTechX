@@ -8,7 +8,7 @@ import { getCritere } from "@/content/habilitation";
 import { getModule } from "@/content/store";
 import { LIMITES_BAREME } from "@/content/bareme";
 import { NOMS_ILLUSTRATION, NOMS_PICTOGRAMME, SANS_BADGE } from "@/content/badges";
-import { filieres, niveaux } from "@/content/habilitation";
+import { identifiantsConnus } from "@/content/referentiel-db";
 import { listeConnue, niveauxConnus, parcoursConnus } from "@/content/reglages";
 import {
   changerStatutModule,
@@ -144,10 +144,12 @@ export async function actionReglerSeuil(formData: FormData) {
     redirect("/admin/modules?ok=seuil#seuils");
   }
   const liste = (cle: string) => formData.getAll(cle).map((v) => String(v));
+  // Le référentiel servi, dépôts compris : c'est lui que le formulaire propose.
+  const connus = await identifiantsConnus();
   const reglage = {
     seuil: borneSeuil(formData.get("seuil"), 80),
-    filieres: listeConnue(liste("filieres"), filieres.map((f) => f.id)),
-    niveaux: niveauxConnus(liste("niveaux"), niveaux.map((n) => n.code)),
+    filieres: listeConnue(liste("filieres"), connus.filieres),
+    niveaux: niveauxConnus(liste("niveaux"), connus.niveaux),
     parcours: parcoursConnus(liste("parcours")),
   };
   await enregistrerReglageModule(moduleId, reglage, s);

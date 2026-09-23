@@ -16,8 +16,9 @@ import {
   criteres,
   etapes,
   maintien,
-  niveaux,
+  niveaux as niveauxFiche,
 } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
 
 // Le barème est lu à chaque requête : la page annonce les règles en vigueur,
 // jamais celles figées à la construction. Les deux questions sur les données
@@ -109,8 +110,17 @@ const questionsFrequentes = [
 ];
 
 export default async function Reperes() {
-  const bareme = await lireBareme();
+  // Niveaux du référentiel servi, comme sur les autres écrans : un niveau
+  // déposé ou corrigé au Référentiel doit s'y lire aussi (23/09/2026).
+  const [bareme, { niveaux }] = await Promise.all([lireBareme(), getReferentiel()]);
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
+  const deLaFiche = new Map(niveauxFiche.map((n) => [String(n.code), n]));
+  // Ce qui ne se lit plus tel que dans la fiche est dit : cette section cite le chapitre III.
+  const ecartFiche = (n: (typeof niveaux)[number]): string | null => {
+    const f = deLaFiche.get(String(n.code));
+    if (!f) return "Ajouté par l'unité";
+    return f.libelle !== n.libelle || f.condition !== n.condition ? "Modifié par l'unité" : null;
+  };
 
   return (
     <>
@@ -240,17 +250,33 @@ export default async function Reperes() {
       {/* ───────────────────────────────────── conditions des niveaux */}
       <section id="niveaux" className="section">
         <h2>Conditions d&apos;obtention des niveaux</h2>
-        <p className="section-intro">Chapitre III de la fiche d&apos;habilitation.</p>
+        <p className="section-intro">
+          Chapitre III de la fiche d&apos;habilitation
+          {niveaux.some((n) => ecartFiche(n))
+            ? ", complété ou corrigé par l'unité : ce qui ne vient pas de la fiche est signalé."
+            : "."}
+        </p>
         <ul className="liste-nue">
-          {niveaux.map((n) => (
-            <li key={n.code} className="carte">
-              <span className="etiquette etiquette--code">{n.code}</span>{" "}
-              <strong>{n.libelle}</strong>
-              <p className="legende" style={{ margin: ".375rem 0 0" }}>
-                {n.condition}
-              </p>
-            </li>
-          ))}
+          {niveaux.map((n) => {
+            const ecart = ecartFiche(n);
+            return (
+              <li key={n.code} className="carte">
+                <span className="etiquette etiquette--code">{n.code}</span>{" "}
+                <strong>{n.libelle}</strong>
+                {ecart && (
+                  <>
+                    {" "}
+                    <span className="etiquette etiquette--neutre">{ecart}</span>
+                  </>
+                )}
+                {n.condition && (
+                  <p className="legende" style={{ margin: ".375rem 0 0" }}>
+                    {n.condition}
+                  </p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
 

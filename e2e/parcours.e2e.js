@@ -1824,9 +1824,48 @@ Justification : cf. procédure interne.`,
   assert.ok(await casesNiveau.count() > 0, "niveau déposé proposé au rattachement d'un module");
   ok("référentiel déposé proposé dans les listes de rattachement des modules");
 
+  // Écrans reliés (23/09/2026) : le réglage d'un module de la fiche garde le
+  // niveau et la filière déposés — ils étaient proposés puis écartés en
+  // silence —, et les Repères lisent le référentiel, plus la fiche seule.
+  await page.goto(BASE + "/admin/modules");
+  await page.click("summary:has-text('réglé(s)')");
+  const ligneReglage = () => page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) });
+  await ligneReglage().locator("summary").click();
+  await ligneReglage().locator('input[name=niveaux][value="S1"]').check();
+  await ligneReglage().locator('input[name=filieres][value="sterilisation"]').check();
+  await ligneReglage().locator("button:has-text('Régler')").click();
+  await page.waitForURL(/ok=seuil/);
+  assert.equal(await ligneReglage().locator('input[name=niveaux][value="S1"]').isChecked(), true, "niveau déposé gardé au réglage");
+  assert.equal(
+    await ligneReglage().locator('input[name=filieres][value="sterilisation"]').isChecked(),
+    true,
+    "filière déposée gardée au réglage",
+  );
+  await page.click("summary:has-text('réglé(s)')");
+  await ligneReglage().locator("button:has-text('Rétablir la fiche')").click();
+  await page.waitForURL(/ok=seuil/);
+  await page.goto(BASE + "/reperes#niveaux");
+  const niveauDepose = page.locator("section#niveaux li.carte", { hasText: "S1 — stérilisation (base)" });
+  assert.equal(await niveauDepose.count(), 1, "niveau déposé lu dans les conditions des niveaux");
+  // textContent : l'étiquette est en capitales à l'écran (text-transform).
+  assert.ok((await niveauDepose.textContent()).includes("Ajouté par l'unité"), "niveau déposé signalé hors fiche");
+  assert.equal(
+    await page.locator("section#niveaux li.carte", { hasText: "N1a — socle général" }).locator(".etiquette--neutre").count(),
+    0,
+    "niveau de la fiche non corrigé : aucune mention",
+  );
+  ok("écrans reliés : réglage d'un module de la fiche avec niveau et filière déposés ; Repères au référentiel");
+
   // arborescence de la banque : filière → niveau → module, avec les comptes
   await page.goto(BASE + "/admin/questions");
   await page.waitForSelector("text=Couverture de la banque");
+  // B5-09, critère de chimiothérapie de niveau N1a : N1a est au référentiel,
+  // il ne se dit plus « absent » sous la filière Chimiothérapie.
+  assert.deepEqual(
+    (await page.locator("section.arbre .etiquette--attention").allTextContents()).filter((t) => t.trim() === "N1a"),
+    [],
+    "aucun niveau du référentiel donné absent dans l'arborescence",
+  );
   const groupes = await page.locator(".arbre-groupe").count();
   assert.ok(groupes >= 1, "au moins un groupe dans l'arborescence");
   assert.ok(await page.locator(".arbre-module").count() >= 1, "au moins un module dans l'arborescence");

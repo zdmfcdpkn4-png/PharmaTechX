@@ -222,7 +222,7 @@ export default async function Modules({
                                   value={f.id}
                                   defaultChecked={(regle?.filieres ?? m.postes).includes(f.id)}
                                 />
-                                {f.id}
+                                {f.libelle}
                               </label>
                             ))}
                           </span>

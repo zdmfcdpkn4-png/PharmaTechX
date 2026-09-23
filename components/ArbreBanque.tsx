@@ -242,7 +242,9 @@ export function ArbreBanque({
           titre={f.libelle}
           badge={f.badge}
           modules={liste}
-          niveaux={niveaux.filter((n) => n.filiere === f.id)}
+          // Tous les niveaux, pas ceux de la filière seule : B5-09, critère de
+          // chimiothérapie de niveau N1a, y était donné « absent du référentiel ».
+          niveaux={niveaux}
           comptes={comptes}
           actif={moduleActif}
         />

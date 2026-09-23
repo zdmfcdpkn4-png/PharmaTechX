@@ -2436,6 +2436,64 @@ colonne (`app/globals.css`). Mesuré le 23/09/2026, titre long de B1-06 :
 Plus aucun mot ne sort du bloc, à aucune de ces largeurs, et aucune page ne
 défile de côté ; vignette à 72 px partout.
 
+## Écrans reliés au référentiel déposé (23/09/2026)
+
+**Demande.** « L'ajout de niveau doit corriger les écrans reliés. Vérifier
+les correspondances entre les différents menus et fenêtres. » Point de
+départ : N2RESTREINT, niveau déposé au Référentiel, manquait aux
+« Conditions d'obtention des niveaux ».
+
+**Contrôle** (base d'essai locale, 23/09/2026). Un niveau `ZT1` et une
+filière « Filière témoin » déposés au Référentiel, puis chaque écran qui
+liste niveaux ou filières ouvert, et chaque lien du menu suivi.
+
+| Écran | Avant | Après |
+|---|---|---|
+| Référentiel : liste des niveaux, prérequis | présents | inchangé |
+| Accueil, « Composer le programme » : filière, niveau visé | présents | inchangé |
+| Accès, « Créer un code » : filière, niveau | présents | inchangé |
+| Modules : dépôt d'un module | présents | inchangé |
+| Documents : profil | présents | inchangé |
+| Pilotage : filtres | présents | inchangé |
+| Modules : réglage d'un module de la fiche | **proposés, puis écartés en silence** : validés contre la fiche seule, à l'enregistrement comme à la relecture | gardés |
+| Repères : « Conditions d'obtention des niveaux » | **fiche seule** | référentiel servi ; « Ajouté par l'unité » ou « Modifié par l'unité » quand le libellé ou la condition ne sont plus ceux de la fiche |
+| Banque : arborescence | N1a donné **« niveau absent du référentiel »** sous Chimiothérapie — B5-09, critère de chimiothérapie de niveau N1a : chaque filière ne recevait que ses propres niveaux | plus de faux « absent » |
+
+Les identifiants reconnus d'un rattachement sont désormais ceux de la fiche
+et de tous les dépôts, actifs ou non (`identifiantsConnus`,
+`content/referentiel-db.ts`) : un dépôt désactivé quitte les listes, pas les
+rattachements déjà posés, comme pour `niveauxOrphelins`. Le formulaire de
+réglage affiche les filières par leur libellé, comme les autres écrans, et
+non plus par leur identifiant (`chimiotherapie`). L'arborescence de la banque
+ne montre que les filières et les niveaux qui portent des modules : c'est
+voulu, elle mesure la couverture.
+
+**Menu.** Les 27 liens — barre latérale et accès rapide, qui reçoivent la
+même définition (`app/layout.tsx`) — mènent tous à une page existante, et
+chaque ancre existe. Trois libellés courts diffèrent du titre de leur page,
+sans ambiguïté : « Accès » → « Administration », « Ordre » →
+« Ordonnancement des modules », « Écrire une question » → « Nouvelle
+question ». Laissés tels quels.
+
+**Ce qui reste, et n'est pas un défaut de report.**
+- Les trois autres métiers — pharmacien/interne, aide en pharmacie, agent
+  d'entretien — n'ont ni niveau ni filière dans le site. Leur échelle attend
+  la question 46, les codes qui se répètent d'un métier à l'autre ; l'axe
+  métier est défini dans `content/habilitation.ts`, mais aucun écran ne le
+  lit.
+- L'ordre des niveaux ne se règle pas : la fiche d'abord, les dépôts ensuite.
+- Un code de niveau ne se renomme pas (N2RESTREINT → N2R, question posée le
+  23/09/2026, en attente).
+- « Programme complet », dans les Repères, reste la fiche — critères et
+  niveau de la fiche, sans les réglages ni les modules déposés — et le dit.
+
+**Vérifié le 23/09/2026.** `npm run verifier` (239 tests), `npm run build`,
+deux passes de bout en bout de 78 étapes, sans erreur de page ni erreur
+serveur. L'étape ajoutée — réglage d'un module de la fiche avec le niveau et
+la filière déposés, niveau déposé lu et signalé dans les Repères, aucun
+niveau du référentiel donné absent dans l'arborescence — reprend les trois
+défauts constatés au contrôle ci-dessus.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

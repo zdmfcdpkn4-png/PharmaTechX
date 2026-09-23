@@ -2,9 +2,8 @@ import "server-only";
 import { requete, sql, type Role } from "@/lib/db";
 import { nouvelId } from "./banque-db";
 import { filieres as FILIERES, getCritere, maintien, niveaux as NIVEAUX } from "./habilitation";
-import { getReferentiel } from "./referentiel-db";
+import { getReferentiel, identifiantsConnus } from "./referentiel-db";
 import { A_PRECISER, type Module, type NiveauHabilitation, type TypeParcours } from "./types";
-import { filieres, niveaux } from "./habilitation";
 import { listeConnue, niveauxConnus, parcoursConnus, reglageVide, type ReglageModule } from "./reglages";
 
 /**
@@ -226,12 +225,14 @@ export async function lireReglagesModules(): Promise<Record<string, ReglageModul
     niveaux: unknown;
     parcours: unknown;
   }>`SELECT module_id, seuil, filieres, niveaux, parcours FROM reglages_modules`;
+  // Relu contre le même référentiel que celui de l'enregistrement, dépôts compris.
+  const connus = await identifiantsConnus();
   const out: Record<string, ReglageModule> = {};
   for (const x of r.rows) {
     out[x.module_id] = {
       seuil: x.seuil,
-      filieres: listeConnue(x.filieres, filieres.map((f) => f.id)),
-      niveaux: niveauxConnus(x.niveaux, niveaux.map((n) => n.code)),
+      filieres: listeConnue(x.filieres, connus.filieres),
+      niveaux: niveauxConnus(x.niveaux, connus.niveaux),
       parcours: parcoursConnus(x.parcours),
     };
   }

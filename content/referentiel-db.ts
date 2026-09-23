@@ -210,6 +210,24 @@ export async function listeNiveaux(): Promise<Niveau[]> {
   return (await getReferentiel()).niveaux;
 }
 
+/**
+ * Identifiants qu'un rattachement peut citer : ceux de la fiche et tous ceux
+ * déposés, actifs ou non. Un dépôt désactivé quitte les listes de
+ * rattachement, pas les rattachements déjà posés — même règle que
+ * `niveauxOrphelins`. Valider contre la fiche seule écartait en silence ce
+ * que le référentiel venait d'ajouter (constaté le 23/09/2026).
+ */
+export async function identifiantsConnus(): Promise<{ filieres: string[]; niveaux: string[] }> {
+  const [fd, nd] = await Promise.all([
+    listerFilieresDeposees(true).catch(() => [] as FiliereDeposee[]),
+    listerNiveauxDeposes(true).catch(() => [] as NiveauDepose[]),
+  ]);
+  return {
+    filieres: [...new Set([...FILIERES_CODE.map((f) => f.id), ...fd.map((f) => f.id)])],
+    niveaux: [...new Set([...NIVEAUX_CODE.map((n) => String(n.code)), ...nd.map((n) => n.code)])],
+  };
+}
+
 export async function enregistrerFiliere(f: {
   id: string;
   libelle: string;
