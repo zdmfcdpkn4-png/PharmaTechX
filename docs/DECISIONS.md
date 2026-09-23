@@ -3370,6 +3370,9 @@ En vue Liste, la page fait 11 855 px sur poste. Aucun défilement horizontal
   l'adresse : revenir à la banque par le menu la rouvre en vue Liste.
 - **Sans JavaScript**, la branche du geste est rouverte, mais la page n'y
   défile pas.
+- **Boutons du haut de la page.** « Nouvelle question » et « Déposer un
+  texte ou un fichier » ramènent à la liste après l'enregistrement ; depuis
+  l'arbre, « Nouvelle question ici » ramène à la branche du module.
 
 **Vérifié le 23/09/2026.** `npm run verifier` (318 tests, 10 de plus),
 `npm run build`, deux passes de bout en bout de 87 étapes, sans erreur de
