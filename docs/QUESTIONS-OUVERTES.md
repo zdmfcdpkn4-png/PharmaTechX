@@ -376,6 +376,21 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+57. **Dépôt de questions : module de chaque question, plusieurs modules par
+    dépôt** — demandé le 23/09/2026 : « détection de module lors du dépôt,
+    possibilité d'avoir plusieurs modules concernés par le même dépôt
+    (proposition) ; attention, possibilité de mélange QIM / QCM ». Existant :
+    un dépôt se rattache à un seul module, choisi dans une liste ; une ligne
+    « Module : … » dans le texte est ignorée sans avertissement ; le format
+    vient du mot-clé « QCM n. » ou « QIM n. » de chaque question, sinon du
+    format par défaut, appliqué à toutes — un intertitre « QIM » ne change
+    rien. Sur les 53 modules du code, 2 sont rédigés ; les autres n'ont qu'un
+    titre et un objectif générique. Posée le 23/09/2026 : comment le module
+    de chaque question est reconnu — ligne « Module : » écrite dans le texte,
+    puis proposition du site d'après les mots du titre, confirmée dans
+    l'aperçu (a) ; ligne seulement, sinon module par défaut (b) ; proposition
+    seulement (c). Le mélange QIM / QCM viendra ensuite.
+
 56. **Ordre « à la carte pour un utilisateur »** — suite de la question 55,
     posée et tranchée le 23/09/2026 (choix a) : un ordre propre à un
     apprenant, attaché à son identifiant, sur les modules de son profil, sans
