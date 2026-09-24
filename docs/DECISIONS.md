@@ -3712,6 +3712,16 @@ serveur.
   dans les signalements, les documents, les fiches à vérifier, le réglage des
   modules et les Repères (51 critères « À rédiger », aucun lien).
 
+## Trois écarts laissés en l'état (24/09/2026, question 67, choix c)
+
+Relevés le 23/09/2026 et consignés plus haut : le lien « Par critère » du
+pilotage, qui porte un code de critère que le filtre écarte ; les lignes du
+tiroir d'accès rapide à 32 px au doigt sur iPad en paysage ; la
+spécification du mouvement réduit, qui annonce une transition que le site
+supprime. Réponse « C » : aucun n'est corrigé pour l'instant. Rien n'a été
+modifié ; ils restent décrits dans les sections « Liens vers les modules »
+et « Accès rapide en tiroir, à toutes les tailles ».
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

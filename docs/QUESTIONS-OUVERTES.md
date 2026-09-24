@@ -376,6 +376,21 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+68. **QCM : « Plusieurs » avec une majuscule** — constaté le 23/09/2026,
+    non corrigé. Un QCM ne s'affiche en cases à cocher que si son énoncé
+    contient « plusieurs » en minuscules (`estUneSeule`,
+    `components/Evaluation.tsx` ; même test pour le libellé du format,
+    `content/types.ts`). Le contrôle du dépôt, lui, ignore la casse
+    (`lib/import-format.ts`). Un QCM à plusieurs réponses vraies dont
+    l'énoncé commence par « Plusieurs » passe donc le dépôt sans alerte,
+    puis s'affiche en boutons radio : une seule réponse cochable, la question
+    ne peut pas être réussie. Posée le 24/09/2026 : une seule règle, sans
+    tenir compte de la casse, à l'affichage comme au libellé (a,
+    recommandé) ; remplacer le mot par un choix explicite « une réponse /
+    plusieurs réponses » sur chaque QCM (b) ; laisser tel quel, la consigne
+    d'écrire « plusieurs » en minuscules étant rappelée à l'éditeur et au
+    prompt (c).
+
 67. **Trois écarts relevés en marge des questions 61 et 66** — constatés le
     23/09/2026, non corrigés. (1) Pilotage, « Par critère » : le lien d'un
     critère porte son code (`?module=B1-01`), que le filtre, qui n'accepte
@@ -387,7 +402,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     transition. Posée le 24/09/2026 : corriger les trois — filtre par
     critère au pilotage, lignes du tiroir à 44 px au doigt, spécification
     alignée sur le site (a, recommandé) ; le pilotage seul (b) ; aucun pour
-    l'instant (c).
+    l'instant (c). Tranchée le même jour (choix c, réponse « C ») : aucun
+    n'est corrigé ; les trois restent consignés dans `DECISIONS.md`.
 
 66. **Liens vers les modules : périmètre** — demandé le 23/09/2026 :
     « Ajoute des liens entre les sections, pouvoir cliquer sur un module
