@@ -217,3 +217,12 @@ test("tirage selon le niveau cible (questions 62 et 63) : ligne scellée citée,
   const ancien = construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "Intégration" }, [resultat], {});
   assert.ok(!ancien.includes("Niveau cible"), "un résultat antérieur se relit sans la ligne");
 });
+
+test("réservées déjà vues (question 71) : comptées sur la ligne de contexte, même sans réservée posée ; absentes des résultats antérieurs", () => {
+  const html = (reservees: ResultatRapport["reservees"]) =>
+    construireRapport({ identifiant: "AG-007", nom: "", qualite: "", parcours: "" }, [{ ...resultat, reservees }], {});
+  assert.ok(html({ posees: 1, disponibles: 3, dejaVues: 2 }).includes("1 question réservée à l’évaluation sur 3, dont 2 déjà vues par l’agent"));
+  assert.ok(html({ posees: 0, disponibles: 2, dejaVues: 2 }).includes("0 question réservée à l’évaluation sur 2, dont 2 déjà vues par l’agent"));
+  assert.ok(html({ posees: 2, disponibles: 2 }).includes("2 questions réservées à l’évaluation sur 2</p>"), "rien de vu : ligne inchangée");
+  assert.ok(!html({ posees: 0, disponibles: 2 }).includes("réservée à l’évaluation sur"), "rien de posé, rien de vu : ligne inchangée");
+});

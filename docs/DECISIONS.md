@@ -3955,6 +3955,79 @@ déjà « Blocs de compétence ». Ce que fait chacun, lu dans le code :
   identifiant en double, les 22 `aria-describedby` de la page trouvent leur
   cible.
 
+## Réservées déjà vues : tirées en dernier (24/09/2026, question 71, choix b)
+
+**Constaté (audit, F1).** L'apprenant voit la réponse attendue et la
+justification des questions réservées après l'évaluation : à l'écran de
+résultat et sur le rapport qu'il télécharge. Tirées en priorité, ces
+questions revenaient à la tentative suivante, réponses connues.
+
+**Tranché (question 71, choix b, réponse « b pour que l'apprenant puisse voir
+la correction »).** La correction reste montrée. Au tirage suivant d'un agent
+rattaché, les réservées qu'il a déjà vues corrigées passent en dernier.
+
+**Écartés.**
+- **a** : masquer à l'apprenant la réponse attendue et la justification des
+  réservées. Il n'aurait plus vu sa correction.
+- **c** : a et b.
+
+**Ce qui est fait.**
+- **Déjà vue** : une réservée qui figure dans une évaluation conservée de
+  l'agent, tous modules confondus (`reserveesDejaVues`, `lib/progression.ts`).
+  Une évaluation n'est conservée que corrigée sous rattachement : c'est là que
+  la correction a été montrée à l'agent.
+- **Tirage** (`content/tirage.ts`) : les questions libres se prennent dans cet
+  ordre — réservées non vues, questions ordinaires, réservées déjà vues. La
+  composition par niveau prime : une déjà vue comble la part de son niveau
+  avant qu'une question d'un autre niveau ne la prenne. Éliminatoires et
+  obligatoires restent posées à chaque évaluation, vues ou non.
+- **Contrôle du serveur** : le nombre de réservées exigé se compte sur celles
+  que l'agent n'a pas vues, et toute réservée posée y répond. Ainsi, un
+  tirage fait avant qu'une autre évaluation n'allonge la liste, ou commencé
+  sans rattachement puis corrigé rattaché, n'est pas refusé.
+- **Annonce** avant l'épreuve, pour l'agent concerné : « En Habilitation,
+  celle que vous avez déjà vue corrigée ne revient que si la banque n'offre
+  pas assez d'autres questions » (au pluriel s'il y en a plusieurs).
+- **Résultat scellé et rapport** : le nombre de réservées déjà vues
+  (`reservees.dejaVues`, absent à zéro). La ligne de contexte du rapport
+  porte « … sur N, dont K déjà vues par l'agent », même quand aucune réservée
+  n'a été posée.
+- **Textes alignés** : aide de l'éditeur de question, `README.md`, finalité 4
+  du registre (`docs/RGPD.md`).
+
+**Limites.**
+- **Complet** pose toute la banque admise : les réservées déjà vues y
+  reviennent.
+- **Sans rattachement**, le site ne sait rien de l'apprenant : les réservées
+  gardent leur priorité et peuvent revenir.
+- **Rattachement perdu pendant l'épreuve** (douze heures atteintes) : à la
+  correction, le serveur ne connaît plus les réservées vues. Un tirage qui en
+  avait écarté peut alors être refusé (« Tirage non conforme… Recommencez
+  l'évaluation »). Cas rare ; l'évaluation n'aurait pas non plus été
+  conservée.
+- **Le serveur vérifie combien de réservées sont posées, pas lesquelles.** Un
+  navigateur modifié pourrait poser une réservée déjà vue à la place d'une
+  non vue ; le contrôle d'avant ne les distinguait pas davantage. Exiger les
+  non vues une à une aurait refusé les tirages honnêtes des deux cas
+  ci-dessus (liste allongée entre-temps, rattachement en cours d'épreuve).
+- **Une question ordinaire se voit en entraînement**, correction comprise :
+  une réservée déjà vue n'est pas plus connue qu'elle. L'ordre suit la lettre
+  du choix b ; seules les réservées non vues gardent leur intérêt.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 338 tests, 7 de plus (six sur le tirage, un sur le
+  rapport).
+- `npm run build`.
+- Deux passes de bout en bout de 94 étapes, sans erreur de page ni erreur
+  serveur. Étape ajoutée (14a ter) : un agent neuf, AG-003, dont une
+  évaluation conservée contient la réservée. L'annonce s'affiche et le
+  résultat scellé compte la déjà vue. La banque de ce module n'offrant pas
+  d'autre question, l'Habilitation la repose et la correction passe.
+- Mesure hors parcours, tirage Habilitation réduit à 5 questions sur les 10
+  du module : sans rattachement, la réservée sort 20 fois sur 20 ; rattaché à
+  AG-003, 0 fois sur 20. La correction d'un tel tirage est acceptée, avec
+  0 réservée posée sur 1, dont 1 déjà vue.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

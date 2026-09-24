@@ -312,7 +312,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
   return `<section class="critere${premiere ? "" : " nouvelle-page"}">
     <p class="sur-titre">Étape 2 sur 6 — évaluation des connaissances</p>
     <h1>${echapper(r.moduleTitre)}</h1>
-    <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && r.reservees.posees > 0 ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
+    <p class="contexte">${r.critereId ? `Critère ${echapper(r.critereId)} · ` : ""}${r.tirage ? `${echapper(r.tirage)} · ` : ""}seuil de réussite ${r.seuilReussite} %${r.reservees && (r.reservees.posees > 0 || (r.reservees.dejaVues ?? 0) > 0) ? ` · ${r.reservees.posees} question${r.reservees.posees > 1 ? "s" : ""} réservée${r.reservees.posees > 1 ? "s" : ""} à l’évaluation sur ${r.reservees.disponibles}${r.reservees.dejaVues ? `, dont ${r.reservees.dejaVues} déjà vue${r.reservees.dejaVues > 1 ? "s" : ""} par l’agent` : ""}` : ""}${o.numero ? ` · rapport n° ${echapper(o.numero)}` : ""}</p>
     <p class="petit">Barème appliqué : ${echapper(libelleBaremeCourt(r.bareme))}.</p>
     ${r.fiches ? `<p class="petit">${echapper(ligneFichesRemises(r.fiches))}</p>` : ""}
     ${r.cible ? `<p class="petit">${echapper(`${libelleCible(r.cible)}${libelleEcartees(r.cible) ? ` ${libelleEcartees(r.cible)}` : ""}`)}</p>` : ""}

@@ -29,7 +29,7 @@ import {
   verdictDuJugement,
   type JugementScelle,
 } from "@/content/jugement";
-import { enregistrerEvaluation, rattachement } from "@/lib/progression";
+import { enregistrerEvaluation, rattachement, reserveesDejaVues } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
 import { identifiantsConnus, referentielDuModule } from "@/content/referentiel-db";
 import { syntheseDuModule } from "@/lib/synthese";
@@ -163,8 +163,11 @@ export interface ResultatEvaluation {
   horodatage: string;
   horodatageIso: string;
   tirage: string;
-  /** Questions réservées à l'évaluation : posées dans ce tirage, disponibles dans la banque à cet instant (absent des résultats antérieurs). */
-  reservees?: { posees: number; disponibles: number };
+  /**
+   * Questions réservées à l'évaluation : posées dans ce tirage, disponibles dans la banque à cet instant (absent des
+   * résultats antérieurs) et, parmi elles, déjà vues corrigées par l'agent rattaché (question 71, choix b ; absent à zéro).
+   */
+  reservees?: { posees: number; disponibles: number; dejaVues?: number };
   /**
    * Évaluation ou entraînement (depuis le 22/09/2026) : un résultat
    * d'entraînement ne s'émet pas en rapport (`refusEmissionEntrainement`).
@@ -285,6 +288,10 @@ export async function POST(request: Request) {
     ? await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[], tolerees: [] as string[] }))
     : { ouvertes: [] as string[], tolerees: [] as string[] };
   const plafond = plafondDuNiveau(bareme, niveauCible);
+  // Réservées déjà vues corrigées par l'agent rattaché (question 71, choix b) :
+  // le tirage les pose en dernier, le contrôle ne les exige pas.
+  const ratt = modeTirage === "evaluation" ? await rattachement() : null;
+  const dejaVues = ratt ? await reserveesDejaVues(ratt.agentId, banque).catch(() => [] as string[]) : [];
   const contexte: ContexteTirage = {
     mode: modeTirage,
     difficulte,
@@ -294,6 +301,7 @@ export async function POST(request: Request) {
     // Signalements ouverts, et clos depuis moins de sept jours : une clôture
     // survenue pendant l'épreuve ne fait pas refuser le tirage.
     signalees: signalements.tolerees,
+    dejaVues,
   };
 
   // Le tirage est décidé côté client ; le serveur ne corrige que les questions
@@ -506,6 +514,7 @@ export async function POST(request: Request) {
     reservees: {
       posees: posees.filter((q) => q.reservee).length,
       disponibles: banque.filter((q) => q.reservee).length,
+      ...(dejaVues.length > 0 ? { dejaVues: dejaVues.length } : {}),
     },
     mode: modeTirage,
     ...(jugement ? { jugement } : {}),

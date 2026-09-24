@@ -552,7 +552,7 @@ export function EditeurQuestion({
         <input type="checkbox" name="reservee" defaultChecked={initiale?.reservee ?? false} />
         <span>
           Réservée à l&apos;évaluation — jamais posée en entraînement ni en Découverte, tirée en priorité en
-          Habilitation et Complet
+          Habilitation et Complet, en dernier pour l&apos;agent qui l&apos;a déjà vue corrigée
         </span>
       </label>
       <label className="option option--compact" style={{ display: "inline-flex" }}>

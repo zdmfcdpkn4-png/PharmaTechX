@@ -142,9 +142,14 @@ elle est toujours incluse dans le tirage.
 Une question **réservée à l'évaluation** (décision du 18/09/2026, question 18,
 choix c) n'est jamais posée en entraînement ni dans le tirage Découverte ; les
 tirages Habilitation et Complet, en mode évaluation, la prennent en priorité.
+Pour un agent rattaché, celles qu'il a déjà vues corrigées passent en dernier,
+après les questions ordinaires (décision du 24/09/2026, question 71, choix b) :
+la correction reste montrée, et l'évaluation suivante pose d'autres réservées
+tant que la banque en compte assez.
 Le serveur refuse à la correction un tirage qui ne respecte pas cette règle.
 Le résultat scellé, le rapport et le registre portent le nombre de questions
-réservées posées. Dans le code, `reservee: true` sur la question ; en base, la
+réservées posées ; le résultat scellé et le rapport, celui des réservées déjà
+vues par l'agent. Dans le code, `reservee: true` sur la question ; en base, la
 case de l'éditeur ou la ligne « Réservée à l'évaluation : oui » à l'import.
 
 Une question **obligatoire** (décision du 23/09/2026, question 63, choix a)

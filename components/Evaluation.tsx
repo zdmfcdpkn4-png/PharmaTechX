@@ -456,6 +456,7 @@ export function Evaluation({
   niveaux = [],
   niveauInitial = null,
   signalees = [],
+  dejaVues = [],
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -487,6 +488,8 @@ export function Evaluation({
   niveauInitial?: string | null;
   /** Questions au signalement ouvert : écartées de tout tirage (question 62). */
   signalees?: string[];
+  /** Réservées déjà vues corrigées par l'agent rattaché : tirées en dernier (question 71, choix b). */
+  dejaVues?: string[];
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -501,6 +504,7 @@ export function Evaluation({
     plafond,
     repartition: bareme.repartitions[plafond],
     signalees,
+    dejaVues,
   });
   // Tirage d'habilitation par défaut ; Découverte seule si la banque admise
   // au niveau cible ne peut pas réunir un tirage concluant.
@@ -551,6 +555,7 @@ export function Evaluation({
   );
   const bilanEvaluation = bilanTirage(banque, contexte("habilitation", "evaluation"));
   const nbReservees = banque.filter((q) => q.reservee).length;
+  const nbDejaVues = banque.filter((q) => q.reservee && dejaVues.includes(q.id)).length;
   const nbADecouvrir = banque.filter(estADecouvrir).length;
 
   const libelleTirage = sousEnsemble
@@ -1075,6 +1080,11 @@ export function Evaluation({
                 Le résultat entre dans la session et peut être porté au rapport (étape 2 sur 6).
                 {nbReservees > 0
                   ? ` En Habilitation et Complet, ${nbReservees} question${nbReservees > 1 ? "s" : ""} réservée${nbReservees > 1 ? "s" : ""} à l'évaluation, jamais vue${nbReservees > 1 ? "s" : ""} en entraînement, ${nbReservees > 1 ? "sont tirées" : "est tirée"} en priorité.`
+                  : ""}
+                {nbDejaVues > 0
+                  ? nbDejaVues > 1
+                    ? ` En Habilitation, les ${nbDejaVues} que vous avez déjà vues corrigées ne reviennent que si la banque n'offre pas assez d'autres questions.`
+                    : " En Habilitation, celle que vous avez déjà vue corrigée ne revient que si la banque n'offre pas assez d'autres questions."
                   : ""}
                 {bilanEvaluation.obligatoires > 0
                   ? ` ${bilanEvaluation.obligatoires} question${bilanEvaluation.obligatoires > 1 ? "s" : ""} obligatoire${bilanEvaluation.obligatoires > 1 ? "s" : ""} ${bilanEvaluation.obligatoires > 1 ? "sont posées" : "est posée"} à chaque évaluation Habilitation et Complet.`

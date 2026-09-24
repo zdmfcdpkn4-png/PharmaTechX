@@ -174,6 +174,26 @@ export async function evaluationsDeLAgent(agentId: number, limite = 200): Promis
   return r.rows.map((x) => x.resultat);
 }
 
+/**
+ * Réservées de cette banque que l'agent a déjà vues corrigées (question 71,
+ * choix b) : celles de ses évaluations conservées, tous modules confondus.
+ * Le tirage de l'évaluation suivante les pose en dernier.
+ */
+export async function reserveesDejaVues(
+  agentId: number,
+  banque: readonly { id: string; reservee?: boolean }[],
+): Promise<string[]> {
+  const reservees = banque.filter((q) => q.reservee).map((q) => q.id);
+  if (reservees.length === 0 || !baseConfiguree()) return [];
+  const r = await sql<{ id: string }>`
+    SELECT DISTINCT d->>'questionId' AS id
+    FROM progression p,
+         jsonb_array_elements(CASE WHEN jsonb_typeof(p.resultat->'detail') = 'array' THEN p.resultat->'detail' ELSE '[]'::jsonb END) d
+    WHERE p.agent_id = ${agentId} AND p.nature = 'evaluation'
+      AND d->>'questionId' = ANY(${reservees}::text[])`;
+  return r.rows.map((l) => l.id);
+}
+
 export interface EmissionAgent {
   id: string;
   numero: string;

@@ -2755,6 +2755,41 @@ Justification : cf. procédure interne.`,
   assert.ok(resultatComplet.detail.some((d) => d.questionId === idReservee && d.reservee === true));
   ok("questions réservées : écartées de l'entraînement, posées et étiquetées en évaluation complète, tirage non conforme refusé (400), comptées dans le résultat scellé");
 
+  // 14a ter. réservées déjà vues (question 71, choix b) : un agent rattaché qui a vu la correction d'une
+  //          réservée la voit annoncée en dernier, et le résultat scellé la compte. Ce module n'a pas
+  //          d'autre question : l'Habilitation la repose, et la correction passe. Un identifiant neuf,
+  //          détaché à la fin : la suite du parcours attend AG-002 sans code personnel.
+  await page.goto(BASE + "/admin/personnel");
+  await page.click("button:has-text('Créer un identifiant')");
+  await page.waitForURL(/ok=cree&identifiant=AG-003/);
+  await page.goto(BASE + "/#progression");
+  await page.fill("#progression input[name=identifiant]", "AG-003");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/premiere=AG-003/);
+  await page.fill("input[name=nouveauCode]", "2468");
+  await page.fill("input[name=confirmation]", "2468");
+  await page.click("button:has-text('Choisir ce code')");
+  await page.waitForURL(/progression=ok/);
+  const premiereVue = await (await corrigerVia({ mode: "evaluation", difficulte: "complet", tirage: "Complet · 10 questions" })).json();
+  assert.deepEqual(premiereVue.reservees, { posees: 1, disponibles: 1 }, "rien de vu avant la première évaluation conservée");
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.waitForSelector("text=celle que vous avez déjà vue corrigée ne revient que si la banque n'offre pas assez d'autres questions");
+  const secondeVue = await (await corrigerVia({ mode: "evaluation", difficulte: "complet", tirage: "Complet · 10 questions" })).json();
+  assert.deepEqual(secondeVue.reservees, { posees: 1, disponibles: 1, dejaVues: 1 }, "déjà vue comptée au résultat scellé");
+  await page.goto(BASE + "/module/comportement-zac/evaluation");
+  await page.check("input[name=mode] >> nth=0");
+  await page.check("input[name=difficulte] >> nth=1");
+  await page.click("button:has-text('Commencer')");
+  await page.waitForSelector("fieldset.question");
+  assert.equal(await page.locator("fieldset.question", { hasText: ENONCE_RESERVEE }).count(), 1, "rien d'autre à poser : la déjà vue revient");
+  await page.locator("fieldset.question").filter({ has: page.locator("label.option") }).first().locator("label.option input").first().check();
+  await validerEvaluation();
+  await page.waitForSelector(".resultat-entete");
+  await page.goto(BASE + "/#progression");
+  await page.click("#progression button:has-text('Se détacher')");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  ok("réservées déjà vues : annoncées à l'agent rattaché, comptées au résultat scellé, reposées quand la banque n'offre rien d'autre, correction acceptée");
+
   // 14a bis. tirage selon le niveau cible (questions 62 et 63, choix a) : plafond et répartition du barème,
   //          question obligatoire toujours posée, question au signalement ouvert écartée de tout tirage,
   //          contrôle du serveur. Une obligatoire de niveau avancé est créée par le tuteur et validée par

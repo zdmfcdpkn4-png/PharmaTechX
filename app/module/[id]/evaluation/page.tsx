@@ -4,7 +4,7 @@ import { getModuleComplet, positionDansParcours, positionDansProfil, positionDan
 import { lireIdProgramme } from "@/content/programmes";
 import { lireProfilDemande, requeteProfil } from "@/content/ordres";
 import { syntheseDuModule } from "@/lib/synthese";
-import { lireEnCours, rattachement } from "@/lib/progression";
+import { lireEnCours, rattachement, reserveesDejaVues } from "@/lib/progression";
 import { A_PRECISER, banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -62,6 +62,8 @@ export default async function PageEvaluation({
   const signalees = baseConfiguree()
     ? (await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[] }))).ouvertes
     : [];
+  // Réservées déjà vues corrigées par l'agent rattaché : tirées en dernier (question 71, choix b).
+  const dejaVues = ratt ? await reserveesDejaVues(ratt.agentId, banque).catch(() => [] as string[]) : [];
 
   return (
     <article>
@@ -96,6 +98,7 @@ export default async function PageEvaluation({
         niveaux={niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle }))}
         niveauInitial={niveauInitial}
         signalees={signalees}
+        dejaVues={dejaVues}
       />
     </article>
   );

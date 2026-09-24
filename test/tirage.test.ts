@@ -325,3 +325,81 @@ test("tirage conforme à son propre contrôle, sur des banques et des réglages 
     assert.equal(verdict.ok, true, verdict.ok ? "" : `graine ${k} : ${verdict.raison}`);
   }
 });
+
+// ───────────────────────────── question 71 (choix b) : réservées déjà vues
+
+test("réservées déjà vues : l'évaluation suivante pose d'abord les autres réservées, puis les questions ordinaires", () => {
+  const h = ctx("evaluation", "habilitation", 4, { dejaVues: ["r1"] });
+  for (let k = 1; k <= 40; k++) {
+    const ids = tirer(banque, h, graine(k)).map((x) => x.id);
+    assert.equal(ids.length, 4);
+    assert.ok(ids.includes("e1") && ids.includes("r2"), "éliminatoire et réservée non vue posées");
+    assert.ok(!ids.includes("r1"), "réservée déjà vue écartée : les questions ordinaires suffisent");
+    assert.equal(tirageConforme(tirer(banque, h, graine(k)), banque, h).ok, true);
+  }
+});
+
+test("réservées déjà vues : reposées quand la banque n'offre pas assez d'autres questions", () => {
+  const petite = [q("r1", { reservee: true }), q("r2", { reservee: true }), q("r3", { reservee: true }), q("a")];
+  const h = ctx("evaluation", "habilitation", 3, { dejaVues: ["r1", "r2"] });
+  for (let k = 1; k <= 20; k++) {
+    const ids = tirer(petite, h, graine(k)).map((x) => x.id);
+    assert.equal(ids.length, 3);
+    assert.ok(ids.includes("r3") && ids.includes("a"));
+    assert.equal(ids.filter((id) => id === "r1" || id === "r2").length, 1, "une déjà vue comble la dernière place");
+  }
+});
+
+test("réservées déjà vues : la composition par niveau prime, la déjà vue passe après les ordinaires de son niveau", () => {
+  const avec = etagee.map((x) => (x.id === "v1" || x.id === "v2" || x.id === "m5" ? { ...x, reservee: true } : x));
+  const h = ctx("evaluation", "habilitation", 10, { plafond: "avance", repartition: PROMPT, dejaVues: ["v1"] });
+  for (let k = 1; k <= 50; k++) {
+    const t = tirer(avec, h, graine(k));
+    assert.ok(t.some((x) => x.id === "v2") && t.some((x) => x.id === "m5"), "réservées non vues posées");
+    assert.ok(!t.some((x) => x.id === "v1"), "v1 déjà vue : trois avancées ordinaires suffisent");
+    assert.deepEqual([compter(t, "initial"), compter(t, "intermediaire"), compter(t, "avance")], [3, 4, 3]);
+    assert.equal(tirageConforme(t, avec, h).ok, true);
+  }
+  // Sans assez d'avancées ordinaires, la déjà vue comble la part de son niveau.
+  const peu = avec.filter((x) => x.id !== "v3" && x.id !== "v4");
+  for (let k = 1; k <= 20; k++) {
+    const t = tirer(peu, h, graine(k));
+    assert.ok(t.some((x) => x.id === "v1"));
+    assert.equal(compter(t, "avance"), 3);
+    assert.equal(tirageConforme(t, peu, h).ok, true);
+  }
+});
+
+test("réservées déjà vues : Complet pose toute la banque, une éliminatoire reste posée", () => {
+  const complet = ctx("evaluation", "complet", null, { dejaVues: ["r1", "r2"] });
+  assert.deepEqual(tirer(banque, complet, fixe).map((x) => x.id), banque.map((x) => x.id));
+  const petite = [q("e1", { eliminatoire: true, reservee: true }), q("a"), q("b"), q("c")];
+  const h = ctx("evaluation", "habilitation", 2, { dejaVues: ["e1"] });
+  assert.ok(tirer(petite, h, fixe).some((x) => x.id === "e1"));
+});
+
+test("réservées déjà vues : une question ordinaire ou inconnue dans la liste ne change pas le tirage, à graine égale", () => {
+  const h = ctx("evaluation", "habilitation", 10, { plafond: "avance", repartition: PROMPT });
+  const avec = etagee.map((x) => (x.id === "v1" || x.id === "m5" ? { ...x, reservee: true } : x));
+  for (let k = 1; k <= 20; k++) {
+    assert.deepEqual(
+      tirer(avec, { ...h, dejaVues: ["i0", "v0", "inconnue"] }, graine(k)).map((x) => x.id),
+      tirer(avec, h, graine(k)).map((x) => x.id),
+    );
+  }
+});
+
+test("réservées déjà vues : contrôle du serveur", () => {
+  const client = ctx("evaluation", "habilitation", 4, { dejaVues: ["r1"] });
+  const t = tirer(banque, client, fixe);
+  // Le serveur en sait plus (une autre évaluation enregistrée entre-temps) : accepté.
+  assert.equal(tirageConforme(t, banque, { ...client, dejaVues: ["r1", "r2"] }).ok, true);
+  // Tirage fait sans rattachement, corrigé rattaché : accepté.
+  const sans = tirer(banque, ctx("evaluation", "habilitation", 4), fixe);
+  assert.equal(tirageConforme(sans, banque, client).ok, true);
+  // Une réservée non vue évitée au profit d'une question ordinaire : refusé.
+  const evitee = [q("e1", { eliminatoire: true }), q("a"), q("b"), q("c")];
+  const c = tirageConforme(evitee, banque, client);
+  assert.equal(c.ok, false);
+  if (!c.ok) assert.match(c.raison, /1 question réservée/);
+});

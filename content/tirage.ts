@@ -6,7 +6,11 @@ import type { NiveauQuestion } from "./types";
  * Questions réservées à l'évaluation (décision du 18/09/2026, question 18,
  * choix c) : jamais posées en entraînement ni dans le tirage Découverte ;
  * elles n'entrent que dans les tirages qui peuvent conclure, Habilitation et
- * Complet, en mode évaluation, où elles sont tirées en priorité.
+ * Complet, en mode évaluation, où elles sont tirées en priorité. Celles que
+ * l'agent rattaché a déjà vues corrigées passent en dernier, après les
+ * questions ordinaires (question 71, choix b, 24/09/2026) : la correction
+ * reste montrée, et l'évaluation suivante pose d'autres réservées tant que
+ * la banque en compte assez.
  *
  * Tirage selon le niveau cible (questions 62 et 63, choix a, 23/09/2026) :
  *  - une question au signalement ouvert est écartée de tout tirage, jusqu'à
@@ -64,6 +68,8 @@ export interface ContexteTirage {
   repartition: Repartition | null;
   /** Questions au signalement ouvert : écartées du tirage. */
   signalees: readonly string[];
+  /** Réservées déjà vues corrigées par l'agent rattaché (question 71, choix b) : tirées en dernier. */
+  dejaVues?: readonly string[];
 }
 
 /** Les réservées n'entrent que dans un tirage qui peut conclure, en mode évaluation. */
@@ -175,10 +181,10 @@ function ordonner<Q extends QuestionTirable>(admises: readonly Q[], choisies: Re
 /**
  * Tirage. Les questions toujours posées sont retenues — laisser au hasard le
  * soin de poser ou non la question de sécurité n'aurait pas de sens —, puis
- * chaque niveau est complété jusqu'à sa part, réservées d'abord ; enfin les
- * places restantes, jusqu'à `nb` (null : toute la banque admise). Les mises
- * en situation sont rendues par vignette, après les questions isolées, dans
- * l'ordre de la banque.
+ * chaque niveau est complété jusqu'à sa part, réservées d'abord et réservées
+ * déjà vues en dernier ; enfin les places restantes, jusqu'à `nb` (null :
+ * toute la banque admise). Les mises en situation sont rendues par vignette,
+ * après les questions isolées, dans l'ordre de la banque.
  */
 export function tirer<Q extends QuestionTirable>(
   banque: readonly Q[],
@@ -189,11 +195,17 @@ export function tirer<Q extends QuestionTirable>(
   if (c.nb === null || c.nb >= admises.length) return admises;
   const nb = c.nb;
   const choisies = new Set<Q>(admises.filter((q) => toujoursPosee(q, c)));
-  // Les réservées d'abord (elles ne sont admises que là où elles passent en priorité), chaque lot mélangé.
-  const libres = (garder: (q: Q) => boolean): Q[] => [
-    ...melanger(admises.filter((q) => !choisies.has(q) && garder(q) && q.reservee), alea),
-    ...melanger(admises.filter((q) => !choisies.has(q) && garder(q) && !q.reservee), alea),
-  ];
+  // Les réservées d'abord (elles ne sont admises que là où elles passent en priorité), chaque lot mélangé ;
+  // celles que l'agent a déjà vues corrigées après les questions ordinaires (question 71, choix b).
+  const vues = new Set(c.dejaVues ?? []);
+  const libres = (garder: (q: Q) => boolean): Q[] => {
+    const lot = (dans: (q: Q) => boolean) => melanger(admises.filter((q) => !choisies.has(q) && garder(q) && dans(q)), alea);
+    return [
+      ...lot((q) => q.reservee === true && !vues.has(q.id)),
+      ...lot((q) => !q.reservee),
+      ...lot((q) => q.reservee === true && vues.has(q.id)),
+    ];
+  };
   if (c.repartition) {
     for (const ecartee of toujoursPoseesEcartees(banque, c)) {
       const remplacante = libres((q) => niveauDe(q) === niveauDe(ecartee))[0];
@@ -271,6 +283,12 @@ const s = (n: number) => (n > 1 ? "s" : "");
  *    par niveau quand une répartition s'applique ; chaque niveau au moins à
  *    sa part, ou à ce que la banque admise en offre.
  *
+ * Réservées déjà vues (question 71, choix b) : le nombre de réservées exigé
+ * se compte sur celles que l'agent n'a pas vues, `c.dejaVues` étant ce que
+ * le serveur sait à la correction ; toute réservée posée, vue ou non, y
+ * répond. Ainsi, un tirage fait avant qu'une autre évaluation n'allonge la
+ * liste, ou sans rattachement puis rattaché en cours, n'est pas refusé.
+ *
  * `c.signalees` est ici ce que le serveur tient pour signalé ; il y compte
  * aussi les signalements clos depuis peu (voir la route de correction), pour
  * qu'une clôture survenue pendant l'épreuve ne la fasse pas refuser.
@@ -315,10 +333,11 @@ export function tirageConforme(
     ? [...ORDRE_NIVEAUX, null].map((n) => (q: QuestionTirable) => niveauDe(q) === n)
     : [() => true];
   if (avecReservees) {
+    const vues = new Set(c.dejaVues ?? []);
     for (const dans of strates) {
       const libresPosees = posees.filter((q) => dans(q) && !toujoursPosee(q, c));
       const reserveesPosees = libresPosees.filter((q) => q.reservee).length;
-      const disponibles = admises.filter((q) => dans(q) && q.reservee && !toujoursPosee(q, c)).length;
+      const disponibles = admises.filter((q) => dans(q) && q.reservee && !vues.has(q.id) && !toujoursPosee(q, c)).length;
       const attendues = Math.min(disponibles, libresPosees.length);
       if (reserveesPosees < attendues) {
         return {

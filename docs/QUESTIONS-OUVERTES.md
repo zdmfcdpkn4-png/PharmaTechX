@@ -400,6 +400,11 @@ telle. Ordre : ce qui change le déploiement en premier.
       en compte assez.
     - **c** : a et b.
 
+    Tranchée le même jour (choix b, « b pour que l'apprenant puisse voir la
+    correction ») et mise en œuvre : la correction reste montrée ; au tirage
+    suivant d'un agent rattaché, les réservées déjà vues corrigées passent
+    après les questions ordinaires. Détail dans `DECISIONS.md`.
+
 70. **Poste partagé : « Quitter » détache-t-il aussi l'agent ?** — posée le
     24/09/2026 (audit, Z1). « Quitter » ferme la session du code de profil,
     mais pas le rattachement de l'agent (`lib/auth.ts`, `lib/progression.ts`).
