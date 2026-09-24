@@ -376,6 +376,27 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+74. **Une question dans plusieurs blocs et plusieurs profils** — posée le
+    24/09/2026, sur demande (« pouvoir positionner une question dans
+    plusieurs blocs de compétences et plusieurs profils »). Aujourd'hui, une
+    question appartient à un seul module (`questions.module_id`). Son bloc
+    est celui du critère de ce module ; ses profils sont les filières et
+    niveaux cochés dans le réglage du module, qui peut déjà en porter
+    plusieurs (question 36, choix a). Trois choix :
+    - **a (recommandé)** : rattacher une question à plusieurs modules. Elle
+      garde son module d'origine, où elle se modifie et se valide, et peut
+      être « aussi posée dans » d'autres modules, choisis dans l'éditeur.
+      Bloc et profils suivent les modules : rattachée à un module du bloc 1
+      et à un du bloc 3, elle est dans les deux blocs, et dans les profils
+      de chacun. Elle entre dans le tirage de chaque module et figure sous
+      chacun dans l'arborescence. Une seule validation, un seul
+      signalement : corrigée une fois, elle l'est partout.
+    - **b** : des étiquettes propres à la question — blocs (1 à 7) et
+      profils (filière × niveau) — à côté de son module unique. Elles
+      filtrent la banque et limitent le tirage aux profils cochés ; la
+      question n'entre dans l'évaluation d'aucun autre module.
+    - **c** : a et b.
+
 73. **Après le lot 1 de l'audit : la suite** — posée le 24/09/2026. Le lot 1
     est fait : correction à l'écran (E1), question dégagée de l'en-tête
     (E2), identifiant rappelé (Z1), pincement des schémas (Z2), réservées
