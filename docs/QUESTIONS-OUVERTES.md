@@ -376,6 +376,20 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+69. **Audit ergonomique : par quoi commencer** — posée le 24/09/2026,
+    après l'audit du même jour (`docs/AUDIT-ERGONOMIE.md`). Trois choix :
+    - **a (recommandé)** : le lot 1 d'abord. Il amène la correction
+      d'entraînement à l'écran, dégage de l'en-tête le numéro et le format
+      de la question, garde l'identité de l'agent visible sur un poste
+      partagé, rend le zoom aux schémas, puis règle le sort des réponses des
+      questions réservées.
+    - **b** : le temps des formateurs d'abord. Les questions se relisent et
+      se valident depuis un seul écran, les alertes du dépôt sont conservées,
+      la relecture se fait dépôt par dépôt et des contrôles de rédaction
+      sont ajoutés.
+    - **c** : un test avec trois à cinq agents d'abord, sur la version
+      actuelle.
+
 68. **QCM : « Plusieurs » avec une majuscule** — constaté le 23/09/2026,
     non corrigé. Un QCM ne s'affiche en cases à cocher que si son énoncé
     contient « plusieurs » en minuscules (`estUneSeule`,
