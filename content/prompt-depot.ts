@@ -21,6 +21,11 @@
  * mot-clé QCM ou QIM devant chaque question, et fait écrire une ligne
  * « Module : » avant les questions de chaque module, d'après la liste des
  * modules qu'il porte : un dépôt peut en servir plusieurs.
+ *
+ * Depuis le 24/09/2026, il fait recopier sous chaque question l'extrait du
+ * document de référence qui donne la réponse (« Extrait : « … » »), mot pour
+ * mot : le relecteur le confronte au document avant de valider. La
+ * justification seule ne le permettait pas.
  */
 
 /** Exemple canonique du format attendu : lu tel quel par l'analyseur. */
@@ -33,6 +38,7 @@ C. Troisième proposition (V)
 D. Quatrième proposition (F)
 Réponses : A C
 Justification : texte affiché à l'apprenant après la correction.
+Extrait : « phrase du document de référence qui donne la réponse, recopiée mot pour mot »
 Source : ANSM — Bonnes pratiques de préparation 2023 — 21/07/2023 — https://ansm.sante.fr/
 Éliminatoire : oui
 Réservée à l'évaluation : oui
@@ -71,6 +77,7 @@ Description de l'image : Tenue complète de zone à atmosphère contrôlée, por
 2. Surchaussures
 3. Combinaison
 Justification : …
+Extrait : « … »
 
 TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
 1. transfert
@@ -94,10 +101,10 @@ export function promptDepot(modules: ModulePrompt[]): string {
     .sort((a, b) => a.repere.localeCompare(b.repere, "fr", { numeric: true }))
     .map((m) => `${m.repere} — ${m.titre}`)
     .join("\n");
-  return `Tu mets en forme des questions d'évaluation pour le dépôt du site de formation de l'unité de pharmacotechnie (CHD Vendée). Tu transcris ce que le texte source contient ; tu ne rédiges pas de contenu nouveau.
+  return `Tu mets en forme des questions d'évaluation pour le dépôt du site de formation de l'unité de pharmacotechnie (CHD Vendée). Tu transcris ce que le texte source contient ; tu ne rédiges pas de contenu nouveau. Le document de référence, s'il est joint, sert à recopier l'extrait qui justifie chaque réponse.
 
 RÈGLES ABSOLUES
-1. N'invente rien : ni question, ni proposition, ni corrigé, ni justification, ni source. Ce qui n'est pas dans le texte source n'apparaît pas dans ta réponse.
+1. N'invente rien : ni question, ni proposition, ni corrigé, ni justification, ni extrait, ni source. Ce qui n'est pas dans le texte source ou le document de référence n'apparaît pas dans ta réponse.
 2. Ne reformule pas le fond. Tu peux corriger une faute de frappe évidente et retirer ce qui n'appartient pas à la question (numéros de page, en-têtes, pieds de page). Rien d'autre.
 3. Corrigé absent ou ambigu : écris les propositions sans « (V) » ni « (F) » et ajoute la ligne « Justification : [à vérifier] ». Un tuteur tranchera dans l'éditeur.
 4. Source : ne recopie que celle que porte le texte source. Pas de source probable, pas d'URL reconstituée, pas de date devinée. Rien à recopier, pas de ligne « Source ».
@@ -113,6 +120,7 @@ PRÉCISIONS
 - QCM : une seule réponse exacte, sauf si l'énoncé dit « plusieurs réponses ». QIM : chaque proposition se juge vraie ou fausse séparément.
 - « Module : B1-05 » — seule sur sa ligne, précédée d'une ligne vide, avant la première question d'un module : elle vaut pour les questions qui suivent, jusqu'à la ligne Module suivante. Le code se prend dans la liste MODULES ci-dessous, d'après ce que dit le texte source (titre de chapitre, thème traité). Le texte source ne permet pas de choisir, ou hésite entre deux modules : pas de ligne Module, le site proposera un module que le tuteur vérifiera.
 - Le corrigé s'écrit « (V) » / « (F) » en fin de proposition, ou en ligne « Réponses : A C ». Si le texte source porte les deux, ils doivent coïncider ; sinon, applique la règle 3.
+- « Extrait : « … » » — sous la justification, la phrase du document de référence qui donne la réponse, recopiée mot pour mot entre guillemets, 300 caractères au plus ; une ligne par phrase. Le relecteur la confronte au document avant de valider, et l'apprenant la lit après la correction. Pour un QCM ou une QIM, tu peux écrire à la place, sous chaque proposition, une ligne « Extrait A : « … » » : la phrase qui la confirme ou qu'elle contredit. Le document de référence est le texte source lui-même, ou le document joint à la conversation. Aucune phrase ne donne la réponse, ou pas de document : pas de ligne Extrait, et jamais de phrase reformulée.
 - « Éliminatoire : oui » — une erreur rend le critère non acquis, quel que soit le score. À ne mettre que si le texte source le dit.
 - « Réservée à l'évaluation : oui » — la question n'est jamais posée en entraînement. Même règle.
 - « Obligatoire : oui » — la question est posée à chaque évaluation qui peut conclure. Même règle.
@@ -126,6 +134,9 @@ PRÉCISIONS
 
 MODULES (code — titre)
 ${liste}
+
+DOCUMENT DE RÉFÉRENCE
+Le document d'où viennent les réponses (procédure, chapitre des BPP…) est joint à la conversation, s'il n'est pas le texte source lui-même. Les extraits s'y recopient.
 
 TEXTE SOURCE À METTRE EN FORME
 """

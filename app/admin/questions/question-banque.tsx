@@ -52,21 +52,69 @@ export function TraceQuestion({ q }: { q: LigneQuestion }) {
   );
 }
 
-/** Propositions avec leur verdict, ou résumé d'un schéma. */
+/** Propositions avec leur verdict, ou résumé d'un schéma ; puis justification et source. */
 export function ContenuQuestion({ q }: { q: LigneQuestion }) {
-  return q.format === "SCH" ? (
-    <p className="legende">
-      {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : q.mode_reponse === "decouvrir" ? "découvrir avec le tuteur" : "écrire"}
-      {q.image_id ? "" : " · image manquante"}
-    </p>
+  return (
+    <>
+      {q.format === "SCH" ? (
+        <p className="legende">
+          {q.legendes.length} légende{q.legendes.length > 1 ? "s" : ""} · réponse à {q.mode_reponse === "choisir" ? "choisir" : q.mode_reponse === "decouvrir" ? "découvrir avec le tuteur" : "écrire"}
+          {q.image_id ? "" : " · image manquante"}
+        </p>
+      ) : (
+        <ul className="apercu-options">
+          {q.options.map((o) => (
+            <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
+              <span className="num">{o.id.toUpperCase()}</span> {o.texte} <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <JustificationQuestion q={q} />
+    </>
+  );
+}
+
+/**
+ * Justification et source, que le relecteur confronte au document d'origine
+ * avant de valider (24/09/2026) : la justification porte l'extrait du
+ * document quand le dépôt en donnait un. Visibles tant que la question est à
+ * vérifier, repliées ensuite.
+ */
+function JustificationQuestion({ q }: { q: LigneQuestion }) {
+  const justification = q.justification.trim();
+  const contenu = (
+    <>
+      <p>
+        <strong>Justification</strong> :{" "}
+        {justification || <span className="legende">aucune — à écrire dans l&apos;éditeur, d&apos;après le document</span>}
+      </p>
+      {q.refs.length > 0 && (
+        <p className="legende">
+          Source :{" "}
+          {q.refs.map((r, i) => (
+            <span key={i}>
+              {i > 0 ? " ; " : ""}
+              {[r.source, r.libelle, r.date, r.localisation].filter(Boolean).join(" — ")}
+              {r.url && (
+                <>
+                  {" — "}
+                  <a href={r.url} target="_blank" rel="noopener noreferrer">lien</a>
+                </>
+              )}
+            </span>
+          ))}
+        </p>
+      )}
+    </>
+  );
+  return q.statut === "a_verifier" ? (
+    <div className="relecture">{contenu}</div>
   ) : (
-    <ul className="apercu-options">
-      {q.options.map((o) => (
-        <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
-          <span className="num">{o.id.toUpperCase()}</span> {o.texte} <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
-        </li>
-      ))}
-    </ul>
+    <details className="relecture">
+      <summary>Justification et source</summary>
+      {contenu}
+    </details>
   );
 }
 

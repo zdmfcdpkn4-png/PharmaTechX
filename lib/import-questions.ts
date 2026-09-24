@@ -178,6 +178,12 @@ const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
  * correction.
  */
 const RE_EXTRAIT = /^Extraits?\s+([A-Ea-e])\s*[:–—-]\s*(.+)$/i;
+/**
+ * « Extrait : « … » » (24/09/2026) : la phrase du document qui donne la
+ * réponse, pour une question de tout format. Versée dans la justification,
+ * que le relecteur confronte au document avant de valider.
+ */
+const RE_EXTRAIT_QUESTION = /^Extraits?\s*[:–—-]\s*(.+)$/i;
 const RE_PIEGES = /^Pi[èe]ges?\s*[:–—-]\s*(.+)$/i;
 /** « Niveau : initial » — ou « Difficulté : … », le libellé du premier modèle ; « base » vaut « initial ». */
 const RE_DIFFICULTE = /^(?:Niveau|Difficult[ée])\s*[:–—-]\s*(initial|base|interm[ée]diaire|avanc[ée]e?)\s*\.?\s*$/i;
@@ -258,6 +264,8 @@ interface Brouillon {
   justification: string[];
   /** Extrait du document qui tranche chaque proposition, par lettre. */
   extraits: { lettre: string; texte: string }[];
+  /** Extrait du document qui donne la réponse, pour la question entière. */
+  extraitsQuestion: string[];
   pieges: string;
   difficulte: string;
   refs: Reference[];
@@ -265,7 +273,8 @@ interface Brouillon {
   reservee: boolean;
   obligatoire: boolean;
   corrige: boolean;
-  dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "rien";
+  /** « extrait » et « extrait-lettre » : une ligne sans libellé prolonge l'extrait coupé en deux. */
+  dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "extrait" | "extrait-lettre" | "rien";
 }
 
 /** Ce qui, lu avant l'en-tête d'une question, vaut pour elle. */
@@ -295,6 +304,7 @@ function nouveau(
     leurres: [],
     justification: [],
     extraits: [],
+    extraitsQuestion: [],
     pieges: "",
     difficulte: "",
     refs: [],
@@ -306,17 +316,42 @@ function nouveau(
   };
 }
 
+/** « Extrait : « … » » : lu pour tout format ; `true` si la ligne en était un. */
+function lireExtraitQuestion(b: Brouillon, ligne: string): boolean {
+  const m = RE_EXTRAIT_QUESTION.exec(ligne);
+  if (!m) return false;
+  b.extraitsQuestion.push(m[1].trim());
+  b.dernier = "extrait";
+  return true;
+}
+
 /**
- * Justification d'un QCM ou d'une QIM : la ligne « Justification » si elle
- * existe, puis les extraits du document dans l'ordre des lettres, puis les
+ * Ligne sans libellé sous un extrait : la suite de sa phrase, coupée par
+ * l'assistant ou le copier-coller. Avant, elle était perdue.
+ */
+function prolongerExtrait(b: Brouillon, ligne: string): void {
+  if (b.dernier === "extrait" && b.extraitsQuestion.length) {
+    b.extraitsQuestion[b.extraitsQuestion.length - 1] += ` ${ligne}`;
+  } else if (b.dernier === "extrait-lettre" && b.extraits.length) {
+    b.extraits[b.extraits.length - 1].texte += ` ${ligne}`;
+  }
+}
+
+/**
+ * Justification d'une question : la ligne « Justification » si elle existe,
+ * puis l'extrait du document qui donne la réponse (tout format, 24/09/2026),
+ * puis, pour un QCM ou une QIM, les extraits dans l'ordre des lettres et les
  * pièges. Tout est affiché à l'apprenant après la correction — l'extrait lui
- * montre la phrase qui tranche, le piège lui dit où était l'erreur. Le niveau,
- * lui, est un champ de la question depuis le 22/09/2026.
+ * montre la phrase qui tranche, le piège lui dit où était l'erreur — et au
+ * relecteur avant la validation. Le niveau, lui, est un champ de la question
+ * depuis le 22/09/2026.
  */
 function justificationAssemblee(b: Brouillon): string {
   const parts: string[] = [];
   const libre = b.justification.join(" ").trim();
   if (libre) parts.push(libre);
+  const duDocument = b.extraitsQuestion.map((t) => t.trim()).filter(Boolean);
+  if (duDocument.length) parts.push(`Extrait du document : ${duDocument.join(" ; ").replace(/\.$/, "")}.`);
   const extraits = [...b.extraits]
     .sort((x, y) => x.lettre.localeCompare(y.lettre))
     .map((x) => `${x.lettre} : ${x.texte}`);
@@ -344,7 +379,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       legendes: [],
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
-      justification: b.justification.join(" ").trim(),
+      justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
       obligatoire: b.obligatoire,
@@ -380,7 +415,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       legendes: [],
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
-      justification: b.justification.join(" ").trim(),
+      justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
       obligatoire: b.obligatoire,
@@ -414,7 +449,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
       numeroSchema: b.numero,
-      justification: b.justification.join(" ").trim(),
+      justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
       obligatoire: b.obligatoire,
@@ -624,6 +659,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         courant.dernier = "rien";
         continue;
       }
+      if (lireExtraitQuestion(courant, ligne)) continue;
       const j = RE_JUSTIF.exec(ligne);
       if (j) {
         courant.justification.push(j[1].trim());
@@ -656,6 +692,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       }
       if (courant.dernier === "enonce") courant.enonce.push(ligne);
       else if (courant.dernier === "justif") courant.justification.push(ligne);
+      else prolongerExtrait(courant, ligne);
       continue;
     }
 
@@ -677,6 +714,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         courant.dernier = "rien";
         continue;
       }
+      if (lireExtraitQuestion(courant, ligne)) continue;
       const j = RE_JUSTIF.exec(ligne);
       if (j) {
         courant.justification.push(j[1].trim());
@@ -697,15 +735,17 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       }
       if (courant.dernier === "enonce") courant.enonce.push(ligne);
       else if (courant.dernier === "justif") courant.justification.push(ligne);
+      else prolongerExtrait(courant, ligne);
       continue;
     }
 
     const ex = RE_EXTRAIT.exec(ligne);
     if (ex) {
       courant.extraits.push({ lettre: ex[1].toUpperCase(), texte: ex[2].trim() });
-      courant.dernier = "rien";
+      courant.dernier = "extrait-lettre";
       continue;
     }
+    if (lireExtraitQuestion(courant, ligne)) continue;
     const pg = RE_PIEGES.exec(ligne);
     if (pg) {
       courant.pieges = pg[1].trim();
@@ -790,6 +830,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       const derniere = courant.props[courant.props.length - 1];
       derniere.texte = `${derniere.texte} ${ligne}`.trim();
     } else if (courant.dernier === "justif") courant.justification.push(ligne);
+    else prolongerExtrait(courant, ligne);
   }
   clore();
 

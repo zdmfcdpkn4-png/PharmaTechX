@@ -154,6 +154,49 @@ test("« Extrait X » sous sa proposition va dans la justification, jamais dans 
   assert.equal(q.justification, "A : « phrase une » ; B : « phrase deux ».");
 });
 
+test("« Extrait : » donne l'extrait du document pour une question de tout format, versé dans la justification (24/09/2026)", () => {
+  const texte = [
+    "QCM 1. Quel mécanisme ?",
+    "A. Ils lient l'ADN (V)",
+    "B. Ils miment une base (F)",
+    "Justification : les sels de platine forment des adduits.",
+    "Extrait : « Les sels de platine se lient à l'ADN. »",
+    "",
+    "SÉQUENCE 1. Remettez dans l'ordre.",
+    "1. Prescription",
+    "2. Validation",
+    "Extrait : « La validation pharmaceutique suit la prescription »",
+    "",
+    "TEXTE 1. Le sas est en {1}.",
+    "1. dépression",
+    "Extrait : « le sas est en dépression »",
+    "",
+    "SCHÉMA 1. Légendez.",
+    "Image : coupe.png",
+    "1. filtre (10, 10)",
+    "Extrait : « le filtre terminal »",
+  ].join("\n");
+  const r = analyserTexte(texte, { formatDefaut: "QCM" });
+  assert.deepEqual(r.questions.map((q) => q.format), ["QCM", "ORD", "TAT", "SCH"]);
+  const [qcm, ordre, trous, schema] = r.questions;
+  assert.equal(qcm.justification, "les sels de platine forment des adduits. Extrait du document : « Les sels de platine se lient à l'ADN. ».");
+  assert.deepEqual(qcm.options.map((o) => o.texte), ["Ils lient l'ADN", "Ils miment une base"], "rien de l'extrait dans les propositions");
+  assert.equal(ordre.justification, "Extrait du document : « La validation pharmaceutique suit la prescription ».");
+  assert.deepEqual(ordre.options.map((o) => o.texte), ["Prescription", "Validation"]);
+  assert.equal(trous.justification, "Extrait du document : « le sas est en dépression ».");
+  assert.equal(schema.justification, "Extrait du document : « le filtre terminal ».");
+  assert.equal(schema.legendes.length, 1);
+});
+
+test("un extrait coupé en deux lignes garde sa fin, par lettre comme pour la question", () => {
+  const [q] = analyserTexte(
+    "QIM 1. x\nA. Un\nExtrait A : « début de la phrase\nfin de la phrase »\nB. Deux\nExtrait B : « b »\nRéponses : A\nExtrait : « phrase\nsuite »",
+    { formatDefaut: "QIM" },
+  ).questions;
+  assert.deepEqual(q.options.map((o) => o.texte), ["Un", "Deux"]);
+  assert.equal(q.justification, "Extrait du document : « phrase suite ». A : « début de la phrase fin de la phrase » ; B : « b ».");
+});
+
 test("« Réponses vraies : aucune » et « Réponses vraies : A B » se lisent comme « Réponses : »", () => {
   const [aucune] = analyserTexte("QIM 1. x\nA. Un\nB. Deux\nRéponses vraies : aucune", { formatDefaut: "QIM" }).questions;
   assert.ok(aucune.corrigeDetecte);

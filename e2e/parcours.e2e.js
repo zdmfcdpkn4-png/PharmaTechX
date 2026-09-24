@@ -1825,6 +1825,7 @@ Justification : justification deux.`;
 2. Surchaussures
 3. Combinaison
 Justification : ordre de la procédure.
+Extrait : « L'habillage commence par l'hygiène des mains »
 
 TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
 1. transfert
@@ -1840,8 +1841,15 @@ Justification : cascade de pression.`,
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=2 questions ajoutées");
 
-  // quatre yeux : c'est un autre code qui valide
+  // quatre yeux : c'est un autre code qui valide, justification et extrait du document sous les yeux (24/09/2026)
   await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/questions?module=" + idFormats + "&statut=a_verifier");
+  const relecture = page.locator(".question-ligne", { hasText: "Remettez dans l'ordre les étapes de l'habillage" }).locator(".relecture");
+  assert.equal(
+    (await relecture.innerText()).replace(/\s+/g, " ").trim(),
+    "Justification : ordre de la procédure. Extrait du document : « L'habillage commence par l'hygiène des mains ».",
+    "justification et extrait visibles avant de valider",
+  );
   for (let i = 0; i < 3; i++) {
     await page.goto(BASE + "/admin/questions?module=" + idFormats + "&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
@@ -1875,7 +1883,7 @@ Justification : cascade de pression.`,
   await page.waitForSelector("text=1. Hygiène des mains");
   await page.waitForSelector("text=2 → zone à atmosphère contrôlée");
   await capture("formats-correction");
-  ok("séquence à ordonner et texte à trous : déposés, validés à quatre yeux, passés au menu déroulant, notés par éléments");
+  ok("séquence à ordonner et texte à trous : déposés, justification et extrait du document lus à la vérification, validés à quatre yeux, passés au menu déroulant, notés par éléments");
 
   // 12j bis. schéma à découvrir (question 52, choix b) : caches posés par le créateur,
   //          levés à l'écran, jugés par le tuteur présent qui confirme par son propre

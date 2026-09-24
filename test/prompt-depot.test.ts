@@ -45,6 +45,7 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.equal(qim.niveauQuestion, null, "sans ligne de niveau : à préciser");
   assert.equal(qcm.refs.length, 1, "une source lue");
   assert.match(qcm.justification, /après la correction/);
+  assert.match(qcm.justification, /Extrait du document : « phrase du document de référence qui donne la réponse, recopiée mot pour mot »\.$/, "l'extrait du document suit la justification (24/09/2026)");
 
   assert.equal(qim.options.length, 3);
   assert.deepEqual(qim.options.map((o) => o.vrai), [true, false, true]);
@@ -67,6 +68,7 @@ test("l'exemple du prompt est lu par l'analyseur du dépôt", () => {
   assert.equal(sequence.imageNom, "tenue-zac.jpg", "une séquence porte une illustration (23/09/2026)");
   assert.match(sequence.imageAlt ?? "", /mannequin/);
   assert.equal(sequence.enonce.includes("Image"), false, "la ligne Image ne se colle plus à l'énoncé");
+  assert.match(sequence.justification, /Extrait du document : « … »\.$/, "une séquence porte aussi son extrait");
 
   assert.equal(trous.enonce.includes("{1}"), true, "les marques de trou restent dans l'énoncé");
   assert.deepEqual(
@@ -107,6 +109,9 @@ test("le prompt porte l'exemple, la liste des modules, et interdit d'inventer", 
   const prompt = promptDepot(MODULES_CODE.map((m) => ({ repere: noms.get(m.id) ?? m.id, titre: m.titre })));
   assert.ok(prompt.includes(EXEMPLE_DEPOT), "l'exemple est repris dans le prompt");
   assert.match(prompt, /N'invente rien/);
+  assert.match(prompt, /ni extrait/, "l'extrait ne s'invente pas plus que le reste");
+  assert.match(prompt, /« Extrait : « … » » — sous la justification, la phrase du document de référence qui donne la réponse, recopiée mot pour mot/);
+  assert.match(prompt, /DOCUMENT DE RÉFÉRENCE/, "le document d'où viennent les réponses est demandé");
   assert.match(prompt, /\[à vérifier\]/);
   assert.match(prompt, /TEXTE SOURCE/);
   assert.match(prompt, /Chaque question commence par son mot-clé/, "mot-clé exigé (question 58)");

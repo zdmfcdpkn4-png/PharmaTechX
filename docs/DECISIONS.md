@@ -4037,6 +4037,72 @@ haut) dit ce qu'ils font et ne font pas. Écartés : les retirer (a,
 recommandé) ; rendre les blocs agissants (b), qui aurait fait décider le
 programme à deux endroits. Rien n'a été modifié.
 
+## Justification et extrait du document à la vérification des questions (24/09/2026, demande directe)
+
+**Demande.** « Dans la vérification des questions je ne vois que vrai faux
+mais pas l'extrait de la réponse du document d'origine ; corriger le prompt
+et/ou le format des questions pour permettre d'avoir la justification de la
+réponse. » La capture montrait la liste « à vérifier » sur iPhone.
+
+**Constaté.**
+- La liste de vérification ne montrait que l'énoncé et les propositions,
+  marquées « (vrai) » ou « (faux) ». La justification et la source étaient
+  chargées, mais pour les lire il fallait ouvrir « Modifier » (audit, D1).
+- Base en ligne, lecture seule, comptes sans contenu : les 8 questions du
+  module B2-01, toutes à vérifier et issues d'un même dépôt, ont une
+  justification. Aucune ne porte d'extrait du document ; une seule a une
+  source.
+- Le prompt de mise en forme (« Faire mettre en forme ») ne demandait
+  qu'une ligne « Justification ». Le prompt de génération (« Générer 10
+  questions ») demandait déjà un « Extrait A » à « Extrait E » par
+  proposition.
+- Un extrait coupé sur deux lignes perdait sa fin à l'analyse.
+
+**Ce qui est fait.**
+- **Vérification** (liste et arborescence, `question-banque.tsx`) : sous les
+  propositions, la justification puis la source. Elles sont visibles tant
+  que la question est à vérifier, repliées ensuite (« Justification et
+  source »). Sans justification : « aucune — à écrire dans l'éditeur,
+  d'après le document ».
+- **Format** : une ligne « Extrait : « … » » est lue pour tout format — QCM,
+  QIM, séquence, texte à trous, schéma. Elle est versée dans la justification
+  sous la forme « Extrait du document : « … ». », affichée au relecteur puis
+  à l'apprenant après la correction. Les « Extrait A » par proposition sont
+  inchangés. Une ligne sans libellé sous un extrait en est la suite.
+- **Prompt de mise en forme** (`content/prompt-depot.ts`) : il fait recopier
+  mot pour mot, sous chaque question, la phrase du document de référence qui
+  donne la réponse ; pour un QCM ou une QIM, il peut le faire proposition par
+  proposition. Le document de référence est le texte source lui-même, ou le
+  document joint à la conversation (nouvelle rubrique « DOCUMENT DE
+  RÉFÉRENCE »). La règle 1 interdit aussi d'inventer un extrait. Aucune
+  phrase ne donne la réponse, ou pas de document : pas de ligne Extrait,
+  jamais de phrase reformulée. L'exemple de format porte la ligne.
+- Le prompt de génération est inchangé : il demandait déjà les extraits.
+
+**Limites.**
+- Les questions déjà déposées gardent leur justification sans extrait :
+  l'extrait s'ajoute dans l'éditeur (« Modifier »), ou par un nouveau dépôt
+  avec le prompt corrigé.
+- Les extraits par proposition s'affichent en un paragraphe (« A : « … » ;
+  B : « … » »), sous les propositions, et non en face de chacune.
+- Le site ne vérifie pas qu'un extrait figure bien dans le document : c'est
+  le rôle du relecteur, qui valide à quatre yeux.
+- Les étapes d'une séquence et les vignettes d'un texte à trous portent
+  toujours « (vrai) » dans la liste (audit, § 4, défaut 1) : laissé à la
+  question 73.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 340 tests, dont deux nouveaux sur l'analyse (extrait
+  pour tout format, extrait coupé) ; les tests du prompt vérifient l'exemple
+  et la règle.
+- `npm run build`.
+- Deux passes de bout en bout de 94 étapes, sans erreur de page ni erreur
+  serveur. La séquence déposée porte un extrait ; le tuteur lit, avant de
+  valider, « Justification : ordre de la procédure. Extrait du document :
+  « L'habillage commence par l'hygiène des mains ». »
+- Capture iPhone (390 px) d'un QCM déposé avec trois extraits et une
+  source : tout est lisible, sans débordement horizontal.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

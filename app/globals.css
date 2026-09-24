@@ -2013,6 +2013,10 @@ fieldset.groupe { margin: 0.75rem 0; padding: 0.875rem 1rem; border: 1px solid v
 .fiche-depot { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--bord-fort); }
 .fiche-depot .champ { margin: 0.5rem 0 0; }
 .question-ligne .apercu-options { color: var(--texte-doux); }
+/* Vérification d'une question : justification et source, à confronter au document (24/09/2026). */
+.relecture { margin: 0.5rem 0 0; font-size: 0.9375rem; max-width: 72ch; }
+.relecture p { margin: 0.25rem 0 0; }
+.relecture > summary { cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--marque); }
 .etiquette--ok { background: var(--succes-fond); color: var(--succes); }
 
 .nav-admin {
