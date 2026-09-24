@@ -4191,6 +4191,44 @@ liste restait la vue par défaut et où l'arborescence ouvrait les filières.
   « niveau », si bien que le parcours remplissait celle du test au lieu de
   celle du code d'accès — d'où les noms propres des champs du test.
 
+## QIM sur téléphone : choix compacts, sur une ligne (24/09/2026, demande directe)
+
+**Demande.** « Revoir pour réduire la dimension des bulles vrai faux ne sait
+pas pour éviter les sauts de ligne et permettre de voir la question en
+entier. » La capture montrait, sur iPhone, trois grands disques par
+proposition.
+
+**Constaté** (mesures à 390, 375 et 360 px, mode normal et mode zone). Sous
+40 rem, les trois choix se partageaient la largeur à parts égales.
+« Je ne sais pas » passait alors sur quatre lignes, et chaque choix
+mesurait environ 100 × 101 px : un disque, les coins étant arrondis à
+100 %. Le groupe débordait aussi de son cadre de 44 à 74 px, si bien que le
+troisième choix était rogné. Une proposition occupait 211 à 235 px de haut.
+
+**Ce qui est fait** (`app/globals.css`, sous 40 rem seulement).
+- Trois pastilles sur une ligne, sans retour à la ligne, chacune à la
+  largeur de son mot. Hauteur : la cible tactile, 44 px, et 52 px en mode
+  zone.
+- Le rond de la case n'est plus dessiné : le choix retenu se remplit de la
+  couleur du site. La case, masquée mais présente, garde le clavier et le
+  lecteur d'écran ; son focus se voit sur la pastille.
+- Au-delà de 40 rem (PC, iPad), rien ne change.
+
+**Mesuré après** : 62 × 44, 68 × 44 et 135 × 44 px à 390 px ; aucun
+débordement, 360 px compris. Une proposition passe de 211 à 154 px, et la
+question de cinq propositions de 1 512 à 1 251 px.
+
+**Limite.** Sur téléphone, le choix se lit à la couleur de la pastille, et
+non plus au rond coché ; le texte du choix reste écrit dans la pastille.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 341 tests.
+- `npm run build`.
+- Deux passes de bout en bout de 94 étapes, sans erreur de page ni erreur
+  serveur. Une vérification est ajoutée à l'étape de l'agent rattaché : à
+  360 px, les choix de chaque proposition tiennent sur une ligne (48 px au
+  plus) sans déborder.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

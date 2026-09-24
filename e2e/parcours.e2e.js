@@ -2613,6 +2613,20 @@ Justification : cf. procédure interne.`,
       await f.locator("label.option", { hasText: "Bonne" }).locator("input").check();
     }
   }
+  // Téléphone (24/09/2026) : les trois choix d'une proposition de QIM tiennent sur une ligne, sans
+  // déborder de leur cadre ; ils formaient des disques de 100 px, « Je ne sais pas » sur quatre lignes.
+  await page.setViewportSize({ width: 360, height: 780 });
+  const choixQim = await page.evaluate(() =>
+    [...document.querySelectorAll(".proposition .jugement")].map((j) => ({
+      hauteurs: [...j.querySelectorAll("label")].map((l) => Math.round(l.getBoundingClientRect().height)),
+      deborde: j.scrollWidth - j.clientWidth,
+    })),
+  );
+  assert.ok(
+    choixQim.length > 0 && choixQim.every((c) => c.deborde <= 0 && c.hauteurs.every((h) => h <= 48)),
+    "choix du QIM sur une ligne à 360 px : " + JSON.stringify(choixQim),
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
   await ouvrirRecap();
   await page.waitForSelector(".recap:has-text(\"Résultat enregistré sous l'identifiant AG-002\")");
   await page.click(".recap button:has-text('Valider définitivement')");
