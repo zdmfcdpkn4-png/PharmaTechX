@@ -2285,6 +2285,13 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=Référentiel : filières et niveaux");
   const avantFilieres = await page.locator(".arbre-groupe, li.carte").count();
   const ajoutFiliere = page.locator("form", { hasText: "Ajouter une filière" });
+  // Aide des champs d'une filière (24/09/2026) : chaque champ désigne la ligne
+  // qui l'explique ; une filière de la fiche dit son rang sans effet.
+  for (const [champ, titre] of [["input[name=blocs]", "Blocs de compétence"], ["input[name=rang]", "Rang"], ["select[name=metier]", "Métier"]]) {
+    const aide = await ajoutFiliere.locator(champ).getAttribute("aria-describedby");
+    assert.ok((await page.locator(`#${aide}`).textContent()).startsWith(`${titre} :`), `aide du champ ${titre}`);
+  }
+  assert.match(await page.locator("#aide-filiere-chimiotherapie-rang").textContent(), /sans effet/, "rang sans effet sur une filière de la fiche");
   await ajoutFiliere.locator("input[name=libelle]").fill("Parcours Stérilisation");
   await ajoutFiliere.locator("input[name=id]").fill("sterilisation");
   await ajoutFiliere.locator("input[name=blocs]").fill("1, 3");
@@ -2311,7 +2318,7 @@ Justification : cf. procédure interne.`,
   await ajoutNiveau.locator('button:has-text("Ajouter le niveau")').click();
   await page.waitForURL(/ok=niveau/);
   await page.waitForSelector("text=S1 — stérilisation (base)");
-  ok("référentiel : filière et niveau déposés, badge rendu");
+  ok("référentiel : aide des champs d'une filière ; filière et niveau déposés, badge rendu");
 
   // la filière déposée est proposée au rattachement d'un module déposé
   await page.goto(BASE + "/admin/modules");

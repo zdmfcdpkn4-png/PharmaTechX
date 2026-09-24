@@ -3910,6 +3910,51 @@ l'agent.
   serveur. L'étape ajoutée vérifie que « Quitter » lève le rattachement, le
   volet compris, et que l'agent se rattache au retour avec son code personnel.
 
+## Aide des champs d'une filière (24/09/2026, demande directe)
+
+**Constaté.** Le formulaire « Ajouter une filière » présentait trois champs
+sans explication : « Blocs », « Rang » et « Métier ». « Modifier » écrivait
+déjà « Blocs de compétence ». Ce que fait chacun, lu dans le code :
+- **Blocs** : enregistrés et fusionnés dans le référentiel servi, mais lus par
+  aucun écran ni aucun calcul. Le programme d'une filière vient des modules
+  qui la cochent dans leur réglage (question 36, choix a).
+  `blocsDeLaFiliere` et `criteresDeLaFiliere` (`content/habilitation.ts`) ne
+  sont appelées nulle part.
+- **Rang** : ordonne les filières ajoutées (rang, puis libellé) après celles
+  de la fiche, qui gardent leur ordre. Sans effet sur une filière de la fiche.
+- **Métier** : range la filière sous ce métier au référentiel. Ses niveaux en
+  prennent le métier, donc le préfixe de code et la place parmi les niveaux
+  (questions 46 et 53). Le changement est refusé tant que la filière porte des
+  niveaux déposés. Une filière de la fiche reste au préparateur.
+
+**Ce qui est fait.**
+- Sous la rangée de champs des deux formulaires, trois lignes d'aide
+  (`AideFiliere`, `app/admin/referentiel/page.tsx`), reliées à leur champ par
+  `aria-describedby`. Pour une filière de la fiche, elles disent le rang sans
+  effet et le métier fixe.
+- « Blocs » devient « Blocs de compétence » dans le formulaire d'ajout, comme
+  dans « Modifier ».
+- Le parcours de bout en bout vérifie que chaque champ du formulaire d'ajout
+  désigne la ligne qui porte son nom, et que le rang d'une filière de la fiche
+  est dit sans effet.
+
+**Limites.**
+- L'aide décrit le code sans le changer : « Blocs » reste une note, et
+  « Rang » reste proposé sur une filière de la fiche, où il ne fait rien.
+  Rendre les blocs agissants, les retirer ou masquer ce rang est une décision,
+  à poser après la question 71.
+- La plage « 1 à 7 » est lue dans la fiche. La saisie accepte toujours de 1 à
+  99, sans contrôle contre la fiche.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 331 tests.
+- `npm run build`.
+- Deux passes de bout en bout de 93 étapes, sans erreur de page ni erreur
+  serveur.
+- Captures PC 1366 et iPad portrait : aucun débordement horizontal, aucun
+  identifiant en double, les 22 `aria-describedby` de la page trouvent leur
+  cible.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

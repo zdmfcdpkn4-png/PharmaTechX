@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes, niveauxOrphelins } from "@/content/referentiel-db";
-import { filieres as filieresFiche, metiers, metierOuDefaut, niveaux as niveauxFiche, parMetier } from "@/content/habilitation";
+import { blocsCompetence, filieres as filieresFiche, metiers, metierOuDefaut, niveaux as niveauxFiche, parMetier } from "@/content/habilitation";
 import { rangEffectif, rappelRangsFiche } from "@/content/ordre-niveaux";
 import { Badge } from "@/components/Badge";
 import { ChoixBadge } from "@/components/ChoixBadge";
@@ -41,6 +41,39 @@ const RAPPEL_PREFIXES = metiers
   .filter((m) => m.prefixe)
   .map((m) => `${m.prefixe} ${m.libelle.toLowerCase()}`)
   .join(", ");
+
+/** Numéros des blocs de la fiche et préfixes seuls, rappelés sous les champs d'une filière. */
+const PLAGE_BLOCS = `${blocsCompetence[0].numero} à ${blocsCompetence[blocsCompetence.length - 1].numero}`;
+const PREFIXES = metiers.filter((m) => m.prefixe).map((m) => m.prefixe).join(", ");
+
+/**
+ * Ce que fait chaque champ d'une filière (demande du 24/09/2026). Aucun écran
+ * ne lit les blocs : le dire évite de croire qu'ils composent le programme,
+ * qui vient des modules. Une filière de la fiche garde sa place et son métier.
+ */
+function AideFiliere({ id, fiche = false }: { id: string; fiche?: boolean }) {
+  return (
+    <ul className="liste-nue legende">
+      <li id={`${id}-blocs`}>
+        <strong>Blocs de compétence</strong> : numéros des blocs de la fiche d&apos;habilitation ({PLAGE_BLOCS}) que
+        couvre la filière, pour mémoire. Le site ne s&apos;en sert pas : le programme de la filière vient des modules
+        qui la cochent dans leur réglage (menu Modules).
+      </li>
+      <li id={`${id}-rang`}>
+        <strong>Rang</strong> :{" "}
+        {fiche
+          ? "sans effet sur une filière de la fiche, qui garde sa place en tête des listes."
+          : "ordre de la filière dans les listes du site, après celles de la fiche : rang croissant, puis ordre alphabétique à rang égal."}
+      </li>
+      <li id={`${id}-metier`}>
+        <strong>Métier</strong> :{" "}
+        {fiche
+          ? "une filière de la fiche reste au préparateur."
+          : `range la filière sous ce métier dans le référentiel. Les niveaux qui s'y rattachent prennent le préfixe de code de ce métier (${PREFIXES} ; aucun pour le préparateur) et se rangent avec ses niveaux. À choisir avant d'y déposer un niveau : il ne change plus tant qu'elle en porte.`}
+      </li>
+    </ul>
+  );
+}
 
 export default async function Referentiel({
   searchParams,
@@ -175,13 +208,14 @@ export default async function Referentiel({
                         </label>
                         <label className="champ">
                           <span>Blocs de compétence</span>
-                          <input name="blocs" defaultValue={f.blocs.join(", ")} placeholder="1, 3, 5" />
+                          <input name="blocs" defaultValue={f.blocs.join(", ")} placeholder="1, 3, 5" aria-describedby={`aide-filiere-${f.id}-blocs`} />
                         </label>
                         <label className="champ">
                           <span>Rang</span>
-                          <input name="rang" type="number" min={0} max={999} defaultValue={d?.rang ?? 0} />
+                          <input name="rang" type="number" min={0} max={999} defaultValue={d?.rang ?? 0} aria-describedby={`aide-filiere-${f.id}-rang`} />
                         </label>
                       </div>
+                      <AideFiliere id={`aide-filiere-${f.id}`} fiche={idsFiche.has(f.id)} />
                       <label className="champ">
                         <span>Description</span>
                         <textarea name="description" defaultValue={f.description} maxLength={400} rows={2} />
@@ -190,7 +224,7 @@ export default async function Referentiel({
                       {!idsFiche.has(f.id) && (
                         <label className="champ">
                           <span>Métier</span>
-                          <select name="metier" defaultValue={metierOuDefaut(f.metier).id}>
+                          <select name="metier" defaultValue={metierOuDefaut(f.metier).id} aria-describedby={`aide-filiere-${f.id}-metier`}>
                             {metiers.map((x) => (
                               <option key={x.id} value={x.id}>{x.libelle}</option>
                             ))}
@@ -235,22 +269,23 @@ export default async function Referentiel({
                 <input name="id" maxLength={40} placeholder="déduit du libellé" />
               </label>
               <label className="champ">
-                <span>Blocs</span>
-                <input name="blocs" placeholder="1, 3" />
+                <span>Blocs de compétence</span>
+                <input name="blocs" placeholder="1, 3" aria-describedby="aide-nouvelle-filiere-blocs" />
               </label>
               <label className="champ">
                 <span>Rang</span>
-                <input name="rang" type="number" min={0} max={999} defaultValue={0} />
+                <input name="rang" type="number" min={0} max={999} defaultValue={0} aria-describedby="aide-nouvelle-filiere-rang" />
               </label>
               <label className="champ">
                 <span>Métier</span>
-                <select name="metier" defaultValue={metiers[0].id}>
+                <select name="metier" defaultValue={metiers[0].id} aria-describedby="aide-nouvelle-filiere-metier">
                   {metiers.map((x) => (
                     <option key={x.id} value={x.id}>{x.libelle}</option>
                   ))}
                 </select>
               </label>
             </div>
+            <AideFiliere id="aide-nouvelle-filiere" />
             <label className="champ">
               <span>Description</span>
               <textarea name="description" maxLength={400} rows={2} />
