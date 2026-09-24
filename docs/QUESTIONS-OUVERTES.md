@@ -376,6 +376,19 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+67. **Trois écarts relevés en marge des questions 61 et 66** — constatés le
+    23/09/2026, non corrigés. (1) Pilotage, « Par critère » : le lien d'un
+    critère porte son code (`?module=B1-01`), que le filtre, qui n'accepte
+    qu'un identifiant de module, écarte sans rien dire ; la page se recharge
+    sans filtre. (2) Sur iPad en paysage, les lignes du tiroir d'accès
+    rapide restent à 32 px au doigt, quand celles du volet passent à 44 px
+    depuis le 22/09. (3) La spécification de l'accès rapide annonce, sous
+    mouvement réduit, « opacité seule, 90 ms » ; le site supprime toute
+    transition. Posée le 24/09/2026 : corriger les trois — filtre par
+    critère au pilotage, lignes du tiroir à 44 px au doigt, spécification
+    alignée sur le site (a, recommandé) ; le pilotage seul (b) ; aucun pour
+    l'instant (c).
+
 66. **Liens vers les modules : périmètre** — demandé le 23/09/2026 :
     « Ajoute des liens entre les sections, pouvoir cliquer sur un module
     pour l'ouvrir. » Existant : une douzaine d'endroits ouvraient déjà un
