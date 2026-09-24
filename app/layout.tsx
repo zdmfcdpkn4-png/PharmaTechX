@@ -198,6 +198,8 @@ export default async function RootLayout({
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
               { href: "/admin/questions/situations", libelle: "Mises en situation" },
+              // Mode test (24/09/2026) : passer une évaluation en apprenant, à un niveau choisi, sans rien enregistrer.
+              { href: "/admin#t-essai", libelle: "Tester en apprenant" },
             ],
           },
           {

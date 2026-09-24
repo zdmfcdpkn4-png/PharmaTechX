@@ -193,10 +193,11 @@ export function elaguer(arbre: BrancheFiliere[], garder: (moduleId: string) => b
 }
 
 /**
- * État du repli : par défaut, les filières ouvertes et le reste replié, comme
- * les UE du quiz de Flore ; sous un filtre, tout est ouvert jusqu'aux modules,
- * l'arbre étant déjà réduit à ce qu'on cherche. « Tout déplier » s'arrête aux
- * modules : une question ne s'ouvre qu'à la demande.
+ * État du repli : par défaut, tout est replié (demande du 24/09/2026 ; avant,
+ * les filières s'ouvraient, comme les UE du quiz de Flore) ; sous un filtre,
+ * tout est ouvert jusqu'aux modules, l'arbre étant déjà réduit à ce qu'on
+ * cherche. « Tout déplier » s'arrête aux modules : une question ne s'ouvre
+ * qu'à la demande.
  */
 export type Plis = "defaut" | "tout" | "aucun";
 
@@ -221,7 +222,7 @@ export function estOuvert(chemin: string, profondeur: 1 | 2 | 3 | 4, e: EtatPlis
   if (e.ouvrir && (e.ouvrir === chemin || e.ouvrir.startsWith(`${chemin}/`))) return true;
   if (profondeur === 4 || e.plis === "aucun") return false;
   if (e.plis === "tout") return true;
-  return e.filtre || profondeur === 1;
+  return e.filtre;
 }
 
 /**

@@ -97,7 +97,7 @@ function LigneModule({
   const vide = c.valides + c.aVerifier === 0;
   return (
     <li className={`arbre-module${vide ? " arbre-module--vide" : ""}${actif === m.id ? " arbre-module--actif" : ""}`}>
-      <Link href={`/admin/questions?module=${encodeURIComponent(m.id)}`}>
+      <Link href={`/admin/questions?vue=liste&module=${encodeURIComponent(m.id)}`}>
         <span className="etiquette etiquette--site">{m.etiquette}</span>
         <span className="arbre-titre">{m.titre}</span>
       </Link>

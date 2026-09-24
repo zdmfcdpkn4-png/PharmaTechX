@@ -391,6 +391,12 @@ telle. Ordre : ce qui change le déploiement en premier.
       agents.
     - **c** : les trois défauts relevés en passant seuls, puis le test.
 
+    Tranchée le même jour (réponse « ne rien faire ») : ni le lot 3, ni les
+    trois défauts relevés en passant ; le test avec des agents reste à
+    organiser. Deux demandes du même message — tester en apprenant à un
+    niveau choisi, banque en arborescence repliée par défaut — sont
+    consignées à part dans `DECISIONS.md`.
+
 72. **Champs d'une filière sans effet** — posée le 24/09/2026, après l'aide
     ajoutée au Référentiel le même jour. « Blocs de compétence » est
     enregistré, mais aucun écran ni aucun calcul ne le lit : le programme

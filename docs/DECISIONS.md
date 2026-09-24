@@ -4103,6 +4103,94 @@ réponse. » La capture montrait la liste « à vérifier » sur iPhone.
 - Capture iPhone (390 px) d'un QCM déposé avec trois extraits et une
   source : tout est lisible, sans débordement horizontal.
 
+## Après le lot 1 : rien d'engagé (24/09/2026, question 73, réponse « ne rien faire »)
+
+Ni le lot 3 de l'audit (le temps des formateurs, D1 à D4), ni les trois
+défauts relevés en passant (§ 4 de l'audit) : rien n'est engagé. Le test
+avec des agents (lot 2) reste à organiser. Les étapes des séquences et les
+vignettes des textes à trous gardent donc « (vrai) » dans la liste de la
+banque.
+
+## Tester en apprenant à un niveau choisi (24/09/2026, demande directe)
+
+**Demande.** « Comment réaliser un test avec un agent test depuis le compte
+admin ? Possibilité accès rapide permettant de réaliser un format
+d'évaluation test pour un niveau. Sans inscrire en base. »
+
+**Existant.** Le mode test (23/09/2026, choix a) : Administration › Accès ›
+« Tester le parcours apprenant » › « Démarrer un test ». Le site se parcourt
+en apprenant, sous « Utilisateur test », jusqu'au rapport émis (numéro
+ESSAI, filigrane), sans rien écrire en base — le parcours de bout en bout
+compare la base table par table avant et après. Le niveau cible se
+choisissait sur l'écran d'évaluation.
+
+**Ce qui est fait.**
+- **Profil au départ** : sous « Démarrer un test », une filière et un niveau,
+  facultatifs. La session d'essai les porte comme un code de poste :
+  l'accueil ouvre ce programme, et chaque évaluation part de ce niveau
+  cible, modifiable à l'écran. Sans choix, rien ne change. Le socle n'est
+  pas proposé comme filière, comme sur l'accueil.
+- **Accès rapide** : « Tester en apprenant », dans le menu Administration ›
+  Questions, donc aussi dans « Aller à » de l'accès rapide ; il ouvre la
+  section du test.
+- Les deux champs ont leur propre nom (`essaiFiliere`, `essaiNiveau`) : la
+  page porte aussi le formulaire des codes d'accès.
+
+**Limites.**
+- Deux gestes, pas un : le lien mène au formulaire, le bouton démarre le
+  test. Changer de session demande un envoi de formulaire, pas un lien.
+- Le profil vaut jusqu'à « Terminer le test ».
+
+**Vérifié le 24/09/2026.** Voir la section suivante (même passe).
+
+## Banque de questions : arborescence repliée par défaut (24/09/2026, demande directe)
+
+**Demande.** « Prévoir par défaut le mode arborescence et replié pour la
+banque de questions. » Elle revient sur la question 64 (choix b), où la
+liste restait la vue par défaut et où l'arborescence ouvrait les filières.
+
+**Ce qui est fait.**
+- La banque s'ouvre en **arborescence, toute repliée**, filières comprises.
+  Sous un filtre, l'arbre s'ouvre jusqu'aux modules, comme avant, les
+  questions restant repliées. « Tout déplier » et « Tout replier » sont
+  inchangés.
+- La **liste** se demande par la bascule (`vue=liste`). Trois entrées faites
+  pour valider l'ouvrent, parce qu'elle montre chaque question, sa
+  justification et son bouton « Valider » sans rien déplier :
+  - la tuile « à vérifier » de la page Accès ;
+  - « Questions et fiches à vérifier », dans l'accès rapide ;
+  - « Vérifier ces questions », après un dépôt.
+- Dans la liste, un geste y ramène : « Valider », « Retirer », mais aussi
+  « Modifier » et « Supprimer », qui portent désormais l'adresse de retour.
+  Les liens de la couverture, affichée au-dessus de la liste, la gardent.
+- « Nouvelle question », en tête de la banque, ramène à la vue d'où l'on
+  part. Une création ou une suppression sans adresse de retour ramène à la
+  liste du module, où la question se lit sans rien déplier.
+
+**Limites.**
+- « Banque de questions », dans le menu, ouvre l'arborescence même quand sa
+  pastille compte des questions à vérifier ; l'entrée de l'accès rapide qui
+  porte le même compte ouvre la liste.
+- Une adresse enregistrée sans `vue` ouvre désormais l'arborescence.
+
+**Vérifié le 24/09/2026** (avec la section précédente).
+- `npm run verifier` : 341 tests. Le repli par défaut et la session d'essai
+  à profil ont leurs tests.
+- `npm run build`.
+- Deux passes de bout en bout de 94 étapes, sans erreur de page ni erreur
+  serveur :
+  - l'étape de l'arborescence vérifie la vue par défaut, tout replié, et
+    le lien vers la liste ;
+  - les étapes qui travaillent sur la liste la demandent (`vue=liste`) ;
+  - l'étape du mode test choisit « Parcours Chimiothérapie » et N2 : le
+    programme s'ouvre dessus, l'évaluation part de N2, et la base reste
+    identique avant et après.
+  Deux premiers passages en échec, corrigés avant les deux passes vertes :
+  un sélecteur du parcours attendait l'adresse exacte de « Modifier », qui
+  porte désormais le retour ; et la page Accès portait deux listes
+  « niveau », si bien que le parcours remplissait celle du test au lieu de
+  celle du code d'accès — d'où les noms propres des champs du test.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

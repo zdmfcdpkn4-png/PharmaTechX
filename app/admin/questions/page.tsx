@@ -53,8 +53,9 @@ export default async function Questions({
   }>;
 }) {
   const p = await searchParams;
-  // Vue « Arborescence » (question 64, choix b) : la liste reste la vue par défaut.
-  const vueArbre = p.vue === "arbre";
+  // Vue « Arborescence » (question 64, choix b), par défaut depuis le 24/09/2026 ;
+  // la liste se demande (`vue=liste`) : les entrées de validation l'ouvrent.
+  const vueArbre = p.vue !== "liste";
   const session = (await getSession())!;
   const modules = await getTousModulesAvecDeposes();
   const statut = (["a_verifier", "valide", "retire"] as const).includes(p.statut as StatutQuestion)
@@ -99,12 +100,10 @@ export default async function Questions({
     ...(filtreNiveau ? [["niveau", filtreNiveau] as [string, string]] : []),
     ...(seulesObligatoires ? [["obligatoires", "1"] as [string, string]] : []),
   ];
-  const retour = `/admin/questions?${new URLSearchParams(filtres).toString()}`;
+  const retour = `/admin/questions?${new URLSearchParams([["vue", "liste"], ...filtres]).toString()}`;
   const titreModule = (id: string) => titreDe(modules, id);
-  const lienVue = (arbre: boolean) => {
-    const q = new URLSearchParams([...(arbre ? [["vue", "arbre"] as [string, string]] : []), ...filtres]).toString();
-    return `/admin/questions${q ? `?${q}` : ""}`;
-  };
+  const lienVue = (arbre: boolean) =>
+    `/admin/questions?${new URLSearchParams([["vue", arbre ? "arbre" : "liste"], ...filtres]).toString()}`;
 
   // Arborescence : filière, niveau, module, question. Sous un filtre de
   // question, elle ne garde que les branches qui en portent ; sous le seul
@@ -117,6 +116,8 @@ export default async function Questions({
     ...filtres,
     ...(plis === "defaut" ? [] : [["plis", plis] as [string, string]]),
   ];
+  // Adresse de la vue courante, filtres compris : un geste ou une création y ramène.
+  const retourVue = vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour;
   const filtreQuestions = Boolean(statut || filtreNiveau || seulesObligatoires);
   const complet = vueArbre
     ? construireArbre(
@@ -146,7 +147,10 @@ export default async function Questions({
           tirages ; une question importée ou créée reste « à vérifier » jusqu&apos;à relecture.
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
-          <Link href={`/admin/questions/nouvelle${moduleId ? `?module=${encodeURIComponent(moduleId)}` : ""}`} className="bouton">
+          <Link
+            href={`/admin/questions/nouvelle?${new URLSearchParams([...(moduleId ? [["module", moduleId] as [string, string]] : []), ["retour", retourVue]]).toString()}`}
+            className="bouton"
+          >
             Nouvelle question
           </Link>
           <Link href="/admin/questions/import" className="bouton bouton--secondaire">
@@ -198,7 +202,7 @@ export default async function Questions({
       )}
 
       <form method="get" className="carte filtres">
-        {vueArbre && <input type="hidden" name="vue" value="arbre" />}
+        <input type="hidden" name="vue" value={vueArbre ? "arbre" : "liste"} />
         <div className="rangee">
           <label className="champ">
             <span>Module</span>
@@ -253,7 +257,7 @@ export default async function Questions({
             {fichesAVerifier > 0 && (
               <>
                 {" · "}
-                <Link href={`/admin/questions?${vueArbre ? "vue=arbre&" : ""}statut=a_verifier#fiches`}>
+                <Link href={`/admin/questions?vue=${vueArbre ? "arbre" : "liste"}&statut=a_verifier#fiches`}>
                   {fichesAVerifier} fiche{fichesAVerifier > 1 ? "s" : ""} de synthèse à vérifier
                 </Link>
               </>
@@ -269,7 +273,7 @@ export default async function Questions({
         ouvrable={(id) => moduleOuvrable(modules, id)}
         session={session}
         // Un geste sur une fiche garde la vue : l'arborescence ne renvoie pas à la liste.
-        retour={vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour}
+        retour={retourVue}
       />
 
       {vueArbre ? (
@@ -309,7 +313,14 @@ export default async function Questions({
                     </div>
                     <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
                     <ContenuQuestion q={q} />
-                    <ActionsQuestion q={q} session={session} retour={retour} />
+                    {/* Modifier ou supprimer depuis la liste y ramène : l'arborescence est la vue par défaut. */}
+                    <ActionsQuestion
+                      q={q}
+                      session={session}
+                      retour={retour}
+                      modifier={`/admin/questions/${q.id}?retour=${encodeURIComponent(retour)}`}
+                      retourSuppression={retour}
+                    />
                   </li>
                 ))}
               </ul>

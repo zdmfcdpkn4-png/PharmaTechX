@@ -74,14 +74,14 @@ const ORDRE: Record<ProfilAcces, DefinitionItem[]> = {
     { cle: "rapportsAViser", libelle: "Rapports à viser", href: "/admin/rapports", conservation: true },
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
-    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?vue=liste&statut=a_verifier" },
     { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
   admin: [
     { cle: "rapportsAViser", libelle: "Rapports à viser", href: "/admin/rapports", conservation: true },
     { cle: "verdictsAArbitrer", libelle: "Verdicts à arbitrer", href: "/admin/rapports", conservation: true },
     { cle: "signalements", libelle: "Signalements ouverts", href: "/admin/signalements" },
-    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?statut=a_verifier" },
+    { cle: "contenusAVerifier", libelle: "Questions et fiches à vérifier", href: "/admin/questions?vue=liste&statut=a_verifier" },
     { cle: "quizAnciens", libelle: "Quiz de plus de 24 mois", href: "/admin/pilotage#anciennete", conservation: true },
   ],
 };

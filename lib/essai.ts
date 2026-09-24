@@ -29,18 +29,31 @@ interface SessionMinimale {
 }
 
 /**
- * Session d'essai : vue d'apprenant (rôle de poste, sans filière ni niveau,
- * choisis à l'écran comme le ferait un agent). Null pour un poste ou une
- * session déjà en test. Ouverture et échéance ne changent pas.
+ * Profil choisi au départ du test (24/09/2026) : le programme s'ouvre sur
+ * cette filière et ce niveau, et le niveau devient le niveau cible des
+ * évaluations, comme avec un code de poste. Null : choisis à l'écran.
  */
-export function sessionDEssai<S extends SessionMinimale>(s: S): S | null {
+export interface ProfilEssai {
+  filiere: string | null;
+  niveau: string | null;
+}
+
+/**
+ * Session d'essai : vue d'apprenant (rôle de poste ; filière et niveau du
+ * profil choisi, sinon choisis à l'écran comme le ferait un agent). Null pour
+ * un poste ou une session déjà en test. Ouverture et échéance ne changent pas.
+ */
+export function sessionDEssai<S extends SessionMinimale>(
+  s: S,
+  profil: ProfilEssai = { filiere: null, niveau: null },
+): S | null {
   if (s.essai || s.role === "poste") return null;
   return {
     ...s,
     role: "poste",
     libelle: LIBELLE_ESSAI,
-    filiere: null,
-    niveau: null,
+    filiere: profil.filiere,
+    niveau: profil.niveau,
     essai: { role: s.role, libelle: s.libelle, filiere: s.filiere, niveau: s.niveau },
   };
 }

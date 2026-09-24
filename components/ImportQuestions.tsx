@@ -76,7 +76,7 @@ export function ImportQuestions({
 
   if (confirmation.etape === "fait") {
     const parModule = confirmation.ajouteesParModule ?? [];
-    const lien = (id: string) => `/admin/questions?module=${encodeURIComponent(id)}&statut=a_verifier`;
+    const lien = (id: string) => `/admin/questions?vue=liste&module=${encodeURIComponent(id)}&statut=a_verifier`;
     return (
       <section className="carte">
         <p className="encart encart--ok">
@@ -97,7 +97,7 @@ export function ImportQuestions({
           </ul>
         )}
         <div className="actions">
-          <Link href={parModule.length === 1 ? lien(parModule[0].id) : "/admin/questions?statut=a_verifier"} className="bouton">
+          <Link href={parModule.length === 1 ? lien(parModule[0].id) : "/admin/questions?vue=liste&statut=a_verifier"} className="bouton">
             Vérifier ces questions
           </Link>
           <Link href="/admin/questions/import" className="bouton bouton--secondaire">

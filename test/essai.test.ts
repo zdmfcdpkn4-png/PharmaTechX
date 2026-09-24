@@ -28,6 +28,16 @@ test("mode test : vue apprenant sous « Utilisateur test », identité du testeu
   assert.deepEqual(e.essai, { role: "tuteur", libelle: "Tutorat · M. T.", filiere: "prep", niveau: "N2" });
 });
 
+test("mode test à un profil choisi (24/09/2026) : filière et niveau posés comme par un code de poste, rétablis à la fin", () => {
+  const e = sessionDEssai(tuteur, { filiere: "chimiotherapie", niveau: "N1c" });
+  assert.ok(e);
+  assert.equal(e.role, "poste");
+  assert.equal(e.filiere, "chimiotherapie");
+  assert.equal(e.niveau, "N1c");
+  assert.deepEqual(e.essai, { role: "tuteur", libelle: "Tutorat · M. T.", filiere: "prep", niveau: "N2" }, "le profil du testeur est mis de côté");
+  assert.deepEqual(sessionRetablie(e), tuteur);
+});
+
 test("mode test : refusé à un poste, et pas deux fois de suite", () => {
   assert.equal(sessionDEssai({ ...tuteur, role: "poste" }), null);
   assert.equal(sessionDEssai(sessionDEssai(tuteur)!), null);

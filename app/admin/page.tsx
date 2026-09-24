@@ -90,7 +90,7 @@ export default async function Admin({
       )}
 
       <div className="tuiles">
-        <Link href="/admin/questions?statut=a_verifier" className="tuile tuile--lien">
+        <Link href="/admin/questions?vue=liste&statut=a_verifier" className="tuile tuile--lien">
           <span className="valeur">{aVerifier}</span>
           <span className="libelle">questions à vérifier</span>
         </Link>
@@ -130,7 +130,39 @@ export default async function Admin({
           navigateur garde ses repères locaux (visite guidée vue, dernière lecture) : testez depuis votre propre
           poste plutôt que depuis celui d&apos;un apprenant.
         </p>
+        {/* Profil facultatif (24/09/2026) : le programme s'ouvre dessus et le
+            niveau devient le niveau cible des évaluations, comme avec un code de poste. */}
         <form action={actionDemarrerEssai}>
+          <div className="rangee">
+            <label className="champ">
+              <span>Filière</span>
+              <select name="essaiFiliere" defaultValue="">
+                <option value="">Au choix, à l&apos;écran</option>
+                {filieres
+                  .filter((f) => f.id !== "socle")
+                  .map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.libelle}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="champ">
+              <span>Niveau (niveau cible des évaluations)</span>
+              <select name="essaiNiveau" defaultValue="">
+                <option value="">Au choix, à l&apos;écran</option>
+                {niveaux.map((n) => (
+                  <option key={n.code} value={n.code}>
+                    {n.libelle}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="legende">
+            Un profil choisi ouvre directement son programme ; ses évaluations tirent au niveau choisi, comme pour
+            un agent muni d&apos;un code de poste. Sans choix, l&apos;apprenant test les choisit à l&apos;écran.
+          </p>
           <button type="submit" className="bouton">Démarrer un test</button>
         </form>
       </section>

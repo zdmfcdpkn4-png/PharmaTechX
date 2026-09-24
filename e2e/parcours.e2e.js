@@ -312,13 +312,13 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("select[name=niveauQuestion]").inputValue(), "", "aucun niveau deviné");
   await page.selectOption("select[name=niveauQuestion]", "intermediaire");
   await page.click("button:has-text('Créer la question')");
-  await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
+  await page.waitForURL(/admin\/questions\?vue=liste&module=comportement-zac&ok=creee/);
   await page.waitForSelector("text=Question de test créée dans le formulaire");
   const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
   assert.equal(await ligneCreee.locator(".etiquette", { hasText: /^Intermédiaire$/i }).count(), 1, "niveau affiché dans la banque");
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&niveau=intermediaire");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&niveau=intermediaire");
   await page.waitForSelector("text=Question de test créée dans le formulaire");
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&niveau=avance");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&niveau=avance");
   assert.equal(
     await page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" }).count(),
     0,
@@ -327,14 +327,14 @@ Justification : cf. procédure interne.`,
   // Administration (23/09/2026) : elle valide aussi ses questions. L'écart aux quatre yeux se dit
   // avant le geste, puis se lit sur la question et au journal. La question repart ensuite « à
   // vérifier » : la suite du parcours garde ses comptes.
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   const ligneAuteur = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
   await ligneAuteur.locator("text=vous en êtes l'auteur : validation tracée comme telle").waitFor();
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ligneAuteur.locator("form button:has-text('Valider')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=valide");
   const ligneValidee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
   await ligneValidee.locator(".etiquette:text-is('Validée par son auteur')").waitFor();
   await ligneValidee.locator(".legende", { hasText: "(son auteur)" }).waitFor();
@@ -342,7 +342,7 @@ Justification : cf. procédure interne.`,
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ligneValidee.locator("form button:has-text('Remettre à vérifier')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   await page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" }).waitFor();
   await page.goto(BASE + "/admin/journal");
   await page.waitForSelector("code:text-is('statut-question:valide-par-auteur')");
@@ -362,7 +362,7 @@ Justification : cf. procédure interne.`,
   await page.fill("textarea[name=references]", "ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x");
   await page.check("input[name=reservee]");
   await page.click("button:has-text('Créer la question')");
-  await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
+  await page.waitForURL(/admin\/questions\?vue=liste&module=comportement-zac&ok=creee/);
   await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator(".etiquette:has-text('Réservée')").waitFor();
   ok("question réservée à l'évaluation créée, étiquetée dans la banque");
 
@@ -512,13 +512,13 @@ Justification : cf. procédure interne.`,
   assert.match(await page.locator(".encart--ok").innerText(), /dans 3 modules/);
   assert.equal(await page.locator("ul.depot-modules li").count(), 3, "un lien par module");
 
-  await page.goto(BASE + "/admin/questions?module=critere-b6-11&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b6-11&statut=a_verifier");
   const alphaBeta = page.locator(".question-ligne:has-text('lesquelles sont fausses')");
   assert.equal(await alphaBeta.locator(".etiquette--site").innerText(), "QCM", "enregistrée dans le format choisi à l'aperçu");
   assert.equal(await page.locator(".question-ligne:has-text('Laquelle est juste')").count(), 1);
-  await page.goto(BASE + "/admin/questions?module=critere-b6-10&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b6-10&statut=a_verifier");
   assert.equal(await page.locator(".question-ligne:has-text('réception des matières premières') .etiquette--site").innerText(), "QIM");
-  await page.goto(BASE + "/admin/questions?module=critere-b1-05&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-05&statut=a_verifier");
   assert.equal(await page.locator(".question-ligne:has-text('incendie')").count(), 1);
   ok("dépôt mêlé : module proposé avec ses mots, ligne Module lue ou inconnue, intertitre, corrigé à l'envers signalé puis corrigé, rien sans module, trois modules servis");
 
@@ -554,7 +554,7 @@ Justification : cf. procédure interne.`,
   assert.match(visiteTuteur.entete, /sur 6/i, "visite tutorat : six étapes");
   assert.match(visiteTuteur.texte, /code de tutorat/, "visite tutorat : texte du profil");
   ok("visite guidée : le tutorat a la sienne, distincte de celle de l'administration");
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
   await page.locator(".question-ligne:has-text('Schéma') a:has-text('Modifier')").first().click();
@@ -572,29 +572,29 @@ Justification : cf. procédure interne.`,
   ok("éditeur de schéma : légende posée au clic et enregistrée (4 légendes)");
 
   for (let i = 0; i < 12; i++) {
-    await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+    await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
     if (!(await bouton.count())) break;
     await bouton.click();
     await page.waitForLoadState("networkidle");
   }
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=valide");
   assert.equal(await page.locator(".question-ligne").count(), 9, "le tuteur valide les neuf questions écrites par l'administrateur");
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
   assert.equal(await page.locator(".question-ligne").count(), 1);
   await page.locator(".question-ligne", { hasText: "à valider par un autre code" }).waitFor();
   // la question réservée écrite par l'administrateur est validée par le tuteur (quatre yeux) : la banque de
   // comportement-zac atteint dix questions, les tirages Habilitation et Complet s'ouvrent
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator("form button:has-text('Valider')").click();
   await page.waitForLoadState("networkidle");
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=valide");
   await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).waitFor();
   await rebrancher(codeAdmin);
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
   await page.locator("form button:has-text('Valider')").first().click();
   await page.waitForLoadState("networkidle");
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=valide");
   assert.equal(await page.locator(".question-ligne").count(), 10);
   ok("quatre yeux : neuf questions validées par le tuteur, le schéma modifié par le tuteur validé par l'administrateur, dix validées");
 
@@ -739,8 +739,9 @@ Justification : cf. procédure interne.`,
     "module désigné par son critère et son titre, non par son identifiant",
   );
   const lienQuestion = await carteSignalement.locator("a:has-text('Ouvrir la question')").getAttribute("href");
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02");
-  const ligneSignalee = page.locator("li.question-ligne", { has: page.locator(`a[href="${lienQuestion}"]`) });
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02");
+  // Depuis la liste, « Modifier » porte l'adresse de retour (24/09/2026) : on compare le chemin.
+  const ligneSignalee = page.locator("li.question-ligne", { has: page.locator(`a[href^="${lienQuestion}?"]`) });
   assert.equal(
     (await ligneSignalee.locator(".etiquette--attention", { hasText: "signalement" }).textContent()).trim(),
     "1 signalement ouvert",
@@ -807,7 +808,7 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("text=Visa enregistré");
   // question 19 (choix b) : une question du tirage retirée après le visa du tuteur est signalée au pharmacien,
   // avec le score indicatif, sans bloquer son visa
-  await page.goto(BASE + "/admin/questions?module=critere-b1-02&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=valide");
   await page.locator(".question-ligne form button:has-text('Retirer')").first().click();
   await page.waitForLoadState("networkidle");
   await page.goto(urlRapport);
@@ -1064,7 +1065,7 @@ Justification : justification deux.`;
   // validation par un autre code que l'auteur : le tuteur ; qui ne publie ni ne modifie un module publié
   await rebrancher(codeTuteur);
   for (let i = 0; i < 3; i++) {
-    await page.goto(BASE + "/admin/questions?module=" + idModule + "&statut=a_verifier");
+    await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule + "&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
     if (!(await bouton.count())) break;
     await bouton.click();
@@ -1143,14 +1144,14 @@ Justification : justification deux.`;
   await page.waitForSelector("li.carte:has-text('Synthèse du module déposé') .etiquette:text-is('À vérifier')");
   await page.goto(BASE + "/module/" + idModule);
   assert.equal(await page.locator("a:has-text('Synthèse du module déposé')").count(), 0, "fiche à vérifier : absente de la page du module");
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   const ficheDepot = page.locator("#fiches .fiche-ligne", { hasText: "Synthèse du module déposé" });
   assert.match(await ficheDepot.innerText(), /vous en êtes l'auteur : validation tracée comme telle/);
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ficheDepot.locator("button:has-text('Valider la fiche')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await ficheDepot.locator(".etiquette:text-is('Validée par son auteur')").waitFor();
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
   await page.click("button:has-text('Commencer')");
@@ -1195,27 +1196,27 @@ Justification : justification deux.`;
   //          banque, validée par un autre code, citée par le résultat scellé ; signalement lu à
   //          l'écran Signalements puis clos ; version corrigée, qui repart à vérifier.
   await rebrancher(codeTuteur);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await page.setInputFiles(".fiche-depot input[name=fichier]", PNG);
   await page.fill(".fiche-depot input[name=titre]", "Fiche du tutorat");
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     page.click(".fiche-depot button:has-text('Déposer la fiche')"),
   ]);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   const ficheTutorat = page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" });
   await ficheTutorat.locator(".etiquette:text-is('À vérifier')").waitFor();
   assert.equal(await ficheTutorat.locator("button:has-text('Valider la fiche')").count(), 0, "le tutorat ne valide pas sa propre fiche");
   assert.match(await ficheTutorat.innerText(), /à valider par un autre code que tuteur · Tuteur test/);
   await rebrancher(codeAdmin);
-  await page.goto(BASE + "/admin/questions?statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&statut=a_verifier");
   assert.equal(await page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" }).count(), 1, "sous le filtre « à vérifier », la fiche attend avec les questions");
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ficheTutorat.locator("button:has-text('Valider la fiche')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await ficheTutorat.locator(".etiquette:text-is('Validée')").waitFor();
   assert.match(await ficheTutorat.innerText(), /validée le \d{2}\/\d{2}\/\d{4} par admin · /);
   // Le résultat scellé cite les fiches montrées, avec leur validation.
@@ -1242,7 +1243,7 @@ Justification : justification deux.`;
   await signalementFiche.locator(".etiquette:text-is('Fiche de synthèse')").waitFor();
   assert.equal(await signalementFiche.locator("a:has-text('Synthèse du module déposé')").count(), 1);
   assert.equal(await signalementFiche.locator("a:has-text('Corriger ou retirer la fiche dans la banque du module')").count(), 1);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await ficheDepot.locator(".etiquette:text-is('1 signalement ouvert')").waitFor();
   // Version corrigée : la fiche repart à vérifier, n'est plus citée ni montrée.
   await ficheDepot.locator("details.fiche-correction summary").click();
@@ -1251,7 +1252,7 @@ Justification : justification deux.`;
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ficheDepot.locator("button:has-text('Remplacer')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=" + idModule);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idModule);
   await ficheDepot.locator(".etiquette:text-is('À vérifier')").waitFor();
   assert.match(await ficheDepot.innerText(), /corrigée le \d{2}\/\d{2}\/\d{4} par admin · /);
   assert.deepEqual((await evaluerAvecFiches()).map((f) => f.titre), ["Fiche du tutorat"], "la fiche corrigée n'est plus montrée avant sa validation");
@@ -1636,7 +1637,7 @@ Justification : justification deux.`;
 
   // pastilles chiffrées du volet : présentes quand il y a quelque chose,
   // absentes à zéro — le volet est la carte, pas la file
-  await page.goto(BASE + "/admin/questions");
+  await page.goto(BASE + "/admin/questions?vue=liste");
   await page.waitForSelector("#volet-principal a[href='/admin/questions']");
 
   // Contraste au survol des variantes claires (23/09/2026) : le survol de la
@@ -1729,7 +1730,7 @@ Justification : justification deux.`;
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=question ajoutée");
   // la question reste « à vérifier » : elle n'entre dans aucun tirage
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   await page
     .locator(".question-ligne", { hasText: ENONCE_ILLUSTRE.slice(0, 40) })
     .locator("a:has-text('Modifier')")
@@ -1787,7 +1788,7 @@ Justification : justification deux.`;
   await page.waitForSelector(`text=Description de l'image : ${DESCRIPTION_SEQ}`);
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=question ajoutée");
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   await page
     .locator(".question-ligne", { hasText: ENONCE_SEQ_ILLUSTREE.slice(0, 40) })
     .locator("a:has-text('Modifier')")
@@ -1843,7 +1844,7 @@ Justification : cascade de pression.`,
 
   // quatre yeux : c'est un autre code qui valide, justification et extrait du document sous les yeux (24/09/2026)
   await rebrancher(codeTuteur);
-  await page.goto(BASE + "/admin/questions?module=" + idFormats + "&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idFormats + "&statut=a_verifier");
   const relecture = page.locator(".question-ligne", { hasText: "Remettez dans l'ordre les étapes de l'habillage" }).locator(".relecture");
   assert.equal(
     (await relecture.innerText()).replace(/\s+/g, " ").trim(),
@@ -1851,7 +1852,7 @@ Justification : cascade de pression.`,
     "justification et extrait visibles avant de valider",
   );
   for (let i = 0; i < 3; i++) {
-    await page.goto(BASE + "/admin/questions?module=" + idFormats + "&statut=a_verifier");
+    await page.goto(BASE + "/admin/questions?vue=liste&module=" + idFormats + "&statut=a_verifier");
     const bouton = page.locator("form button:has-text('Valider')").first();
     if (!(await bouton.count())) break;
     await bouton.click();
@@ -1917,16 +1918,16 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=1 question ajoutée");
   // le créateur choisit le mode « découvrir » dans l'éditeur ; les caches sont ceux qu'il a posés
-  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idCaches + "&statut=a_verifier");
   await page.locator(".question-ligne:has-text('Nommez ce que cache') a:has-text('Modifier')").click();
   await page.waitForSelector(".schema-cadre--editeur img");
   await page.selectOption("select[name=modeReponse]", "decouvrir");
   await page.click("button:has-text('Enregistrer les modifications')");
   await page.waitForURL(/ok=modifiee/);
-  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idCaches + "&statut=a_verifier");
   await page.locator(".question-ligne", { hasText: "réponse à découvrir avec le tuteur" }).waitFor();
   await rebrancher(codeTuteur);
-  await page.goto(BASE + "/admin/questions?module=" + idCaches + "&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idCaches + "&statut=a_verifier");
   await page.locator("form button:has-text('Valider')").first().click();
   await page.waitForLoadState("networkidle");
   await rebrancher(codeAdmin);
@@ -2552,7 +2553,7 @@ Justification : cf. procédure interne.`,
   ok("ordre des niveaux : rang de la fiche lu, S1 au rang 45 entre N2 et N3 (prérequis, Repères) ; niveau supprimé : code d'accès et plafond du barème signalés, encart éteint après reprise");
 
   // arborescence de la banque : filière → niveau → module, avec les comptes
-  await page.goto(BASE + "/admin/questions");
+  await page.goto(BASE + "/admin/questions?vue=liste");
   await page.waitForSelector("text=Couverture de la banque");
   // B5-09, critère de chimiothérapie de niveau N1a : N1a est au référentiel,
   // il ne se dit plus « absent » sous la filière Chimiothérapie.
@@ -2568,7 +2569,7 @@ Justification : cf. procédure interne.`,
   // un module de l'arbre conduit à la liste filtrée sur ce module
   const premier = page.locator(".arbre-module a").first();
   const cible = await premier.getAttribute("href");
-  assert.match(cible, /\/admin\/questions\?module=/, "un module de l'arbre renvoie à sa liste");
+  assert.match(cible, /\/admin\/questions\?vue=liste&module=/, "un module de l'arbre renvoie à sa liste");
   await premier.click();
   await page.waitForURL(/module=/);
   ok("arborescence de la banque : filière, niveau, module, comptes et renvoi vers la liste");
@@ -2750,9 +2751,9 @@ Justification : cf. procédure interne.`,
   const fReservee = page.locator("fieldset.question", { hasText: ENONCE_RESERVEE });
   assert.equal(await fReservee.count(), 1, "réservée posée dans l'évaluation complète");
   await fReservee.locator(".etiquette:has-text('Réservée')").waitFor();
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=valide");
   const hrefReservee = await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator("a:has-text('Modifier')").getAttribute("href");
-  const idReservee = hrefReservee.split("/").pop();
+  const idReservee = new URL(hrefReservee, BASE).pathname.split("/").pop();
   const corrigerVia = (corps) => page.request.post(BASE + "/api/evaluation", { data: { moduleId: "comportement-zac", reponses: {}, ...corps } });
   assert.equal((await corrigerVia({ questionIds: [idReservee], mode: "entrainement", difficulte: "complet" })).status(), 400, "réservée refusée en entraînement");
   assert.equal((await corrigerVia({ questionIds: [idReservee], mode: "evaluation", difficulte: "decouverte" })).status(), 400, "réservée refusée en Découverte");
@@ -2818,18 +2819,19 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('Créer la question')");
   await page.waitForURL(/ok=creee/);
   await rebrancher(codeAdmin);
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=a_verifier");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
   const ligneObligatoire = page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE });
   await ligneObligatoire.locator(".etiquette:text-is('Obligatoire')").waitFor();
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     ligneObligatoire.locator("form button:has-text('Valider')").click(),
   ]);
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&obligatoires=1");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&obligatoires=1");
   assert.equal(await page.locator(".question-ligne").count(), 1, "filtre des obligatoires : la seule du module");
-  const idObligatoire = (
-    await page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("a:has-text('Modifier')").getAttribute("href")
-  ).split("/").pop();
+  const idObligatoire = new URL(
+    await page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("a:has-text('Modifier')").getAttribute("href"),
+    BASE,
+  ).pathname.split("/").pop();
   // Barème : un plafond par niveau cible, avec ses valeurs par défaut.
   await page.goto(BASE + "/admin/bareme");
   await page.waitForSelector("h2:has-text('Tirage selon le niveau cible')");
@@ -2895,7 +2897,7 @@ Justification : cf. procédure interne.`,
   const carteTirage = page.locator("li.carte", { hasText: "Signalement e2e du tirage" });
   await carteTirage.locator("button:has-text('Rejeter')").click();
   await carteTirage.locator("text=Rejeté par").waitFor();
-  await page.goto(BASE + "/admin/questions?module=comportement-zac&statut=valide");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=valide");
   await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
     page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("form button:has-text('Retirer')").click(),
@@ -2908,16 +2910,15 @@ Justification : cf. procédure interne.`,
   //          signalé, filtres gardés, et chaque geste — créer, valider, modifier, retirer, supprimer — ramène
   //          à sa branche, rouverte, en vue et avec le focus. La question créée est supprimée à la fin.
   await rebrancher(codeAdmin);
+  // Arborescence repliée par défaut (24/09/2026) ; la liste se demande.
   await page.goto(BASE + "/admin/questions");
   const bascule = page.locator("nav.bascule-vue");
-  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Liste", "la liste reste la vue par défaut");
-  await bascule.locator("a:has-text('Arborescence')").click();
-  await page.waitForURL(/vue=arbre/);
+  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arborescence est la vue par défaut");
+  assert.match(await bascule.locator("a:has-text('Liste')").getAttribute("href"), /vue=liste/, "la liste se demande");
   await page.waitForSelector("section.arborescence");
   assert.equal(await page.locator("section.arbre").count(), 0, "la couverture laisse place à l'arborescence");
   assert.ok((await page.locator("details.arbo-filiere").count()) >= 2, "tronc commun et filières");
-  assert.equal(await page.locator("details.arbo-filiere:not([open])").count(), 0, "par défaut, filières ouvertes");
-  assert.equal(await page.locator("details.arbo-niveau[open]").count(), 0, "par défaut, niveaux repliés");
+  assert.equal(await page.locator("details.arbo-noeud[open]").count(), 0, "par défaut, tout est replié, filières comprises");
   await page.click("section.arborescence a:has-text('Tout déplier')");
   await page.waitForURL(/plis=tout/);
   assert.equal(await page.locator("details.arbo-module:not([open])").count(), 0, "Tout déplier ouvre jusqu'aux modules");
@@ -3012,7 +3013,7 @@ Justification : cf. procédure interne.`,
   );
   await page.setViewportSize({ width: 1280, height: 900 });
   await rebrancher(codeTuteur);
-  ok("banque en arborescence : bascule Liste | Arborescence, repli par défaut, Tout déplier / Tout replier, module rattaché à deux niveaux signalé, filtres gardés, créer, valider, modifier, retirer et supprimer ramènent à la branche, rouverte, en vue et avec le focus ; rien ne déborde à 360 px");
+  ok("banque en arborescence : vue par défaut, repliée, bascule vers la liste, Tout déplier / Tout replier, module rattaché à deux niveaux signalé, filtres gardés, créer, valider, modifier, retirer et supprimer ramènent à la branche, rouverte, en vue et avec le focus ; rien ne déborde à 360 px");
 
   // 15. limiteur : 5 échecs bloquent
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -3379,10 +3380,21 @@ Justification : cf. procédure interne.`,
   );
   const baseAvant = process.env.DATABASE_URL ? await empreinteBase() : null;
   await page.goto(BASE + "/admin");
+  // Profil choisi au départ (24/09/2026) : programme et niveau cible s'ouvrent dessus, comme avec un
+  // code de poste ; le menu y mène par « Tester en apprenant ».
+  assert.equal(await page.locator("#volet-principal a[href='/admin#t-essai']").count(), 1, "lien « Tester en apprenant » au menu");
+  const sectionEssai = page.locator("section[aria-labelledby='t-essai']");
+  await sectionEssai.locator("select[name=essaiFiliere]").selectOption("chimiotherapie");
+  await sectionEssai.locator("select[name=essaiNiveau]").selectOption("N2");
   await page.click("button:has-text('Démarrer un test')");
   await page.waitForURL((u) => u.pathname === "/");
   await fermerVisite();
   await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
+  assert.deepEqual(
+    [await page.locator("#composer select").nth(0).inputValue(), await page.locator("#composer select").nth(1).inputValue()],
+    ["chimiotherapie", "N2"],
+    "le programme s'ouvre sur le profil choisi",
+  );
   await capture("15-mode-test-bandeau", page.locator(".entete"));
   assert.equal(
     await page.locator("button[aria-label='Utilisateur test — quitter']").count(),
@@ -3406,6 +3418,7 @@ Justification : cf. procédure interne.`,
   }
   // évaluation complète, corrigée par le serveur, puis signalement retenu
   await page.goto(BASE + "/module/comportement-zac/evaluation");
+  assert.equal(await page.locator("select[name=niveauCible]").inputValue(), "N2", "niveau cible : celui du profil choisi");
   await page.check("input[name=difficulte] >> nth=2"); // Complet
   await page.check("input[name=mode] >> nth=0"); // évaluation
   await page.click("button:has-text('Commencer')");
@@ -3478,7 +3491,7 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok(
-    `utilisateur test : parcours apprenant jusqu'au rapport ${numeroTest} (filigrane), signalement retenu, ` +
+    `utilisateur test : profil choisi au départ (programme et niveau cible), lien au menu ; parcours apprenant jusqu'au rapport ${numeroTest} (filigrane), signalement retenu, ` +
       "rattachement du poste ignoré, administration fermée pendant le test, tutorat compris ; " +
       (baseAvant ? "base identique avant et après, table par table et séquence par séquence" : "base NON comparée (DATABASE_URL absente)"),
   );
