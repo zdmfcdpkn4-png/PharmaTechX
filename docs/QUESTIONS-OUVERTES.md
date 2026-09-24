@@ -376,6 +376,20 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+72. **Champs d'une filière sans effet** — posée le 24/09/2026, après l'aide
+    ajoutée au Référentiel le même jour. « Blocs de compétence » est
+    enregistré, mais aucun écran ni aucun calcul ne le lit : le programme
+    d'une filière vient des modules qui la cochent dans leur réglage
+    (question 36, choix a). « Rang » ne fait rien sur une filière de la
+    fiche, qui garde sa place. Trois choix :
+    - **a (recommandé)** : retirer ces deux champs des formulaires —
+      « Blocs de compétence » partout, « Rang » sur une filière de la fiche.
+      Les valeurs déjà enregistrées restent en base, sans usage.
+    - **b** : rendre les blocs agissants : le programme d'une filière
+      comprendrait aussi, par défaut, les modules de ses blocs, sauf réglage
+      contraire du module.
+    - **c** : laisser tel quel ; l'aide dit que ces champs ne servent pas.
+
 71. **Réponses des questions réservées montrées après l'évaluation** — posée
     le 24/09/2026 (audit, F1).
 
