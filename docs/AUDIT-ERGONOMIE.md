@@ -535,9 +535,12 @@ le site les a déjà : tests et corrections.
 - **L'agent suivant entretient le rattachement.** Son activité sur le même
   poste maintient celui du précédent (`app/api/activite/route.ts:38-39`). Le
   rattachement ne tombe qu'après 4 h sans activité, 12 h au plus.
-- **L'identifiant n'est affiché nulle part pendant l'évaluation.** L'écran de
-  l'évaluation ne reçoit qu'un booléen (`app/module/[id]/evaluation/page.tsx:93`),
-  et le récapitulatif ne montre pas non plus l'identifiant.
+- **L'identifiant n'apparaît pas sur l'écran de l'évaluation.** L'écran ne
+  reçoit qu'un booléen (`app/module/[id]/evaluation/page.tsx:93`), et le
+  récapitulatif ne montre pas non plus l'identifiant. *Corrigé le 24/09/2026 :
+  la première version disait « nulle part ». En fait, le volet le porte, en
+  petit, en regard de « Ma progression », au-dessus de 62 rem ; il n'apparaît
+  pas sur iPad en portrait, où le volet est un tiroir.*
 - **« Se détacher » est difficile à trouver.** Le bouton est en bas de « Ma
   progression ».
 
@@ -565,7 +568,10 @@ ne permet non plus d'agrandir l'image.
 **Proposition.**
 - Réserver `touch-action: none` à l'éditeur, qui en a besoin pour placer les
   repères.
-- Côté apprenant, ajouter un bouton « Agrandir » qui ouvre l'image seule.
+- ~~Côté apprenant, ajouter un bouton « Agrandir » qui ouvre l'image seule.~~
+  *Retiré le 24/09/2026 : l'image porte les mots d'origine sous les caches ;
+  ouverte seule, elle donnerait les réponses. Le pincement agrandit la
+  figure, caches compris.*
 
 **Mise en œuvre.** Effort : petit. Décision : aucune.
 

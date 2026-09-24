@@ -390,6 +390,16 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : un test avec trois à cinq agents d'abord, sur la version
       actuelle.
 
+    Tranchée le même jour (choix a, réponse « À »).
+    - **Faits** : la correction amenée à l'écran et reportée sur les
+      propositions (E1), la question dégagée de l'en-tête (E2), l'identifiant
+      rappelé au réglage, dans la barre et au récapitulatif (Z1, affichage),
+      et le pincement rendu aux schémas (Z2).
+    - **Posés à part** : « Quitter » qui détacherait l'agent, et les réponses
+      des questions réservées (F1).
+
+    Détail dans `DECISIONS.md`.
+
 68. **QCM : « Plusieurs » avec une majuscule** — constaté le 23/09/2026,
     non corrigé. Un QCM ne s'affiche en cases à cocher que si son énoncé
     contient « plusieurs » en minuscules (`estUneSeule`,

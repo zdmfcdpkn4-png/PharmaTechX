@@ -91,6 +91,7 @@ export default async function PageEvaluation({
         suivant={position?.suivant ? { id: position.suivant.id, titre: position.suivant.titre } : null}
         requete={requete}
         rattache={Boolean(ratt)}
+        identifiant={ratt?.identifiant ?? null}
         enCoursInitial={enCours}
         niveaux={niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle }))}
         niveauInitial={niveauInitial}

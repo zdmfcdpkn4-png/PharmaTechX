@@ -2579,8 +2579,12 @@ Justification : cf. procédure interne.`,
   // l'identifiant rattaché est porté par le volet, en regard de « Ma progression »
   await page.waitForSelector("#volet-principal a[href='/#progression']:has-text('AG-002')");
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
+  // Poste partagé (question 69, audit Z1) : l'identifiant rattaché est rappelé avant de commencer,
+  // avec de quoi se détacher, puis dans la barre de passation et au récapitulatif.
+  await page.waitForSelector("form.encart:has-text('AG-002') button:has-text('me détacher')");
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("fieldset.question");
+  assert.match(await page.locator(".barre-passation .legende").first().innerText(), /^AG-002 · /, "identifiant dans la barre de passation");
   const fsProg = page.locator("fieldset.question");
   const nProg = await fsProg.count();
   for (let i = 0; i < nProg; i++) {
@@ -2593,7 +2597,11 @@ Justification : cf. procédure interne.`,
       await f.locator("label.option", { hasText: "Bonne" }).locator("input").check();
     }
   }
-  await validerEvaluation();
+  await ouvrirRecap();
+  await page.waitForSelector(".recap:has-text(\"Résultat enregistré sous l'identifiant AG-002\")");
+  await page.click(".recap button:has-text('Valider définitivement')");
+  await page.waitForSelector(".recap", { state: "detached" });
+  ok("identifiant rattaché rappelé avant de commencer, dans la barre de passation et au récapitulatif");
   await page.waitForSelector(".resultat-entete");
   // rechargement complet : la mémoire de session repart des évaluations conservées
   await page.goto(BASE + "/#progression");
@@ -2676,7 +2684,23 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('Vérifier')");
   await page.waitForSelector(".correction");
   await page.waitForSelector("button:has-text('Question suivante')");
-  ok("entraînement : correction immédiate après la première question");
+  // Question 69 (audit E1) : la correction est amenée à l'écran, au-dessus de la barre de passation,
+  // et reçoit le focus ; les propositions portent leur verdict, l'énoncé n'est pas répété.
+  await page.waitForFunction(() => document.activeElement?.classList.contains("correction"));
+  const vueCorrection = await page.evaluate(() => {
+    const c = document.querySelector(".correction");
+    const r = c.getBoundingClientRect();
+    const barre = document.querySelector(".barre-passation").getBoundingClientRect().height;
+    return {
+      aLEcran: r.top >= 0 && r.bottom <= innerHeight - barre,
+      marques: document.querySelectorAll("fieldset.question .marque").length,
+      enonceRepete: c.querySelectorAll("p > strong").length,
+    };
+  });
+  assert.ok(vueCorrection.aLEcran, "correction à l'écran, au-dessus de la barre de passation");
+  assert.ok(vueCorrection.marques > 0, "verdict porté sur les propositions");
+  assert.equal(vueCorrection.enonceRepete, 0, "énoncé non répété sous la question");
+  ok("entraînement : correction immédiate après la première question, à l'écran, lue sur les propositions");
 
   // 14a. questions réservées à l'évaluation (question 18, choix c) : jamais en entraînement ni en Découverte,
   //      tirées en priorité en Habilitation et Complet ; le serveur refuse un tirage non conforme

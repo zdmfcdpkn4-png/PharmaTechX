@@ -740,6 +740,30 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
 .correction--partielle .verdict { color: var(--alerte); }
 .correction--erronee .verdict { color: var(--echec); }
 .correction .source { font-size: 0.75rem; line-height: 1.5; color: var(--texte-doux); border-top: 1px solid var(--bord); padding-top: 0.5rem; }
+.correction:focus { outline: none; }
+.correction:focus-visible { outline: 3px solid var(--marque-anneau); outline-offset: 2px; }
+
+/* Correction d'entraînement reportée sur les propositions (audit du 24/09/2026,
+   E1) : le verdict s'écrit en texte, la couleur ne fait que le doubler. */
+.option .marque,
+.proposition .marque { font-size: 0.875rem; font-weight: 650; }
+.option .marque { margin-left: auto; padding-left: 0.5rem; white-space: nowrap; }
+.proposition .marque { flex: 1 1 100%; }
+.option.option--attendue,
+.option.option--attendue:hover,
+.proposition--juste { border-color: var(--succes); background: var(--succes-fond); }
+.option.option--erronee,
+.option.option--erronee:hover,
+.proposition--faux { border-color: var(--echec); background: var(--echec-fond); }
+.option--attendue .marque,
+.proposition--juste .marque { color: var(--succes); }
+.option--erronee .marque,
+.proposition--faux .marque { color: var(--echec); }
+.proposition--sans .marque { color: var(--texte-doux); }
+
+/* Cibles du défilement pendant la passation (audit du 24/09/2026, E2) : sous
+   l'en-tête fixe, jamais derrière. */
+.passation :is(.encart, .vignette, fieldset.question) { scroll-margin-top: calc(var(--decalage) + 0.75rem); }
 
 /* =============================================================================
  * Volet de navigation — permanent au-dessus de 62 rem, tiroir en deçà
@@ -1799,7 +1823,6 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
   background: var(--surface);
   border: 1px solid var(--bord);
   user-select: none;
-  touch-action: none;
 }
 .schema-cadre > img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .schema-cache {
@@ -1811,7 +1834,9 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
 }
 .schema-cadre--editeur .schema-cache { background: rgba(255, 255, 255, 0.72); border: 1px dashed var(--marque); }
 .schema-cadre--editeur.schema-cadre--apercu .schema-cache { background: #ffffff; border: 1px solid var(--bord-fort); }
-.schema-cadre--editeur { cursor: crosshair; }
+/* Le doigt place les repères : seul l'éditeur retient le geste. Côté apprenant,
+   le pincement agrandit le schéma, caches compris (audit du 24/09/2026, Z2). */
+.schema-cadre--editeur { cursor: crosshair; touch-action: none; }
 .schema-repere {
   position: absolute;
   transform: translate(-50%, -50%);

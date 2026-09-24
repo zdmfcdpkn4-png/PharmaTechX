@@ -3766,6 +3766,107 @@ page ni erreur serveur. La règle elle-même n'est couverte que par les deux
 tests purs : aucune étape de bout en bout ne tire de QCM « Plusieurs… » ;
 les deux passes vérifient l'absence de régression.
 
+## Lot 1 de l'audit : correction à l'écran, question dégagée, identifiant rappelé (24/09/2026, question 69, choix a)
+
+**Tranché (question 69, choix a, réponse « À »).** Le lot 1 de l'audit
+(`docs/AUDIT-ERGONOMIE.md`) passe en premier. Ce qui ne demandait aucune
+décision est fait. Deux points appellent chacun une question, posée à part :
+- « Quitter » détache-t-il aussi l'agent (Z1) ?
+- que deviennent les réponses des questions réservées après l'évaluation
+  (F1) ?
+
+**Ce qui est fait.**
+- **Correction amenée à l'écran (E1).** En entraînement, après « Vérifier »,
+  la page défile au plus court pour que la correction tienne entre l'en-tête
+  et la barre de passation. Si elle est plus haute que l'écran, c'est son
+  haut qui s'affiche. Puis la correction reçoit le focus : `role="group"`,
+  nommée par son en-tête (« Question 1 Réponse erronée 0 pt »), elle est lue
+  par un lecteur d'écran. Le défilement est un saut immédiat, réajusté pendant
+  400 ms si le navigateur recale la page, sauf geste de l'apprenant.
+- **Correction lue sur les propositions (E1).**
+  - QCM, et QIM en cases : « ✓ attendue » sur chaque bonne réponse, cochée ou
+    non, et « ✗ non attendue » sur un choix erroné.
+  - QIM : « Vous : Vrai · Attendu : Faux » sur chaque ligne.
+  - Schéma : légendes révélées sur la question même.
+  - Le verdict est écrit ; la couleur ne fait que le doubler.
+  - Sous la question, la correction ne répète plus l'énoncé ni l'image, ni
+    « Votre réponse / Attendu » quand les propositions le disent déjà. La
+    fin d'entraînement et le résultat d'évaluation, où la question n'est pas
+    affichée, restent complets.
+  - Le rapprochement se fait par le texte des propositions : le navigateur ne
+    reçoit jamais les identifiants des bonnes réponses. Si deux propositions
+    ont le même texte, il n'y a pas de marquage et la correction écrite reste
+    (`content/marques.ts`, trois tests).
+- **Question dégagée de l'en-tête (E2).** Au démarrage et à chaque question
+  suivante, la question, ou sa mise en situation, vient se placer sous
+  l'en-tête, une fois la page affichée. La cause avait deux faces :
+  - le défilement vers le haut, lancé dans le clic avant l'affichage de la
+    question suivante, était interrompu par la mise à jour de la page ;
+  - au démarrage, la page raccourcie restait calée en bas, numéro et format
+    de la question sous l'en-tête fixe.
+
+  En évaluation, la page s'ouvre désormais sur la question 1. Elle s'ouvrait
+  à la hauteur du bouton « Commencer », parfois au milieu du questionnaire.
+- **Identifiant rappelé (Z1, affichage seulement).**
+  - Écran de réglage : « Rattaché à l'identifiant AG-012… », avec « Ce n'est
+    pas moi : me détacher ».
+  - Barre de passation : « AG-012 · Question 3 / 10… ».
+  - Récapitulatif : « Résultat enregistré sous l'identifiant AG-012. Ce
+    n'est pas le vôtre ? Ne validez pas… ».
+- **Pincement rendu aux schémas (Z2).** `touch-action: none` ne vaut plus que
+  pour l'éditeur, qui en a besoin pour placer les repères. Côté apprenant, le
+  pincement agrandit la figure, caches compris.
+
+**Écarts à l'audit, et pourquoi.**
+- **Z2 : pas de bouton « Agrandir » ouvrant l'image seule.** L'image porte
+  les mots d'origine sous les caches (`components/SchemaQuestion.tsx`) :
+  ouverte seule, elle donnerait les réponses. L'audit est corrigé.
+- **Z1 : l'identifiant était déjà affiché, mais peu.** L'audit le disait
+  affiché nulle part pendant l'évaluation. C'est inexact : le volet le porte
+  déjà, en petit, en regard de « Ma progression », au-dessus de 62 rem. Il
+  n'apparaît pas sur iPad en portrait, où le volet est un tiroir. Rien n'est
+  ajouté à l'en-tête, qui tient sur une ligne depuis l'audit d'affichage du
+  22/09 : le rappel est placé là où le résultat s'enregistre. L'audit est
+  corrigé.
+- **E1 : le focus plutôt que `role="status"`.** Porté sur la correction, le
+  focus la fait lire ; un `role="status"` en plus la ferait annoncer deux
+  fois.
+
+**Limites.**
+- Mesures faites sous Chromium, iPad émulé ; ni Safari ni gants
+  `[à vérifier sur l'appareil]`.
+- **Le réajustement de 400 ms est une parade, sans cause établie.** Sur un
+  schéma « à découvrir », la figure raccourcit en se révélant, et la page
+  était recalée au rendu suivant, après le calcul. La correction retombait
+  alors sous la barre deux fois sur trois avant la parade, jamais en cinq
+  essais après. L'ancrage du défilement a été testé et écarté : le coupé, le
+  recalage persistait.
+- **Évaluation : un cas non corrigé.** Le démarrage sur la question 1 a
+  échoué en mesure quand un défilement doux lancé juste avant le clic était
+  encore en cours. C'était un artefact du script de mesure : un défilement de
+  test instantané donne la question 1 sous l'en-tête cinq fois sur cinq. Le
+  même cas reste possible si l'apprenant clique pendant un défilement à la
+  molette `[non corrigé]`.
+- **Séquences et textes à trous** : pas de marquage sur place ; la correction
+  écrite reste.
+
+**Mesures après correction (base d'essai).** En entraînement, 20 questions sur
+deux passes (QCM, QIM, schéma « à écrire »), sur PC 1366 × 768 et iPad
+portrait en mode zone, plus cinq essais d'un schéma « à découvrir » sur iPad :
+- la correction est entièrement visible à chaque fois (avant : 0 % pour les
+  QIM et les schémas) ;
+- le focus est porté sur la correction à chaque fois ;
+- la question arrive sous l'en-tête à chaque fois (avant, sur PC : cadre à
+  9 px du haut, sous un en-tête de 81 px).
+
+**Vérifié le 24/09/2026.** `npm run verifier` : 331 tests, dont 3 nouveaux.
+`npm run build`. Deux passes de bout en bout de 92 étapes, sans erreur de
+page ni erreur serveur. Assertions ajoutées :
+- correction à l'écran, au-dessus de la barre, avec le focus ;
+- verdict porté sur les propositions ;
+- énoncé non répété ;
+- identifiant rappelé au réglage, dans la barre et au récapitulatif.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

@@ -11,6 +11,8 @@ import { libelleCible, libelleEcartees } from "@/content/cible";
 import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
 import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
+import { marquesOptions, marquesQim } from "@/content/marques";
+import { actionDetacher } from "@/app/actions-progression";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
 import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
 import { useSessionFormation } from "./SessionFormation";
@@ -196,6 +198,7 @@ function RecapitulatifValidation({
   surCodeTuteur,
   envoi = false,
   erreur = null,
+  identifiant = null,
 }: {
   total: number;
   renseignees: number;
@@ -210,6 +213,8 @@ function RecapitulatifValidation({
   envoi?: boolean;
   /** Refus du serveur (code du tuteur) : dit dans le panneau, qui reste ouvert. */
   erreur?: string | null;
+  /** Identifiant sous lequel le résultat s'enregistre (Z1) : dernier moment pour s'en apercevoir. */
+  identifiant?: string | null;
 }) {
   // Des caches jugés ne valent qu'avec le code du tuteur ; aucun cache jugé,
   // rien à confirmer — ils comptent alors comme sans réponse.
@@ -341,6 +346,12 @@ function RecapitulatifValidation({
             {erreur}
           </p>
         )}
+        {identifiant && (
+          <p style={{ margin: ".75rem 0 0" }}>
+            Résultat enregistré sous l&apos;identifiant <strong>{identifiant}</strong>. Ce n&apos;est pas
+            le vôtre ? Ne validez pas : revenez aux questions et prévenez votre tuteur.
+          </p>
+        )}
         <p className="legende" style={{ margin: ".75rem 0 0" }}>
           La correction est faite par le serveur. Le résultat entre dans la session et peut être
           porté au rapport d&apos;habilitation (étape 2 sur 6).
@@ -439,6 +450,7 @@ export function Evaluation({
   syntheses = [],
   suivant = null,
   rattache = false,
+  identifiant = null,
   enCoursInitial = null,
   requete = "",
   niveaux = [],
@@ -459,6 +471,12 @@ export function Evaluation({
   suivant?: { id: string; titre: string } | null;
   /** Apprenant rattaché à son identifiant : l'évaluation en cours est sauvegardée, la fin d'un entraînement notée. */
   rattache?: boolean;
+  /**
+   * Identifiant de l'agent rattaché, rappelé là où le résultat s'enregistre
+   * (audit du 24/09/2026, Z1) : sur un poste partagé, le rattachement du
+   * précédent peut courir encore.
+   */
+  identifiant?: string | null;
   /** Évaluation interrompue, conservée sous l'identifiant, proposée à la reprise. */
   enCoursInitial?: EtatEnCours | null;
   /** Programme à la carte (`?programme=…`) : gardé sur les liens vers les modules. */
@@ -607,6 +625,77 @@ export function Evaluation({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rattache, demarre, resultat, entrainementFini, sousEnsemble, posees, mode, difficulte, niveauCible, reponses, qim, legendes, rangs, trous, jugements, reveles, indexCourant, corrections]);
+
+  // Cibles du défilement : le cadre des questions et la correction d'entraînement.
+  const refPassation = useRef<HTMLDivElement | null>(null);
+  const refCorrection = useRef<HTMLDivElement | null>(null);
+
+  /*
+   * La question arrive sous l'en-tête au démarrage et à chaque question
+   * suivante (audit du 24/09/2026, E2). Le défilement se fait après le rendu :
+   * lancé dans le gestionnaire du clic, avant que la question suivante ne
+   * s'affiche, il était interrompu par la mise à jour de la page. Au
+   * démarrage, la page raccourcie restait calée en bas, le numéro et le
+   * format de la question sous l'en-tête fixe. La marge sous l'en-tête est
+   * celle des ancres (`--decalage`). Saut immédiat, comme en mouvement
+   * réduit : un défilement doux peut encore être interrompu par la page qui
+   * se recompose, et la question resterait alors sous l'en-tête.
+   */
+  useEffect(() => {
+    if (!demarre || resultat) return;
+    if (entrainementFini) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    refPassation.current
+      ?.querySelector<HTMLElement>(".encart, .vignette, fieldset.question")
+      ?.scrollIntoView({ behavior: "instant", block: "start" });
+  }, [demarre, resultat, entrainementFini, indexCourant]);
+
+  /*
+   * Correction d'entraînement amenée à l'écran (audit du 24/09/2026, E1) :
+   * ajoutée sous la question, elle pouvait rester entière sous la barre de
+   * passation (QIM et schémas, sur PC comme sur iPad) pendant que le bouton
+   * devenait « Question suivante ». Défilement au plus court : son bas
+   * au-dessus de la barre, sans que son haut passe sous l'en-tête — le haut
+   * l'emporte si elle est plus haute que l'écran. `scrollIntoView` « au plus
+   * près » ne suffit pas : pour lui, une correction cachée par la barre fixe
+   * est déjà dans la fenêtre. Saut immédiat, puis le focus : un lecteur
+   * d'écran la lit.
+   *
+   * Le navigateur peut encore recaler la page au rendu suivant, après ce
+   * calcul : mesuré sur un schéma « à découvrir », dont la figure raccourcit
+   * en se révélant — la correction retombait sous la barre deux fois sur
+   * trois. La position est donc réajustée à chaque défilement pendant
+   * 400 ms, sauf si l'apprenant fait défiler lui-même entre-temps.
+   */
+  const correctionCourante = mode === "entrainement" ? corrections[posees[indexCourant]?.id ?? ""] : undefined;
+  useEffect(() => {
+    const el = refCorrection.current;
+    if (!correctionCourante || !el) return;
+    const ajuster = () => {
+      const barre = document.querySelector<HTMLElement>(".barre-passation")?.getBoundingClientRect().height ?? 0;
+      const entete = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--decalage")) || 0;
+      const r = el.getBoundingClientRect();
+      let decalage = Math.max(0, r.bottom - (window.innerHeight - barre - 12));
+      if (r.top - decalage < entete + 12) decalage = r.top - (entete + 12);
+      if (Math.abs(decalage) > 1) window.scrollBy({ top: decalage, behavior: "instant" });
+    };
+    ajuster();
+    el.focus({ preventScroll: true });
+    const gestes = ["pointerdown", "wheel", "touchstart", "keydown"] as const;
+    const arreter = () => {
+      window.removeEventListener("scroll", ajuster);
+      for (const g of gestes) window.removeEventListener(g, arreter);
+    };
+    window.addEventListener("scroll", ajuster, { passive: true });
+    for (const g of gestes) window.addEventListener(g, arreter, { passive: true });
+    const minuteur = window.setTimeout(arreter, 400);
+    return () => {
+      window.clearTimeout(minuteur);
+      arreter();
+    };
+  }, [correctionCourante]);
 
   const effacerEnCours = () => {
     if (minuteurSauvegarde.current) window.clearTimeout(minuteurSauvegarde.current);
@@ -1009,6 +1098,15 @@ export function Evaluation({
             </span>
           </label>
         </fieldset>
+        {identifiant && (
+          <form action={actionDetacher} className="encart">
+            Rattaché à l&apos;identifiant <strong>{identifiant}</strong> : vos évaluations sont conservées sous
+            cet identifiant.{" "}
+            <button type="submit" className="bouton bouton--compact bouton--secondaire">
+              Ce n&apos;est pas moi : me détacher
+            </button>
+          </form>
+        )}
         <div className="actions">
           <button type="button" className="bouton" onClick={() => setDemarre(true)}>
             Commencer
@@ -1022,9 +1120,38 @@ export function Evaluation({
   }
 
   // ──────────────────────────────────────────────────── blocs partagés
-  const rendreCorrection = (d: DetailQuestion, i: number, q: QuestionPublique | undefined) => (
-    <div key={d.questionId} className={`correction ${classeCorrection(d)}`}>
-      <div className="etape-tete">
+  /**
+   * Correction reportée sur les propositions (audit du 24/09/2026, E1) : QIM
+   * jugée ligne à ligne, ou QCM (et QIM en cases). `null` pour les autres
+   * formats, ou quand deux propositions ont le même texte (`content/marques.ts`).
+   */
+  const marquesDe = (q: QuestionPublique, d: DetailQuestion) =>
+    q.type === "QIM" && qimEnVraiFaux
+      ? { qim: marquesQim(q.options, qim[q.id] ?? {}, d.reponsesAttendues), options: null }
+      : q.type === "QCM" || q.type === "QIM"
+        ? { qim: null, options: marquesOptions(q.options, reponses[q.id] ?? [], d.reponsesAttendues) }
+        : { qim: null, options: null };
+
+  /**
+   * Sous la question qu'elle corrige (entraînement, `sousLaQuestion`), la
+   * correction ne répète ni l'énoncé ni l'image, et laisse aux propositions
+   * marquées, ou au schéma révélé, ce qu'ils disent déjà. Ailleurs — fin
+   * d'entraînement, résultat d'évaluation — elle reste complète : la question
+   * n'y est pas affichée.
+   */
+  const rendreCorrection = (d: DetailQuestion, i: number, q: QuestionPublique | undefined, sousLaQuestion = false) => {
+    const marques = sousLaQuestion && q ? marquesDe(q, d) : null;
+    const reportee = Boolean(marques?.qim ?? marques?.options) || (sousLaQuestion && d.type === "SCH" && Boolean(d.legendes));
+    return (
+    <div
+      key={d.questionId}
+      ref={sousLaQuestion ? refCorrection : undefined}
+      tabIndex={sousLaQuestion ? -1 : undefined}
+      role={sousLaQuestion ? "group" : undefined}
+      aria-labelledby={sousLaQuestion ? `correction-${d.questionId}` : undefined}
+      className={`correction ${classeCorrection(d)}`}
+    >
+      <div className="etape-tete" id={sousLaQuestion ? `correction-${d.questionId}` : undefined}>
         <strong>Question {i + 1}</strong>
         <span className="etiquette etiquette--neutre">{etatLisible(d)}</span>
         {d.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
@@ -1032,14 +1159,16 @@ export function Evaluation({
         {d.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
         <span style={{ marginLeft: "auto", fontWeight: 650 }}>{nombre(d.note)} pt</span>
       </div>
-      <p>
-        <strong>{d.enonce}</strong>
-      </p>
-      {d.type !== "SCH" && q?.image && (
+      {!sousLaQuestion && (
+        <p>
+          <strong>{d.enonce}</strong>
+        </p>
+      )}
+      {!sousLaQuestion && d.type !== "SCH" && q?.image && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img src={q.image.url} alt={q.image.alt} className="illustration-question" />
       )}
-      {d.type === "SCH" && q && d.legendes ? (
+      {reportee ? null : d.type === "SCH" && q && d.legendes ? (
         <SchemaQuestion question={q} valeurs={{}} verrouille revelation={d.legendes} />
       ) : (
         <p className="legende">
@@ -1054,7 +1183,8 @@ export function Evaluation({
       )}
       {signalementPossible && <Signaler questionId={d.questionId} moduleId={moduleId} />}
     </div>
-  );
+    );
+  };
 
   const rendreVignette = (q: QuestionPublique, nbQuestions: number) =>
     q.situation ? (
@@ -1072,6 +1202,9 @@ export function Evaluation({
 
   const rendreQuestion = (q: QuestionPublique, i: number, total: number, verrouille: boolean) => {
     const enVraiFaux = q.type === "QIM" && qimEnVraiFaux;
+    // Question corrigée (entraînement) : la correction se lit sur les propositions (E1).
+    const corrigee = verrouille ? corrections[q.id] : undefined;
+    const marques = corrigee ? marquesDe(q, corrigee) : null;
     return (
       <fieldset className="question" id={`question-${i + 1}`} disabled={verrouille}>
         <legend>
@@ -1114,6 +1247,7 @@ export function Evaluation({
             jugements={jugements[q.id] ?? {}}
             onJuger={(lid, j) => jugerCache(q.id, lid, j)}
             juge={mode === "evaluation" ? "tuteur" : "apprenant"}
+            revelation={corrigee?.legendes}
           />
         ) : q.type === "ORD" ? (
           <OrdreQuestion
@@ -1130,8 +1264,9 @@ export function Evaluation({
             </p>
             {q.options.map((o) => {
               const v = qim[q.id]?.[o.id];
+              const m = marques?.qim?.[o.id];
               return (
-                <div key={o.id} className="proposition">
+                <div key={o.id} className={`proposition${m ? ` proposition--${m.verdict}` : ""}`}>
                   <span className="libelle">{o.texte}</span>
                   <span className="jugement">
                     <label>
@@ -1162,22 +1297,38 @@ export function Evaluation({
                       <span>Je ne sais pas</span>
                     </label>
                   </span>
+                  {m && (
+                    <span className="marque">
+                      <span aria-hidden="true">{m.verdict === "juste" ? "✓ " : m.verdict === "faux" ? "✗ " : "– "}</span>
+                      Vous&nbsp;: {m.vous === true ? "Vrai" : m.vous === false ? "Faux" : m.vous === "nsp" ? "Je ne sais pas" : "sans réponse"}
+                      {" · "}Attendu&nbsp;: {m.attendu ? "Vrai" : "Faux"}
+                    </span>
+                  )}
                 </div>
               );
             })}
           </>
         ) : (
-          q.options.map((o) => (
-            <label key={o.id} className="option">
-              <input
-                type={estUneSeule(q) ? "radio" : "checkbox"}
-                name={q.id}
-                checked={(reponses[q.id] ?? []).includes(o.id)}
-                onChange={() => basculer(q, o.id)}
-              />
-              <span>{o.texte}</span>
-            </label>
-          ))
+          q.options.map((o) => {
+            const m = marques?.options?.[o.id] ?? null;
+            return (
+              <label key={o.id} className={`option${m ? ` option--${m}` : ""}`}>
+                <input
+                  type={estUneSeule(q) ? "radio" : "checkbox"}
+                  name={q.id}
+                  checked={(reponses[q.id] ?? []).includes(o.id)}
+                  onChange={() => basculer(q, o.id)}
+                />
+                <span>{o.texte}</span>
+                {m && (
+                  <span className="marque">
+                    <span aria-hidden="true">{m === "attendue" ? "✓ " : "✗ "}</span>
+                    {m === "attendue" ? "attendue" : "non attendue"}
+                  </span>
+                )}
+              </label>
+            );
+          })
         )}
       </fieldset>
     );
@@ -1292,7 +1443,7 @@ export function Evaluation({
     const correction = corrections[q.id];
     const nbSituation = q.situation ? posees.filter((x) => x.situation?.id === q.situation!.id).length : 0;
     return (
-      <div style={{ paddingBottom: "120px" }}>
+      <div className="passation" ref={refPassation} style={{ paddingBottom: "120px" }}>
         {sousEnsemble?.revoir && (
           <p className="encart">
             À revoir · {posees.length} question{posees.length > 1 ? "s" : ""} ratée{posees.length > 1 ? "s" : ""} : entraînement sur ces
@@ -1302,12 +1453,12 @@ export function Evaluation({
         {rendreVignette(q, nbSituation)}
         {rendreQuestion(q, indexCourant, posees.length, Boolean(correction))}
         {erreur && <p className="encart encart--attention">{erreur}</p>}
-        {correction && rendreCorrection(correction, indexCourant, q)}
+        {correction && rendreCorrection(correction, indexCourant, q, true)}
         <div className="barre-passation">
           <div className="barre-passation-interne">
             <div style={{ flex: "1 1 14rem", minWidth: 0 }}>
               <p className="legende" style={{ margin: "0 0 .25rem" }}>
-                Question {indexCourant + 1} / {posees.length} — {moduleTitre} — entraînement
+                {identifiant ? `${identifiant} · ` : ""}Question {indexCourant + 1} / {posees.length} — {moduleTitre} — entraînement
               </p>
               <PastillesQuestions
                 faites={posees.map((x) => Boolean(corrections[x.id]))}
@@ -1323,10 +1474,9 @@ export function Evaluation({
                 type="button"
                 className="bouton"
                 onClick={() => {
+                  // Le défilement vers la question suivante suit le rendu (E2, effet plus haut).
                   if (indexCourant + 1 >= posees.length) terminerEntrainement();
                   else setIndexCourant(indexCourant + 1);
-                  const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-                  window.scrollTo({ top: 0, behavior: doux ? "smooth" : "auto" });
                 }}
               >
                 {indexCourant + 1 >= posees.length ? "Terminer" : "Question suivante"}
@@ -1376,7 +1526,7 @@ export function Evaluation({
   };
 
   return (
-    <div style={{ paddingBottom: "120px" }}>
+    <div className="passation" ref={refPassation} style={{ paddingBottom: "120px" }}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -1401,7 +1551,7 @@ export function Evaluation({
           <div className="barre-passation-interne">
             <div style={{ flex: "1 1 14rem", minWidth: 0 }}>
               <p className="legende" style={{ margin: "0 0 .25rem" }}>
-                {repondues} / {posees.length} questions renseignées — {moduleTitre}
+                {identifiant ? `${identifiant} · ` : ""}{repondues} / {posees.length} questions renseignées — {moduleTitre}
               </p>
               <PastillesQuestions faites={posees.map(estRenseignee)} libelle="Questions renseignées" />
               <p className="legende" style={{ margin: ".25rem 0 0" }}>
@@ -1430,6 +1580,7 @@ export function Evaluation({
           surCodeTuteur={setCodeTuteur}
           envoi={envoi}
           erreur={erreurRecap}
+          identifiant={identifiant}
         />
       )}
     </div>
