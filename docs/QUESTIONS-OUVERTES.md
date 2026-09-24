@@ -376,6 +376,18 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+70. **Poste partagé : « Quitter » détache-t-il aussi l'agent ?** — posée le
+    24/09/2026 (audit, Z1). « Quitter » ferme la session du code de profil,
+    mais pas le rattachement de l'agent (`lib/auth.ts`, `lib/progression.ts`).
+    L'activité de la personne suivante, sur le même poste, entretient ce
+    rattachement, jusqu'à 4 h sans activité et 12 h au plus. Depuis la
+    question 69, l'identifiant est rappelé au réglage, dans la barre de
+    passation et au récapitulatif. Trois choix :
+    - **a (recommandé)** : « Quitter » détache aussi l'agent.
+    - **b** : comme a, plus « Se détacher » en permanence dans l'en-tête tant
+      qu'un agent est rattaché.
+    - **c** : laisser tel quel ; les rappels de la question 69 suffisent.
+
 69. **Audit ergonomique : par quoi commencer** — posée le 24/09/2026,
     après l'audit du même jour (`docs/AUDIT-ERGONOMIE.md`). Trois choix :
     - **a (recommandé)** : le lot 1 d'abord. Il amène la correction
