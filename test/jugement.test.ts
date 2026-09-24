@@ -8,7 +8,7 @@ import {
   refusEmissionEntrainement,
   verdictDuJugement,
 } from "../content/jugement";
-import { libelleBareme, libelleFormat, lireModeReponse, noterQuestion, sanitizeQuestion, type Question } from "../content/types";
+import { annoncePlusieurs, libelleBareme, libelleFormat, lireModeReponse, noterQuestion, sanitizeQuestion, type Question } from "../content/types";
 import { BAREME_DEFAUT } from "../content/bareme";
 import { normaliserEtatEnCours, questionsRenseignees } from "../content/en-cours";
 import { construireRapport, type ResultatRapport } from "../lib/rapport";
@@ -102,6 +102,18 @@ test("format et barème annoncés à l'apprenant", () => {
   assert.match(libelleBareme(schema("decouvrir")), /chaque cache compte pour sa part/);
   assert.match(libelleBareme(schema("decouvrir")), /cache non jugé/);
   assert.match(libelleBareme(schema("ecrire")), /légende vide/);
+});
+
+// ── « Plusieurs » quelle que soit la casse (question 68, choix a, 24/09/2026)
+
+test("un QCM annonce plusieurs réponses quelle que soit la casse de « plusieurs »", () => {
+  assert.equal(annoncePlusieurs("Plusieurs réponses possibles : lesquelles ?"), true);
+  assert.equal(annoncePlusieurs("Lesquelles ? (PLUSIEURS RÉPONSES)"), true);
+  assert.equal(annoncePlusieurs("Lesquelles ? (plusieurs réponses)"), true);
+  assert.equal(annoncePlusieurs("Laquelle est exacte ?"), false);
+  const qcm = (enonce: string): Question => ({ id: "q1", enonce, type: "QCM", options: [], bonnesReponses: [], justification: "" });
+  assert.equal(libelleFormat(qcm("Plusieurs réponses : lesquelles ?")), "QCM — plusieurs réponses");
+  assert.equal(libelleFormat(qcm("Laquelle est exacte ?")), "QCM — une seule réponse");
 });
 
 test("un résultat d'entraînement ne s'émet pas ; un résultat ancien, sans mode, reste émissible", () => {

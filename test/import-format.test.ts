@@ -82,6 +82,13 @@ test("alerte : format contredit par la consigne, dans les deux sens", () => {
   );
 });
 
+test("« Plusieurs » en majuscule suffit au dépôt, comme à l'affichage (question 68, choix a)", () => {
+  assert.deepEqual(
+    alertesFormat({ format: "QCM", enonce: "Plusieurs réponses : lesquelles ?", options: [{ vrai: true }, { vrai: true }], corrigeDetecte: true }),
+    [],
+  );
+});
+
 test("alertes propres au QCM : aucune vraie, plusieurs vraies sans « plusieurs », (V)/(F) sur un QCM à rebours", () => {
   assert.deepEqual(
     alertesFormat({ format: "QCM", enonce: "Laquelle ?", options: [{ vrai: false }, { vrai: false }], corrigeDetecte: true }),

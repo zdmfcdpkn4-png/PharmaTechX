@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
 import { ORDRE_NIVEAUX, bilanTirage, repartir, tirer, type ContexteTirage, type Difficulte } from "@/content/tirage";
-import { libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
+import { annoncePlusieurs, libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
 import { LIBELLES_PLAFOND, libelleBande, plafondDuNiveau, type Bareme } from "@/content/bareme";
 import { libelleCible, libelleEcartees } from "@/content/cible";
@@ -82,9 +82,9 @@ function annonceEcartees(remplacees: number, nonRemplacees: number): string {
   return `${tete} : ${remplacees} remplacée${s(remplacees)} par une question du même niveau, ${nonRemplacees} sans remplaçante faute d'autre question de ce niveau.`;
 }
 
-/** QCM à réponse unique : l'énoncé ne mentionne pas « plusieurs ». */
+/** QCM à réponse unique : l'énoncé ne mentionne pas « plusieurs », quelle que soit la casse. */
 function estUneSeule(q: QuestionPublique): boolean {
-  return q.type === "QCM" && !q.enonce.includes("plusieurs");
+  return q.type === "QCM" && !annoncePlusieurs(q.enonce);
 }
 
 // Tirage et règle des questions réservées : `content/tirage.ts` (testé à part).

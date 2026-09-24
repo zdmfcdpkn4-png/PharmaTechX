@@ -639,6 +639,18 @@ function noterTrous(q: Question, trous: Record<string, string>, bareme: Bareme):
   return { note, discordances: faux + sans, nonJugees: sans, max: format.max };
 }
 
+/**
+ * Un QCM annonce plusieurs réponses quand son énoncé contient « plusieurs »,
+ * quelle que soit la casse (question 68, choix a, 24/09/2026). Seul le
+ * contrôle du dépôt ignorait la casse : un énoncé « Plusieurs réponses… »
+ * passait le dépôt, puis s'affichait en boutons radio — une seule réponse
+ * cochable, une question impossible à réussir. Une seule règle, désormais,
+ * pour l'affichage, le libellé du format et le contrôle du dépôt.
+ */
+export function annoncePlusieurs(enonce: string): boolean {
+  return /plusieurs/i.test(enonce);
+}
+
 /** Libellé lisible d'un format, tel qu'il s'annonce à l'apprenant. */
 export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse">): string {
   if (q.type === "QIM") return "QIM — barème à la discordance";
@@ -650,7 +662,7 @@ export function libelleFormat(q: Pick<Question, "type" | "enonce" | "modeReponse
       ? "Schéma — légendes à attribuer"
       : "Schéma — légendes à écrire";
   }
-  return q.enonce.includes("plusieurs")
+  return annoncePlusieurs(q.enonce)
     ? "QCM — plusieurs réponses"
     : "QCM — une seule réponse";
 }

@@ -389,7 +389,10 @@ telle. Ordre : ce qui change le déploiement en premier.
     recommandé) ; remplacer le mot par un choix explicite « une réponse /
     plusieurs réponses » sur chaque QCM (b) ; laisser tel quel, la consigne
     d'écrire « plusieurs » en minuscules étant rappelée à l'éditeur et au
-    prompt (c).
+    prompt (c). Tranchée le même jour (choix a, réponse « À ») et mise en
+    œuvre : une seule règle, `annoncePlusieurs` (`content/types.ts`), pour
+    l'affichage, le libellé du format et le contrôle du dépôt. Détail dans
+    `DECISIONS.md`.
 
 67. **Trois écarts relevés en marge des questions 61 et 66** — constatés le
     23/09/2026, non corrigés. (1) Pilotage, « Par critère » : le lien d'un

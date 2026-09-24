@@ -3722,6 +3722,50 @@ supprime. Réponse « C » : aucun n'est corrigé pour l'instant. Rien n'a été
 modifié ; ils restent décrits dans les sections « Liens vers les modules »
 et « Accès rapide en tiroir, à toutes les tailles ».
 
+## « Plusieurs » quelle que soit la casse (24/09/2026, question 68, choix a)
+
+**Constaté** (23/09/2026). Trois endroits lisaient le mot « plusieurs » dans
+l'énoncé d'un QCM :
+- le contrôle du dépôt, sans tenir compte de la casse (`lib/import-format.ts`) ;
+- l'affichage de l'évaluation (`estUneSeule`, `components/Evaluation.tsx`) et
+  le libellé du format (`libelleFormat`, `content/types.ts`), en minuscules
+  seulement.
+
+Un QCM à plusieurs réponses vraies dont l'énoncé commence par « Plusieurs
+réponses… » passait donc le dépôt sans alerte, puis s'affichait en boutons
+radio : une seule réponse cochable, une question impossible à réussir, en
+évaluation d'habilitation comme en entraînement.
+
+**Tranché.** Question 68, **a** (réponse « À ») : une seule règle, insensible
+à la casse. Écartés : un choix explicite « une réponse / plusieurs
+réponses » sur chaque QCM (b) ; laisser tel quel (c).
+
+**Ce qui est fait.** `annoncePlusieurs` (`content/types.ts`) reconnaît
+« plusieurs » quelle que soit la casse ; l'affichage, le libellé du format et
+le contrôle du dépôt l'appellent tous trois. Deux tests : la règle et le
+libellé (`test/jugement.test.ts`), le dépôt sans alerte
+(`test/import-format.test.ts`).
+
+**Limites.**
+- La règle reste lexicale. Un QCM à plusieurs réponses dont l'énoncé ne
+  contient pas « plusieurs » (« Cochez les réponses exactes ») s'affiche
+  toujours en boutons radio. Le dépôt le signale ; l'éditeur de question ne
+  fait que rappeler la consigne.
+- À l'inverse, un QCM à une seule réponse dont l'énoncé contient
+  « plusieurs » pour une autre raison s'affiche en cases à cocher : la
+  question reste réussissable, il suffit de cocher sa seule bonne réponse.
+- `[à vérifier]` en ligne, faute d'accès à la base : si un QCM « Plusieurs… »
+  à plusieurs réponses vraies a été tiré avant cette correction, l'apprenant
+  n'a pu en cocher qu'une, et les rapports déjà émis le gardent — ils sont
+  scellés. Le site étant en phase d'essai, ces rapports portent la mention
+  correspondante.
+
+**Vérifié le 24/09/2026.** `npm run verifier` (328 tests, 2 de plus),
+`npm run build`, deux passes de bout en bout de 91 étapes, sans erreur de
+page ni erreur serveur. La règle elle-même n'est couverte que par les deux
+tests purs : aucune étape de bout en bout ne tire de QCM « Plusieurs… » ;
+les deux passes vérifient l'absence de régression.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

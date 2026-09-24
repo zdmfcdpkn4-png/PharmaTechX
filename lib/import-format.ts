@@ -23,6 +23,8 @@
  * Fichier pur, lu par l'analyseur du dépôt et par son aperçu.
  */
 
+import { annoncePlusieurs } from "@/content/types";
+
 export type FormatChoix = "QCM" | "QIM";
 
 export interface IndiceFormat {
@@ -125,7 +127,7 @@ export function alertesFormat(q: QuestionAJuger): string[] {
   if (q.format === "QCM") {
     const vraies = q.options.filter((o) => o.vrai).length;
     if (vraies === 0 && q.corrigeDetecte) out.push("QCM sans aucune proposition vraie : vérifier le corrigé.");
-    if (vraies > 1 && !/plusieurs/i.test(q.enonce)) {
+    if (vraies > 1 && !annoncePlusieurs(q.enonce)) {
       out.push("Plusieurs réponses vraies : l'énoncé devrait mentionner « plusieurs réponses ».");
     }
     // Un « (F) » posé par un humain sur une proposition fausse veut dire
