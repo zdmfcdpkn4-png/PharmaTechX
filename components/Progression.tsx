@@ -123,7 +123,7 @@ export async function Progression({
           )}
           <form action={actionDetacher} className="actions">
             <button type="submit" className="bouton bouton--compact bouton--secondaire">Se détacher</button>
-            <span className="legende">Sur un poste partagé, détachez-vous en partant : le rattachement tombe seul après quatre heures sans activité, douze heures au plus.</span>
+            <span className="legende">Sur un poste partagé, détachez-vous en partant : « Quitter » le fait aussi. Sinon, le rattachement tombe seul après quatre heures sans activité, douze heures au plus.</span>
           </form>
         </section>
       </section>

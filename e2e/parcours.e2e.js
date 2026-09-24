@@ -2632,6 +2632,23 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("text=interrompue").count(), 0, "session en cours effacée après correction");
   ok("évaluation interrompue : sauvegardée sous l'identifiant, reprise avec la réponse conservée, effacée après correction");
 
+  // 12h bis. poste partagé (question 70, choix a) : « Quitter » ferme la session et détache l'agent ;
+  //          l'agent suivant ne trouve plus l'identifiant du précédent. L'agent se rattache ensuite
+  //          avec son code personnel, comme au retour.
+  await page.goto(BASE + "/#progression");
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  await rebrancher(codeAdmin);
+  await page.goto(BASE + "/#progression");
+  await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  assert.equal(await page.locator("#progression code:has-text('AG-002')").count(), 0, "rattachement levé par « Quitter »");
+  assert.equal(await page.locator("a[href='/#progression']:has-text('AG-002')").count(), 0, "volet : aucun identifiant rattaché");
+  await page.fill("#progression input[name=identifiant]", "AG-002");
+  await page.fill("#progression input[name=code]", "1234");
+  await page.click("#progression button:has-text('Reprendre ma progression')");
+  await page.waitForURL(/progression=ok/);
+  await page.waitForSelector("#progression code:has-text('AG-002')");
+  ok("poste partagé : « Quitter » détache l'agent, qui se rattache au retour avec son code personnel");
+
   // 12i. tutorat : traces de l'agent, purge confirmée, code réinitialisé, détachement, nouveau code exigé
   await page.goto(BASE + "/admin/personnel");
   const ligneAg2 = page.locator("tr:has(code:has-text('AG-002'))");

@@ -388,6 +388,10 @@ telle. Ordre : ce qui change le déploiement en premier.
       qu'un agent est rattaché.
     - **c** : laisser tel quel ; les rappels de la question 69 suffisent.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre :
+    « Quitter » lève le rattachement après la session. Détail dans
+    `DECISIONS.md`.
+
 69. **Audit ergonomique : par quoi commencer** — posée le 24/09/2026,
     après l'audit du même jour (`docs/AUDIT-ERGONOMIE.md`). Trois choix :
     - **a (recommandé)** : le lot 1 d'abord. Il amène la correction

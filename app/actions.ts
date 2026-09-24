@@ -25,6 +25,7 @@ import {
   sessionRequise,
 } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
+import { detacher } from "@/lib/progression";
 import { moduleExiste, modulesDuParcours } from "@/content/store";
 import { lireOrdreSaisi } from "@/content/ordres";
 import { lireIdProgramme } from "@/content/programmes";
@@ -74,6 +75,11 @@ export async function actionDeconnexion() {
   const qui = s?.essai ?? s;
   if (qui) await journaliser({ role: qui.role, libelle: qui.libelle }, "deconnexion");
   await fermerSession();
+  // « Quitter » détache aussi l'agent (question 70, choix a) : le code d'accès
+  // est commun à un profil de poste, et sur un poste partagé le rattachement
+  // survivait à la sortie. L'agent suivant héritait alors de l'identifiant du
+  // précédent.
+  await detacher();
   redirect("/connexion");
 }
 

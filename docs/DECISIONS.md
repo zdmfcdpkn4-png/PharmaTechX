@@ -3867,6 +3867,49 @@ page ni erreur serveur. Assertions ajoutées :
 - énoncé non répété ;
 - identifiant rappelé au réglage, dans la barre et au récapitulatif.
 
+## « Quitter » détache aussi l'agent (24/09/2026, question 70, choix a)
+
+**Constaté (audit, Z1).** Le code d'accès est commun à un profil de poste ;
+chaque agent se rattache ensuite avec son identifiant et son code personnel.
+« Quitter » fermait la session du code, mais pas le rattachement. Sur le même
+poste, l'activité de la personne suivante entretenait ce rattachement, jusqu'à
+quatre heures sans activité et douze heures au plus. La décision du 23/09 sur
+la déconnexion après quatre heures l'avait noté comme un « comportement
+antérieur, inchangé », sans le trancher.
+
+**Tranché (question 70, choix a, réponse « À »).** « Quitter » détache aussi
+l'agent.
+
+**Écartés.**
+- **b** : ajouter en plus un « Se détacher » permanent dans l'en-tête. Il
+  couvrait l'agent qui part sans fermer la session du profil. Mais l'en-tête
+  risquait de passer sur deux lignes sur iPad en portrait, et deux boutons de
+  sortie voisins se confondent au gant.
+- **c** : laisser tel quel, en comptant sur les rappels de la question 69. Un
+  rappel ne protège que celui qui le lit.
+
+**Ce qui est fait.**
+- `actionDeconnexion` (`app/actions.ts`) lève le rattachement après la
+  session, mode test compris. Un rattachement laissé sur le poste par un
+  apprenant tombe donc aussi quand le testeur quitte.
+- Le texte d'aide de « Ma progression » dit : « “Quitter” le fait aussi ».
+- La fiche RGPD, rubrique des mesures de sécurité, mentionne que le cookie est
+  levé à la sortie.
+
+**Limites.**
+- **L'agent qui part sans « Quitter »** reste rattaché, s'il laisse la session
+  du profil ouverte pour le suivant. C'est l'écart que couvrait b, écarté. Les
+  rappels de la question 69 (réglage, barre, récapitulatif) restent la parade.
+- **L'agent qui revient après « Quitter »** ressaisit le code du profil, puis
+  son identifiant et son code personnel.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 331 tests.
+- `npm run build`.
+- Deux passes de bout en bout de 93 étapes, sans erreur de page ni erreur
+  serveur. L'étape ajoutée vérifie que « Quitter » lève le rattachement, le
+  volet compris, et que l'agent se rattache au retour avec son code personnel.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
