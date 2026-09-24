@@ -376,6 +376,30 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+71. **Réponses des questions réservées montrées après l'évaluation** — posée
+    le 24/09/2026 (audit, F1).
+
+    La question 18 (choix c) a créé les questions réservées pour qu'un agent
+    ne puisse pas apprendre la banque avant l'évaluation. Or ces réponses lui
+    sont données après :
+    - le résultat affiche, pour chacune, la réponse attendue, la
+      justification et la source (`app/api/evaluation/route.ts`,
+      `components/Evaluation.tsx`) ;
+    - le rapport que l'apprenant télécharge depuis l'accueil les reprend
+      (`lib/rapport.ts`).
+
+    Tirées en priorité, ces questions reviennent à la tentative suivante.
+    Trois choix :
+    - **a (recommandé)** : l'apprenant ne voit plus, pour une réservée, ni la
+      réponse attendue ni la justification. Cela vaut à l'écran et sur le
+      rapport téléchargé ; il garde « juste » ou « faux ». Le rapport émis,
+      que le pharmacien vise et imprime depuis l'administration, reste
+      complet.
+    - **b** : les réponses restent visibles, mais le tirage suivant de
+      l'agent rattaché écarte les réservées qu'il a déjà vues, quand la banque
+      en compte assez.
+    - **c** : a et b.
+
 70. **Poste partagé : « Quitter » détache-t-il aussi l'agent ?** — posée le
     24/09/2026 (audit, Z1). « Quitter » ferme la session du code de profil,
     mais pas le rattachement de l'agent (`lib/auth.ts`, `lib/progression.ts`).
