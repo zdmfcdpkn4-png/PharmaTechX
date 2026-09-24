@@ -376,6 +376,21 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+73. **Après le lot 1 de l'audit : la suite** — posée le 24/09/2026. Le lot 1
+    est fait : correction à l'écran (E1), question dégagée de l'en-tête
+    (E2), identifiant rappelé (Z1), pincement des schémas (Z2), réservées
+    déjà vues (F1, question 71). L'audit place ensuite le test avec des
+    agents (lot 2, § 5), puis le temps des formateurs (lot 3). Trois choix :
+    - **a (recommandé)** : le lot 3 maintenant — relire et valider une
+      question depuis un seul écran (D1), alertes du dépôt conservées (D2),
+      relecture dépôt par dépôt (D3), contrôles de rédaction (D4) —, avec
+      les trois défauts relevés en passant (§ 4), qui touchent les mêmes
+      écrans. Le test avec trois à cinq agents s'organise en parallèle : le
+      lot 3 ne change pas les écrans des apprenants.
+    - **b** : l'ordre de l'audit : rien de plus avant le test avec les
+      agents.
+    - **c** : les trois défauts relevés en passant seuls, puis le test.
+
 72. **Champs d'une filière sans effet** — posée le 24/09/2026, après l'aide
     ajoutée au Référentiel le même jour. « Blocs de compétence » est
     enregistré, mais aucun écran ni aucun calcul ne le lit : le programme
@@ -389,6 +404,9 @@ telle. Ordre : ce qui change le déploiement en premier.
       comprendrait aussi, par défaut, les modules de ses blocs, sauf réglage
       contraire du module.
     - **c** : laisser tel quel ; l'aide dit que ces champs ne servent pas.
+
+    Tranchée le même jour (choix c, réponse « C ») : rien n'est modifié.
+    Détail dans `DECISIONS.md`.
 
 71. **Réponses des questions réservées montrées après l'évaluation** — posée
     le 24/09/2026 (audit, F1).

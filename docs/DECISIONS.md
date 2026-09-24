@@ -4028,6 +4028,15 @@ rattaché, les réservées qu'il a déjà vues corrigées passent en dernier.
   AG-003, 0 fois sur 20. La correction d'un tel tirage est acceptée, avec
   0 réservée posée sur 1, dont 1 déjà vue.
 
+## Champs d'une filière laissés tels quels (24/09/2026, question 72, choix c)
+
+« Blocs de compétence », que rien ne lit, et « Rang » sur une filière de la
+fiche, sans effet, restent dans les formulaires du Référentiel. Réponse
+« C » : l'aide ajoutée le même jour (« Aide des champs d'une filière », plus
+haut) dit ce qu'ils font et ne font pas. Écartés : les retirer (a,
+recommandé) ; rendre les blocs agissants (b), qui aurait fait décider le
+programme à deux endroits. Rien n'a été modifié.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
