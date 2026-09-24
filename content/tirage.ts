@@ -26,6 +26,12 @@ import type { NiveauQuestion } from "./types";
  *    composition par niveau. Les places qu'un niveau ne peut remplir vont
  *    aux questions sans niveau, puis aux autres niveaux admis.
  *
+ * Étiquettes de profil (question 74, choix c, 24/09/2026) : une question
+ * étiquetée de filières ou de niveaux d'habilitation n'est tirée que pour un
+ * profil qu'elles admettent (`admiseAuProfil`). Une dimension du profil non
+ * précisée ne limite rien, comme un niveau cible non précisé n'impose aucun
+ * plafond.
+ *
  * Le tirage se fait dans le navigateur ; le serveur vérifie sa conformité à
  * la correction (`tirageConforme`). Aucune dépendance à Next ni à la base :
  * testable tel quel.
@@ -47,6 +53,22 @@ const NOM_NIVEAU: Record<NiveauQuestion, string> = {
 /** Part de chaque niveau de question dans un tirage, en pourcentage. */
 export type Repartition = Record<NiveauQuestion, number>;
 
+/**
+ * Étiquettes de profil d'une question (question 74, choix c) : filières et
+ * niveaux d'habilitation auxquels son tirage est limité. Une liste vide ne
+ * limite rien — même lecture que le réglage d'un module.
+ */
+export interface EtiquettesProfil {
+  filieres: readonly string[];
+  niveaux: readonly string[];
+}
+
+/** Profil pour lequel on tire : filière et niveau cible ; `null` : non précisé. */
+export interface ProfilTirage {
+  filiere: string | null;
+  niveau: string | null;
+}
+
 export interface QuestionTirable {
   id: string;
   eliminatoire?: boolean;
@@ -54,6 +76,8 @@ export interface QuestionTirable {
   obligatoire?: boolean;
   niveauQuestion?: NiveauQuestion | null;
   situation?: { id: string } | null;
+  /** Étiquettes de profil (question 74) ; absentes : posée à tous les profils. */
+  profils?: EtiquettesProfil | null;
 }
 
 /** Ce qui règle un tirage, la banque mise à part. */
@@ -70,6 +94,8 @@ export interface ContexteTirage {
   signalees: readonly string[];
   /** Réservées déjà vues corrigées par l'agent rattaché (question 71, choix b) : tirées en dernier. */
   dejaVues?: readonly string[];
+  /** Profil de l'évaluation (question 74) : filière et niveau cible ; absent : aucune limite de profil. */
+  profil?: ProfilTirage;
 }
 
 /** Les réservées n'entrent que dans un tirage qui peut conclure, en mode évaluation. */
@@ -97,9 +123,28 @@ export function toujoursPosee(q: QuestionTirable, c: Pick<ContexteTirage, "mode"
   return q.eliminatoire === true || (q.obligatoire === true && obligatoiresForcees(c.mode, c.difficulte));
 }
 
-/** Plafond et règle des réservées ; le signalement se juge à part. */
+/**
+ * Les étiquettes admettent ce profil (question 74, choix c) : sans
+ * étiquette, toujours ; sinon la filière parmi les filières cochées et le
+ * niveau parmi les niveaux cochés, une liste vide ou une dimension du profil
+ * non précisée ne limitant rien. Les codes de niveau se comparent sans
+ * égard à la casse.
+ */
+export function admiseAuProfil(e: EtiquettesProfil | null | undefined, p: ProfilTirage | null | undefined): boolean {
+  if (!e) return true;
+  const filiere = e.filieres.length === 0 || !p?.filiere || e.filieres.includes(p.filiere);
+  const niveau =
+    e.niveaux.length === 0 || !p?.niveau || e.niveaux.some((n) => n.toUpperCase() === p.niveau!.toUpperCase());
+  return filiere && niveau;
+}
+
+/** Plafond, profil et règle des réservées ; le signalement se juge à part. */
 function admiseHorsSignalement(q: QuestionTirable, c: ContexteTirage): boolean {
-  return sousPlafond(niveauDe(q), c.plafond) && (reserveesAdmises(c.mode, c.difficulte) || !q.reservee);
+  return (
+    sousPlafond(niveauDe(q), c.plafond) &&
+    admiseAuProfil(q.profils, c.profil) &&
+    (reserveesAdmises(c.mode, c.difficulte) || !q.reservee)
+  );
 }
 
 /** Les questions admises au tirage, dans l'ordre de la banque. */
@@ -234,6 +279,8 @@ export interface BilanTirage {
   signalees: number;
   /** Au-dessus du plafond de niveau. */
   auDessus: number;
+  /** Sous le plafond, mais étiquetées pour d'autres profils (question 74). */
+  horsProfil: number;
   /** Obligatoires posées (éliminatoires non comprises). */
   obligatoires: number;
   /** Questions toujours posées qu'un signalement écarte et qu'une question du même niveau remplace… */
@@ -263,6 +310,7 @@ export function bilanTirage(banque: readonly QuestionTirable[], c: ContexteTirag
     admises: admises.length,
     signalees: banque.filter((q) => signalees.has(q.id) && admiseHorsSignalement(q, c)).length,
     auDessus: banque.filter((q) => !sousPlafond(niveauDe(q), c.plafond)).length,
+    horsProfil: banque.filter((q) => sousPlafond(niveauDe(q), c.plafond) && !admiseAuProfil(q.profils, c.profil)).length,
     obligatoires: admises.filter((q) => q.obligatoire && !q.eliminatoire && toujoursPosee(q, c)).length,
     remplacees,
     nonRemplacees,
@@ -278,10 +326,11 @@ const s = (n: number) => (n > 1 ? "s" : "");
  * module à cet instant :
  *  - entraînement ou Découverte : aucune question réservée ; l'entraînement,
  *    corrigé question par question, ne se vérifie pas plus avant ;
- *  - évaluation : aucune question au-dessus du plafond ; toutes les questions
- *    toujours posées de la banque admise ; les réservées en priorité, niveau
- *    par niveau quand une répartition s'applique ; chaque niveau au moins à
- *    sa part, ou à ce que la banque admise en offre.
+ *  - évaluation : aucune question au-dessus du plafond, ni étiquetée pour un
+ *    autre profil (question 74) ; toutes les questions toujours posées de la
+ *    banque admise ; les réservées en priorité, niveau par niveau quand une
+ *    répartition s'applique ; chaque niveau au moins à sa part, ou à ce que
+ *    la banque admise en offre.
  *
  * Réservées déjà vues (question 71, choix b) : le nombre de réservées exigé
  * se compte sur celles que l'agent n'a pas vues, `c.dejaVues` étant ce que
@@ -315,6 +364,14 @@ export function tirageConforme(
     return {
       ok: false,
       raison: `Tirage non conforme : ${auDessus} question${s(auDessus)} au-dessus du niveau cible. Recommencez l'évaluation.`,
+    };
+  }
+
+  const horsProfil = posees.filter((q) => !admiseAuProfil(q.profils, c.profil)).length;
+  if (horsProfil > 0) {
+    return {
+      ok: false,
+      raison: `Tirage non conforme : ${horsProfil} question${s(horsProfil)} étiquetée${s(horsProfil)} pour d'autres profils. Recommencez l'évaluation.`,
     };
   }
 

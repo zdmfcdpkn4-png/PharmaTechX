@@ -110,12 +110,15 @@ export function filtrerParcours(parcours: unknown): TypeParcours[] {
   return p.length > 0 ? [...new Set(p)] : ["integration", "maintien"];
 }
 
+/** Question de sa banque : du module, ou aussi posée dans le module (question 74). */
+const POSEE_ICI = `(q.module_id = m.id OR EXISTS (SELECT 1 FROM questions_modules qm WHERE qm.question_id = q.id AND qm.module_id = m.id))`;
+
 const COLONNES = `
   m.id, m.titre, m.objectif, m.presentation, m.critere_id, m.filieres, m.niveaux, m.parcours,
   m.seuil, m.duree_minutes, m.statut, m.cree_par, m.cree_le::text, m.edite_le::text,
   m.publie_le::text, m.version, m.badge,
-  (SELECT COUNT(*)::int FROM questions q WHERE q.module_id = m.id AND q.statut <> 'retire') AS nb_questions,
-  (SELECT COUNT(*)::int FROM questions q WHERE q.module_id = m.id AND q.statut = 'valide') AS nb_valides,
+  (SELECT COUNT(*)::int FROM questions q WHERE ${POSEE_ICI} AND q.statut <> 'retire') AS nb_questions,
+  (SELECT COUNT(*)::int FROM questions q WHERE ${POSEE_ICI} AND q.statut = 'valide') AS nb_valides,
   (SELECT COUNT(*)::int FROM depots d WHERE d.module_id = m.id) AS nb_documents`;
 
 export async function listerModulesDeposes(statut?: StatutModule): Promise<LigneModuleDepose[]> {
@@ -169,10 +172,12 @@ export async function supprimerModuleDepose(id: string): Promise<{ ok: true } | 
   if (l.nb_questions > 0 || l.nb_documents > 0) {
     return {
       ok: false,
-      raison: `Ce module porte encore ${l.nb_questions} question(s) et ${l.nb_documents} document(s) : retirez-le, ou déplacez-les d'abord.`,
+      raison: `Ce module porte encore ${l.nb_questions} question(s) et ${l.nb_documents} document(s) : retirez-le, ou déplacez-les d'abord. Une question seulement « aussi posée » ici se décoche dans son éditeur.`,
     };
   }
   await sql`DELETE FROM modules_deposes WHERE id = ${id}`;
+  // Rattachements de questions retirées : sans module, ils ne mènent plus nulle part (question 74).
+  await sql`DELETE FROM questions_modules WHERE module_id = ${id}`;
   return { ok: true };
 }
 

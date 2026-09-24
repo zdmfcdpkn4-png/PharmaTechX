@@ -27,6 +27,7 @@ import {
   noterElements,
   type Bareme,
 } from "./bareme";
+import type { EtiquettesProfil } from "./tirage";
 export type { Legende, Repere };
 export type { Bareme } from "./bareme";
 
@@ -298,6 +299,14 @@ export interface Question {
   obligatoire?: boolean;
   /** Initial, intermédiaire ou avancé ; `null` tant qu'il n'est pas renseigné. */
   niveauQuestion?: NiveauQuestion | null;
+  /**
+   * Étiquettes de profil (question 74, choix c, 24/09/2026) : filières et
+   * niveaux d'habilitation auxquels le tirage limite la question ; absentes :
+   * posée à tous les profils. Elles ne disent rien de la réponse et partent
+   * avec la question publique, pour que le tirage fait au navigateur les
+   * respecte.
+   */
+  profils?: EtiquettesProfil;
   references?: Reference[];
   /** Schéma à compléter : les légendes à écrire, avec leur place sur l'image. */
   legendes?: Legende[];

@@ -1,10 +1,19 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import { Compte, cumuler, type Comptes } from "@/components/ArbreBanque";
+import { Compte, cumuler, type Comptes, type Cumul } from "@/components/ArbreBanque";
 import { ancreDe, estOuvert, type BrancheFiliere, type BrancheModule, type EtatPlis } from "@/content/arbre-banque";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { CodeActeur } from "@/content/quatre-yeux";
-import { ActionsQuestion, ContenuQuestion, EtiquettesQuestion, TraceQuestion } from "./question-banque";
+import { etiquettesProfil } from "@/content/rattachement-question";
+import { admiseAuProfil, type ProfilTirage } from "@/content/tirage";
+import {
+  ActionsQuestion,
+  ContenuQuestion,
+  EtiquettesQuestion,
+  RattachementQuestion,
+  TraceQuestion,
+  type LecturesRattachement,
+} from "./question-banque";
 
 /**
  * Vue « Arborescence » de la banque (question 64, choix b, 23/09/2026) :
@@ -16,10 +25,13 @@ import { ActionsQuestion, ContenuQuestion, EtiquettesQuestion, TraceQuestion } f
  */
 
 interface Contexte {
-  /** Questions retenues par les filtres, par module. */
+  /** Questions retenues par les filtres, sous chaque module où elles sont posées (question 74). */
   parModule: Map<string, LigneQuestion[]>;
   /** Couverture de la banque entière, comme la vue Liste : le filtre ne la change pas. */
   comptes: Comptes;
+  /** Cumul d'une branche, chaque question une fois (question 74). */
+  cumul: Cumul;
+  lectures: LecturesRattachement;
   signales: Record<string, number>;
   session: CodeActeur;
   etat: EtatPlis;
@@ -43,20 +55,23 @@ function Affichees({ ids, ctx }: { ids: string[]; ctx: Contexte }) {
   return <span className="legende arbo-affichees">{pluriel(n, "question affichée", "questions affichées")}</span>;
 }
 
-function QuestionArbre({ q, bm, ctx }: { q: LigneQuestion; bm: BrancheModule; ctx: Contexte }) {
+function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheModule; profil: ProfilTirage; ctx: Contexte }) {
   const chemin = `${bm.chemin}/${encodeURIComponent(q.id)}`;
   const retour = ctx.adresse(chemin);
+  // Étiquettes de profil (question 74) : sous une branche qu'elles excluent, la question n'est pas tirée.
+  const horsProfil = !admiseAuProfil(etiquettesProfil(q), profil);
   return (
     <li>
       <details id={ancreDe(chemin)} className="arbo-noeud arbo-question" open={estOuvert(chemin, 4, ctx.etat)}>
         <summary>
-          <EtiquettesQuestion q={q} signalements={ctx.signales[q.id] ?? 0} />
+          <EtiquettesQuestion q={q} signalements={ctx.signales[q.id] ?? 0} ici={bm.module.id} horsProfil={horsProfil} />
           <span className="arbo-enonce">{q.enonce}</span>
         </summary>
         <div className="arbo-corps">
           <p className="arbo-trace">
             <TraceQuestion q={q} />
           </p>
+          <RattachementQuestion q={q} lectures={ctx.lectures} ici={bm.module.id} />
           <ContenuQuestion q={q} />
           <ActionsQuestion
             q={q}
@@ -71,7 +86,7 @@ function QuestionArbre({ q, bm, ctx }: { q: LigneQuestion; bm: BrancheModule; ct
   );
 }
 
-function ModuleArbre({ bm, ctx }: { bm: BrancheModule; ctx: Contexte }) {
+function ModuleArbre({ bm, profil, ctx }: { bm: BrancheModule; profil: ProfilTirage; ctx: Contexte }) {
   const m = bm.module;
   const questions = ctx.parModule.get(m.id) ?? [];
   const c = ctx.comptes[m.id] ?? AUCUNE;
@@ -103,7 +118,7 @@ function ModuleArbre({ bm, ctx }: { bm: BrancheModule; ctx: Contexte }) {
           ) : (
             <ul className="liste-nue">
               {questions.map((q) => (
-                <QuestionArbre key={q.id} q={q} bm={bm} ctx={ctx} />
+                <QuestionArbre key={q.id} q={q} bm={bm} profil={profil} ctx={ctx} />
               ))}
             </ul>
           )}
@@ -121,7 +136,7 @@ function FiliereArbre({ f, ctx }: { f: BrancheFiliere; ctx: Contexte }) {
           <Badge nom={f.badge} />
           <span className="arbre-titre">{f.libelle}</span>
           <Affichees ids={f.modules.map((m) => m.id)} ctx={ctx} />
-          <Compte c={cumuler(f.modules, ctx.comptes)} modules={f.modules.length} />
+          <Compte c={ctx.cumul(f.modules)} modules={f.modules.length} />
         </summary>
         <ul className="liste-nue arbo-enfants">
           {f.niveaux.map((n) => (
@@ -137,11 +152,11 @@ function FiliereArbre({ f, ctx }: { f: BrancheFiliere; ctx: Contexte }) {
                     </>
                   )}
                   <Affichees ids={n.modules.map((bm) => bm.module.id)} ctx={ctx} />
-                  <Compte c={cumuler(n.modules.map((bm) => bm.module), ctx.comptes)} modules={n.modules.length} />
+                  <Compte c={ctx.cumul(n.modules.map((bm) => bm.module))} modules={n.modules.length} />
                 </summary>
                 <ul className="liste-nue arbo-enfants">
                   {n.modules.map((bm) => (
-                    <ModuleArbre key={bm.chemin} bm={bm} ctx={ctx} />
+                    <ModuleArbre key={bm.chemin} bm={bm} profil={{ filiere: f.filiere, niveau: n.code }} ctx={ctx} />
                   ))}
                 </ul>
               </details>
@@ -157,6 +172,8 @@ export function ArborescenceBanque({
   arbre,
   parModule,
   comptes,
+  cumul = (liste) => cumuler(liste, comptes),
+  lectures,
   signales,
   session,
   etat,
@@ -166,6 +183,8 @@ export function ArborescenceBanque({
   arbre: BrancheFiliere[];
   parModule: Map<string, LigneQuestion[]>;
   comptes: Comptes;
+  cumul?: Cumul;
+  lectures: LecturesRattachement;
   signales: Record<string, number>;
   session: CodeActeur;
   etat: EtatPlis;
@@ -175,6 +194,8 @@ export function ArborescenceBanque({
   const ctx: Contexte = {
     parModule,
     comptes,
+    cumul,
+    lectures,
     signales,
     session,
     etat,
@@ -199,12 +220,13 @@ export function ArborescenceBanque({
           Arborescence de la banque
         </h2>
         <span className="compte">
-          <Compte c={cumuler(distincts, comptes)} modules={distincts.length} />
+          <Compte c={cumul(distincts)} modules={distincts.length} />
         </span>
       </div>
       <p className="legende">
         Filière, puis niveau, puis module, puis question. Un module rattaché à deux niveaux figure sous chacun, avec ses
-        questions. Les modules sans question apparaissent en grisé.
+        questions ; une question posée dans plusieurs modules figure sous chacun d&apos;eux. Les modules sans question
+        apparaissent en grisé.
       </p>
       <p className="arbo-plis">
         <Link href={lienPlis("tout")}>Tout déplier</Link>

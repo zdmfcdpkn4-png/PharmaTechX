@@ -9,7 +9,10 @@ import { texteDocx } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, type IndexModules } from "@/lib/import-module";
 import { schemaPret, type Legende } from "@/content/schema";
-import { moduleExiste } from "@/content/store";
+import { getTousModulesAvecDeposes, moduleExiste } from "@/content/store";
+import { blocsCompetence } from "@/content/habilitation";
+import { identifiantsConnus } from "@/content/referentiel-db";
+import { lireBlocs, lireIdentifiants, modulesDeLaQuestion } from "@/content/rattachement-question";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { retourBanque } from "@/content/arbre-banque";
 import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
@@ -183,6 +186,21 @@ export async function actionEnregistrerQuestion(
     options = lues;
   }
 
+  // Question 74 (choix c) : autres modules, blocs et profils — seuls les identifiants connus sont gardés.
+  const [tousModules, connus] = await Promise.all([getTousModulesAvecDeposes(), identifiantsConnus()]);
+  const modulesConnus = new Set(tousModules.map((m) => m.id));
+  const aussiDans = lireIdentifiants(formData.getAll("aussiDans"))
+    .filter((m) => modulesConnus.has(m) && m !== moduleId)
+    .slice(0, 80);
+  const numerosBlocs = new Set(blocsCompetence.map((b) => b.numero));
+  const blocs = lireBlocs(formData.getAll("blocs")).filter((n) => numerosBlocs.has(n));
+  const profilFilieres = lireIdentifiants(formData.getAll("profilFilieres")).filter(
+    (f) => f !== "socle" && connus.filieres.includes(f),
+  );
+  const profilNiveaux = lireIdentifiants(formData.getAll("profilNiveaux"))
+    .map((n) => connus.niveaux.find((c) => c.toUpperCase() === n.toUpperCase()))
+    .filter((n): n is string => Boolean(n));
+
   const q: QuestionAEnregistrer = {
     moduleId,
     situationId: chaine(formData, "situationId", 80) || null,
@@ -199,11 +217,28 @@ export async function actionEnregistrerQuestion(
     niveauQuestion: lireNiveauQuestion(formData.get("niveauQuestion")),
     refs: lireReferences(chaine(formData, "references", 3000)),
     statut,
+    aussiDans,
+    blocs,
+    profilFilieres: [...new Set(profilFilieres)],
+    profilNiveaux: [...new Set(profilNiveaux)],
   };
+  // Les modules qu'elle quitte sont aussi à revalider.
+  const avant = id ? await lireQuestion(id) : null;
   const ident = await enregistrerQuestion(q, s, id);
-  await journaliser(s, id ? "modification-question" : "creation-question", ident, { moduleId, format, statut });
+  await journaliser(s, id ? "modification-question" : "creation-question", ident, {
+    moduleId,
+    format,
+    statut,
+    ...(aussiDans.length > 0 ? { aussiDans } : {}),
+    ...(blocs.length > 0 ? { blocs } : {}),
+    ...(q.profilFilieres!.length > 0 || q.profilNiveaux!.length > 0
+      ? { profils: { filieres: q.profilFilieres, niveaux: q.profilNiveaux } }
+      : {}),
+  });
   revalidatePath("/admin/questions");
-  revalidatePath(`/module/${moduleId}`);
+  for (const m of new Set([moduleId, ...aussiDans, ...(avant ? modulesDeLaQuestion(avant) : [])])) {
+    revalidatePath(`/module/${m}`);
+  }
   // Venu de l'arborescence (question 64) ou de la liste : retour d'où l'on est parti. Sans adresse
   // de retour, la liste du module, où la question se lit sans rien déplier (arborescence par défaut
   // depuis le 24/09/2026).
@@ -231,7 +266,7 @@ export async function actionChangerStatutQuestion(formData: FormData) {
   await changerStatutQuestion(id, statut, s, parAuteur);
   await journaliser(s, parAuteur ? "statut-question:valide-par-auteur" : `statut-question:${statut}`, id, { moduleId: q.module_id });
   revalidatePath("/admin/questions");
-  revalidatePath(`/module/${q.module_id}`);
+  for (const m of modulesDeLaQuestion(q)) revalidatePath(`/module/${m}`);
   redirect(retour);
 }
 
@@ -242,7 +277,7 @@ export async function actionSupprimerQuestion(formData: FormData) {
   if (q) {
     await supprimerQuestion(id);
     await journaliser(s, "suppression-question", id, { moduleId: q.module_id, enonce: q.enonce.slice(0, 120) });
-    revalidatePath(`/module/${q.module_id}`);
+    for (const m of modulesDeLaQuestion(q)) revalidatePath(`/module/${m}`);
   }
   revalidatePath("/admin/questions");
   // Depuis l'arborescence, retour au module de la question supprimée ; sans adresse, la liste du module.

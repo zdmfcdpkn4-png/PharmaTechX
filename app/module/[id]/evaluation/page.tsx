@@ -10,7 +10,7 @@ import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
 import { questionsSignalees } from "@/content/banque-db";
-import { listeNiveaux } from "@/content/referentiel-db";
+import { getReferentiel } from "@/content/referentiel-db";
 import { Evaluation } from "@/components/Evaluation";
 import { NoterConsultation } from "@/components/NoterConsultation";
 
@@ -30,12 +30,12 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   const idProgramme = lireIdProgramme(sp.programme);
   const profil = idProgramme ? null : lireProfilDemande(sp);
-  const [bareme, syntheses, dansProgramme, ratt, niveaux] = await Promise.all([
+  const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
     rattachement(),
-    listeNiveaux(),
+    getReferentiel(),
   ]);
   // L'apprenant rattaché suit son ordre propre sur ce profil, s'il en a un (question 56).
   const dansProfil = profil
@@ -59,6 +59,10 @@ export default async function PageEvaluation({
   const codes = niveaux.map((n) => String(n.code));
   const niveauDemande = profil?.niveau ?? session?.niveau ?? null;
   const niveauInitial = niveauDemande ? (codes.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null) : null;
+  // Filière du profil (question 74) : celle de la page, sinon celle du code de session. Les questions
+  // étiquetées pour d'autres profils ne sont pas tirées ; sans filière, cette dimension ne limite rien.
+  const filiereDemandee = profil?.filiere ?? session?.filiere ?? null;
+  const filiere = filieres.find((f) => f.id !== "socle" && f.id === filiereDemandee) ?? null;
   const signalees = baseConfiguree()
     ? (await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[] }))).ouvertes
     : [];
@@ -97,6 +101,7 @@ export default async function PageEvaluation({
         enCoursInitial={enCours}
         niveaux={niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle }))}
         niveauInitial={niveauInitial}
+        filiere={filiere ? { id: filiere.id, libelle: filiere.libelle } : null}
         signalees={signalees}
         dejaVues={dejaVues}
       />

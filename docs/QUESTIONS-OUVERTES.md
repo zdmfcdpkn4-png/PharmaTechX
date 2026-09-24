@@ -397,6 +397,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       question n'entre dans l'évaluation d'aucun autre module.
     - **c** : a et b.
 
+    Tranchée le même jour (choix c, réponse « C ») et mise en œuvre : une
+    question garde son module d'origine et peut être aussi posée dans
+    d'autres modules ; ses blocs sont ceux de ses modules et de ses
+    étiquettes ; ses filières et niveaux cochés limitent son tirage, une
+    liste vide ne limitant rien. Profils saisis en deux listes (filières,
+    niveaux), comme au réglage d'un module. Détail et limites dans
+    `DECISIONS.md`.
+
 73. **Après le lot 1 de l'audit : la suite** — posée le 24/09/2026. Le lot 1
     est fait : correction à l'écran (E1), question dégagée de l'en-tête
     (E2), identifiant rappelé (Z1), pincement des schémas (Z2), réservées

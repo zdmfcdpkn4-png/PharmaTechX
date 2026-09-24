@@ -6,7 +6,7 @@ import { conservationActive } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { blocsCompetence, criteres, maintien } from "@/content/habilitation";
-import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
+import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
 import { LIBELLES_ATTENTE, attenteDe, classerCriteres, libelleAnciennete, moisContinus, part, questionsDifficiles, quizAnciens, tranchesScores } from "@/lib/pilotage";
 import {
   anciennetesQuiz,
@@ -61,10 +61,11 @@ export default async function Pilotage({
 }) {
   const p = await searchParams;
   const session = await getSession();
-  const [{ filieres, niveaux }, modules, comptesBanque, signalements] = await Promise.all([
+  const [{ filieres, niveaux }, modules, totalBanque, signalements] = await Promise.all([
     getReferentiel(),
     getTousModulesAvecDeposes({ publiesSeulement: false }),
-    comptesParModule().catch(() => ({}) as Record<string, { valides: number; aVerifier: number; reservees: number }>),
+    // Chaque question une fois, même posée dans plusieurs modules (question 74).
+    totauxQuestions().catch(() => ({ valides: 0, aVerifier: 0 })),
     compterSignalementsOuverts().catch(() => 0),
   ]);
 
@@ -105,10 +106,6 @@ export default async function Pilotage({
   const depasses = quizAnciens(anciennetes, maintien.periodiciteMois);
 
   const publies = modules.filter((m) => m.origine !== "base" || m.statut === "publie");
-  const totalBanque = Object.values(comptesBanque).reduce(
-    (s, c) => ({ valides: s.valides + c.valides, aVerifier: s.aVerifier + c.aVerifier }),
-    { valides: 0, aVerifier: 0 },
-  );
   const { couverts } = classerCriteres(parCritere);
   const difficiles = questionsDifficiles(manquees);
   // Seuil le plus courant parmi les modules retenus : repère de lecture de

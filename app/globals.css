@@ -2135,6 +2135,9 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .cases { display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; margin: 0.25rem 0 0.5rem; }
 .cases label { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.9375rem; min-height: var(--cible); }
 .cases input { width: 18px; height: 18px; accent-color: var(--marque); }
+/* « Aussi posée dans » (question 74) : un repli par bloc, à la taille d'une cible tactile. */
+.aussi-bloc > summary { padding: 0.625rem 0; cursor: pointer; }
+.aussi-bloc > .cases { margin-left: 1.25rem; }
 
 /* ── arborescence de la banque de questions ───────────────────────────────── */
 /* Filière → niveau → module, en `<details>` : aucun script, repli au clavier. */

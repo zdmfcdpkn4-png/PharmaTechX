@@ -4229,6 +4229,139 @@ non plus au rond coché ; le texte du choix reste écrit dans la pastille.
   360 px, les choix de chaque proposition tiennent sur une ligne (48 px au
   plus) sans déborder.
 
+## Une question dans plusieurs blocs et plusieurs profils (24/09/2026, question 74, choix c)
+
+**Demande.** « Pouvoir positionner une question dans plusieurs blocs de
+compétences et plusieurs profils. » Jusqu'ici, une question appartenait à
+un seul module (`questions.module_id`) : un seul bloc, celui du critère du
+module, et les profils cochés au réglage de ce module.
+
+**Tranché (question 74, choix c, réponse « C »).** Les deux moyens proposés,
+cumulés : rattacher une question à plusieurs modules (a) et lui donner des
+étiquettes propres de blocs et de profils (b).
+
+**Écartés.**
+- **a seul** : aucune étiquette ; un profil ne se restreint qu'en réglant un
+  module entier.
+- **b seul** : la question n'entre dans l'évaluation d'aucun autre module ;
+  « plusieurs blocs » n'y serait qu'un classement.
+
+**Ce qui est fait.**
+- **Base** : table `questions_modules` (question, module), effacée avec la
+  question ; colonnes `blocs`, `profil_filieres` et `profil_niveaux` sur
+  `questions`, vides par défaut. Les questions existantes ne changent pas.
+- **Éditeur**, bloc « Autres modules, blocs et profils » :
+  - « Aussi posée dans d'autres modules » : cases rangées par bloc, un repli
+    par bloc qui dit combien de ses modules sont cochés. Le module d'origine
+    y est coché d'office et grisé ;
+  - « Blocs de compétence » : les sept blocs de la fiche ;
+  - « Filières » et « Niveaux d'habilitation » : ceux du référentiel, le
+    socle excepté.
+  Seuls les identifiants connus sont enregistrés, et le journal les porte.
+- **Module d'origine** : la question s'y modifie, s'y valide et y garde sa
+  mise en situation. Posée ailleurs, elle entre dans le tirage du module et
+  apporte sa vignette. Une seule validation, un seul signalement : elle est
+  la même question partout, sous le même identifiant.
+- **Blocs** : ceux de ses modules, origine et rattachements, plus ceux de ses
+  étiquettes. Ils classent la banque et restent sans effet sur le tirage.
+- **Profils** : les filières et les niveaux cochés limitent le tirage. La
+  question n'est posée qu'à une filière cochée et à un niveau cible coché ;
+  une liste vide ne limite rien, comme au réglage d'un module
+  (`admiseAuProfil`, `content/tirage.ts`).
+- **Profil de l'évaluation** : la filière du profil de la page, sinon celle
+  du code de session, et le niveau cible choisi à l'écran. Le tirage du
+  navigateur et le contrôle du serveur appliquent la même règle.
+  - Le serveur refuse un tirage qui pose une question étiquetée pour un autre
+    profil (« Tirage non conforme : N questions étiquetées pour d'autres
+    profils »).
+  - Une éliminatoire ou une obligatoire étiquetée pour un autre profil n'est
+    ni posée ni exigée.
+- **Annonces**
+  - Avant l'épreuve : « … N étiquetées pour d'autres profils (filière ou
+    niveau) ».
+  - Résultat scellé et rapport, quand des questions ont été écartées :
+    « N questions étiquetées pour d'autres profils non tirées (profil :
+    filière, niveau) » (`cible.horsProfil`, `cible.filiere`).
+- **Banque**
+  - Nouveaux filtres « Bloc de compétence », « Filière » et « Niveau
+    d'habilitation », gardés après chaque geste. « Niveau » devient « Niveau
+    de question », pour ne pas le confondre avec le niveau d'habilitation.
+  - La liste montre une question une fois, sous son module d'origine, ou
+    sous le module filtré.
+  - L'arborescence la montre sous chacun de ses modules, avec « Aussi posée
+    ici » hors de son module d'origine. Sous une branche que ses étiquettes
+    excluent, elle porte « Hors du profil de cette branche ».
+  - Étiquettes « Posée dans N modules » et « Profils limités », et une ligne
+    qui nomme le module d'origine, les autres modules, les blocs et les
+    profils.
+- **Comptes**
+  - Par module : la banque du module, questions aussi posées ici comprises.
+    Un module du code ou déposé qui n'a que des questions rattachées devient
+    évaluable.
+  - Branches de l'arborescence et de la couverture : chaque question une
+    fois, même posée dans deux modules de la branche (`cumulDistinct`).
+  - Totaux de la banque (page Accès, pilotage, file d'attente) : chaque
+    question une fois (`totauxQuestions`).
+- **Module déposé** : la suppression reste refusée tant que des questions y
+  sont posées, rattachées comprises ; le message dit qu'une question
+  seulement « aussi posée » se décoche dans son éditeur. Les rattachements
+  des questions retirées partent avec le module.
+- **Au passage** : `README.md` disait encore la liste « par défaut » ; c'est
+  l'arborescence depuis ce matin.
+
+**Choix d'interprétation, faits sans nouvelle question.**
+- **Profils en deux listes**, filières et niveaux, et non en couples
+  filière × niveau : c'est la forme du réglage d'un module, et elle tient en
+  une dizaine de cases. En contrepartie, cocher Chimiothérapie et
+  Préparatoire avec N1c et N1b admet aussi Chimiothérapie × N1b et
+  Préparatoire × N1c.
+- **Une dimension non précisée ne limite rien**, comme un niveau cible non
+  précisé n'impose aucun plafond. Un code sans filière, ou le mode test
+  « au choix », tire donc aussi les questions étiquetées pour une filière.
+- **Filtres de profil** : un profil retient une question si l'un de ses
+  modules couvre ce profil et si ses étiquettes l'admettent. Sous le filtre
+  d'un module, seul ce module compte.
+
+**Limites.**
+- **Un agent peut retrouver la même question** dans l'évaluation de deux
+  modules. Une réservée déjà vue passe en dernier partout, puisque « déjà
+  vue » se lit tous modules confondus ; une question ordinaire peut revenir.
+- **Le format de dépôt ne porte ni rattachements ni étiquettes** : ils se
+  règlent dans l'éditeur. Comme toute modification, les changer remet la
+  question « à vérifier » (règle des quatre yeux).
+- **Le serveur fait confiance à la filière envoyée**, comme au niveau cible
+  choisi à l'écran. Une filière absente ou inconnue ne limite rien ; le
+  résultat scellé nomme la filière retenue quand des questions ont été
+  écartées.
+- **La filière ne se choisit pas à l'écran d'évaluation** : elle vient du
+  profil ouvert à l'accueil ou du code de session.
+
+**Vérifié le 24/09/2026.**
+- `npm run verifier` : 353 tests, 12 de plus.
+  - Six sur le tirage : admission par profil, dimension non précisée,
+    tirage, bilan, contrôle du serveur, obligatoire d'un autre profil.
+  - Six sur les rattachements : lecture des étiquettes, blocs d'une
+    question, profils, libellés, ligne du rapport.
+- `npm run build`.
+- Deux passes de bout en bout de 95 étapes, sans erreur de page ni erreur
+  serveur. Étape ajoutée (14a quater) : une question de comportement-zac
+  (bloc 1), aussi posée dans B4-02 et B6-02, étiquetée bloc 7 et
+  Chimiothérapie. Le parcours vérifie :
+  - relue dans l'éditeur et comptée dans la banque de B4-02 ;
+  - filtres : présente pour les blocs 4 et 7 et pour Chimiothérapie,
+    absente pour le bloc 2 et pour Préparatoire ;
+  - dans l'arborescence, sous ses trois modules, et hors profil sous la
+    branche du préparatoire ;
+  - tirée pour Chimiothérapie et non pour Préparatoire, à l'écran comme au
+    serveur, avec la mention au résultat scellé ;
+  - corrigée dans B4-02 et écartée de B6-02 par son étiquette ;
+  - supprimée, elle quitte les trois modules.
+- Mesures de l'éditeur :
+  - aucun débordement horizontal à 1 280 et 360 px, bloc replié ou ouvert ;
+  - un bloc de modules ouvert : 1 575 px de haut sur poste et 3 432 px à
+    360 px. Avant le repli par bloc, la liste entière ouverte faisait
+    4 087 px sur poste.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

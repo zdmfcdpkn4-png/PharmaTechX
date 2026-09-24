@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { lireQuestion, listerSituations, signalementsOuvertsDe } from "@/content/banque-db";
 import { EditeurQuestion } from "@/components/EditeurQuestion";
 import { actionEnregistrerQuestion } from "../actions";
-import { choixModules, versInitiale } from "../commun";
+import { choixEtiquettes, choixModules, versInitiale } from "../commun";
 import { retourBanque } from "@/content/arbre-banque";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +60,7 @@ export default async function ModifierQuestion({
       <EditeurQuestion
         modules={await choixModules()}
         situations={situations}
+        etiquettes={await choixEtiquettes()}
         initiale={versInitiale(q)}
         action={actionEnregistrerQuestion}
         retour={retour}

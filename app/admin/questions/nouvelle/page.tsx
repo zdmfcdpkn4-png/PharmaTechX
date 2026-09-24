@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listerSituations } from "@/content/banque-db";
 import { EditeurQuestion } from "@/components/EditeurQuestion";
 import { actionEnregistrerQuestion } from "../actions";
-import { choixModules } from "../commun";
+import { choixEtiquettes, choixModules } from "../commun";
 import { retourBanque } from "@/content/arbre-banque";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +31,7 @@ export default async function NouvelleQuestion({
       <EditeurQuestion
         modules={await choixModules()}
         situations={situations}
+        etiquettes={await choixEtiquettes()}
         moduleInitial={p.module}
         action={actionEnregistrerQuestion}
         retour={retour}

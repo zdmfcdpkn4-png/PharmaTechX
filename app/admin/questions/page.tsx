@@ -1,17 +1,40 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { comptesParModule, listerQuestions, signalementsOuvertsParQuestion, type StatutQuestion } from "@/content/banque-db";
+import {
+  comptesParModule,
+  listerQuestions,
+  questionsAuCompte,
+  signalementsOuvertsParQuestion,
+  type LigneQuestion,
+  type StatutQuestion,
+} from "@/content/banque-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { etiquetteModule, moduleOuvrable, titreModule as titreDe } from "./commun";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
 import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
 import { compterFichesAVerifier, listerFiches } from "@/lib/fiches-db";
-import { ancreDe, construireArbre, elaguer, lireChemin, lirePlis } from "@/content/arbre-banque";
+import { ancreDe, construireArbre, cumulDistinct, elaguer, lireChemin, lirePlis } from "@/content/arbre-banque";
+import { blocsCompetence } from "@/content/habilitation";
+import {
+  blocsDeLaQuestion,
+  etiquettesProfil,
+  libelleProfils,
+  modulesDeLaQuestion,
+  poseeAuProfil,
+  type ModuleDeRattachement,
+} from "@/content/rattachement-question";
 import { RetourBranche } from "@/components/RetourBranche";
 import { SectionFiches } from "./fiches";
 import { ArborescenceBanque } from "./arborescence";
-import { ActionsQuestion, ContenuQuestion, EtiquettesQuestion, TraceQuestion } from "./question-banque";
+import {
+  ActionsQuestion,
+  ContenuQuestion,
+  EtiquettesQuestion,
+  RattachementQuestion,
+  TraceQuestion,
+  type LecturesRattachement,
+} from "./question-banque";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +68,10 @@ export default async function Questions({
     statut?: string;
     niveau?: string;
     obligatoires?: string;
+    /** Question 74 : bloc de compétence, filière et niveau d'habilitation. */
+    bloc?: string;
+    filiere?: string;
+    habilitation?: string;
     vue?: string;
     plis?: string;
     ouvrir?: string;
@@ -69,7 +96,7 @@ export default async function Questions({
       : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
         ? (p.niveau as NiveauQuestion)
         : undefined;
-  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier] = await Promise.all([
+  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier, auCompte] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
@@ -78,20 +105,48 @@ export default async function Questions({
     // filtre « à vérifier », celles qui attendent une validation.
     moduleId ? listerFiches({ moduleId }) : statut === "a_verifier" ? listerFiches({ statut: "a_verifier" }) : Promise.resolve([]),
     compterFichesAVerifier(),
+    questionsAuCompte(),
   ]);
+  // Question 74 (choix c) : filtres par bloc et par profil. Un bloc se lit sur les modules de la
+  // question et sur ses étiquettes ; un profil, sur ses modules et ses étiquettes de profil.
+  const filtreBloc = blocsCompetence.find((b) => String(b.numero) === p.bloc)?.numero;
+  const filtreFiliere = referentiel.filieres.find((f) => f.id !== "socle" && f.id === p.filiere)?.id;
+  const filtreHabilitation = referentiel.niveaux.map((n) => String(n.code)).find((c) => c === p.habilitation);
+  const rattachements = new Map<string, ModuleDeRattachement>(
+    modules.map((m) => [
+      m.id,
+      { id: m.id, bloc: typeof m.bloc === "number" ? m.bloc : null, postes: m.postes ?? [], niveaux: (m.niveaux ?? []).map(String) },
+    ]),
+  );
+  // Sous un filtre de module, le profil se juge sur ce module seul.
+  const dansLeModule = (q: LigneQuestion) => (moduleId ? { ...q, module_id: moduleId, aussi_dans: [] } : q);
   // Filtre des obligatoires (question 63) : le socle posé à chaque évaluation, module par module.
   const seulesObligatoires = p.obligatoires === "1";
   const questions = toutes.filter(
     (q) =>
       (!filtreNiveau || (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau)) &&
-      (!seulesObligatoires || q.obligatoire),
+      (!seulesObligatoires || q.obligatoire) &&
+      (filtreBloc === undefined || blocsDeLaQuestion(q, rattachements).includes(filtreBloc)) &&
+      (!(filtreFiliere || filtreHabilitation) ||
+        poseeAuProfil(dansLeModule(q), { filiere: filtreFiliere ?? null, niveau: filtreHabilitation ?? null }, rattachements)),
   );
+  // Liste : chaque question sous son module d'origine, ou sous le module filtré. Arborescence : sous
+  // chacun des modules où elle est posée (question 74).
   const parModule = new Map<string, typeof questions>();
+  const parModuleArbre = new Map<string, typeof questions>();
+  const ranger = (carte: Map<string, typeof questions>, m: string, q: LigneQuestion) =>
+    carte.set(m, [...(carte.get(m) ?? []), q]);
   for (const q of questions) {
-    const liste = parModule.get(q.module_id) ?? [];
-    liste.push(q);
-    parModule.set(q.module_id, liste);
+    ranger(parModule, moduleId ?? q.module_id, q);
+    for (const m of moduleId ? [moduleId] : modulesDeLaQuestion(q)) ranger(parModuleArbre, m, q);
   }
+  // Cumul d'une branche : chaque question une fois, même posée dans plusieurs de ses modules.
+  const cumul = (liste: { id: string }[]) => cumulDistinct(liste.map((m) => m.id), auCompte);
+  const lectures: LecturesRattachement = {
+    titreModule: (id) => titreDe(modules, id),
+    blocs: (q) => blocsDeLaQuestion(q, rattachements),
+    profils: (q) => libelleProfils(etiquettesProfil(q), referentiel.filieres),
+  };
   // Filtres gardés après chaque geste, dans les deux vues. Le niveau et les
   // obligatoires, venus après l'adresse de retour, s'y perdaient.
   const filtres: [string, string][] = [
@@ -99,6 +154,9 @@ export default async function Questions({
     ...(statut ? [["statut", statut] as [string, string]] : []),
     ...(filtreNiveau ? [["niveau", filtreNiveau] as [string, string]] : []),
     ...(seulesObligatoires ? [["obligatoires", "1"] as [string, string]] : []),
+    ...(filtreBloc !== undefined ? [["bloc", String(filtreBloc)] as [string, string]] : []),
+    ...(filtreFiliere ? [["filiere", filtreFiliere] as [string, string]] : []),
+    ...(filtreHabilitation ? [["habilitation", filtreHabilitation] as [string, string]] : []),
   ];
   const retour = `/admin/questions?${new URLSearchParams([["vue", "liste"], ...filtres]).toString()}`;
   const titreModule = (id: string) => titreDe(modules, id);
@@ -118,7 +176,9 @@ export default async function Questions({
   ];
   // Adresse de la vue courante, filtres compris : un geste ou une création y ramène.
   const retourVue = vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour;
-  const filtreQuestions = Boolean(statut || filtreNiveau || seulesObligatoires);
+  const filtreQuestions = Boolean(
+    statut || filtreNiveau || seulesObligatoires || filtreBloc !== undefined || filtreFiliere || filtreHabilitation,
+  );
   const complet = vueArbre
     ? construireArbre(
         referentiel.filieres,
@@ -134,7 +194,7 @@ export default async function Questions({
     : [];
   const arbre =
     filtreQuestions || moduleId
-      ? elaguer(complet, (id) => (!moduleId || id === moduleId) && (!filtreQuestions || (parModule.get(id)?.length ?? 0) > 0))
+      ? elaguer(complet, (id) => (!moduleId || id === moduleId) && (!filtreQuestions || (parModuleArbre.get(id)?.length ?? 0) > 0))
       : complet;
 
   return (
@@ -197,6 +257,7 @@ export default async function Questions({
             niveaux: (m.niveaux ?? []).map(String),
           }))}
           comptes={comptes}
+          cumul={cumul}
           moduleActif={moduleId}
         />
       )}
@@ -231,7 +292,7 @@ export default async function Questions({
             </select>
           </label>
           <label className="champ">
-            <span>Niveau</span>
+            <span>Niveau de question</span>
             <select name="niveau" defaultValue={filtreNiveau ?? ""}>
               <option value="">Tous</option>
               {NIVEAUX_QUESTION.map((n) => (
@@ -245,6 +306,42 @@ export default async function Questions({
             <select name="obligatoires" defaultValue={seulesObligatoires ? "1" : ""}>
               <option value="">Toutes les questions</option>
               <option value="1">Obligatoires seulement</option>
+            </select>
+          </label>
+          {/* Question 74 : bloc et profil, lus sur les modules de la question et sur ses étiquettes. */}
+          <label className="champ">
+            <span>Bloc de compétence</span>
+            <select name="bloc" defaultValue={filtreBloc !== undefined ? String(filtreBloc) : ""}>
+              <option value="">Tous</option>
+              {blocsCompetence.map((b) => (
+                <option key={b.numero} value={b.numero}>
+                  {b.numero} — {b.titre.slice(0, 50)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="champ">
+            <span>Filière</span>
+            <select name="filiere" defaultValue={filtreFiliere ?? ""}>
+              <option value="">Toutes</option>
+              {referentiel.filieres
+                .filter((f) => f.id !== "socle")
+                .map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.libelle}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="champ">
+            <span>Niveau d&apos;habilitation</span>
+            <select name="habilitation" defaultValue={filtreHabilitation ?? ""}>
+              <option value="">Tous</option>
+              {referentiel.niveaux.map((n) => (
+                <option key={String(n.code)} value={String(n.code)}>
+                  {n.libelle}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -280,8 +377,10 @@ export default async function Questions({
         <>
           <ArborescenceBanque
             arbre={arbre}
-            parModule={parModule}
+            parModule={parModuleArbre}
             comptes={comptes}
+            cumul={cumul}
+            lectures={lectures}
             signales={signales}
             session={session}
             etat={{ plis, ouvrir, filtre: filtreQuestions || Boolean(moduleId) }}
@@ -308,10 +407,11 @@ export default async function Questions({
                 {liste.map((q) => (
                   <li key={q.id} className="carte question-ligne">
                     <div className="etape-tete">
-                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} />
+                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} />
                       <TraceQuestion q={q} />
                     </div>
                     <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
+                    <RattachementQuestion q={q} lectures={lectures} ici={mid} />
                     <ContenuQuestion q={q} />
                     {/* Modifier ou supprimer depuis la liste y ramène : l'arborescence est la vue par défaut. */}
                     <ActionsQuestion

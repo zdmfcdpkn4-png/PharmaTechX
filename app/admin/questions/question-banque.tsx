@@ -12,8 +12,22 @@ import { LIBELLES_STATUT } from "./commun";
  * les deux.
  */
 
-/** Format, statut, signalements, niveau et rôle dans le tirage. */
-export function EtiquettesQuestion({ q, signalements }: { q: LigneQuestion; signalements: number }) {
+/**
+ * Format, statut, signalements, niveau et rôle dans le tirage. `ici` : le
+ * module sous lequel la question est montrée ; `horsProfil` : ses étiquettes
+ * de profil excluent la branche où elle est montrée (question 74).
+ */
+export function EtiquettesQuestion({
+  q,
+  signalements,
+  ici,
+  horsProfil = false,
+}: {
+  q: LigneQuestion;
+  signalements: number;
+  ici?: string;
+  horsProfil?: boolean;
+}) {
   return (
     <>
       <span className="etiquette etiquette--site">{q.format === "SCH" ? "Schéma" : q.format}</span>
@@ -37,7 +51,61 @@ export function EtiquettesQuestion({ q, signalements }: { q: LigneQuestion; sign
       {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
       {q.obligatoire && <span className="etiquette etiquette--neutre">Obligatoire</span>}
       {q.situation_titre && <span className="etiquette etiquette--neutre">Situation : {q.situation_titre}</span>}
+      {/* Question 74 : posée dans plusieurs modules, limitée à des profils. */}
+      {ici && ici !== q.module_id ? (
+        <span className="etiquette etiquette--neutre">Aussi posée ici</span>
+      ) : (
+        q.aussi_dans.length > 0 && (
+          <span className="etiquette etiquette--neutre">
+            Posée dans {q.aussi_dans.length + 1} modules
+          </span>
+        )
+      )}
+      {(q.profil_filieres.length > 0 || q.profil_niveaux.length > 0) && (
+        <span className={`etiquette ${horsProfil ? "etiquette--attention" : "etiquette--neutre"}`}>
+          {horsProfil ? "Hors du profil de cette branche" : "Profils limités"}
+        </span>
+      )}
     </>
+  );
+}
+
+/** Ce qu'il faut pour dire en clair où une question est posée (question 74). */
+export interface LecturesRattachement {
+  /** « Critère — titre » d'un module, ou son identifiant s'il n'existe plus. */
+  titreModule: (id: string) => string;
+  /** Blocs de la question : ceux de ses modules et ceux de ses étiquettes. */
+  blocs: (q: LigneQuestion) => number[];
+  /** Étiquettes de profil en clair ; vide sans étiquette. */
+  profils: (q: LigneQuestion) => string;
+}
+
+/**
+ * Où la question est posée, ses blocs et ses profils (question 74, choix c) —
+ * seulement quand elle a d'autres modules ou des étiquettes, ou qu'elle est
+ * montrée sous un module qui n'est pas le sien.
+ */
+export function RattachementQuestion({
+  q,
+  lectures,
+  ici,
+}: {
+  q: LigneQuestion;
+  lectures: LecturesRattachement;
+  ici?: string;
+}) {
+  const profils = lectures.profils(q);
+  const ailleurs = Boolean(ici && ici !== q.module_id);
+  if (q.aussi_dans.length === 0 && q.blocs.length === 0 && !profils && !ailleurs) return null;
+  const blocs = lectures.blocs(q);
+  return (
+    <p className="legende rattachement-question">
+      Module d&apos;origine : {lectures.titreModule(q.module_id)}
+      {ailleurs ? " — elle s'y modifie et s'y valide" : ""}
+      {q.aussi_dans.length > 0 && <> · aussi posée dans : {q.aussi_dans.map(lectures.titreModule).join(" ; ")}</>}
+      {blocs.length > 0 && <> · bloc{blocs.length > 1 ? "s" : ""} {blocs.join(", ")}</>}
+      {profils && <> · profils : {profils}</>}
+    </p>
   );
 }
 

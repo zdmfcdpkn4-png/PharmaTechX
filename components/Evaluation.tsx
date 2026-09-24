@@ -455,6 +455,7 @@ export function Evaluation({
   requete = "",
   niveaux = [],
   niveauInitial = null,
+  filiere = null,
   signalees = [],
   dejaVues = [],
 }: {
@@ -486,6 +487,12 @@ export function Evaluation({
   niveaux?: { code: string; libelle: string }[];
   /** Niveau cible du profil de la page, ou du code de session ; `null` : non précisé. */
   niveauInitial?: string | null;
+  /**
+   * Filière du profil de la page, ou du code de session (question 74) : les
+   * questions étiquetées pour d'autres profils ne sont pas tirées ; `null` :
+   * non précisée, cette dimension ne limite rien.
+   */
+  filiere?: { id: string; libelle: string } | null;
   /** Questions au signalement ouvert : écartées de tout tirage (question 62). */
   signalees?: string[];
   /** Réservées déjà vues corrigées par l'agent rattaché : tirées en dernier (question 71, choix b). */
@@ -505,12 +512,17 @@ export function Evaluation({
     repartition: bareme.repartitions[plafond],
     signalees,
     dejaVues,
+    profil: { filiere: filiere?.id ?? null, niveau: niveauCible || null },
   });
   // Tirage d'habilitation par défaut ; Découverte seule si la banque admise
   // au niveau cible ne peut pas réunir un tirage concluant.
   const suffisante = (niveau: string) =>
-    bilanTirage(banque, { ...contexte("habilitation", "evaluation"), plafond: plafondDuNiveau(bareme, niveau || null) }).admises >=
-    MIN_QUESTIONS_HABILITATION;
+    bilanTirage(banque, {
+      ...contexte("habilitation", "evaluation"),
+      plafond: plafondDuNiveau(bareme, niveau || null),
+      // Le niveau essayé, pas celui encore affiché : les étiquettes de profil en dépendent (question 74).
+      profil: { filiere: filiere?.id ?? null, niveau: niveau || null },
+    }).admises >= MIN_QUESTIONS_HABILITATION;
   const banqueSuffisante = suffisante(niveauCible);
   const [difficulte, setDifficulte] = useState<Difficulte>(banqueSuffisante ? "habilitation" : "decouverte");
   const [mode, setMode] = useState<Mode>("evaluation");
@@ -825,6 +837,7 @@ export function Evaluation({
       mode,
       difficulte,
       niveauCible: niveauCible || null,
+      filiere: filiere?.id ?? null,
     };
   };
 
@@ -971,6 +984,9 @@ export function Evaluation({
           Les questions sont tirées au sort dans la banque du critère : {bilanEvaluation.admises} admise
           {bilanEvaluation.admises > 1 ? "s" : ""} au niveau cible sur {banque.length}
           {bilanEvaluation.auDessus > 0 ? `, ${bilanEvaluation.auDessus} au-dessus du niveau cible` : ""}
+          {bilanEvaluation.horsProfil > 0
+            ? `, ${bilanEvaluation.horsProfil} étiquetée${bilanEvaluation.horsProfil > 1 ? "s" : ""} pour d'autres profils (filière ou niveau)`
+            : ""}
           {bilanEvaluation.signalees > 0
             ? `, ${bilanEvaluation.signalees} écartée${bilanEvaluation.signalees > 1 ? "s" : ""} par un signalement ouvert jusqu'à sa clôture`
             : ""}

@@ -106,6 +106,9 @@ function LigneModule({
   );
 }
 
+/** Cumul d'un ensemble de modules ; par défaut, la somme de leurs comptes. */
+export type Cumul = (modules: Pick<ModuleArbre, "id">[]) => CompteQuestions;
+
 function Groupe({
   cle,
   titre,
@@ -113,6 +116,7 @@ function Groupe({
   modules,
   niveaux,
   comptes,
+  cumul,
   actif,
 }: {
   cle: string;
@@ -121,10 +125,11 @@ function Groupe({
   modules: ModuleArbre[];
   niveaux: Niveau[];
   comptes: Comptes;
+  cumul: Cumul;
   actif?: string;
 }) {
   if (modules.length === 0) return null;
-  const total = cumuler(modules, comptes);
+  const total = cumul(modules);
   // Un module sans niveau vaut pour tous : il est listé à part, en tête.
   const sansNiveau = modules.filter((m) => m.niveaux.length === 0);
   const parNiveau = niveaux
@@ -144,7 +149,7 @@ function Groupe({
       {sansNiveau.length > 0 && (
         <div className="arbre-niveau">
           <p className="arbre-niveau-titre">
-            Tous niveaux <Compte c={cumuler(sansNiveau, comptes)} />
+            Tous niveaux <Compte c={cumul(sansNiveau)} />
           </p>
           <ul className="liste-nue">
             {sansNiveau.map((m) => (
@@ -157,7 +162,7 @@ function Groupe({
         <div key={String(n.code)} className="arbre-niveau">
           <p className="arbre-niveau-titre">
             <span className="etiquette etiquette--neutre">{String(n.code)}</span> {n.libelle}
-            <Compte c={cumuler(liste, comptes)} />
+            <Compte c={cumul(liste)} />
           </p>
           <ul className="liste-nue">
             {liste.map((m) => (
@@ -172,7 +177,7 @@ function Groupe({
           <div key={code} className="arbre-niveau">
             <p className="arbre-niveau-titre">
               <span className="etiquette etiquette--attention">{code}</span> niveau absent du référentiel
-              <Compte c={cumuler(liste, comptes)} />
+              <Compte c={cumul(liste)} />
             </p>
             <ul className="liste-nue">
               {liste.map((m) => (
@@ -191,12 +196,18 @@ export function ArbreBanque({
   niveaux,
   modules,
   comptes,
+  cumul = (liste) => cumuler(liste, comptes),
   moduleActif,
 }: {
   filieres: Filiere[];
   niveaux: Niveau[];
   modules: ModuleArbre[];
   comptes: Comptes;
+  /**
+   * Cumul d'une branche. Une question posée dans plusieurs modules (question
+   * 74) y compte une fois quand la page le fournit (`cumulDistinct`).
+   */
+  cumul?: Cumul;
   moduleActif?: string;
 }) {
   const troncCommun = modules.filter((m) => m.postes.length === 0);
@@ -213,7 +224,7 @@ export function ArbreBanque({
   const connues = new Set(filieres.map((f) => f.id));
   const inconnues = [...new Set(modules.flatMap((m) => m.postes).filter((id) => !connues.has(id)))];
 
-  const total = cumuler(modules, comptes);
+  const total = cumul(modules);
 
   return (
     <section className="section arbre">
@@ -233,6 +244,7 @@ export function ArbreBanque({
         modules={troncCommun}
         niveaux={niveaux}
         comptes={comptes}
+        cumul={cumul}
         actif={moduleActif}
       />
       {groupes.map(({ f, liste }) => (
@@ -246,6 +258,7 @@ export function ArbreBanque({
           // chimiothérapie de niveau N1a, y était donné « absent du référentiel ».
           niveaux={niveaux}
           comptes={comptes}
+          cumul={cumul}
           actif={moduleActif}
         />
       ))}
@@ -257,6 +270,7 @@ export function ArbreBanque({
           modules={modules.filter((m) => m.postes.includes(id))}
           niveaux={niveaux}
           comptes={comptes}
+          cumul={cumul}
           actif={moduleActif}
         />
       ))}

@@ -8,6 +8,7 @@ import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
 import {
   admissibles,
+  bilanTirage,
   niveauDe,
   tirageConforme,
   toujoursPosee,
@@ -31,7 +32,7 @@ import {
 } from "@/content/jugement";
 import { enregistrerEvaluation, rattachement, reserveesDejaVues } from "@/lib/progression";
 import type { Bareme } from "@/content/bareme";
-import { identifiantsConnus, referentielDuModule } from "@/content/referentiel-db";
+import { identifiantsConnus, listeFilieres, referentielDuModule } from "@/content/referentiel-db";
 import { syntheseDuModule } from "@/lib/synthese";
 import type { SyntheseDocument } from "@/content/types";
 
@@ -83,6 +84,8 @@ interface CorpsRequete {
   codeTuteur?: unknown;
   /** Niveau cible du tirage (questions 62 et 63) : un code de niveau connu, sinon aucun. */
   niveauCible?: unknown;
+  /** Filière du profil de tirage (question 74) : une filière connue, sinon aucune. */
+  filiere?: unknown;
 }
 
 export interface DetailLegende {
@@ -282,8 +285,11 @@ export async function POST(request: Request) {
   // vaut « non précisé » : aucun plafond.
   const bareme = await lireBareme();
   const niveauDemande = typeof corps.niveauCible === "string" ? corps.niveauCible.slice(0, 12) : "";
-  const connus = niveauDemande ? (await identifiantsConnus()).niveaux : [];
-  const niveauCible = connus.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null;
+  const filiereDemandee = typeof corps.filiere === "string" ? corps.filiere.slice(0, 40) : "";
+  const connus = niveauDemande || filiereDemandee ? await identifiantsConnus() : { niveaux: [], filieres: [] };
+  const niveauCible = connus.niveaux.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null;
+  // Profil de tirage (question 74) : une filière inconnue vaut « non précisée », comme un niveau inconnu.
+  const filiereCible = connus.filieres.find((f) => f !== "socle" && f === filiereDemandee) ?? null;
   const signalements = baseConfiguree()
     ? await questionsSignalees(banque.map((q) => q.id)).catch(() => ({ ouvertes: [] as string[], tolerees: [] as string[] }))
     : { ouvertes: [] as string[], tolerees: [] as string[] };
@@ -302,6 +308,7 @@ export async function POST(request: Request) {
     // survenue pendant l'épreuve ne fait pas refuser le tirage.
     signalees: signalements.tolerees,
     dejaVues,
+    profil: { filiere: filiereCible, niveau: niveauCible },
   };
 
   // Le tirage est décidé côté client ; le serveur ne corrige que les questions
@@ -470,6 +477,7 @@ export async function POST(request: Request) {
     for (const q of admissibles(banque, contexte)) {
       if (!toujoursPosee(q, contexte)) libres.set(niveauDe(q), (libres.get(niveauDe(q)) ?? 0) + 1);
     }
+    const horsProfil = bilanTirage(banque, contexte).horsProfil;
     cible = {
       niveau: niveauCible,
       plafond,
@@ -482,6 +490,14 @@ export async function POST(request: Request) {
           if (reste > 0) libres.set(niveauDe(q), reste - 1);
           return { questionId: q.id, enonce: q.enonce, eliminatoire: q.eliminatoire === true, remplacee: reste > 0 };
         }),
+      ...(horsProfil > 0
+        ? {
+            horsProfil,
+            filiere: filiereCible
+              ? ((await listeFilieres().catch(() => [])).find((f) => f.id === filiereCible)?.libelle ?? filiereCible)
+              : null,
+          }
+        : {}),
     };
   }
 

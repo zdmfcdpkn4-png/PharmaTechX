@@ -1,7 +1,9 @@
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { A_PRECISER, type Module } from "@/content/types";
 import { reperesModules, type ModuleRepere } from "@/lib/import-module";
-import type { ModuleChoix } from "@/components/EditeurQuestion";
+import { blocsCompetence } from "@/content/habilitation";
+import { getReferentiel } from "@/content/referentiel-db";
+import type { ChoixEtiquettes, ModuleChoix } from "@/components/EditeurQuestion";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { QuestionInitiale } from "@/components/EditeurQuestion";
 
@@ -13,7 +15,22 @@ export async function choixModules(): Promise<ModuleChoix[]> {
     critereId: etiquetteModule(m),
     redige: m.redige,
     origine: m.origine ?? "code",
+    bloc: typeof m.bloc === "number" ? m.bloc : null,
   }));
+}
+
+/**
+ * Étiquettes qu'une question peut porter (question 74, choix c) : les sept
+ * blocs de la fiche, les filières de poste (le socle n'en est pas une) et les
+ * niveaux d'habilitation du référentiel.
+ */
+export async function choixEtiquettes(): Promise<ChoixEtiquettes> {
+  const { filieres, niveaux } = await getReferentiel();
+  return {
+    blocs: blocsCompetence.map((b) => ({ numero: b.numero, titre: b.titre })),
+    filieres: filieres.filter((f) => f.id !== "socle").map((f) => ({ id: f.id, libelle: f.libelle })),
+    niveaux: niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle })),
+  };
 }
 
 /** Module tel que le lit une ligne « Module : » : identifiant, titre, code du critère s'il en a un. */
@@ -88,5 +105,9 @@ export function versInitiale(l: LigneQuestion): QuestionInitiale {
       .map((r) => [r.source, r.libelle, r.date, r.url, r.localisation].filter(Boolean).join(" — "))
       .join("\n"),
     statut: l.statut,
+    aussiDans: l.aussi_dans,
+    blocs: l.blocs,
+    profilFilieres: l.profil_filieres,
+    profilNiveaux: l.profil_niveaux,
   };
 }

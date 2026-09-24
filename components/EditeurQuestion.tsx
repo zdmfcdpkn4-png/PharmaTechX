@@ -31,6 +31,15 @@ export interface ModuleChoix {
   redige: boolean;
   /** `base` pour un module déposé depuis l'administration. */
   origine?: "code" | "base";
+  /** Bloc de compétence du critère ; `null` : à préciser. Range la liste « Aussi posée dans ». */
+  bloc: number | null;
+}
+
+/** Ce que les étiquettes d'une question proposent (question 74) : blocs, filières, niveaux d'habilitation. */
+export interface ChoixEtiquettes {
+  blocs: { numero: number; titre: string }[];
+  filieres: { id: string; libelle: string }[];
+  niveaux: { code: string; libelle: string }[];
 }
 
 export interface SituationChoix {
@@ -68,6 +77,11 @@ export interface QuestionInitiale {
   /** Une référence par ligne : « Source — Libellé — Date — URL ». */
   references: string;
   statut: "a_verifier" | "valide" | "retire";
+  /** Question 74 : modules où elle est aussi posée, et ses étiquettes de blocs et de profil. */
+  aussiDans: string[];
+  blocs: number[];
+  profilFilieres: string[];
+  profilNiveaux: string[];
 }
 
 const LETTRES = "abcdefghijkl";
@@ -100,6 +114,7 @@ const MAX_ELEMENTS: Record<string, number> = { QCM: 5, QIM: 5, ORD: 12, TAT: 12 
 export function EditeurQuestion({
   modules,
   situations,
+  etiquettes,
   initiale,
   moduleInitial,
   action,
@@ -107,6 +122,8 @@ export function EditeurQuestion({
 }: {
   modules: ModuleChoix[];
   situations: SituationChoix[];
+  /** Blocs, filières et niveaux proposés en étiquettes (question 74). */
+  etiquettes: ChoixEtiquettes;
   initiale?: QuestionInitiale;
   moduleInitial?: string;
   action: (prec: EtatFormulaireQuestion, fd: FormData) => Promise<EtatFormulaireQuestion>;
@@ -129,6 +146,26 @@ export function EditeurQuestion({
     () => situations.filter((s) => s.moduleId === moduleId),
     [situations, moduleId],
   );
+  // « Aussi posée dans » (question 74) : les modules rangés par bloc, ceux sans bloc à la fin, et par
+  // critère dans chaque bloc. Les cases sont tenues ici pour que chaque bloc dise combien il en a de cochées.
+  const modulesParBloc = useMemo(() => {
+    const groupes = new Map<number | null, ModuleChoix[]>();
+    for (const m of modules) groupes.set(m.bloc, [...(groupes.get(m.bloc) ?? []), m]);
+    for (const liste of groupes.values()) {
+      liste.sort((a, b) => a.critereId.localeCompare(b.critereId, "fr", { numeric: true }) || a.titre.localeCompare(b.titre, "fr"));
+    }
+    return [...groupes.entries()].sort(([a], [b]) => (a ?? 99) - (b ?? 99));
+  }, [modules]);
+  const [aussiDans, setAussiDans] = useState<string[]>(initiale?.aussiDans ?? []);
+  const basculerAussi = (id: string, coche: boolean) =>
+    setAussiDans((prec) => (coche ? [...prec.filter((x) => x !== id), id] : prec.filter((x) => x !== id)));
+  const titreBloc = (n: number | null) => {
+    if (n === null) return "Bloc à préciser";
+    const b = etiquettes.blocs.find((x) => x.numero === n);
+    return b ? `Bloc ${n} — ${b.titre}` : `Bloc ${n}`;
+  };
+  // Blocs ouverts au départ : ceux qui portent déjà un rattachement.
+  const blocsOuverts = new Set((initiale?.aussiDans ?? []).map((id) => modules.find((m) => m.id === id)?.bloc ?? null));
 
   const majOption = (i: number, patch: Partial<OptionForm>) =>
     setOptions((prec) => prec.map((o, k) => (k === i ? { ...o, ...patch } : o)));
@@ -200,7 +237,16 @@ export function EditeurQuestion({
       <div className="rangee">
         <label className="champ">
           <span>Module (critère de la fiche)</span>
-          <select name="moduleId" value={moduleId} onChange={(e) => setModuleId(e.target.value)} required>
+          <select
+            name="moduleId"
+            value={moduleId}
+            onChange={(e) => {
+              setModuleId(e.target.value);
+              // Le module d'origine ne se coche pas aussi dans « Aussi posée dans ».
+              setAussiDans((prec) => prec.filter((x) => x !== e.target.value));
+            }}
+            required
+          >
             {modules.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.critereId} — {m.titre.slice(0, 70)}{m.redige ? "" : " (à rédiger)"}
@@ -562,6 +608,105 @@ export function EditeurQuestion({
           note ; comptée dans sa part de niveau
         </span>
       </label>
+
+      {/* Question 74 (choix c, 24/09/2026) : d'autres modules, des blocs et des profils. */}
+      <fieldset className="groupe">
+        <legend className="champ-titre">Autres modules, blocs et profils</legend>
+        <details open={aussiDans.length > 0}>
+          <summary>
+            Aussi posée dans d&apos;autres modules{aussiDans.length > 0 ? ` (${aussiDans.length})` : ""}
+          </summary>
+          <p className="legende">
+            La question reste à son module d&apos;origine, où elle se modifie et se valide ; elle entre aussi dans le tirage
+            des modules cochés et figure sous chacun dans l&apos;arborescence. Une seule validation, un seul signalement :
+            corrigée une fois, elle l&apos;est partout.
+          </p>
+          {modulesParBloc.map(([bloc, liste]) => {
+            const cochees = liste.filter((m) => m.id !== moduleId && aussiDans.includes(m.id)).length;
+            return (
+              <details key={bloc ?? "aucun"} className="aussi-bloc" open={blocsOuverts.has(bloc)}>
+                <summary>
+                  {titreBloc(bloc)}
+                  <span className="legende">
+                    {" "}
+                    — {liste.length} module{liste.length > 1 ? "s" : ""}
+                    {cochees > 0 ? `, ${cochees} coché${cochees > 1 ? "s" : ""}` : ""}
+                  </span>
+                </summary>
+                <span className="cases">
+                  {liste.map((m) => (
+                    <label key={m.id}>
+                      <input
+                        type="checkbox"
+                        name="aussiDans"
+                        value={m.id}
+                        checked={m.id === moduleId || aussiDans.includes(m.id)}
+                        onChange={(e) => basculerAussi(m.id, e.target.checked)}
+                        disabled={m.id === moduleId}
+                      />
+                      {m.critereId} — {m.titre}
+                      {m.id === moduleId ? " (module d'origine)" : ""}
+                    </label>
+                  ))}
+                </span>
+              </details>
+            );
+          })}
+        </details>
+        <fieldset className="champ">
+          <legend className="legende">Blocs de compétence</legend>
+          <p className="legende" style={{ margin: 0 }}>
+            Classement de la banque, sans effet sur le tirage ; les blocs de ses modules s&apos;y ajoutent.
+          </p>
+          <span className="cases">
+            {etiquettes.blocs.map((b) => (
+              <label key={b.numero}>
+                <input type="checkbox" name="blocs" value={b.numero} defaultChecked={initiale?.blocs.includes(b.numero) ?? false} />
+                {b.numero} — {b.titre}
+              </label>
+            ))}
+          </span>
+        </fieldset>
+        <p className="legende" style={{ margin: 0 }}>
+          Profils : rien de coché, la question est posée à tous les profils de ses modules. Cochées, les filières et les
+          niveaux limitent son tirage : elle n&apos;est posée qu&apos;à une filière cochée et à un niveau cible coché — une
+          liste vide ne limite rien.
+        </p>
+        <div className="rangee">
+          <fieldset className="champ">
+            <legend className="legende">Filières</legend>
+            <span className="cases">
+              {etiquettes.filieres.map((f) => (
+                <label key={f.id}>
+                  <input
+                    type="checkbox"
+                    name="profilFilieres"
+                    value={f.id}
+                    defaultChecked={initiale?.profilFilieres.includes(f.id) ?? false}
+                  />
+                  {f.libelle}
+                </label>
+              ))}
+            </span>
+          </fieldset>
+          <fieldset className="champ">
+            <legend className="legende">Niveaux d&apos;habilitation</legend>
+            <span className="cases">
+              {etiquettes.niveaux.map((n) => (
+                <label key={n.code}>
+                  <input
+                    type="checkbox"
+                    name="profilNiveaux"
+                    value={n.code}
+                    defaultChecked={initiale?.profilNiveaux.includes(n.code) ?? false}
+                  />
+                  {n.code}
+                </label>
+              ))}
+            </span>
+          </fieldset>
+        </div>
+      </fieldset>
 
       <div className="actions">
         <button type="submit" className="bouton" disabled={enCours || preparationImage.enCours}>

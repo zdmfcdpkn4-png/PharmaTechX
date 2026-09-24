@@ -4,7 +4,7 @@ import { listerAcces } from "@/lib/db";
 import { modeStockage } from "@/lib/stockage";
 import { modeConservation } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
-import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
+import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
 import { comptesRapports } from "@/lib/rapports";
 import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
 import { listerProgrammes } from "@/content/programmes-db";
@@ -46,15 +46,16 @@ export default async function Admin({
   const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [acces, comptes, ouverts, programmes] = await Promise.all([
+  const [acces, totaux, ouverts, programmes] = await Promise.all([
     listerAcces(),
-    comptesParModule(),
+    // Une question posée dans plusieurs modules (question 74) compte une fois.
+    totauxQuestions(),
     compterSignalementsOuverts(),
     listerProgrammes().catch(() => []),
   ]);
   const programmesValides = programmes.filter((x) => x.statut === "valide");
-  const aVerifier = Object.values(comptes).reduce((s, c) => s + c.aVerifier, 0);
-  const validees = Object.values(comptes).reduce((s, c) => s + c.valides, 0);
+  const aVerifier = totaux.aVerifier;
+  const validees = totaux.valides;
   const conservation = modeConservation();
   const rapports = conservation === "pseudonyme" ? await comptesRapports() : null;
 

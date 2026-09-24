@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   ORDRE_NIVEAUX,
+  admiseAuProfil,
   bilanTirage,
   melanger,
   repartir,
@@ -402,4 +403,74 @@ test("réservées déjà vues : contrôle du serveur", () => {
   const c = tirageConforme(evitee, banque, client);
   assert.equal(c.ok, false);
   if (!c.ok) assert.match(c.raison, /1 question réservée/);
+});
+
+// ───────────────────────────────────── étiquettes de profil (question 74, choix c)
+
+test("profil : sans étiquette, une question est admise à tout profil, précisé ou non", () => {
+  assert.equal(admiseAuProfil(null, { filiere: "chimiotherapie", niveau: "N2" }), true);
+  assert.equal(admiseAuProfil(undefined, undefined), true);
+  assert.equal(admiseAuProfil({ filieres: [], niveaux: [] }, { filiere: "preparatoire", niveau: "N1b" }), true);
+});
+
+test("profil : filières et niveaux cochés se lisent comme le réglage d'un module", () => {
+  const e = { filieres: ["chimiotherapie"], niveaux: ["N1c", "N2"] };
+  assert.equal(admiseAuProfil(e, { filiere: "chimiotherapie", niveau: "N2" }), true);
+  assert.equal(admiseAuProfil(e, { filiere: "chimiotherapie", niveau: "n1c" }), true, "code de niveau sans égard à la casse");
+  assert.equal(admiseAuProfil(e, { filiere: "preparatoire", niveau: "N2" }), false, "autre filière");
+  assert.equal(admiseAuProfil(e, { filiere: "chimiotherapie", niveau: "N1a" }), false, "autre niveau");
+  // Une liste vide ne limite rien.
+  assert.equal(admiseAuProfil({ filieres: [], niveaux: ["N3"] }, { filiere: "encadrement", niveau: "N3" }), true);
+  assert.equal(admiseAuProfil({ filieres: ["preparatoire"], niveaux: [] }, { filiere: "preparatoire", niveau: "N1b" }), true);
+});
+
+test("profil : une dimension non précisée ne limite rien, comme un niveau cible non précisé", () => {
+  const e = { filieres: ["chimiotherapie"], niveaux: ["N2"] };
+  assert.equal(admiseAuProfil(e, { filiere: null, niveau: "N2" }), true);
+  assert.equal(admiseAuProfil(e, { filiere: "chimiotherapie", niveau: null }), true);
+  assert.equal(admiseAuProfil(e, { filiere: null, niveau: null }), true);
+  assert.equal(admiseAuProfil(e, { filiere: null, niveau: "N1b" }), false, "le niveau précisé limite encore");
+  assert.equal(admiseAuProfil(e, undefined), true, "contexte sans profil");
+});
+
+test("profil : une question étiquetée pour un autre profil n'est tirée ni en évaluation ni en entraînement", () => {
+  const chimio = { filieres: ["chimiotherapie"], niveaux: [] };
+  const b = [q("a"), q("b"), q("c", { profils: chimio }), q("e", { eliminatoire: true, profils: chimio })];
+  const prep = { filiere: "preparatoire", niveau: "N1b" };
+  for (const mode of ["evaluation", "entrainement"] as const) {
+    const t = tirer(b, ctx(mode, "complet", null, { profil: prep }), fixe);
+    assert.deepEqual(t.map((x) => x.id), ["a", "b"], `${mode} : ni la question ni l'éliminatoire d'un autre profil`);
+  }
+  const t = tirer(b, ctx("evaluation", "complet", null, { profil: { filiere: "chimiotherapie", niveau: "N2" } }), fixe);
+  assert.deepEqual(t.map((x) => x.id), ["a", "b", "c", "e"]);
+  const sans = tirer(b, ctx("evaluation", "complet", null), fixe);
+  assert.equal(sans.length, 4, "sans profil : aucune limite");
+});
+
+test("profil : bilan et contrôle du serveur", () => {
+  const e = { filieres: ["chimiotherapie"], niveaux: [] };
+  const b = [q("a"), q("b"), q("c"), q("d"), q("x", { profils: e }), q("y", { profils: e })];
+  const c = ctx("evaluation", "habilitation", 3, { profil: { filiere: "preparatoire", niveau: null } });
+  const bilan = bilanTirage(b, c);
+  assert.equal(bilan.admises, 4);
+  assert.equal(bilan.horsProfil, 2);
+  for (let i = 0; i < 20; i++) {
+    const t = tirer(b, c, graine(i));
+    assert.ok(t.every((x) => !x.profils), "aucune question d'un autre profil tirée");
+    assert.deepEqual(tirageConforme(t, b, c), { ok: true });
+  }
+  const refus = tirageConforme([b[0], b[1], b[4]], b, c);
+  assert.equal(refus.ok, false);
+  assert.match((refus as { raison: string }).raison, /1 question étiquetée pour d'autres profils/);
+  // Pour la filière cochée, la même soumission est conforme.
+  assert.deepEqual(tirageConforme([b[0], b[1], b[4]], b, { ...c, profil: { filiere: "chimiotherapie", niveau: null } }), { ok: true });
+});
+
+test("profil : une obligatoire d'un autre profil n'est pas exigée par le contrôle", () => {
+  const e = { filieres: ["chimiotherapie"], niveaux: ["N2"] };
+  const b = [q("a"), q("b"), q("c"), q("o", { obligatoire: true, profils: e })];
+  const c = ctx("evaluation", "habilitation", 2, { profil: { filiere: "chimiotherapie", niveau: "N1c" } });
+  const t = tirer(b, c, fixe);
+  assert.ok(!t.some((x) => x.id === "o"));
+  assert.deepEqual(tirageConforme(t, b, c), { ok: true });
 });

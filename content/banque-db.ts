@@ -2,6 +2,8 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { requete, sql, transaction, sqlSur, type Role } from "@/lib/db";
 import type { Legende } from "./schema";
+import { lireBlocs, lireIdentifiants } from "./rattachement-question";
+import type { QuestionAuCompte } from "./arbre-banque";
 import type {
   MiseEnSituation,
   ModeReponse,
@@ -73,6 +75,17 @@ export interface LigneQuestion {
   image_hauteur: number | null;
   image_alt: string | null;
   situation_titre: string | null;
+  /**
+   * Question 74 (choix c, 24/09/2026) : modules où la question est aussi
+   * posée, son module d'origine (`module_id`) mis à part — elle entre dans
+   * leur tirage et figure sous chacun dans l'arborescence.
+   */
+  aussi_dans: string[];
+  /** Étiquettes de blocs de compétence (classement ; question 74). */
+  blocs: number[];
+  /** Étiquettes de profil (question 74) : filières et niveaux d'habilitation auxquels le tirage la limite ; vides : aucune limite. */
+  profil_filieres: string[];
+  profil_niveaux: string[];
 }
 
 export interface LigneSituation {
@@ -114,6 +127,12 @@ export interface QuestionAEnregistrer {
   refs: Reference[];
   statut: StatutQuestion;
   depotId?: string | null;
+  /** Modules où elle est aussi posée (question 74) ; absent : aucun. */
+  aussiDans?: string[];
+  /** Étiquettes de blocs et de profil (question 74) ; absentes : aucune. */
+  blocs?: number[];
+  profilFilieres?: string[];
+  profilNiveaux?: string[];
 }
 
 export function nouvelId(prefixe = "q"): string {
@@ -126,12 +145,29 @@ const COLONNES = `
   q.depot_id, q.rang, q.cree_par, q.cree_le::text, q.valide_par, q.valide_le::text, q.valide_par_auteur,
   q.edite_le::text, q.version, q.cree_par_acces, q.edite_par, q.edite_par_acces,
   i.largeur AS image_largeur, i.hauteur AS image_hauteur, i.alt AS image_alt,
-  s.titre AS situation_titre`;
+  s.titre AS situation_titre, q.blocs, q.profil_filieres, q.profil_niveaux,
+  COALESCE((SELECT array_agg(qm.module_id ORDER BY qm.module_id) FROM questions_modules qm
+            WHERE qm.question_id = q.id AND qm.module_id <> q.module_id), '{}'::text[]) AS aussi_dans`;
+
+/** La question est posée dans le module `$n` : son module d'origine, ou l'un de ceux où elle l'est aussi (question 74). */
+const POSEE_DANS = (n: number) =>
+  `(q.module_id = $${n} OR EXISTS (SELECT 1 FROM questions_modules qm WHERE qm.question_id = q.id AND qm.module_id = $${n}))`;
 
 const JOINTURES = `
   FROM questions q
   LEFT JOIN images i ON i.id = q.image_id
   LEFT JOIN situations s ON s.id = q.situation_id`;
+
+/** Rattachements et étiquettes relus tels qu'écrits, quoi que la base renvoie (question 74). */
+function normaliser(l: LigneQuestion): LigneQuestion {
+  return {
+    ...l,
+    aussi_dans: lireIdentifiants(l.aussi_dans),
+    blocs: lireBlocs(l.blocs),
+    profil_filieres: lireIdentifiants(l.profil_filieres),
+    profil_niveaux: lireIdentifiants(l.profil_niveaux),
+  };
+}
 
 /** Conversion d'une ligne en question du modèle de contenu. */
 export function versQuestion(l: LigneQuestion): Question {
@@ -149,6 +185,10 @@ export function versQuestion(l: LigneQuestion): Question {
     references: l.refs,
     origine: "base",
   };
+  // Étiquettes de profil (question 74) : elles limitent le tirage, et partent donc avec la question.
+  const filieres = lireIdentifiants(l.profil_filieres);
+  const niveaux = lireIdentifiants(l.profil_niveaux);
+  if (filieres.length > 0 || niveaux.length > 0) base.profils = { filieres, niveaux };
   if (l.format === "SCH") {
     base.legendes = l.legendes;
     base.modeReponse = l.mode_reponse;
@@ -170,13 +210,14 @@ export async function questionsValideesDuModule(
   moduleId: string,
 ): Promise<{ questions: Question[]; misesEnSituation: MiseEnSituation[] }> {
   const r = await requete<LigneQuestion>(
-    `SELECT ${COLONNES} ${JOINTURES} WHERE q.module_id = $1 AND q.statut = 'valide'
-     ORDER BY q.rang, q.cree_le`,
+    // Origine d'abord, puis les questions aussi posées ici (question 74), chacune dans son ordre.
+    `SELECT ${COLONNES} ${JOINTURES} WHERE ${POSEE_DANS(1)} AND q.statut = 'valide'
+     ORDER BY (q.module_id <> $1), q.rang, q.cree_le`,
     [moduleId],
   );
   const isolees: Question[] = [];
   const parSituation = new Map<string, Question[]>();
-  for (const l of r.rows) {
+  for (const l of r.rows.map(normaliser)) {
     const q = versQuestion(l);
     if (l.situation_id) {
       const liste = parSituation.get(l.situation_id) ?? [];
@@ -203,14 +244,22 @@ export async function questionsValideesDuModule(
   return { questions: isolees, misesEnSituation };
 }
 
-/** Nombre de questions validées et à vérifier par module. */
-/** Par module : questions validées, à vérifier, et validées réservées à l'évaluation. */
+/**
+ * Par module : questions validées, à vérifier, et validées réservées à
+ * l'évaluation — celles de sa banque, origine et rattachements (question 74) :
+ * une question posée dans deux modules compte dans chacun. Pour un total de
+ * la banque, `totauxQuestions`, qui la compte une fois.
+ */
 export async function comptesParModule(): Promise<
   Record<string, { valides: number; aVerifier: number; reservees: number }>
 > {
   const r = await sql<{ module_id: string; statut: StatutQuestion; reservee: boolean; n: number }>`
-    SELECT module_id, statut, reservee, COUNT(*)::int AS n FROM questions
-    WHERE statut IN ('valide','a_verifier') GROUP BY module_id, statut, reservee`;
+    SELECT m.module_id, q.statut, q.reservee, COUNT(*)::int AS n
+    FROM questions q
+      CROSS JOIN LATERAL (
+        SELECT q.module_id UNION SELECT qm.module_id FROM questions_modules qm WHERE qm.question_id = q.id
+      ) m(module_id)
+    WHERE q.statut IN ('valide','a_verifier') GROUP BY m.module_id, q.statut, q.reservee`;
   const out: Record<string, { valides: number; aVerifier: number; reservees: number }> = {};
   for (const l of r.rows) {
     const e = (out[l.module_id] ??= { valides: 0, aVerifier: 0, reservees: 0 });
@@ -224,6 +273,29 @@ export async function comptesParModule(): Promise<
   return out;
 }
 
+/**
+ * Chaque question validée ou à vérifier, avec les modules où elle est posée :
+ * de quoi cumuler une branche de la banque sans compter deux fois une
+ * question posée dans deux de ses modules (question 74, `cumulDistinct`).
+ */
+export async function questionsAuCompte(): Promise<QuestionAuCompte[]> {
+  const r = await sql<{ statut: "valide" | "a_verifier"; reservee: boolean; module_id: string; aussi: string[] | null }>`
+    SELECT q.statut, q.reservee, q.module_id,
+      (SELECT array_agg(qm.module_id) FROM questions_modules qm WHERE qm.question_id = q.id) AS aussi
+    FROM questions q WHERE q.statut IN ('valide','a_verifier')`;
+  return r.rows.map((l) => ({ statut: l.statut, reservee: l.reservee, modules: [l.module_id, ...(l.aussi ?? [])] }));
+}
+
+/** Questions validées et à vérifier de toute la banque, chacune une fois, quel que soit le nombre de ses modules. */
+export async function totauxQuestions(): Promise<{ valides: number; aVerifier: number }> {
+  const r = await sql<{ statut: StatutQuestion; n: number }>`
+    SELECT statut, COUNT(*)::int AS n FROM questions WHERE statut IN ('valide','a_verifier') GROUP BY statut`;
+  return {
+    valides: r.rows.find((l) => l.statut === "valide")?.n ?? 0,
+    aVerifier: r.rows.find((l) => l.statut === "a_verifier")?.n ?? 0,
+  };
+}
+
 export async function listerQuestions(filtre: {
   moduleId?: string;
   statut?: StatutQuestion;
@@ -232,17 +304,17 @@ export async function listerQuestions(filtre: {
   const statut = filtre.statut ?? null;
   const r = await requete<LigneQuestion>(
     `SELECT ${COLONNES} ${JOINTURES}
-     WHERE ($1::text IS NULL OR q.module_id = $1)
+     WHERE ($1::text IS NULL OR ${POSEE_DANS(1)})
        AND ($2::text IS NULL OR q.statut = $2)
      ORDER BY q.module_id, q.rang, q.cree_le`,
     [moduleId, statut],
   );
-  return r.rows;
+  return r.rows.map(normaliser);
 }
 
 export async function lireQuestion(id: string): Promise<LigneQuestion | null> {
   const r = await requete<LigneQuestion>(`SELECT ${COLONNES} ${JOINTURES} WHERE q.id = $1`, [id]);
-  return r.rows[0] ?? null;
+  return r.rows[0] ? normaliser(r.rows[0]) : null;
 }
 
 export async function enregistrerQuestion(
@@ -256,15 +328,23 @@ export async function enregistrerQuestion(
   const refs = JSON.stringify(q.refs);
   const par = `${acteur.role} · ${acteur.libelle}`;
   const acces = acteur.acces ?? null;
-  await sql`
+  // Étiquettes et rattachements (question 74) : absents de l'enregistrement, ceux en base sont gardés.
+  const etiquettes = q.blocs !== undefined || q.profilFilieres !== undefined || q.profilNiveaux !== undefined;
+  const blocs = JSON.stringify(q.blocs ?? []);
+  const profilFilieres = JSON.stringify(q.profilFilieres ?? []);
+  const profilNiveaux = JSON.stringify(q.profilNiveaux ?? []);
+  const aussiDans = q.aussiDans?.filter((m) => m !== q.moduleId);
+  await transaction(async (client) => {
+    const s = sqlSur(client);
+    await s`
     INSERT INTO questions (id, module_id, situation_id, format, enonce, options, legendes,
       mode_reponse, image_id, justification, eliminatoire, reservee, obligatoire, niveau_question, refs, statut, depot_id, cree_par,
-      valide_par, valide_le, cree_par_acces, edite_par, edite_par_acces)
+      valide_par, valide_le, cree_par_acces, edite_par, edite_par_acces, blocs, profil_filieres, profil_niveaux)
     VALUES (${ident}, ${q.moduleId}, ${q.situationId}, ${q.format}, ${q.enonce},
       ${options}::jsonb, ${legendes}::jsonb, ${q.modeReponse}, ${q.imageId},
       ${q.justification}, ${q.eliminatoire}, ${q.reservee}, ${q.obligatoire}, ${q.niveauQuestion}, ${refs}::jsonb, ${q.statut}, ${q.depotId ?? null},
       ${par}, ${q.statut === "valide" ? par : null}, ${q.statut === "valide" ? new Date() : null},
-      ${acces}, ${par}, ${acces})
+      ${acces}, ${par}, ${acces}, ${blocs}::jsonb, ${profilFilieres}::jsonb, ${profilNiveaux}::jsonb)
     ON CONFLICT (id) DO UPDATE SET
       edite_par = EXCLUDED.edite_par,
       edite_par_acces = EXCLUDED.edite_par_acces,
@@ -286,8 +366,18 @@ export async function enregistrerQuestion(
       valide_par = CASE WHEN EXCLUDED.statut = 'valide' THEN EXCLUDED.valide_par ELSE NULL END,
       valide_le = CASE WHEN EXCLUDED.statut = 'valide' THEN NOW() ELSE NULL END,
       valide_par_auteur = FALSE,
+      blocs = CASE WHEN ${etiquettes}::boolean THEN EXCLUDED.blocs ELSE questions.blocs END,
+      profil_filieres = CASE WHEN ${etiquettes}::boolean THEN EXCLUDED.profil_filieres ELSE questions.profil_filieres END,
+      profil_niveaux = CASE WHEN ${etiquettes}::boolean THEN EXCLUDED.profil_niveaux ELSE questions.profil_niveaux END,
       edite_le = NOW(),
       version = questions.version + 1`;
+    if (aussiDans) {
+      await s`DELETE FROM questions_modules WHERE question_id = ${ident}`;
+      for (const m of new Set(aussiDans)) {
+        await s`INSERT INTO questions_modules (question_id, module_id) VALUES (${ident}, ${m}) ON CONFLICT DO NOTHING`;
+      }
+    }
+  });
   return ident;
 }
 

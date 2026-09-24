@@ -3029,6 +3029,138 @@ Justification : cf. procédure interne.`,
   await rebrancher(codeTuteur);
   ok("banque en arborescence : vue par défaut, repliée, bascule vers la liste, Tout déplier / Tout replier, module rattaché à deux niveaux signalé, filtres gardés, créer, valider, modifier, retirer et supprimer ramènent à la branche, rouverte, en vue et avec le focus ; rien ne déborde à 360 px");
 
+  // 14a quater. une question dans plusieurs blocs et plusieurs profils (question 74, choix c) : créée
+  //             dans comportement-zac (bloc 1, tronc commun), aussi posée dans un module du bloc 4
+  //             (chimiothérapie) et un du bloc 6 (préparatoire), étiquetée bloc 7 et filière
+  //             Chimiothérapie. Elle figure sous ses trois modules, se filtre par bloc et par filière,
+  //             entre dans le tirage de chaque module, n'est tirée que pour la filière cochée, et le
+  //             serveur refuse de la corriger pour une autre. Supprimée à la fin : la suite garde ses comptes.
+  await rebrancher(codeAdmin);
+  const ENONCE_74 = `Question posée dans trois modules (${Date.now()}) ?`;
+  await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
+  await page.fill("textarea[name=enonce]", ENONCE_74);
+  const champs74 = page.locator(".proposition--editeur input[type=text]");
+  await champs74.nth(0).fill("Oui");
+  await champs74.nth(1).fill("Non");
+  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+  await page.fill("textarea[name=justification]", "Question commune à trois critères.");
+  await page.locator("summary", { hasText: "Aussi posée dans d'autres modules" }).click();
+  assert.equal(
+    await page.locator("input[name=aussiDans][value=comportement-zac]").isDisabled(),
+    true,
+    "le module d'origine ne se coche pas une seconde fois",
+  );
+  // Un repli par bloc, qui dit combien de ses modules sont cochés.
+  const bloc4 = page.locator("details.aussi-bloc", { hasText: "Bloc 4 —" });
+  await bloc4.locator(":scope > summary").click();
+  await page.check("input[name=aussiDans][value=critere-b4-02]");
+  await bloc4.locator(":scope > summary", { hasText: "1 coché" }).waitFor();
+  await page.locator("details.aussi-bloc", { hasText: "Bloc 6 —" }).locator(":scope > summary").click();
+  await page.check("input[name=aussiDans][value=critere-b6-02]");
+  await page.locator("summary", { hasText: "Aussi posée dans d'autres modules (2)" }).waitFor();
+  await page.check("input[name=blocs][value='7']");
+  await page.check("input[name=profilFilieres][value=chimiotherapie]");
+  await page.click("button:has-text('Créer la question')");
+  await page.waitForURL(/ok=creee/);
+  const ligne74 = page.locator(".question-ligne", { hasText: ENONCE_74 });
+  await ligne74.locator(".etiquette:text-is('Posée dans 3 modules')").waitFor();
+  await ligne74.locator(".etiquette:text-is('Profils limités')").waitFor();
+  const rattachement74 = (await ligne74.locator(".rattachement-question").innerText()).replace(/\s+/g, " ");
+  assert.match(rattachement74, /aussi posée dans : B4-02 — .+ ; B6-02 — /, "les modules où elle est aussi posée, nommés");
+  assert.match(rattachement74, /blocs 1, 4, 6, 7/, "blocs de ses modules et de ses étiquettes");
+  assert.match(rattachement74, /profils : .*Chimioth.* · tous niveaux/, "étiquettes de profil en clair");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ligne74.locator("form button:has-text('Valider')").click(),
+  ]);
+  await ligne74.locator(".etiquette:text-is('Validée')").waitFor();
+  const id74 = new URL(await ligne74.locator("a:has-text('Modifier')").getAttribute("href"), BASE).pathname.split("/").pop();
+  // Relue dans l'éditeur, telle qu'enregistrée.
+  await page.goto(BASE + `/admin/questions/${id74}`);
+  assert.equal(await page.isChecked("input[name=aussiDans][value=critere-b4-02]"), true);
+  assert.equal(await page.isChecked("input[name=aussiDans][value=critere-b6-02]"), true);
+  assert.equal(await page.isChecked("input[name=blocs][value='7']"), true);
+  assert.equal(await page.isChecked("input[name=profilFilieres][value=chimiotherapie]"), true);
+  assert.equal(await page.isChecked("input[name=profilFilieres][value=preparatoire]"), false);
+  // Liste d'un module où elle est aussi posée : dite comme telle, et comptée dans sa banque.
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b4-02");
+  await page.locator(".question-ligne", { hasText: ENONCE_74 }).locator(".etiquette:text-is('Aussi posée ici')").waitFor();
+  assert.match(
+    await page.locator("form.filtres select[name=module] option[value=critere-b4-02]").innerText(),
+    /\(1 validée, 0 à vérifier\)/,
+    "comptée dans la banque du module où elle est aussi posée",
+  );
+  // Filtres : bloc lu sur ses modules et ses étiquettes, filière sur ses étiquettes.
+  const presente = async (requete) => {
+    await page.goto(BASE + "/admin/questions?vue=liste&" + requete);
+    return page.locator(".question-ligne", { hasText: ENONCE_74 }).count();
+  };
+  assert.equal(await presente("bloc=4"), 1, "bloc 4, par son rattachement, listée une fois");
+  assert.equal(await presente("bloc=7"), 1, "bloc 7, par son étiquette");
+  assert.equal(await presente("bloc=2"), 0, "bloc 2 : ni module ni étiquette");
+  assert.equal(await presente("filiere=chimiotherapie"), 1, "filière cochée");
+  assert.equal(await presente("filiere=preparatoire"), 0, "filière exclue par son étiquette");
+  assert.equal(await page.locator("form.filtres select[name=filiere]").inputValue(), "preparatoire", "filtre gardé");
+  // Arborescence : sous chacun de ses trois modules ; hors profil sous la branche du préparatoire.
+  await page.goto(BASE + "/admin/questions?vue=arbre&plis=tout");
+  assert.equal(await page.locator("details.arbo-question", { hasText: ENONCE_74 }).count(), 3, "sous chacun de ses modules");
+  await page
+    .locator("#arb-chimiotherapie_2f_N1c_2f_critere-b4-02 details.arbo-question", { hasText: ENONCE_74 })
+    .locator(".etiquette:text-is('Aussi posée ici')")
+    .waitFor();
+  await page
+    .locator("#arb-preparatoire_2f_N1b_2f_critere-b6-02 details.arbo-question", { hasText: ENONCE_74 })
+    .locator(".etiquette:text-is('Hors du profil de cette branche')")
+    .waitFor();
+  assert.equal(
+    await page
+      .locator("#arb-_2a__2f_N1a_2f_comportement-zac details.arbo-question", { hasText: ENONCE_74 })
+      .locator(".etiquette:text-is('Hors du profil de cette branche')")
+      .count(),
+    0,
+    "le tronc commun vaut pour toutes les filières",
+  );
+  // Tirage : la page d'évaluation annonce la question réservée à d'autres profils ; le Complet la compte ou non.
+  const completDuProfil = async (filiere) => {
+    await page.goto(BASE + `/module/comportement-zac/evaluation?parcours=integration&filiere=${filiere}&niveau=N1a`);
+    return Number(/Complet — (\d+) questions?/.exec((await page.locator("fieldset.choix-difficulte label").nth(2).innerText()).replace(/\s+/g, " "))[1]);
+  };
+  const nbChimio = await completDuProfil("chimiotherapie");
+  const nbPrep = await completDuProfil("preparatoire");
+  assert.equal(nbChimio - nbPrep, 1, "la question étiquetée Chimiothérapie n'est pas tirée pour le préparatoire");
+  await page.waitForSelector("text=1 étiquetée pour d'autres profils (filière ou niveau)");
+  // Serveur : même règle, contrôlée, et dite dans le résultat scellé.
+  const corriger74 = (corps) => page.request.post(BASE + "/api/evaluation", { data: { reponses: {}, mode: "evaluation", difficulte: "complet", ...corps } });
+  const pourChimio = await (await corriger74({ moduleId: "comportement-zac", niveauCible: "N1a", filiere: "chimiotherapie" })).json();
+  assert.ok(pourChimio.detail.some((d) => d.questionId === id74), "tirée pour la filière cochée");
+  assert.equal(pourChimio.cible.horsProfil, undefined, "rien d'écarté pour ce profil");
+  const pourPrep = await (await corriger74({ moduleId: "comportement-zac", niveauCible: "N1a", filiere: "preparatoire" })).json();
+  assert.ok(!pourPrep.detail.some((d) => d.questionId === id74), "écartée pour une autre filière");
+  assert.equal(pourPrep.cible.horsProfil, 1, "le résultat scellé compte la question écartée");
+  assert.equal(typeof pourPrep.cible.filiere, "string", "et nomme la filière du tirage");
+  const refus74 = await corriger74({
+    moduleId: "comportement-zac",
+    niveauCible: "N1a",
+    filiere: "preparatoire",
+    questionIds: pourChimio.detail.map((d) => d.questionId),
+  });
+  assert.equal(refus74.status(), 400);
+  assert.match((await refus74.json()).erreur, /1 question étiquetée pour d'autres profils/);
+  // Elle entre dans le tirage des modules où elle est aussi posée.
+  const dansB4 = await (await corriger74({ moduleId: "critere-b4-02", niveauCible: "N1c", filiere: "chimiotherapie" })).json();
+  assert.deepEqual(dansB4.detail.map((d) => d.questionId), [id74], "posée dans le module du bloc 4");
+  const dansB6 = await corriger74({ moduleId: "critere-b6-02", niveauCible: "N1b", filiere: "preparatoire" });
+  assert.equal(dansB6.status(), 400, "dans le module du préparatoire, son étiquette l'écarte du tirage");
+  // Remise en ordre : la question est supprimée, ses rattachements avec elle.
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.locator(".question-ligne", { hasText: ENONCE_74 }).locator("form button:has-text('Supprimer')").click(),
+  ]);
+  assert.equal(await presente("module=critere-b4-02"), 0, "supprimée, elle quitte aussi les modules où elle était posée");
+  await rebrancher(codeTuteur);
+  ok("question dans plusieurs blocs et profils (question 74, choix c) : aussi posée dans deux autres modules, étiquetée bloc 7 et filière Chimiothérapie ; relue dans l'éditeur, comptée dans chaque banque, filtrée par bloc et filière, sous ses trois modules dans l'arborescence et hors profil sous celle du préparatoire ; tirée pour la filière cochée seulement, dite au résultat scellé, refusée par le serveur pour une autre ; supprimée avec ses rattachements");
+
   // 15. limiteur : 5 échecs bloquent
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);

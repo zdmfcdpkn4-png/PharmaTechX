@@ -44,6 +44,8 @@ export interface BrancheNiveau {
 
 export interface BrancheFiliere {
   chemin: string;
+  /** Identifiant de la filière ; `null` : le tronc commun, tous postes. */
+  filiere: string | null;
   libelle: string;
   badge?: string;
   /** Faux pour une filière citée par un module mais absente du référentiel. */
@@ -129,6 +131,7 @@ export function construireArbre(
     ];
     arbre.push({
       chemin: cheminF,
+      filiere: g.cle === TOUS ? null : g.cle,
       libelle: g.libelle,
       badge: g.badge,
       connue: g.connue,
@@ -246,4 +249,39 @@ export function retourBanque(brut: unknown, ajouts: Record<string, string> = {})
  */
 export function ancreDe(chemin: string): string {
   return `arb-${chemin.replace(/[^A-Za-z0-9-]/g, (c) => `_${c.charCodeAt(0).toString(16)}_`)}`;
+}
+
+/**
+ * Une question telle que la comptent les cumuls d'une branche (question 74,
+ * choix c) : son statut, et tous les modules où elle est posée — origine et
+ * rattachements.
+ */
+export interface QuestionAuCompte {
+  statut: "valide" | "a_verifier";
+  reservee: boolean;
+  modules: readonly string[];
+}
+
+/**
+ * Questions validées, à vérifier et réservées validées d'un ensemble de
+ * modules, chacune une fois : une question posée dans deux modules d'une
+ * même branche n'y compte pas double, quand la somme des comptes par module
+ * la compterait deux fois.
+ */
+export function cumulDistinct(
+  moduleIds: Iterable<string>,
+  questions: readonly QuestionAuCompte[],
+): { valides: number; aVerifier: number; reservees: number } {
+  const ids = new Set(moduleIds);
+  const out = { valides: 0, aVerifier: 0, reservees: 0 };
+  for (const q of questions) {
+    if (!q.modules.some((m) => ids.has(m))) continue;
+    if (q.statut === "valide") {
+      out.valides += 1;
+      if (q.reservee) out.reservees += 1;
+    } else {
+      out.aVerifier += 1;
+    }
+  }
+  return out;
 }

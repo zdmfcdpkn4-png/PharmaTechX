@@ -23,6 +23,15 @@ export interface CibleScellee {
    * la banque admise n'en offrait plus.
    */
   ecartees: { questionId: string; enonce: string; eliminatoire: boolean; remplacee: boolean }[];
+  /**
+   * Question 74 (choix c, 24/09/2026) : questions de la banque, sous le
+   * plafond, que leurs étiquettes réservent à d'autres profils et que le
+   * tirage n'a donc pas pu poser ; absent à zéro et dans les résultats
+   * antérieurs. `filiere` : libellé de la filière du profil de tirage,
+   * `null` si elle n'était pas précisée.
+   */
+  horsProfil?: number;
+  filiere?: string | null;
 }
 
 const NOMS: Record<NiveauQuestion | "a_preciser", [string, string]> = {
@@ -40,7 +49,12 @@ export function libelleCible(c: CibleScellee): string {
     .map((n) => `${c.parNiveau[n]} ${NOMS[n][c.parNiveau[n] > 1 ? 1 : 0]}`)
     .join(", ");
   const obligatoires = c.obligatoires > 0 ? ` ; ${c.obligatoires} obligatoire${c.obligatoires > 1 ? "s" : ""}` : "";
-  return `${tete}. Posées : ${posees || "aucune"}${obligatoires}.`;
+  const n = c.horsProfil ?? 0;
+  const horsProfil =
+    n > 0
+      ? ` ${n} question${n > 1 ? "s" : ""} étiquetée${n > 1 ? "s" : ""} pour d'autres profils non tirée${n > 1 ? "s" : ""} (profil : ${c.filiere ?? "filière non précisée"}, ${c.niveau ?? "niveau non précisé"}).`
+      : "";
+  return `${tete}. Posées : ${posees || "aucune"}${obligatoires}.${horsProfil}`;
 }
 
 /** Les questions toujours posées qu'un signalement a écartées, en une phrase ; vide s'il n'y en a pas. */

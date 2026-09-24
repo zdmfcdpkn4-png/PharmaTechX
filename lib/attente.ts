@@ -1,5 +1,5 @@
 import "server-only";
-import { comptesParModule, compterSignalementsOuverts } from "@/content/banque-db";
+import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
 import { compterFichesAVerifier } from "./fiches-db";
 import { AUCUN_COMPTE, type ComptesAttente, type ProfilAcces } from "@/content/acces-rapide";
 import { anciennetesQuiz, rapportsEnAttente, SANS_FILTRE, type RapportEnAttente } from "./pilotage-db";
@@ -10,7 +10,7 @@ import { maintien } from "@/content/habilitation";
  * Compteurs de la file d'attente (paquet A, 21/09/2026).
  *
  * Tous proviennent des fonctions qui alimentent déjà les écrans
- * correspondants — `compterSignalementsOuverts()`, `comptesParModule()`,
+ * correspondants — `compterSignalementsOuverts()`, `totauxQuestions()`,
  * `compterFichesAVerifier()`, `rapportsEnAttente()`. C'est la seule façon de tenir le critère 2 de
  * `docs/ACCES-RAPIDE.md` : « les compteurs égalent ceux des écrans ». Une
  * requête écrite pour l'occasion aurait divergé au premier changement de
@@ -35,11 +35,10 @@ export async function comptesAttente(
 ): Promise<ComptesAttente> {
   if (profil === "poste") return AUCUN_COMPTE;
 
-  const [signalements, parModule, rapports, anciennetes, fichesAVerifier] = await Promise.all([
+  const [signalements, totaux, rapports, anciennetes, fichesAVerifier] = await Promise.all([
     compterSignalementsOuverts().catch(() => 0),
-    comptesParModule().catch(
-      () => ({}) as Record<string, { valides: number; aVerifier: number; reservees: number }>,
-    ),
+    // Chaque question une fois, même posée dans plusieurs modules (question 74).
+    totauxQuestions().catch(() => ({ valides: 0, aVerifier: 0 })),
     conservation
       ? rapportsEnAttente(SANS_FILTRE).catch((): RapportEnAttente[] => [])
       : Promise.resolve<RapportEnAttente[]>([]),
@@ -51,7 +50,7 @@ export async function comptesAttente(
 
   // Questions et fiches de synthèse (question 59) : la banque montre les deux
   // sous le même filtre « à vérifier ».
-  const contenusAVerifier = Object.values(parModule).reduce((s, c) => s + c.aVerifier, 0) + fichesAVerifier;
+  const contenusAVerifier = totaux.aVerifier + fichesAVerifier;
 
   // Un signalement ouvert sur une question du tirage verrouille visa et
   // arbitrage : ces rapports n'appellent aucun acte tant qu'il n'est pas clos.

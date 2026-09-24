@@ -48,6 +48,7 @@ export const TABLES = [
   "programmes",
   "ordres_profil",
   "ordres_agent",
+  "questions_modules",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -460,6 +461,22 @@ export const SCHEMA: string[] = [
   // question obligatoire (question 63, choix a) : posée à chaque évaluation
   // qui peut conclure, sans effet sur la note
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS obligatoire BOOLEAN NOT NULL DEFAULT FALSE`,
+
+  // ── une question dans plusieurs blocs et plusieurs profils (question 74,
+  // choix c, 24/09/2026) ────────────────────────────────────────────────────
+  // Modules où la question est aussi posée, en plus de son module d'origine
+  // (questions.module_id, où elle se modifie et se valide).
+  `CREATE TABLE IF NOT EXISTS questions_modules (
+     question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+     module_id   TEXT NOT NULL,
+     PRIMARY KEY (question_id, module_id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS questions_modules_module ON questions_modules (module_id)`,
+  // Étiquettes propres à la question : blocs de compétence (classement), et
+  // filières et niveaux d'habilitation qui limitent son tirage — vides : aucune limite.
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS blocs JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS profil_filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  `ALTER TABLE questions ADD COLUMN IF NOT EXISTS profil_niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

@@ -76,8 +76,8 @@ jamais seulement par l'affichage.
 **Stocké** (configuration du site) : `acces` (codes hachés), `ordonnancement`
 (ordre général) et `ordres_profil` (ordre d'un profil de poste à un niveau cible),
 `depots` (index des documents, avec leurs profils ; fichiers en Blob ou dans
-`fichiers`), `questions` / `situations` / `images` / `depots_questions`
-(banque déposée), `modules_deposes` (modules ajoutés depuis
+`fichiers`), `questions` / `questions_modules` / `situations` / `images` /
+`depots_questions` (banque déposée), `modules_deposes` (modules ajoutés depuis
 l'administration), `reglages_modules` (seuil réglé d'un module du code),
 `parametres` (barème réglé), `progression` et `en_cours` (progression
 rattachée à un identifiant d'agent, décision du 18/09/2026, question 11 :
@@ -161,6 +161,19 @@ plafond (question 62, choix a) ; une question au signalement ouvert n'est
 tirée nulle part. Le serveur refuse un tirage qui omet une éliminatoire ou
 une obligatoire, ou qui pose une question au-dessus du niveau cible.
 
+Une question peut être posée dans **plusieurs modules** et porter des
+**étiquettes** (décision du 24/09/2026, question 74, choix c). Elle garde son
+module d'origine, où elle se modifie et se valide, et entre aussi dans le
+tirage des modules cochés « Aussi posée dans ». Ses blocs sont ceux de ses
+modules et de ses étiquettes : ils classent la banque, sans effet sur le
+tirage. Ses filières et niveaux d'habilitation cochés limitent son tirage
+aux profils correspondants ; une liste vide ne limite rien, une filière ou
+un niveau cible non précisé non plus. Le serveur refuse un tirage qui pose
+une question étiquetée pour un autre profil. En base : table
+`questions_modules`, colonnes `blocs`, `profil_filieres` et
+`profil_niveaux`, réglées dans l'éditeur ; le format de dépôt ne les porte
+pas.
+
 **Barème harmonisé et réglable** (décisions du 18/09/2026, question 10, et du
 19/09/2026, questions 34 et 35) : les **cinq** formats suivent **la même règle**
 et se règlent avec **les six mêmes champs** depuis `/admin/bareme` — mode
@@ -206,13 +219,13 @@ portant sa **justification** et ses sources, mises en situation,
 signalements des apprenants.
 
 Deux présentations de la même banque (23/09/2026, question 64, choix b) :
-la **Liste**, par défaut, précédée de la couverture (filière, niveau,
-module, avec les comptes) ; l'**Arborescence**, qui prolonge cette
-couverture jusqu'aux questions, en `<details>` repliables au clavier et
-sans script. Un module rattaché à deux niveaux y figure sous chacun et le
-dit ; les filtres valent pour les deux vues ; après un geste (valider,
-retirer, modifier, supprimer), l'arborescence rouvre la branche où il a été
-fait et y ramène.
+la **Liste**, précédée de la couverture (filière, niveau, module, avec les
+comptes) ; l'**Arborescence**, par défaut et repliée depuis le 24/09/2026,
+qui prolonge cette couverture jusqu'aux questions, en `<details>`
+repliables au clavier et sans script. Un module rattaché à deux niveaux y
+figure sous chacun et le dit ; les filtres valent pour les deux vues ;
+après un geste (valider, retirer, modifier, supprimer), l'arborescence
+rouvre la branche où il a été fait et y ramène.
 
 `/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
 à la manière des dépôts du Lecteur QIM · QCM) : le texte des 53 critères
