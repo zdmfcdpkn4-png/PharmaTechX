@@ -110,7 +110,7 @@
   --ombre-haute: 0 1px 2px rgba(16, 24, 32, 0.04), 0 22px 60px rgba(0, 85, 134, 0.12);
   --largeur: 70rem;
   --largeur-texte: 68ch;     /* longueur de ligne de lecture confortable */
-  --cible: 44px;             /* cible tactile minimale (WCAG 2.1 AA) */
+  --cible: 44px;             /* cible tactile : WCAG 2.5.5, niveau AAA (l'AA, 2.5.8, en demande 24) */
   --cible-large: 52px;       /* actions principales, usage tablette en zone */
   --transition: 0.22s ease;
   /* Hauteur réelle de l'en-tête, écrite au runtime par un ResizeObserver.
@@ -1221,12 +1221,40 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
 }
 
 /* « Reprendre » et « À faire » ne défilent jamais : ce sont elles qu'on vient
-   lire. Seul le plan du site défile. */
+   lire. Seul le plan du site défile ; « À faire » se replie à la demande pour
+   lui laisser la place (question 75). */
 .ar-fixe { flex: none; padding: 0 1rem; }
 .ar-defilant { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 1rem 1rem; }
 
 .ar-zone { display: flex; flex-direction: column; gap: 0.125rem; margin-bottom: 0.875rem; }
 .ar-zone h3 { margin: 0 0 0.25rem; padding: 0 0.125rem; }
+/* « À faire » repliable (question 75, choix a) : l'intitulé devient un bouton
+   de toute la largeur, cible pleine au doigt ; replié, il porte le total de la
+   file. Ses lignes passent dans `.ar-zone-liens`, qui garde l'écart de la zone. */
+.ar-zone h3.ar-titre-repli { margin: 0; padding: 0; }
+.ar-repli {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 0.125rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ar-repli-titre { flex: 1 1 auto; }
+.ar-repli .ar-compte { letter-spacing: 0; }
+.ar-repli[aria-expanded="true"] .ar-chevron::before { transform: rotate(90deg); }
+.ar-compte--nul { background: var(--surface-douce); color: var(--texte-doux); }
+.ar-zone-liens { display: flex; flex-direction: column; gap: inherit; }
+.ar-zone-liens[hidden] { display: none; }
 /* « Aller à » en accordéon (choix b du 23/09/2026). L'intitulé de groupe était
    en capitales grises de 11 px, plus petit que les liens qu'il coiffe : il
    devient un bandeau, et les liens se rangent en retrait sous un filet. */
@@ -1282,6 +1310,10 @@ button.ar-groupe { cursor: pointer; }
 .ar-item--choisi { background: var(--marque-clair); border-left-color: var(--hdv-rose); }
 .ar-libelle { flex: 1 1 auto; min-width: 0; }
 .ar-detail { flex: none; font-size: 0.75rem; color: var(--texte-doux); }
+/* « Reprendre » : le détail passe sous le titre (question 75). À côté, il
+   prenait la moitié droite et le titre s'étalait sur quatre lignes. */
+.ar-item--reprise { flex-wrap: wrap; row-gap: 0; }
+.ar-item--reprise .ar-detail { flex-basis: 100%; }
 .ar-compte {
   flex: none;
   min-width: 1.5rem;
@@ -1326,7 +1358,8 @@ button.ar-groupe { cursor: pointer; }
   .rail { display: none; }
   /* Le doigt remplace le pointeur : cible pleine. */
   .ar-item,
-  .ar-groupe { min-height: var(--cible); }
+  .ar-groupe,
+  .ar-repli { min-height: var(--cible); }
   .ar-zone { gap: 0.25rem; }
   body.menu-ouvert { overflow: hidden; }
 }
@@ -2518,6 +2551,7 @@ html[data-zone="1"] body { font-size: 18px; }
 html[data-zone="1"] .rail a,
 html[data-zone="1"] .ar-item,
 html[data-zone="1"] .ar-groupe,
+html[data-zone="1"] .ar-repli,
 html[data-zone="1"] details.rail-groupe > summary { min-height: var(--cible); }
 html[data-zone="1"] .option { min-height: 60px; }
 html[data-zone="1"] .ar-raccourci { display: none; }

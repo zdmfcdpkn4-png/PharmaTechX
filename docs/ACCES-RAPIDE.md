@@ -15,6 +15,11 @@ du volet, et le voile ne voile plus rien, à aucune taille. Réécrits en
 conséquence : § 4.1 (animation, fond), § 4.3, § 5.2 et § 7 ; critère 10
 ajouté au § 8, vérifié de bout en bout.
 
+**Révisée le 25/09/2026** (question 75, choix a) : « À faire » se replie à la
+demande, son intitulé portant alors le total de la file, et l'état est gardé
+sur le poste. Complétés : § 3.1, § 3.2 et § 5.1 ; critère 11 ajouté au § 8,
+vérifié de bout en bout.
+
 ---
 
 ## 1. Le problème que ce composant règle — et celui qu'il ne règle pas
@@ -132,6 +137,10 @@ Si les deux sont absents, **la zone entière disparaît** — pas de cadre vide,
 pas de « rien à reprendre ». Un cadre vide est du bruit qu'il faut lire pour
 constater qu'il ne dit rien.
 
+Le détail d'un item (« lecture, section 1 sur 5 ») s'écrit **sous** son titre
+(question 75, 25/09/2026) : à côté, il prenait la moitié de la largeur du
+tiroir et un titre de module s'étalait sur quatre lignes.
+
 ### 3.2 « À faire » — la file d'attente, chiffrée
 
 Le cœur du gain. Chaque item porte un **compteur calculé côté serveur**, déjà
@@ -158,6 +167,15 @@ pilotage.
 4. **Zone entière absente pour un profil de poste.** Un apprenant n'a pas de
    file d'attente ; lui en montrer une vide lui apprend seulement qu'il est
    surveillé.
+
+**Repli à la demande** (question 75, choix a, 25/09/2026). Sur téléphone, les
+zones fixes laissaient à « Aller à » 161 px sur un iPhone 15 dans Safari et
+55 px sur un iPhone SE. L'intitulé « À faire » est donc un bouton : replié, il
+porte le **total** de la file (« À faire, 8 en attente », « À faire,
+aucun »), en gris à zéro. La zone est dépliée par défaut ; le repli est gardé
+sur le poste, comme le mode zone. Pendant une recherche, ses résultats
+s'affichent même repliée. La règle 1 tient : aucun item ne va et vient de
+lui-même, c'est l'utilisateur qui replie la zone entière.
 
 ### 3.3 « Aller à » — le volet, à l'identique
 
@@ -233,6 +251,7 @@ et « À faire » s'insérant au-dessus de « Aller à ».
 | Cible tactile | **44 px** de haut par item |
 | Recherche | présente, mais **sans focus automatique** (§ 4.1) |
 | Clavier virtuel | le panneau défile ; la zone « À faire » reste au-dessus du pli |
+| « À faire » | repliable, total sur l'intitulé, état gardé sur le poste (question 75) : « Aller à » passe de 155 à 395 px sur un iPhone 15 dans Safari, de 49 à 289 px sur un iPhone SE |
 
 ### 5.2 Au-dessus de 62 rem — poste de travail
 
@@ -322,6 +341,7 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 | 8 | Le panneau n'apparaît pas à l'impression | test de feuille d'impression |
 | 9 | Ouverture perçue < 100 ms, aucun appel réseau | les compteurs voyagent avec la page |
 | 10 | Sur poste, le tiroir recouvre le volet et laisse la colonne de lecture découverte, ni assombrie ni floutée ; un clic sur la page le ferme sans suivre le lien (question 61) | e2e à 1 280 px : bords du tiroir, du volet et de la colonne mesurés ; calque transparent ; clic sur un lien de la page → adresse inchangée, focus au hamburger |
+| 11 | « À faire » se replie : l'intitulé porte alors le total de la file, « Aller à » récupère la place, l'état tient d'une ouverture à l'autre, une recherche en montre quand même les résultats (question 75) | e2e : repli, total égal à la somme des compteurs, hauteur d'« Aller à », fermeture et réouverture, recherche, dépli |
 
 ---
 

@@ -406,6 +406,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     intitulés « Administration · … » d'« Aller à » (synonyme, ou mot
     remplacé par une vignette ou une icône).
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre :
+    l'intitulé « À faire » est un bouton qui replie la zone ; replié, il
+    porte le total de la file ; l'état est gardé sur le poste ; une
+    recherche montre quand même ses résultats. Mesuré après : « Aller à »
+    passe de 155 à 395 px sur iPhone 15, de 49 à 289 px sur iPhone SE, de
+    16 à 274 px sur ce dernier en mode zone. Détail dans `DECISIONS.md`.
+
 74. **Une question dans plusieurs blocs et plusieurs profils** — posée le
     24/09/2026, sur demande (« pouvoir positionner une question dans
     plusieurs blocs de compétences et plusieurs profils »). Aujourd'hui, une

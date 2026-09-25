@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ContexteMenu } from "./Menu";
 import type { GroupeRail } from "./Navigation";
-import { nomAccessible, type ItemAttente } from "@/content/acces-rapide";
+import { nomAccessible, totalEnAttente, type ItemAttente } from "@/content/acces-rapide";
 import { groupePorteLaPage, relevePage } from "@/lib/rail";
 import { DERNIER, type DernierModule } from "./LectureModule";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
@@ -36,7 +36,16 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * la main le reste jusqu'au rechargement de la page. Pendant une recherche,
  * tous les groupes qui ont un résultat sont ouverts. L'onglet RGPD reste une
  * entrée directe.
+ *
+ * « À faire » repliable (question 75, choix a, 25/09/2026) : sur téléphone, la
+ * partie fixe laissait à « Aller à » 161 px sur un iPhone 15, 55 px sur un
+ * iPhone SE. Replié, l'intitulé porte le total de la file ; l'état est gardé
+ * sur le poste, comme le mode zone. Pendant une recherche, ses résultats
+ * s'affichent quand même, comme ceux d'un groupe replié.
  */
+
+/** Repli de « À faire », mémorisé sur le poste seulement. */
+const REPLI_A_FAIRE = "fp-a-faire-replie";
 
 export interface ReprisePossible {
   /** `lecture` : repère posé sur ce poste. `evaluation` : session laissée en plan. */
@@ -134,6 +143,8 @@ export function AccesRapide({
   const [presel, setPresel] = useState(false);
   // Groupes ouverts ou fermés à la main ; les autres suivent la page courante.
   const [replis, setReplis] = useState<Record<string, boolean>>({});
+  // « À faire » replié : lu à l'ouverture, comme le repère de lecture.
+  const [faireReplie, setFaireReplie] = useState(false);
   // Repère de lecture : local au poste, lu à l'ouverture seulement — jamais au
   // premier rendu, qui doit être identique côté serveur et côté navigateur.
   const [lecture, setLecture] = useState<ReprisePossible | null>(null);
@@ -164,12 +175,16 @@ export function AccesRapide({
     return toutes.filter((e) => sansAccent(`${e.libelle} ${e.groupe ?? ""}`).includes(q));
   }, [toutes, filtre]);
 
-  // Pendant une recherche, tout groupe qui a un résultat est ouvert.
+  // Pendant une recherche, tout groupe qui a un résultat est ouvert — « À faire » aussi.
   const groupeOuvert = (r: NonNullable<Entree["repli"]>) => recherche || (replis[r.cle] ?? r.porteLaPage);
+  const faireDeplie = recherche || !faireReplie;
   // Les flèches et Entrée ne parcourent que les liens affichés.
   const navigables = useMemo(
-    () => visibles.filter((e) => !e.repli || recherche || (replis[e.repli.cle] ?? e.repli.porteLaPage)),
-    [visibles, recherche, replis],
+    () =>
+      visibles.filter((e) =>
+        e.zone === "faire" ? faireDeplie : !e.repli || recherche || (replis[e.repli.cle] ?? e.repli.porteLaPage),
+      ),
+    [visibles, recherche, replis, faireDeplie],
   );
 
   // Le panneau s'ouvre : état remis à zéro, focus posé, défilement du corps figé.
@@ -192,6 +207,11 @@ export function AccesRapide({
       );
     } catch {
       setLecture(null);
+    }
+    try {
+      setFaireReplie(localStorage.getItem(REPLI_A_FAIRE) === "1");
+    } catch {
+      setFaireReplie(false);
     }
     // Sur tactile, donner le focus au champ ouvre le clavier virtuel, qui mange
     // la moitié de l'écran avant qu'on ait rien demandé : on vise le panneau.
@@ -306,6 +326,19 @@ export function AccesRapide({
 
   const suivre = () => menu.fermer();
 
+  // Total de la file, porté par l'intitulé replié : le repli n'efface pas le compteur.
+  const total = totalEnAttente(items);
+  const basculerAFaire = () => {
+    const replie = !faireReplie;
+    setFaireReplie(replie);
+    try {
+      if (replie) localStorage.setItem(REPLI_A_FAIRE, "1");
+      else localStorage.removeItem(REPLI_A_FAIRE);
+    } catch {
+      // stockage refusé : le repli vaut pour cette ouverture seulement
+    }
+  };
+
   return (
     <>
       <div
@@ -358,7 +391,7 @@ export function AccesRapide({
                 <Link
                   key={e.cle}
                   href={e.href}
-                  className={classe(e)}
+                  className={`${classe(e)} ar-item--reprise`}
                   onClick={suivre}
                   onMouseEnter={() => setChoisi(rang(e))}
                 >
@@ -373,25 +406,52 @@ export function AccesRapide({
               de file d'attente, et lui en montrer une vide lui apprendrait
               seulement qu'il est surveillé. */}
           {items.length > 0 && (
-            <section className="ar-zone">
-              <h3 className="sur-titre">À faire</h3>
-              {aFaire.length === 0 ? (
-                <p className="ar-vide">Aucun de ces écrans ne correspond au filtre.</p>
+            <section className="ar-zone ar-zone--faire">
+              {/* Pendant une recherche, la zone reste ouverte : l'intitulé
+                  n'est plus qu'un titre, comme celui d'un groupe. */}
+              {recherche ? (
+                <h3 className="sur-titre">À faire</h3>
               ) : (
-                aFaire.map((e) => (
-                  <Link
-                    key={e.cle}
-                    href={e.href}
-                    className={`${classe(e)}${e.nombre === 0 ? " ar-item--nul" : ""}`}
-                    onClick={suivre}
-                    onMouseEnter={() => setChoisi(rang(e))}
-                    aria-label={nomAccessible({ libelle: e.libelle, nombre: e.nombre ?? 0 })}
+                <h3 className="sur-titre ar-titre-repli">
+                  <button
+                    type="button"
+                    className="ar-repli"
+                    aria-expanded={!faireReplie}
+                    aria-controls={`${titreId}-faire`}
+                    onClick={basculerAFaire}
                   >
-                    <span className="ar-libelle">{e.libelle}</span>
-                    <span className="ar-compte" aria-hidden="true">{e.nombre}</span>
-                  </Link>
-                ))
+                    <span className="ar-repli-titre">À faire</span>
+                    {faireReplie ? (
+                      <>
+                        <span className={`ar-compte${total === 0 ? " ar-compte--nul" : ""}`} aria-hidden="true">
+                          {total}
+                        </span>
+                        <span className="lecture-seule">, {total === 0 ? "aucun" : `${total} en attente`}</span>
+                      </>
+                    ) : null}
+                    <span className="ar-chevron" aria-hidden="true" />
+                  </button>
+                </h3>
               )}
+              <div id={`${titreId}-faire`} className="ar-zone-liens" hidden={!faireDeplie}>
+                {aFaire.length === 0 ? (
+                  <p className="ar-vide">Aucun de ces écrans ne correspond au filtre.</p>
+                ) : (
+                  aFaire.map((e) => (
+                    <Link
+                      key={e.cle}
+                      href={e.href}
+                      className={`${classe(e)}${e.nombre === 0 ? " ar-item--nul" : ""}`}
+                      onClick={suivre}
+                      onMouseEnter={() => setChoisi(rang(e))}
+                      aria-label={nomAccessible({ libelle: e.libelle, nombre: e.nombre ?? 0 })}
+                    >
+                      <span className="ar-libelle">{e.libelle}</span>
+                      <span className="ar-compte" aria-hidden="true">{e.nombre}</span>
+                    </Link>
+                  ))
+                )}
+              </div>
             </section>
           )}
 

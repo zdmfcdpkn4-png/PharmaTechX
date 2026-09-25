@@ -1527,14 +1527,14 @@ Justification : justification deux.`;
 
   // critère 3 : un item à zéro reste affiché, cliquable, et le dit
   assert.equal(
-    await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-item").count(),
+    await page.locator(".ar-zone--faire .ar-item").count(),
     5,
     "cinq items dans la file d'attente d'un code d'administration",
   );
   // Question 49 (choix b) : le cinquième item est en **fin** de file, les
   // quatre premiers gardent leur rang, donc leur place sous la main.
   assert.equal(
-    (await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-libelle").allInnerTexts())
+    (await page.locator(".ar-zone--faire .ar-libelle").allInnerTexts())
       .map((s) => s.trim())
       .pop(),
     "Quiz de plus de 24 mois",
@@ -1550,11 +1550,49 @@ Justification : justification deux.`;
   await page.fill(".ar-recherche input", "journ");
   await page.waitForSelector(".ar-defilant a[href='/admin/journal']", { state: "visible" });
   assert.equal(
-    await page.locator(".ar-zone:has(h3:text-is('À faire')) .ar-item").count(),
+    await page.locator(".ar-zone--faire .ar-item").count(),
     0,
     "le filtre s'applique aussi à la file d'attente",
   );
   await page.fill(".ar-recherche input", "");
+
+  // Question 75 (choix a, 25/09/2026) : « À faire » se replie, garde son total
+  // et son état d'une ouverture à l'autre ; « Aller à » récupère la place ;
+  // une recherche montre quand même ses résultats.
+  const repliAFaire = page.locator(".ar-zone--faire button.ar-repli");
+  assert.equal(await repliAFaire.getAttribute("aria-expanded"), "true", "« À faire » déplié par défaut");
+  const totalFile = (
+    await page.locator(".ar-zone--faire .ar-item .ar-compte").allInnerTexts()
+  ).reduce((n, s) => n + Number(s.trim()), 0);
+  const hauteurAller = () => page.locator(".ar-defilant").evaluate((el) => el.clientHeight);
+  const allerDeplie = await hauteurAller();
+  await repliAFaire.click();
+  assert.equal(await repliAFaire.getAttribute("aria-expanded"), "false");
+  assert.equal(await page.locator(".ar-zone--faire .ar-item:visible").count(), 0, "replié, les lignes ne s'affichent plus");
+  assert.equal((await repliAFaire.locator(".ar-compte").innerText()).trim(), String(totalFile), "replié, l'intitulé porte le total de la file");
+  assert.match(
+    await repliAFaire.textContent(),
+    totalFile === 0 ? /, aucun/ : new RegExp(`, ${totalFile} en attente`),
+    "le total est dans le nom accessible",
+  );
+  assert.ok((await hauteurAller()) - allerDeplie >= 120, "replié, « Aller à » récupère la hauteur des lignes");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  await page.keyboard.press("Control+k");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(await repliAFaire.getAttribute("aria-expanded"), "false", "le repli est gardé d'une ouverture à l'autre");
+  await page.fill(".ar-recherche input", "signalements ouv");
+  assert.equal(
+    await page.locator(".ar-zone--faire .ar-item:visible").count(),
+    1,
+    "pendant une recherche, les résultats de la file s'affichent même repliée",
+  );
+  await page.fill(".ar-recherche input", "");
+  assert.equal(await page.locator(".ar-zone--faire .ar-item:visible").count(), 0, "recherche effacée : de nouveau repliée");
+  await repliAFaire.click();
+  assert.equal(await page.locator(".ar-zone--faire .ar-item:visible").count(), 5, "dépliée d'un appui");
+  assert.equal(await page.evaluate(() => localStorage.getItem("fp-a-faire-replie")), null, "déplié : rien de gardé sur le poste");
+  ok("« À faire » repliable : total porté par l'intitulé, état gardé, place rendue à « Aller à », recherche entière");
 
   // critère 6 : la tabulation ne sort pas du panneau
   for (let i = 0; i < 25; i++) await page.keyboard.press("Tab");
@@ -3235,7 +3273,7 @@ Justification : cf. procédure interne.`,
   await page2.click("button.bouton-menu");
   await page2.waitForSelector(".acces-rapide--ouvert");
   assert.equal(
-    await page2.locator(".ar-zone:has(h3:text-is('À faire'))").count(),
+    await page2.locator(".ar-zone--faire").count(),
     0,
     "aucune file d'attente pour un profil de poste",
   );

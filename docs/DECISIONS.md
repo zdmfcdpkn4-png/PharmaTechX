@@ -4362,6 +4362,93 @@ cumulés : rattacher une question à plusieurs modules (a) et lui donner des
     360 px. Avant le repli par bloc, la liste entière ouverte faisait
     4 087 px sur poste.
 
+## « À faire » repliable dans le menu (25/09/2026, question 75, choix a)
+
+**Demande.** « Sur bandeau de menu la zone de défilement est trop limitée :
+pouvoir replier la partie À faire ou réduire l'espacement pour garder un
+espace confortable pour le reste du menu. » La capture, sur iPhone, montrait
+« Aller à » réduit à trois bandeaux sous « Reprendre » et « À faire ».
+
+**Constaté** (gabarits, code d'administration, banque de questions ouverte).
+- L'en-tête, la recherche, « Reprendre » et « À faire » ne défilent pas :
+  497 px à eux quatre.
+- « Aller à » disposait de 161 px sur un iPhone 15 dans Safari
+  (393 × 659), de 55 px sur un iPhone SE (375 × 553), et d'aucune place sur
+  ce dernier en mode zone : les 16 px mesurés sont la marge basse de la
+  zone.
+- Le titre repris s'étalait sur quatre lignes, sa mention « lecture,
+  section 1 sur 5 » occupant la moitié droite du tiroir.
+
+**Tranché (question 75, choix a, réponse « À »).** « À faire » repliable, son
+intitulé portant le total de la file, l'état gardé sur l'appareil.
+
+**Écartés.**
+- **b, espacement resserré** (lignes de 32 px au lieu de 44) : « Aller à »
+  n'aurait gagné qu'une centaine de pixels (244 px sur iPhone 15, 138 sur
+  iPhone SE), rien en mode zone, et les lignes seraient passées sous les
+  44 pt recommandés par Apple.
+- **c, un seul défilement sur téléphone** : la zone qui défile passait à
+  551 px, mais « Aller à » commençait au même endroit à l'ouverture ; il
+  aurait fallu glisser à chaque ouverture.
+
+**Ce qui est fait** (`components/AccesRapide.tsx`, `app/globals.css`,
+`content/acces-rapide.ts`).
+- **Intitulé** : « À faire » devient un bouton de toute la largeur, avec un
+  chevron. Cible de 44 px au doigt, 52 px en mode zone, 32 px sur poste,
+  comme les bandeaux d'« Aller à ».
+- **Replié**, il porte le total de la file (`totalEnAttente`), en gris à
+  zéro ; le lecteur d'écran entend « À faire, 8 en attente » ou « À faire,
+  aucun ». La pastille du bouton Menu ne change pas.
+- **État** : déplié par défaut ; le repli est gardé sur le poste
+  (`fp-a-faire-replie`), comme le mode zone, et relu à chaque ouverture du
+  menu. Il ne désigne personne et ne quitte pas l'appareil.
+- **Recherche** : ses résultats s'affichent même repliée, et l'intitulé n'est
+  plus qu'un titre, comme celui d'un groupe d'« Aller à ». Les flèches et
+  Entrée ne parcourent que les lignes affichées.
+- **« Reprendre »** : la mention passe sous le titre, qui tient en deux
+  lignes (62 px au lieu de 83), à toutes les tailles.
+- **Au passage**, annoncé avec la question : le commentaire de `--cible`
+  attribuait les 44 px au niveau AA du WCAG 2.1. C'est le critère 2.5.5,
+  niveau AAA ; le niveau AA (critère 2.5.8, WCAG 2.2) demande 24 px.
+
+**Mesuré après** (mêmes gabarits, même écran), hauteur laissée à
+« Aller à » :
+
+| | Avant | Déplié | Replié |
+|---|---|---|---|
+| iPhone 15 | 161 px | 155 px | 395 px |
+| iPhone 15, mode zone | 114 px | 100 px | 380 px |
+| iPhone SE | 55 px | 49 px | 289 px |
+| iPhone SE, mode zone | aucune | aucune | 274 px |
+| Poste, 1 280 × 800 | — | 358 px | 550 px |
+
+**Limites.**
+- **Déplié, « Aller à » perd 6 px** (14 en mode zone) : l'intitulé devenu
+  bouton prend la hauteur d'une cible, un peu plus que ce que rend la
+  mention de « Reprendre ». Sur un iPhone SE en mode zone, déplié, « Aller
+  à » reste sans place : il faut replier « À faire ».
+- **Replié, on ne voit plus quelle file attend** sans rouvrir : le total
+  additionne rapports, verdicts, signalements, questions et quiz anciens.
+- **Le repli vaut pour un appareil** : le téléphone et le poste ne se le
+  transmettent pas.
+- Les hauteurs de Safari sont celles de gabarits `[à vérifier sur
+  l'appareil]` ; la capture de la demande laissait environ 200 px à « Aller
+  à », du même ordre.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 354 tests, dont un nouveau sur le total de la file
+  (avec et sans conservation, à zéro, nom accessible).
+- `npm run build`.
+- Deux passes de bout en bout de 96 étapes, sans erreur de page ni erreur
+  serveur. Étape ajoutée à l'accès rapide (12h bis) : repli, total égal à la
+  somme des compteurs et dit au lecteur d'écran, « Aller à » agrandi d'au
+  moins 120 px, repli gardé après fermeture et réouverture, résultat de
+  recherche affiché puis masqué, dépli sans rien garder sur le poste. Les
+  sélecteurs de la zone passent par sa classe (`.ar-zone--faire`) : celui
+  du texte de l'intitulé ne l'aurait plus trouvée, et le contrôle « aucune
+  file pour un profil de poste » serait devenu vrai d'office.
+- Mesures ci-dessus ; aucun débordement horizontal du tiroir.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

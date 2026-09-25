@@ -6,6 +6,7 @@ import {
   fileNonVide,
   itemsAFaire,
   nomAccessible,
+  totalEnAttente,
   type ComptesAttente,
 } from "../content/acces-rapide";
 
@@ -68,6 +69,13 @@ test("la pastille du déclencheur ne s'allume que si un item est non nul", () =>
     fileNonVide(itemsAFaire("admin", { ...AUCUN_COMPTE, signalements: 1 }, true)),
     true,
   );
+});
+
+test("« À faire » replié porte le total de la file, zéro compris (question 75)", () => {
+  assert.equal(totalEnAttente(itemsAFaire("admin", PLEIN, true)), 22);
+  assert.equal(totalEnAttente(itemsAFaire("admin", PLEIN, false)), 15, "sans conservation, sans les rapports ni les quiz anciens");
+  assert.equal(totalEnAttente(itemsAFaire("admin", AUCUN_COMPTE, true)), 0);
+  assert.equal(nomAccessible({ libelle: "À faire", nombre: 0 }), "À faire, aucun");
 });
 
 test("le compteur est dans le nom accessible, y compris à zéro", () => {

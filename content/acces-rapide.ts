@@ -108,6 +108,15 @@ export function fileNonVide(items: ItemAttente[]): boolean {
 }
 
 /**
+ * Total de la file, que porte l'intitulé « À faire » replié (question 75,
+ * choix a, 25/09/2026) : ses lignes ne s'affichent plus, mais il dit encore
+ * s'il y a quelque chose à faire — « 0 » compris.
+ */
+export function totalEnAttente(items: ItemAttente[]): number {
+  return items.reduce((n, i) => n + i.nombre, 0);
+}
+
+/**
  * Nom accessible d'un item : le compteur doit être dans le nom, pas seulement
  * à côté (WCAG 4.1.2). « Signalements ouverts, 3 en attente », « …, aucun ».
  */
