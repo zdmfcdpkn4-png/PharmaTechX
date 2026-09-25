@@ -799,7 +799,8 @@ Justification : cf. procédure interne.`,
   // 10c. arbitrage motivé, puis visas tuteur et pharmacien (signature incrustée)
   await page.check("input[name=verdict][value=acquis]");
   assert.equal(await page.locator("input[name=nom]").count(), 1); // seul le formulaire d'édition porte un nom
-  await page.fill("textarea[name=motif]", "Les deux erreurs portent sur des points revus en compagnonnage.");
+  // Motif tapé comme une liste, un tiret en tête : le registre CSV ne doit pas le lire comme une formule (question 79).
+  await page.fill("textarea[name=motif]", "- Les deux erreurs portent sur des points revus en compagnonnage.");
   await page.click("button:has-text(\"Enregistrer l'arbitrage\")");
   await page.waitForSelector("text=Arbitrage enregistré");
   await page.waitForSelector("text=Arbitrage du tuteur : acquis");
@@ -950,7 +951,9 @@ Justification : cf. procédure interne.`,
   assert.ok(csv.startsWith("﻿numero;statut;emis_le;agent;"));
   assert.ok(csv.includes(`${numero};clos;`) && csv.includes(";AG-001;B1-02;") && csv.includes(";indéterminé;acquis;acquis;"));
   assert.ok(!csv.includes("Apprenant Test"));
-  ok("registre cumulatif CSV : ligne du rapport par identifiant, verdict brut et verdict final");
+  // Question 79 (choix a) : un texte qui commence comme une formule est précédé d'une tabulation, entre guillemets.
+  assert.ok(csv.includes(';"\t- Les deux erreurs portent sur des points revus en compagnonnage.";'), "motif neutralisé dans le registre");
+  ok("registre cumulatif CSV : ligne du rapport par identifiant, verdict brut et verdict final ; motif qui commence comme une formule neutralisé");
   await page.goto(BASE + "/admin/personnel");
   await page.waitForSelector("td:has-text('AG-001')");
   await page.waitForSelector("td:has-text('80 % · acquis')");

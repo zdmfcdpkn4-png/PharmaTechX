@@ -754,22 +754,3 @@ export function avantApres(tentatives: readonly Tentative[], actions: readonly A
     apres: entre(action.le, i < triees.length - 1 ? triees[i + 1].le : null),
   }));
 }
-
-// ────────────────────────────────────────────────────────────────── tableur
-
-/** Début de texte que le tableur lirait comme une formule, blancs de tête compris. */
-const FORMULE = /^\s*[=+\-@＝＋－＠]/;
-
-/**
- * Une cellule de texte pour le tableur (`csv` de `lib/registre.ts`). Un texte
- * qui commence par `=`, `+`, `-`, `@` ou leur variante pleine chasse, même
- * après des blancs, serait lu comme une formule (injection de formule) : il
- * est précédé d'une tabulation, dans une cellule que `csv` met entre
- * guillemets. C'est la parade que l'OWASP (« CSV Injection ») donne pour
- * résister à Excel même après un nouvel enregistrement du fichier, où une
- * apostrophe de tête se perd. Énoncés, propositions et titres viennent de
- * saisies libres.
- */
-export function texteTableur(s: string): string {
-  return FORMULE.test(s) ? `\t${s}` : s;
-}

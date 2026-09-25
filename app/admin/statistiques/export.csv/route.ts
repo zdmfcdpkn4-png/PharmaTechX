@@ -14,7 +14,6 @@ import {
   analyserQuestions,
   bilansModules,
   classerModules,
-  texteTableur,
   type Tentative,
 } from "@/lib/statistiques";
 import { lireEssais } from "@/lib/statistiques-db";
@@ -61,7 +60,7 @@ export async function GET(req: NextRequest) {
     corps = csv(
       ["Module", "Identifiant", "Agents", "Essais", "Premiers essais", "Réussite au premier essai (%)", "IC 95 % bas", "IC 95 % haut", "Réussite finale (%)", "Essais pour réussir", "Score médian au premier essai (%)", "À revoir"],
       bilans.map((b) => ({
-        Module: texteTableur(b.titre),
+        Module: b.titre,
         Identifiant: b.moduleId,
         Agents: b.agents,
         Essais: b.essais,
@@ -86,8 +85,8 @@ export async function GET(req: NextRequest) {
     corps = csv(
       ["Module", "Question", "Identifiant", "Type", "Posée", "Réussie (%)", "IC 95 % bas", "IC 95 % haut", "Discrimination", "Sans réponse (%)", "Repères"],
       rangs.map(({ mid, titre, a }) => ({
-        Module: texteTableur(titre || mid),
-        Question: texteTableur(a.enonce),
+        Module: titre || mid,
+        Question: a.enonce,
         Identifiant: a.questionId,
         Type: a.type,
         Posée: a.n,
@@ -111,10 +110,10 @@ export async function GET(req: NextRequest) {
     corps = csv(
       ["Question", "Identifiant", "Nature", "Élément", "Présent", "Erreurs", "Sans réponse", "Non départagé", "Taux d'erreur (%)", "Ne piège personne"],
       elements.map((e) => ({
-        Question: texteTableur(e.enonce),
+        Question: e.enonce,
         Identifiant: e.questionId,
         Nature: e.nature,
-        Élément: texteTableur(e.element),
+        Élément: e.element,
         Présent: e.n,
         Erreurs: e.erreurs,
         "Sans réponse": e.sansReponse,

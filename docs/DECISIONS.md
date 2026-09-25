@@ -4582,10 +4582,24 @@ identifiant, ni rattachée ni émise, n'y figurent.
   discrimination de l'option positif, n'est pas appliqué.
 - Indices de difficulté et de discrimination : Tavakol et Dennick (Med Teach
   2011;33(6):447-58, doi:10.3109/0142159X.2011.564682).
-- Les seuils 90 % (très facile), 30 % (très difficile), 0,2 (discrimine peu)
-  et 60 % (module à revoir) sont des conventions de lecture retenues ici, non
-  des normes `[à vérifier]` contre la littérature d'analyse d'items ;
-  l'écran les dit tels.
+- Seuils vérifiés le 25/09/2026 (Consensus, PubMed). Ce sont des conventions
+  de lecture, non des normes ; l'écran les dit tels.
+  - 30 % (très difficile) et 0,2 (discrimine peu) sont les bornes usuelles de
+    l'analyse d'items en éducation médicale : difficulté acceptable de 30 à
+    70 %, discrimination faible sous 0,20 (Rao et al., Int J Educ Psychol Res
+    2016, relevé par Consensus :
+    <https://consensus.app/papers/details/81b96b7d668158d08bdf3d89b601bb49/>).
+    Un item de qualité a une point-bisériale supérieure à 0,20 (Sunsundegui et
+    al., Perspect Med Educ 2026;15(1):372-80, doi:10.5334/pme.2583).
+  - 90 % (très facile) s'écarte de ces études, qui jugent un item « facile »
+    dès 70 % : elles portent sur des examens qui classent des étudiants. Une
+    évaluation d'habilitation vérifie une maîtrise, et une question réussie par
+    presque tous n'y est pas un défaut. D'où le repère à 90 %, hors « à
+    revoir » : choix du dispositif.
+  - 60 % (module à revoir) : convention du dispositif, sans source.
+  - Ces études calculent souvent la discrimination sur les groupes extrêmes
+    (27 % supérieurs et inférieurs) ; le site, par la point-bisériale
+    corrigée. Mêmes bornes d'usage, calculs différents.
 
 **Garde-fous.**
 - Aucune donnée individuelle : l'agent sert à reconnaître les essais d'une
@@ -4608,6 +4622,8 @@ identifiant, ni rattachée ni émise, n'y figurent.
   - Pour cela, `csv` (`lib/registre.ts`) met désormais entre guillemets toute
     cellule qui contient une tabulation, registre et répertoire compris : un
     CSV valide, rien d'autre ne change.
+  - Depuis la question 79 (choix a), la parade est dans `csv` lui-même, pour
+    tous les tableurs ; `texteTableur` a disparu.
 
 **Intégration.**
 - Menu Suivi › Statistiques, quand la conservation est active.
@@ -4758,6 +4774,52 @@ accompagne le mot et ne le remplace nulle part.
   serveur. L'étape de l'accès rapide sur poste contrôle le pictogramme de
   chaque bandeau, groupe, sous-menu et onglet RGPD, leur masquage au lecteur
   d'écran et la hauteur des bandeaux ; le volet de connexion, son cadenas.
+
+## Tableurs : l'injection de formule parée partout (25/09/2026, question 79, choix a)
+
+**Constaté** en vérifiant les tableurs des statistiques (question 78) : le
+registre des rapports (`/admin/rapports`, et la ligne CSV du paquet
+d'archivage) et le répertoire du personnel reprennent des saisies libres :
+motifs d'arbitrage et d'annulation, titres de modules déposés, libellés des
+codes (profils des visas). Un texte qui commençait par `=`, `+`, `-` ou `@` y
+était écrit tel quel ; ouvert dans un tableur, il aurait été exécuté comme une
+formule (page « CSV Injection » de l'OWASP). Le sceau des rapports n'est pas en
+cause : le CSV est recomposé à chaque téléchargement, hors empreinte.
+
+**Tranché (question 79, choix a, réponse « À »).** La parade des tableurs de
+statistiques, dans `csv` lui-même, pour toute cellule de texte de tous les
+tableurs.
+
+**Écartés.**
+- **b, colonne par colonne** (motifs, titres, profils) : une colonne ajoutée
+  plus tard serait restée exposée si on l'oubliait.
+- **c, risque accepté** : la parade ne coûte rien, et un motif tapé comme une
+  liste, un tiret en tête, suffisait à produire une cellule-formule.
+
+**Ce qui est fait** (`lib/registre.ts`).
+- `champCsv` : un texte qui commence par `=`, `+`, `-`, `@` ou leur variante
+  pleine chasse, même après des blancs, est précédé d'une tabulation, et la
+  cellule est mise entre guillemets. C'est la parade que l'OWASP donne pour
+  résister à Excel même après un nouvel enregistrement du fichier.
+- Les nombres s'écrivent tels quels : « -1,5 » reste un nombre.
+- Les colonnes produites par le site (numéros, dates, verdicts, empreintes) ne
+  commencent jamais par l'un de ces signes : seules les saisies concernées
+  changent.
+- `texteTableur` (statistiques) a disparu : `csv` protège tous les tableurs,
+  et toute colonne ajoutée plus tard.
+
+**Limite.** La parade est donnée par l'OWASP pour Excel ; elle « peut différer
+dans d'autres tableurs », selon la même page. Ouverture dans Excel et
+LibreOffice non essayée ici `[à vérifier]`.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 375 tests, dont les cas de `champCsv` : variantes,
+  blancs de tête, guillemets doublés, nombre négatif.
+- `npm run build`.
+- Deux passes de bout en bout de 98 étapes, sans erreur de page ni erreur
+  serveur. Le motif d'arbitrage du parcours commence par un tiret, comme une
+  liste tapée à la main ; le registre CSV le rend précédé d'une tabulation,
+  entre guillemets.
 
 ## Non fait
 

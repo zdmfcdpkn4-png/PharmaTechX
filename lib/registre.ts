@@ -9,15 +9,29 @@ import { decider, verdictFinal, LIBELLES_COURTS_VERDICT, type Decision, type Ver
  * CSV : séparateur « ; », guillemets doublés, fin de ligne CRLF, marque
  * d'ordre UTF-8 en tête — le format que le tableur français ouvre sans
  * assistant d'import. [à préciser] si un autre outil consomme ces fichiers.
+ * Un texte qui commence comme une formule est neutralisé (`champCsv`).
  */
 
 export const SEPARATEUR_CSV = ";";
 
+/**
+ * Début de texte qu'un tableur lirait comme une formule, blancs de tête
+ * compris : `=`, `+`, `-`, `@` ou leur variante pleine chasse (page « CSV
+ * Injection » de l'OWASP).
+ */
+const FORMULE = /^\s*[=+\-@＝＋－＠]/;
+
 export function champCsv(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = typeof v === "number" ? String(v).replace(".", ",") : String(v);
-  // Une tabulation aussi : la parade à l'injection de formule des tableurs de
-  // statistiques (`texteTableur`) n'agit que dans une cellule entre guillemets.
+  // Un nombre s'écrit tel quel, virgule décimale : « -1,5 » reste un nombre.
+  if (typeof v === "number") return String(v).replace(".", ",");
+  // Injection de formule (question 79, choix a, 25/09/2026) : motifs, titres,
+  // libellés et énoncés viennent de saisies libres. Un texte qui commence comme
+  // une formule est précédé d'une tabulation, dans une cellule entre guillemets :
+  // la parade que l'OWASP donne pour résister à Excel même après un nouvel
+  // enregistrement du fichier, où une apostrophe de tête se perd.
+  const texte = String(v);
+  const s = FORMULE.test(texte) ? `\t${texte}` : texte;
   return /[;"\r\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

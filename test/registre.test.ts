@@ -89,6 +89,21 @@ test("champ CSV : point-virgule, guillemets et retours protégés, virgule déci
   assert.equal(champCsv(null), "");
 });
 
+test("champ CSV : un texte qui commence comme une formule est neutralisé (question 79, OWASP)", () => {
+  // Parade de l'OWASP qui résiste à Excel : une tabulation en tête, cellule entre guillemets.
+  assert.equal(champCsv("=SOMME(A1)"), '"\t=SOMME(A1)"');
+  assert.equal(champCsv("+33 6"), '"\t+33 6"');
+  assert.equal(champCsv("- point revu en compagnonnage"), '"\t- point revu en compagnonnage"');
+  assert.equal(champCsv("@lien"), '"\t@lien"');
+  assert.equal(champCsv("＝1+2"), '"\t＝1+2"', "variante pleine chasse");
+  assert.equal(champCsv(" \n=1+2"), '"\t \n=1+2"', "après des blancs de tête");
+  assert.equal(champCsv('=LIEN("x";"y")'), '"\t=LIEN(""x"";""y"")"', "guillemets doublés");
+  assert.equal(champCsv("Seuil = 80 %"), "Seuil = 80 %", "un signe égal au milieu ne gêne pas");
+  assert.equal(champCsv("RAP-2026-0001"), "RAP-2026-0001");
+  assert.equal(champCsv(-1.5), "-1,5", "un nombre négatif reste un nombre");
+  assert.equal(csv(["A"], [{ A: "=1+2" }]), '\uFEFFA\r\n"\t=1+2"\r\n', "tout tableur en profite");
+});
+
 test("csv : marque d'ordre, entête, CRLF", () => {
   const texte = csv(["a", "b"], [{ a: 1, b: "x" }]);
   assert.equal(texte, "﻿a;b\r\n1;x\r\n");

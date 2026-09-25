@@ -22,13 +22,11 @@ import {
   seuilAtteint,
   taux,
   tauxAgents,
-  texteTableur,
   trimestre,
   wilson,
   type ItemTentative,
   type Tentative,
 } from "../lib/statistiques";
-import { csv } from "../lib/registre";
 
 /** Statistiques de réussite (question 78, choix a, 25/09/2026). */
 
@@ -372,17 +370,4 @@ test("avant / après : un essai se range au jour de Paris, comme l'action", () =
   const r = avantApres(l, [{ id: 1, moduleId: "m1", le: "2026-02-01", description: "Section réécrite", auteur: "admin" }]);
   assert.equal(r[0].avant.n, 0);
   assert.equal(r[0].apres.n, 5);
-});
-
-test("tableur : une saisie libre qui ressemble à une formule n'est pas exécutée", () => {
-  // Parade de l'OWASP qui résiste à Excel : une tabulation en tête, cellule entre guillemets.
-  assert.equal(texteTableur("=SOMME(A1)"), "\t=SOMME(A1)");
-  assert.equal(texteTableur("+33 6"), "\t+33 6");
-  assert.equal(texteTableur("-1"), "\t-1");
-  assert.equal(texteTableur("@lien"), "\t@lien");
-  assert.equal(texteTableur("＝1+2"), "\t＝1+2", "variante pleine chasse");
-  assert.equal(texteTableur(" \n=1+2"), "\t \n=1+2", "après des blancs de tête");
-  assert.equal(texteTableur("Gants stériles"), "Gants stériles");
-  assert.equal(texteTableur("Seuil = 80 %"), "Seuil = 80 %", "un signe égal au milieu ne gêne pas");
-  assert.equal(csv(["A"], [{ A: texteTableur("=1+2") }]), '\uFEFFA\r\n"\t=1+2"\r\n', "cellule mise entre guillemets");
 });

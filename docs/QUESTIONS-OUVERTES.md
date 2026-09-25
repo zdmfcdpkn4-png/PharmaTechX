@@ -405,6 +405,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : ne rien changer, et consigner le risque comme accepté : textes
       saisis par des personnes habilitées, tableurs lus par elles.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : la
+    parade est dans `csv` (`lib/registre.ts`), pour toute cellule de texte de
+    tous les tableurs ; les nombres restent des nombres. Le parcours de bout
+    en bout le vérifie sur le registre, avec un motif d'arbitrage qui commence
+    par un tiret. Détail dans `DECISIONS.md`.
+
 78. **Statistiques de réussite : sur quelles données** — posée le
     25/09/2026, sur demande (« ajouter un module de statistiques pour
     identifier les modules les mieux et les moins bien répondus ; imaginer
