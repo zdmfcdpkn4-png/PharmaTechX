@@ -376,6 +376,33 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+76. **Menu : les quatre intitulés « Administration · … »** — posée le
+    25/09/2026, second point de la demande de la question 75 (« trouver un
+    synonyme pour les groupes de fonctions qui commencent tous par
+    administrer, ou supprimer administrer et le remplacer par une vignette
+    ou une icône »). Dans « Aller à », quatre bandeaux commencent par le
+    même mot — « Administration · Suivi », « · Questions », « · Modules »,
+    « · Réglages » — et le mot qui les distingue vient en dernier. Sur
+    poste, trois d'entre eux passent sur deux lignes. Le volet de poste range
+    ces quatre sous-menus dans un seul groupe « Administration ». Maquettes
+    mesurées (hauteur d'« Aller à », groupes repliés) : 414 px sur iPhone 15
+    et 389 px sur poste aujourd'hui. Trois choix :
+    - **a (recommandé)** : « Administration · » retiré des quatre bandeaux
+      et remplacé par un pictogramme d'écusson, dessiné comme ceux du site
+      (monochrome, couleur du bandeau). Le lecteur d'écran et la recherche
+      gardent « Administration » ; le volet de poste ne change pas. Une
+      ligne par bandeau sur poste : 325 px.
+    - **b** : un synonyme plus court, « Gestion · Suivi », « Gestion ·
+      Questions »…, et « Gestion » pour le groupe du volet de poste, pour
+      que les deux surfaces gardent les mêmes mots. Une ligne sur poste
+      aussi : 325 px. Le titre des pages et le nom du rôle restent
+      « Administration ».
+    - **c** : « Administration » écrit une seule fois, en sous-titre
+      au-dessus des quatre bandeaux, comme « À faire » et « Aller à » ;
+      l'onglet RGPD remonte au-dessus de ce sous-titre pour ne pas passer
+      pour un écran d'administration. 352 px sur poste, 443 px sur
+      iPhone 15 (une ligne de plus).
+
 75. **Menu sur téléphone : la place laissée à « Aller à »** — posée le
     25/09/2026, sur demande (« sur bandeau de menu la zone de défilement est
     trop limitée : pouvoir replier la partie À faire ou réduire l'espacement
