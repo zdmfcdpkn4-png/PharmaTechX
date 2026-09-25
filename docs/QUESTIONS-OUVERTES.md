@@ -376,6 +376,47 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+81. **Squelette de la formation : un menu, et jusqu'où le rendre
+    modifiable** — posée le 25/09/2026, sur la réponse à la question 80.
+    Aujourd'hui :
+    - se créent ou se règlent à l'écran : les filières et les niveaux
+      (Réglages › Référentiel), le rattachement des modules du code
+      (Modules › Modules), l'ordre (Modules › Ordre), les programmes à la
+      carte, les paliers du tirage par niveau cible (Réglages › Barème) ;
+    - sont écrits dans le code, sans écran : les quatre métiers, les sept
+      blocs de compétence, les 53 critères, les trois niveaux des
+      questions, les deux parcours et la périodicité de revalidation.
+
+    « Niveaux d'avancement » est lu comme les trois niveaux des questions —
+    initial, intermédiaire, avancé — et leurs paliers par niveau cible : le
+    seul autre jeu de niveaux du site `[à confirmer]`.
+
+    Dans tous les cas : un sous-menu « Squelette de la formation » de
+    l'Administration, une page par élément. Le Référentiel s'y scinde en
+    Filières et Niveaux ; l'ordre, les programmes à la carte, le
+    rattachement des modules et les paliers du tirage y passent. Les droits
+    ne changent pas. Trois choix sur ce qui devient modifiable :
+    - **a (recommandé)** : les blocs de compétence se créent et se
+      modifient comme les filières — un dépôt corrige un bloc de la fiche
+      ou en ajoute un —, et un module déposé reçoit un bloc. Les trois
+      niveaux des questions se renomment ; leur nombre reste fixe, le
+      tirage et le barème étant bâtis sur trois. Métiers, critères et
+      parcours s'affichent en lecture. Contre : huit écrans lisent les blocs
+      (accueil, repères, page d'un module, banque, programmes, statistiques,
+      pilotage, référentiel) et passent sur la liste servie ; un bloc ajouté
+      reste vide tant qu'aucun module ne s'y rattache.
+    - **b** : rassembler seulement ; blocs, métiers, critères et niveaux
+      des questions restent ceux du code, en lecture. Contre : les blocs ne
+      se créent pas, contrairement à la demande.
+    - **c** : a, et les critères et les métiers se créent et se modifient
+      aussi (par métier : libellé, niveau, caractère obligatoire, bloc).
+      Les fiches des trois autres métiers se saisiraient alors sur le site,
+      sans attendre le passage du dépôt en privé. Contre : le plus gros
+      changement depuis le début — les critères sont lus par presque tous
+      les écrans, par les rapports et par les prompts —, la fiche transcrite
+      cesse d'être la seule référence, et chaque critère ajouté ouvre un
+      module à rédiger. Peut suivre a, dans un second temps.
+
 80. **Filières : les créer, les gérer, les modifier** — posée le
     25/09/2026, sur demande (« créer la possibilité de créer et gérer et
     modifier les filières »). Existant, Réglages › Référentiel,
@@ -423,6 +464,11 @@ telle. Ordre : ce qui change le déploiement en premier.
       des rapports émis qui gardent l'ancien, pour un identifiant que l'on
       ne lit guère — le libellé se modifie déjà. Le renommage d'un niveau
       (question 65) s'est fait à la main pour ces raisons.
+
+    Réponse du même jour, qui élargit la demande : « Rassembler dans un
+    même menu la création modification pour les filières, les niveaux, les
+    blocs, les niveaux d'avancement… tout ce qui est en lien avec le
+    squelette de la formation. » Suite : question 81.
 
 79. **Tableurs du registre et du répertoire : l'injection de formule** —
     posée le 25/09/2026, sur un constat fait en vérifiant les tableurs des
