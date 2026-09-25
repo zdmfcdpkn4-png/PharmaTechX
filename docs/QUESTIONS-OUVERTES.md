@@ -376,6 +376,35 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+79. **Tableurs du registre et du répertoire : l'injection de formule** —
+    posée le 25/09/2026, sur un constat fait en vérifiant les tableurs des
+    statistiques (question 78).
+    - Le registre des rapports (`/admin/rapports`, et la ligne CSV du
+      paquet d'archivage) et le répertoire du personnel reprennent des
+      saisies libres : motifs d'arbitrage et d'annulation, titres de
+      modules déposés, libellés des codes (profils des visas).
+    - Un texte qui commence par `=`, `+`, `-` ou `@` y est écrit tel quel.
+      Ouvert dans Excel ou LibreOffice, il serait exécuté comme une formule
+      (page « CSV Injection » de l'OWASP).
+    - Ces textes ne sont saisis que sous un code de tutorat ou
+      d'administration.
+    - Le sceau des rapports n'est pas en cause : le CSV est recomposé à
+      chaque téléchargement, hors empreinte.
+
+    Trois choix :
+    - **a (recommandé)** : la parade des tableurs de statistiques, dans
+      `csv` lui-même, pour toute cellule de texte de tous les tableurs. Une
+      tabulation invisible précède les seuls textes qui commencent par ces
+      signes, et la cellule est mise entre guillemets. Les colonnes produites
+      par le site (numéros, dates, verdicts, empreintes) ne commencent
+      jamais par l'un d'eux : seules les saisies concernées changent, et une
+      colonne ajoutée plus tard est protégée d'office.
+    - **b** : la même parade, sur les seules colonnes de saisie libre du
+      registre et du répertoire (motifs, titres, profils), colonne par
+      colonne.
+    - **c** : ne rien changer, et consigner le risque comme accepté : textes
+      saisis par des personnes habilitées, tableurs lus par elles.
+
 78. **Statistiques de réussite : sur quelles données** — posée le
     25/09/2026, sur demande (« ajouter un module de statistiques pour
     identifier les modules les mieux et les moins bien répondus ; imaginer
