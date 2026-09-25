@@ -376,6 +376,37 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+78. **Statistiques de réussite : sur quelles données** — posée le
+    25/09/2026, sur demande (« ajouter un module de statistiques pour
+    identifier les modules les mieux et les moins bien répondus ; imaginer
+    le meilleur système pour analyser la réussite des apprenants et ajuster
+    les formations relatives aux modules ; l'intégrer au mieux au reste du
+    site »). Existant : le Pilotage agrège les **rapports émis** (verdicts
+    par critère, score moyen, questions les plus manquées). Or un agent
+    émet d'ordinaire l'essai qui réussit : les rapports ne disent ni la
+    réussite au premier essai, ni le nombre d'essais. Toutes les
+    évaluations des agents rattachés sont, elles, conservées dans leur
+    progression, avec le détail scellé de chaque réponse. Système proposé,
+    écran « Statistiques » (Administration › Suivi) : classement des
+    modules (réussite au premier essai, réussite finale, essais jusqu'à
+    l'acquis, score médian, intervalle de confiance à 95 %) ; fiche par
+    module (évolution, profils, questions avec difficulté, discrimination et
+    « je ne sais pas », propositions, réponses, légendes, étapes et trous
+    manqués, distracteurs jamais choisis, erreurs par source du support) ;
+    actions d'amélioration datées et comparaison avant/après ; liens depuis
+    le Pilotage, la banque et la page du module ; export tableur. Aucune
+    donnée individuelle, aucun taux sous cinq agents. Trois choix :
+    - **a (recommandé)** : toutes les évaluations conservées des agents
+      rattachés, premiers essais compris, sans double compte avec les
+      rapports émis. Finalité ajoutée à `docs/RGPD.md` et à la page RGPD :
+      statistiques agrégées pour améliorer les formations, sans décision sur
+      une personne `[à valider avec le DPO]`.
+    - **b** : les rapports émis seulement, comme le Pilotage : aucun nouvel
+      usage de la progression, mais une réussite surestimée et ni premier
+      essai ni nombre d'essais.
+    - **c** : a, et les identifiants d'agents visibles dans les
+      statistiques, pour cibler un accompagnement individuel.
+
 77. **Menu : un pictogramme par thème** — posée le 25/09/2026, sur demande
     (« prévoir des icônes différentes pour chaque tête de menu, en lien
     avec le thème du menu »). Depuis la question 76, les quatre sous-menus
