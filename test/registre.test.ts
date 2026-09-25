@@ -84,6 +84,7 @@ test("champ CSV : point-virgule, guillemets et retours protégés, virgule déci
   assert.equal(champCsv("Dupont; Marie"), '"Dupont; Marie"');
   assert.equal(champCsv('dit "oui"'), '"dit ""oui"""');
   assert.equal(champCsv("a\nb"), '"a\nb"');
+  assert.equal(champCsv("a\tb"), '"a\tb"', "une tabulation met la cellule entre guillemets");
   assert.equal(champCsv(7.5), "7,5");
   assert.equal(champCsv(null), "");
 });

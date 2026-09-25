@@ -4596,9 +4596,18 @@ identifiant, ni rattachée ni émise, n'y figurent.
   dessous, les effectifs restent lisibles.
 - Tutorat et administration seulement. Le bandeau de la page du module ne
   paraît jamais à l'apprenant, ni en mode test.
-- Les cellules de texte des tableurs qui commencent par `=`, `+`, `-`, `@`
-  sont préfixées d'une apostrophe : le tableur ne les exécute pas comme
-  formules.
+- Une cellule de texte des tableurs qui commence par `=`, `+`, `-`, `@` ou
+  leur variante pleine chasse, même après des blancs, est précédée d'une
+  tabulation, entre guillemets : le tableur ne l'exécute pas comme formule.
+  C'est la parade que l'OWASP donne pour résister à Excel même après un
+  nouvel enregistrement du fichier (page « CSV Injection », source GitHub de
+  l'OWASP, consultée le 25/09/2026).
+  - La première version mettait une apostrophe. Selon cette page, l'apostrophe
+    se perd à l'enregistrement ; elle oubliait aussi le saut de ligne et les
+    variantes pleine chasse. Corrigé le même jour.
+  - Pour cela, `csv` (`lib/registre.ts`) met désormais entre guillemets toute
+    cellule qui contient une tabulation, registre et répertoire compris : un
+    CSV valide, rien d'autre ne change.
 
 **Intégration.**
 - Menu Suivi › Statistiques, quand la conservation est active.

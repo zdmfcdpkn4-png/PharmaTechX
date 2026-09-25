@@ -16,7 +16,9 @@ export const SEPARATEUR_CSV = ";";
 export function champCsv(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = typeof v === "number" ? String(v).replace(".", ",") : String(v);
-  return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // Une tabulation aussi : la parade à l'injection de formule des tableurs de
+  // statistiques (`texteTableur`) n'agit que dans une cellule entre guillemets.
+  return /[;"\r\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export function csv(colonnes: string[], lignes: Record<string, unknown>[]): string {
