@@ -158,6 +158,19 @@ export async function enregistrerModuleDepose(
   return ident;
 }
 
+/**
+ * Filières et niveaux d'un module déposé, réglés depuis la page d'une filière
+ * (question 80, choix a). Le reste de la ligne ne change pas ; la version
+ * avance, comme à toute modification du module.
+ */
+export async function reglerProfilsModuleDepose(id: string, filieres: string[], niveaux: string[]): Promise<void> {
+  await sql`
+    UPDATE modules_deposes SET
+      filieres = ${JSON.stringify(filieres)}::jsonb, niveaux = ${JSON.stringify(niveaux)}::jsonb,
+      edite_le = NOW(), version = version + 1
+    WHERE id = ${id}`;
+}
+
 export async function changerStatutModule(id: string, statut: StatutModule): Promise<void> {
   await sql`
     UPDATE modules_deposes SET statut = ${statut}, edite_le = NOW(),

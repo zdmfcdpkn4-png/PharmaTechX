@@ -1,79 +1,22 @@
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerFilieresDeposees, listerNiveauxDeposes, niveauxOrphelins } from "@/content/referentiel-db";
-import { blocsCompetence, filieres as filieresFiche, metiers, metierOuDefaut, niveaux as niveauxFiche, parMetier } from "@/content/habilitation";
+import { filieres as filieresFiche, metiers, metierOuDefaut, niveaux as niveauxFiche } from "@/content/habilitation";
 import { rangEffectif, rappelRangsFiche } from "@/content/ordre-niveaux";
 import { Badge } from "@/components/Badge";
-import { ChoixBadge } from "@/components/ChoixBadge";
+import { actionEnregistrerNiveau, actionSupprimerNiveau } from "./actions";
 import {
-  actionEnregistrerFiliere,
-  actionEnregistrerNiveau,
-  actionSupprimerFiliere,
-  actionSupprimerNiveau,
-} from "./actions";
+  FormulaireFiliere,
+  FormulaireNouveauNiveau,
+  FormulaireNouvelleFiliere,
+  SupprimerDepotFiliere,
+} from "./formulaires";
+import { ERREURS, MESSAGES } from "./messages";
 
 export const dynamic = "force-dynamic";
 
-const MESSAGES: Record<string, string> = {
-  filiere: "Filière enregistrée.",
-  niveau: "Niveau enregistré.",
-  "filiere-supprimee": "Dépôt de filière supprimé.",
-  "niveau-supprime": "Dépôt de niveau supprimé.",
-};
-
-const ERREURS: Record<string, string> = {
-  libelle: "Le libellé est obligatoire.",
-  identifiant: "L'identifiant doit faire au moins deux caractères une fois normalisé.",
-  code: "Le code du niveau est obligatoire.",
-  "filiere-manquante": "Un niveau se rattache à une filière.",
-  prefixe:
-    "Ce code porte le préfixe d'un autre métier que celui de la filière choisie (PH- pharmacien / interne, AP- aide en pharmacie, AE- agent d'entretien).",
-  longueur: "Le code dépasse douze caractères une fois le préfixe du métier ajouté.",
-  "metier-change": "Un niveau ne change pas de métier : ajoutez-en un autre dans la filière voulue.",
-  "metier-filiere":
-    "Cette filière porte des niveaux : elle garde son métier. Supprimez d'abord ses niveaux déposés, ou ajoutez une autre filière.",
-};
-
 /** Codes des niveaux de la fiche : leur place fixe le rang par défaut (10, 20…). */
 const CODES_FICHE = niveauxFiche.map((n) => String(n.code));
-
-/** Préfixes des codes par métier, rappelés sous le champ « Code » (question 46, choix a). */
-const RAPPEL_PREFIXES = metiers
-  .filter((m) => m.prefixe)
-  .map((m) => `${m.prefixe} ${m.libelle.toLowerCase()}`)
-  .join(", ");
-
-/** Numéros des blocs de la fiche et préfixes seuls, rappelés sous les champs d'une filière. */
-const PLAGE_BLOCS = `${blocsCompetence[0].numero} à ${blocsCompetence[blocsCompetence.length - 1].numero}`;
-const PREFIXES = metiers.filter((m) => m.prefixe).map((m) => m.prefixe).join(", ");
-
-/**
- * Ce que fait chaque champ d'une filière (demande du 24/09/2026). Aucun écran
- * ne lit les blocs : le dire évite de croire qu'ils composent le programme,
- * qui vient des modules. Une filière de la fiche garde sa place et son métier.
- */
-function AideFiliere({ id, fiche = false }: { id: string; fiche?: boolean }) {
-  return (
-    <ul className="liste-nue legende">
-      <li id={`${id}-blocs`}>
-        <strong>Blocs de compétence</strong> : numéros des blocs de la fiche d&apos;habilitation ({PLAGE_BLOCS}) que
-        couvre la filière, pour mémoire. Le site ne s&apos;en sert pas : le programme de la filière vient des modules
-        qui la cochent dans leur réglage (menu Modules).
-      </li>
-      <li id={`${id}-rang`}>
-        <strong>Rang</strong> :{" "}
-        {fiche
-          ? "sans effet sur une filière de la fiche, qui garde sa place en tête des listes."
-          : "ordre de la filière dans les listes du site, après celles de la fiche : rang croissant, puis ordre alphabétique à rang égal."}
-      </li>
-      <li id={`${id}-metier`}>
-        <strong>Métier</strong> :{" "}
-        {fiche
-          ? "une filière de la fiche reste au préparateur."
-          : `range la filière sous ce métier dans le référentiel. Les niveaux qui s'y rattachent prennent le préfixe de code de ce métier (${PREFIXES} ; aucun pour le préparateur) et se rangent avec ses niveaux. À choisir avant d'y déposer un niveau : il ne change plus tant qu'elle en porte.`}
-      </li>
-    </ul>
-  );
-}
 
 export default async function Referentiel({
   searchParams,
@@ -184,7 +127,9 @@ export default async function Referentiel({
               <li key={f.id} className="carte">
                 <div className="etape-tete">
                   <Badge nom={f.badge} />
-                  <strong>{f.libelle}</strong>
+                  <strong>
+                    <Link href={`/admin/filieres/${encodeURIComponent(f.id)}`}>{f.libelle}</Link>
+                  </strong>
                   <code className="legende">{f.id}</code>
                   <span className={`etiquette ${f.origine === "base" ? "etiquette--ok" : "etiquette--site"}`}>
                     {f.origine === "base" ? (d?.actif === false ? "Déposée, inactive" : "Déposée") : "Fiche"}
@@ -199,55 +144,13 @@ export default async function Referentiel({
                 {estAdmin && (
                   <details>
                     <summary className="legende">Modifier</summary>
-                    <form action={actionEnregistrerFiliere} className="carte">
-                      <input type="hidden" name="id" value={f.id} />
-                      <div className="rangee">
-                        <label className="champ">
-                          <span>Libellé</span>
-                          <input name="libelle" defaultValue={f.libelle} maxLength={120} required />
-                        </label>
-                        <label className="champ">
-                          <span>Blocs de compétence</span>
-                          <input name="blocs" defaultValue={f.blocs.join(", ")} placeholder="1, 3, 5" aria-describedby={`aide-filiere-${f.id}-blocs`} />
-                        </label>
-                        <label className="champ">
-                          <span>Rang</span>
-                          <input name="rang" type="number" min={0} max={999} defaultValue={d?.rang ?? 0} aria-describedby={`aide-filiere-${f.id}-rang`} />
-                        </label>
-                      </div>
-                      <AideFiliere id={`aide-filiere-${f.id}`} fiche={idsFiche.has(f.id)} />
-                      <label className="champ">
-                        <span>Description</span>
-                        <textarea name="description" defaultValue={f.description} maxLength={400} rows={2} />
-                      </label>
-                      {/* Une filière de la fiche reste au préparateur. */}
-                      {!idsFiche.has(f.id) && (
-                        <label className="champ">
-                          <span>Métier</span>
-                          <select name="metier" defaultValue={metierOuDefaut(f.metier).id} aria-describedby={`aide-filiere-${f.id}-metier`}>
-                            {metiers.map((x) => (
-                              <option key={x.id} value={x.id}>{x.libelle}</option>
-                            ))}
-                          </select>
-                        </label>
-                      )}
-                      <ChoixBadge nom="badge" defaut={f.badge} familles="pictogrammes" />
-                      <label className="case-seule">
-                        <input type="checkbox" name="actif" defaultChecked={d?.actif !== false} />
-                        <span>Proposée dans les listes de rattachement</span>
-                      </label>
-                      <div className="actions">
-                        <button type="submit" className="bouton bouton--compact">Enregistrer</button>
-                      </div>
-                    </form>
-                    {d && (
-                      <form action={actionSupprimerFiliere}>
-                        <input type="hidden" name="id" value={f.id} />
-                        <button type="submit" className="bouton bouton--compact bouton--discret">
-                          Supprimer le dépôt
-                        </button>
-                      </form>
-                    )}
+                    <FormulaireFiliere
+                      filiere={f}
+                      rang={d?.rang ?? 0}
+                      actif={d?.actif !== false}
+                      fiche={idsFiche.has(f.id)}
+                    />
+                    {d && <SupprimerDepotFiliere id={f.id} />}
                   </details>
                 )}
               </li>
@@ -257,45 +160,7 @@ export default async function Referentiel({
         </ul>
 
         {estAdmin && (
-          <form action={actionEnregistrerFiliere} className="carte">
-            <h3 style={{ fontSize: "1rem", margin: 0 }}>Ajouter une filière</h3>
-            <div className="rangee">
-              <label className="champ">
-                <span>Libellé</span>
-                <input name="libelle" maxLength={120} required placeholder="Parcours Stérilisation" />
-              </label>
-              <label className="champ">
-                <span>Identifiant (facultatif)</span>
-                <input name="id" maxLength={40} placeholder="déduit du libellé" />
-              </label>
-              <label className="champ">
-                <span>Blocs de compétence</span>
-                <input name="blocs" placeholder="1, 3" aria-describedby="aide-nouvelle-filiere-blocs" />
-              </label>
-              <label className="champ">
-                <span>Rang</span>
-                <input name="rang" type="number" min={0} max={999} defaultValue={0} aria-describedby="aide-nouvelle-filiere-rang" />
-              </label>
-              <label className="champ">
-                <span>Métier</span>
-                <select name="metier" defaultValue={metiers[0].id} aria-describedby="aide-nouvelle-filiere-metier">
-                  {metiers.map((x) => (
-                    <option key={x.id} value={x.id}>{x.libelle}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <AideFiliere id="aide-nouvelle-filiere" />
-            <label className="champ">
-              <span>Description</span>
-              <textarea name="description" maxLength={400} rows={2} />
-            </label>
-            <ChoixBadge nom="badge" />
-            <input type="hidden" name="actif" value="1" />
-            <div className="actions">
-              <button type="submit" className="bouton">Ajouter la filière</button>
-            </div>
-          </form>
+          <FormulaireNouvelleFiliere />
         )}
       </section>
 
@@ -421,58 +286,11 @@ export default async function Referentiel({
         </ul>
 
         {estAdmin && (
-          <form action={actionEnregistrerNiveau} className="carte">
-            <h3 style={{ fontSize: "1rem", margin: 0 }}>Ajouter un niveau</h3>
-            <div className="rangee">
-              <label className="champ">
-                <span>Code</span>
-                <input name="code" maxLength={12} required placeholder="S1" aria-describedby="rappel-prefixes" />
-              </label>
-              <label className="champ">
-                <span>Libellé</span>
-                <input name="libelle" maxLength={120} required placeholder="S1 — stérilisation (base)" />
-              </label>
-              <label className="champ">
-                <span>Filière</span>
-                <select name="filiereId" defaultValue={filieres[0]?.id}>
-                  {parMetier(filieres, (f) => f.metier).map(({ metier, liste }) => (
-                    <optgroup key={metier.id} label={metier.libelle}>
-                      {liste.map((f) => (
-                        <option key={f.id} value={f.id}>{f.libelle}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
-              <label className="champ">
-                <span>Rang</span>
-                <input name="rang" type="number" min={0} max={999} defaultValue={0} aria-describedby="rangs-niveaux" />
-              </label>
-            </div>
-            <p id="rappel-prefixes" className="legende" style={{ margin: 0 }}>
-              Le code prend le préfixe du métier de la filière s&apos;il ne l&apos;a pas : {RAPPEL_PREFIXES}.
-              Le préparateur n&apos;en a pas.
-            </p>
-            <label className="champ">
-              <span>Condition d&apos;obtention</span>
-              <textarea name="condition" maxLength={600} rows={2} />
-            </label>
-            <fieldset className="groupe">
-              <legend className="champ-titre">Prérequis</legend>
-              <div className="cases">
-                {niveaux.map((x) => (
-                  <label key={String(x.code)}>
-                    <input type="checkbox" name="prerequis" value={String(x.code)} />
-                    <span>{String(x.code)}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <input type="hidden" name="actif" value="1" />
-            <div className="actions">
-              <button type="submit" className="bouton">Ajouter le niveau</button>
-            </div>
-          </form>
+          <FormulaireNouveauNiveau
+            filieres={filieres}
+            prerequis={niveaux.map((x) => String(x.code))}
+            idRangs="rangs-niveaux"
+          />
         )}
       </section>
     </>

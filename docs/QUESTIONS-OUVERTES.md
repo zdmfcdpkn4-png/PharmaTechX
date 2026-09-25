@@ -387,6 +387,10 @@ telle. Ordre : ce qui change le déploiement en premier.
       blocs de compétence, les 53 critères, les trois niveaux des
       questions, les deux parcours et la périodicité de revalidation.
 
+    Depuis la question 80 (choix a, même jour), chaque filière a sa page
+    (Modules › Filières) : fiche, niveaux, programme. Elle prendrait place
+    dans le sous-menu proposé ci-dessous.
+
     « Niveaux d'avancement » est lu comme les trois niveaux des questions —
     initial, intermédiaire, avancé — et leurs paliers par niveau cible : le
     seul autre jeu de niveaux du site `[à confirmer]`.
@@ -469,6 +473,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     même menu la création modification pour les filières, les niveaux, les
     blocs, les niveaux d'avancement… tout ce qui est en lien avec le
     squelette de la formation. » Suite : question 81.
+
+    Puis tranchée (choix a, réponse « À question 80 ») et mise en œuvre :
+    `/admin/filieres` et une page par filière — fiche, niveaux, programme,
+    ce qui la cite —, le programme enregistré dans le réglage de chaque
+    module, tout ou rien, sans jamais retirer la dernière filière d'un
+    module. La question 81 reste ouverte. Détail dans `DECISIONS.md`.
 
 79. **Tableurs du registre et du répertoire : l'injection de formule** —
     posée le 25/09/2026, sur un constat fait en vérifiant les tableurs des

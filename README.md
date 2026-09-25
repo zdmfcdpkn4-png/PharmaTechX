@@ -239,6 +239,15 @@ brouillon et modification d'un module publié : administration seulement
 (question 12) ; suppression réservée à l'administrateur, refusée tant que
 des questions ou des documents s'y rattachent.
 
+`/admin/filieres` — une **page par filière** (25/09/2026, question 80,
+choix a), depuis le menu Modules ou le Référentiel : sa fiche, ses niveaux
+(ajout d'un niveau déjà rattaché), son **programme** et ce qui la cite. Le
+programme se compose en cochant les modules et, par module, les niveaux de la
+filière ; il s'enregistre dans le réglage du module du code ou dans la ligne
+du module déposé, comme depuis l'écran Modules, qui montre la même chose.
+Administration seulement ; tout ou rien ; un module n'y perd jamais sa
+dernière filière, et le tronc commun s'y lit sans s'y régler.
+
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
 niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
@@ -367,6 +376,7 @@ les mêmes écrans.
 | Barème (valeurs par défaut, règles, libellés) | `content/bareme.ts` ; réglage `/admin/bareme`, lecture `lib/bareme-db.ts` |
 | Banque déposée (requêtes) | `content/banque-db.ts` |
 | Modules déposés | `content/modules-db.ts`, `app/admin/modules` ; fusion `content/store.ts` |
+| Page d'une filière (programme, ce qui la cite) | `app/admin/filieres` ; règles `content/programme-filiere.ts` ; formulaires communs au Référentiel `app/admin/referentiel/formulaires.tsx` |
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
 | Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |

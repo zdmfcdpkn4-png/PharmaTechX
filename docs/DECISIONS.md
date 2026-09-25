@@ -4821,6 +4821,106 @@ LibreOffice non essayée ici `[à vérifier]`.
   liste tapée à la main ; le registre CSV le rend précédé d'une tabulation,
   entre guillemets.
 
+## Une page par filière (25/09/2026, question 80, choix a)
+
+**Demande.** « Créer la possibilité de créer et gérer et modifier les
+filières. » Au Référentiel, une filière se créait, se modifiait, se
+désactivait et son dépôt se supprimait déjà. Il manquait de la gérer depuis
+elle-même : ses modules se cochaient module par module, son ordre et ses
+niveaux se réglaient ailleurs, et rien ne disait ce qui la cite avant de la
+retirer. Réponse « À question 80 », après une réponse qui élargit la
+demande à tout le squelette de la formation (question 81, restée ouverte).
+
+**Ce qui est fait.**
+- `/admin/filieres` : les filières rangées par métier, désactivées
+  comprises pour pouvoir les rouvrir, avec le nombre de modules au programme
+  et leurs niveaux. « Ajouter une filière » y mène à la page de la nouvelle
+  filière. Un lien « Filières » s'ajoute au menu Modules ; au Référentiel, le
+  libellé d'une filière mène à sa page.
+- `/admin/filieres/[id]`, en quatre parties :
+  - **Fiche** : le formulaire du Référentiel (mêmes champs, même action) et
+    « Supprimer le dépôt ».
+  - **Niveaux** : ceux de la filière, avec un lien vers l'ordre à chaque
+    niveau, et « Ajouter un niveau à cette filière », la filière étant
+    donnée. Un niveau se modifie, se range et se supprime au Référentiel.
+  - **Programme** : tous les modules du code et déposés, hors retirés,
+    rangés par bloc. Ceux de la filière sont cochés ; ceux des autres
+    filières attendent dans « Ajouter des modules d'autres filières » ; le
+    tronc commun se lit à part, sans se régler. Chaque ligne porte les
+    niveaux de la filière à cocher, et rappelle les autres filières et les
+    autres niveaux du module. Un résumé dit, par niveau cible, combien de
+    modules de la filière et du tronc commun y sont proposés.
+  - **Ce qui la cite** : modules au programme, niveaux, documents déposés,
+    codes d'accès actifs, ordres de profil et d'apprenants, questions
+    étiquetées de ce profil. À lire avant de la désactiver ou de supprimer
+    son dépôt.
+- Le programme s'enregistre là où il l'était, et nulle part ailleurs :
+  - module du code : son réglage (`reglages_modules`) ; seuil et parcours
+    inchangés, filières et niveaux égaux à ceux de la fiche retombent sur
+    elle ;
+  - module déposé : sa ligne (`modules_deposes`), dont la version avance.
+
+  L'écran Modules montre donc la même chose, et signale l'écart à la fiche
+  comme avant. Journal : `filiere:programme`, une entrée par
+  enregistrement, avec les modules changés.
+- Règles, dans `content/programme-filiere.ts` et testées :
+  - un module ne perd pas ici sa **dernière filière** : case grisée, et le
+    serveur refuse aussi une case forcée. Sans filière, un module du code
+    reprendrait celles de la fiche, et un module déposé passerait au tronc
+    commun ;
+  - un module du **tronc commun** ne se coche pas ici : le rattacher le
+    retirerait de toutes les autres filières ;
+  - retiré d'une filière, un module perd aussi les niveaux de cette
+    filière, sauf s'il n'en a pas d'autre ;
+  - un module resté garde au moins un niveau ;
+  - **seules les cases changées comptent** : chaque ligne renvoie ce
+    qu'elle a montré, et une case non touchée laisse le module tel qu'il est
+    au moment de l'enregistrement. Une page restée ouverte ne défait donc pas
+    ce qu'un autre onglet, ou un autre administrateur, a fait depuis ;
+  - **tout ou rien** : une ligne refusée n'enregistre aucune ligne, et la
+    page nomme chaque module refusé avec sa raison.
+- Le socle transversal : son programme est le tronc commun, en lecture ; il
+  se règle module par module, depuis l'écran Modules.
+- Au passage :
+  - les formulaires d'une filière et d'un niveau sont écrits une fois
+    (`app/admin/referentiel/formulaires.tsx`), pour le Référentiel et pour
+    la page d'une filière, avec leurs messages
+    (`app/admin/referentiel/messages.ts`) ;
+  - « Ajouter une filière » ne propose plus que les pictogrammes, comme
+    « Modifier » : le badge d'une filière s'affiche en pastille de 24 px, où
+    une illustration ne se lit pas (`components/ChoixBadge.tsx`).
+
+**Limites.**
+- Un profil de l'écran Ordre est une filière et l'un de ses niveaux ; les
+  cases de niveau suivent cette définition. Un code d'accès peut pourtant
+  viser un autre niveau, chimiothérapie · N1a par exemple, et un module de
+  niveau N1a y reste proposé. La page dit donc « à aucun des niveaux de la
+  filière », sans dire « à aucun profil ». Cas relevé : B5-09, de la
+  chimiothérapie, au seul niveau N1a d'après la fiche.
+- Les cases de niveau ne touchent que les niveaux de la filière ; les
+  autres niveaux d'un module se règlent sur l'écran Modules.
+- La question 81 — un sous-menu « Squelette de la formation », blocs
+  créables — reste ouverte ; si elle est tranchée, cette page y prendra
+  place.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 386 tests, dont 11 pour le programme d'une filière.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 99 étapes, sans erreur de page
+  ni erreur serveur. L'étape de la question 80 :
+  - ajoute B6-01 au programme de la stérilisation, au niveau S1, et lit le
+    même écart sur l'écran Modules ;
+  - force la case grisée de B5-01 : le serveur refuse, et le niveau coché
+    sur B5-09 dans le même envoi n'est pas enregistré ;
+  - ajoute B6-10 depuis un second onglet : la première page, restée
+    ouverte, ne le retire pas en enregistrant autre chose ;
+  - retire B6-01 : il revient à la fiche, filière et niveau ensemble ;
+  - ajoute un niveau depuis la page, crée une filière depuis la liste, puis
+    supprime son dépôt depuis sa page.
+- Mesures à 1366 et 390 px : aucun débordement, aucun identifiant en double,
+  aucune aide orpheline ; sur téléphone, code et titre d'un module tiennent
+  sur une ligne.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

@@ -508,6 +508,41 @@ a.carte-lien:hover .carte {
 .ligne-critere .libelle { flex: 1 1 0; min-width: 0; }
 .ligne-critere .obligatoire { flex: none; font-size: 0.6875rem; font-weight: 600; color: var(--marque-accent-texte); }
 
+/* Programme d'une filière (question 80, choix a) : une ligne par module —
+   code, case et titre, puis les niveaux de la filière, puis les remarques. */
+.liste-programme { display: flex; flex-direction: column; gap: 0.375rem; margin: 0; padding: 0; list-style: none; }
+.ligne-programme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-douce);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.ligne-programme .code {
+  flex: none;
+  width: 46px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.ligne-programme-choix {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 11rem;
+  min-width: 0;
+  min-height: var(--cible);
+}
+.ligne-programme-choix input { flex: none; }
+.ligne-programme-niveaux.cases { margin: 0; }
+.ligne-programme-infos { flex-basis: 100%; margin: 0; }
+.ligne-programme-alerte { color: var(--alerte); font-weight: 600; }
+.citations-filiere { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9375rem; }
+
 details.bloc {
   background: var(--verre);
   backdrop-filter: var(--verre-flou);

@@ -226,6 +226,51 @@ export async function getReferentiel(): Promise<Referentiel> {
   return { filieres, niveaux: ordonnes };
 }
 
+export interface FiliereListee {
+  filiere: Filiere;
+  /** Dépôt qui la corrige ou l'ajoute, s'il existe. */
+  depot: FiliereDeposee | undefined;
+  /** Filière de la fiche d'habilitation. */
+  fiche: boolean;
+  /** Proposée dans les listes de rattachement. */
+  active: boolean;
+}
+
+/**
+ * Filières servies, puis celles désactivées — fiche ou ajoutées —, pour
+ * pouvoir les rouvrir (liste et page des filières, question 80, choix a).
+ */
+export async function toutesLesFilieres(): Promise<FiliereListee[]> {
+  const [{ filieres }, deposees] = await Promise.all([
+    getReferentiel(),
+    listerFilieresDeposees(true).catch(() => [] as FiliereDeposee[]),
+  ]);
+  const depot = new Map(deposees.map((f) => [f.id, f]));
+  const deLaFiche = new Set(FILIERES_CODE.map((f) => f.id));
+  const servies: FiliereListee[] = filieres.map((f) => ({ filiere: f, depot: depot.get(f.id), fiche: deLaFiche.has(f.id), active: true }));
+  const inactives: FiliereListee[] = deposees
+    .filter((d) => !d.actif && !filieres.some((f) => f.id === d.id))
+    .map((d) => {
+      const code = FILIERES_CODE.find((f) => f.id === d.id);
+      return {
+        filiere: {
+          id: d.id,
+          libelle: d.libelle,
+          description: d.description,
+          blocs: d.blocs.length > 0 ? d.blocs : code?.blocs ?? [],
+          niveaux: [],
+          badge: d.badge || code?.badge || "",
+          origine: "base",
+          metier: code ? METIER_PAR_DEFAUT : d.metierId,
+        },
+        depot: d,
+        fiche: Boolean(code),
+        active: false,
+      };
+    });
+  return [...servies, ...inactives];
+}
+
 /** Filières servies aux écrans (raccourci le plus courant). */
 export async function listeFilieres(): Promise<Filiere[]> {
   return (await getReferentiel()).filieres;
@@ -341,6 +386,61 @@ export async function referentielDuModule(m: {
   };
 }
 
+
+// ────────────────────────────────────── Ce qui cite une filière
+
+/**
+ * Ce qui cite une filière hors des modules, lu sur sa page avant de la
+ * désactiver ou de supprimer son dépôt (question 80, choix a). Les modules
+ * se comptent sur la page elle-même, dans son programme.
+ *
+ * Rien n'est décidé ici : une filière désactivée garde tout ce qui la cite,
+ * et une filière ajoutée dont on supprime le dépôt le laisse citer un
+ * identifiant devenu inconnu. La liste sert à le savoir avant.
+ */
+export interface CitationsFiliere {
+  /** Documents déposés rattachés à la filière (titre). */
+  documents: string[];
+  /** Codes d'accès actifs de ce profil de poste (libellé du code). */
+  codes: string[];
+  /** Niveaux déposés rattachés à la filière (code). */
+  niveaux: string[];
+  /** Ordres de profil enregistrés : niveau et parcours. */
+  ordres: { niveau: string; parcours: string }[];
+  /** Ordres propres à des apprenants, sur un profil de cette filière. */
+  ordresApprenants: number;
+  /** Questions étiquetées de ce profil, hors questions retirées. */
+  questions: number;
+}
+
+export async function citationsDeLaFiliere(id: string): Promise<CitationsFiliere> {
+  const vide: CitationsFiliere = { documents: [], codes: [], niveaux: [], ordres: [], ordresApprenants: 0, questions: 0 };
+  if (!baseConfiguree()) return vide;
+  const cite = JSON.stringify([id]);
+  const [documents, codes, niveaux, ordres, apprenants, questions] = await Promise.all([
+    sql<{ titre: string }>`
+      SELECT titre FROM depots WHERE filieres @> ${cite}::jsonb ORDER BY titre`.catch(() => ({ rows: [] })),
+    sql<{ libelle: string }>`
+      SELECT libelle FROM acces WHERE actif AND filiere = ${id} ORDER BY libelle`.catch(() => ({ rows: [] })),
+    sql<{ code: string }>`
+      SELECT code FROM niveaux_deposes WHERE filiere_id = ${id} ORDER BY rang, code`.catch(() => ({ rows: [] })),
+    sql<{ niveau: string; parcours: string }>`
+      SELECT niveau, parcours FROM ordres_profil WHERE filiere_id = ${id} ORDER BY niveau, parcours`.catch(() => ({ rows: [] })),
+    sql<{ n: number }>`
+      SELECT COUNT(*)::int AS n FROM ordres_agent WHERE filiere_id = ${id}`.catch(() => ({ rows: [{ n: 0 }] })),
+    sql<{ n: number }>`
+      SELECT COUNT(*)::int AS n FROM questions
+      WHERE statut <> 'retire' AND profil_filieres @> ${cite}::jsonb`.catch(() => ({ rows: [{ n: 0 }] })),
+  ]);
+  return {
+    documents: documents.rows.map((r) => r.titre),
+    codes: codes.rows.map((r) => r.libelle),
+    niveaux: niveaux.rows.map((r) => r.code),
+    ordres: ordres.rows,
+    ordresApprenants: apprenants.rows[0]?.n ?? 0,
+    questions: questions.rows[0]?.n ?? 0,
+  };
+}
 
 // ────────────────────────────────────── Rattachements devenus orphelins
 

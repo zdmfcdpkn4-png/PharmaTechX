@@ -2654,6 +2654,122 @@ Justification : cf. procédure interne.`,
   await carteNiveau("S1").locator(".niveau-rang", { hasText: "sans rang" }).waitFor();
   ok("ordre des niveaux : rang de la fiche lu, S1 au rang 45 entre N2 et N3 (prérequis, Repères) ; niveau supprimé : code d'accès et plafond du barème signalés, encart éteint après reprise");
 
+  // Question 80 (choix a, 25/09/2026) : une page par filière — fiche, niveaux,
+  // programme, ce qui la cite. Le programme s'enregistre dans le réglage du
+  // module, le même que sur l'écran Modules ; tout ou rien, et jamais la
+  // dernière filière d'un module, même sa case grisée forcée.
+  await page.goto(BASE + "/admin/referentiel");
+  assert.equal(await page.locator("li.carte a[href='/admin/filieres/sterilisation']").count(), 1, "Référentiel : la filière mène à sa page");
+  await page.goto(BASE + "/admin/filieres");
+  await page.waitForSelector("h1:has-text('Filières')");
+  assert.equal(await page.locator("#volet-principal a[href='/admin/filieres']").count(), 1, "lien « Filières » du menu Modules");
+  const carteSterListe = page.locator("li.carte", { has: page.locator('code:text-is("sterilisation")') });
+  assert.match(await carteSterListe.textContent(), /0 module au programme · niveaux : S1/, "liste : programme et niveaux de la filière déposée");
+  await carteSterListe.locator("a", { hasText: "Parcours Stérilisation" }).click();
+  await page.waitForURL(/\/admin\/filieres\/sterilisation$/);
+  const lignePgm = (id) => page.locator(`#programme li.ligne-programme[data-module="${id}"]`);
+  await page.click("#programme summary:has-text(\"Ajouter des modules d'autres filières\")");
+  await lignePgm("critere-b6-01").locator("input[type=checkbox][name=dans]").check();
+  await lignePgm("critere-b6-01").locator('input[name="niv:critere-b6-01"][value="S1"]').check();
+  await page.click("button:has-text('Enregistrer le programme')");
+  await page.waitForURL(/ok=programme&n=1/);
+  await page.locator(".encart--ok", { hasText: "1 module modifié" }).waitFor();
+  assert.equal(await lignePgm("critere-b6-01").locator("input[name=dans]:checked").count(), 1, "B6-01 au programme de la stérilisation");
+  assert.match(await page.locator("#programme").textContent(), /S1 — 1 de la filière/, "B6-01 proposé au niveau S1");
+  assert.match(await lignePgm("critere-b6-01").textContent(), /aussi : Parcours Préparatoire/, "sa première filière rappelée");
+  await page.goto(BASE + "/admin/modules");
+  await page.click("summary:has-text('réglé(s)')");
+  const reglageB601 = page.locator("form.ligne-critere", { hasText: "Habillage et règles d'hygiène au préparatoire" });
+  const ecartB601 = await reglageB601.locator(".libelle").textContent();
+  assert.match(ecartB601, /filières : preparatoire, sterilisation/, "écran Modules : la filière ajoutée — " + ecartB601);
+  assert.match(ecartB601, /niveaux : N1b, S1/, "écran Modules : le niveau coché — " + ecartB601);
+  // B5-01 n'a que la chimiothérapie : sa case grisée, forcée, fait tout refuser,
+  // y compris le niveau coché sur une autre ligne.
+  await page.goto(BASE + "/admin/filieres/chimiotherapie");
+  assert.equal(await lignePgm("critere-b5-01").locator("input[type=checkbox][name=dans]").isDisabled(), true, "seule filière : case grisée");
+  const texteB509 = await lignePgm("critere-b5-09").textContent();
+  assert.ok(
+    texteB509.includes("autres niveaux : N1a") && texteB509.includes("à aucun des niveaux de la filière"),
+    "B5-09, critère de niveau N1a, signalé hors des niveaux de la filière — " + texteB509,
+  );
+  await lignePgm("critere-b5-01").evaluate((li) => {
+    li.querySelector("input[type=hidden][name=dans]").remove();
+    const c = li.querySelector("input[type=checkbox][name=dans]");
+    c.disabled = false;
+    c.checked = false;
+  });
+  await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').check();
+  await page.click("button:has-text('Enregistrer le programme')");
+  await page.waitForURL(/erreur=programme/);
+  const refusProgramme = page.locator("[role=alert]", { hasText: "Rien n'a été enregistré" });
+  await refusProgramme.waitFor();
+  assert.match(await refusProgramme.textContent(), /c'est sa seule filière/, "dernière filière refusée par le serveur");
+  assert.equal(
+    await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]:checked').count(),
+    0,
+    "tout ou rien : le niveau coché sur B5-09 n'est pas enregistré",
+  );
+  await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').check();
+  await page.click("button:has-text('Enregistrer le programme')");
+  await page.waitForURL(/ok=programme&n=1/);
+  await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]:checked').waitFor({ state: "attached" });
+  assert.equal(await lignePgm("critere-b5-09").locator(".ligne-programme-alerte").count(), 0, "B5-09 proposé au niveau N2");
+  await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').uncheck();
+  await page.click("button:has-text('Enregistrer le programme')");
+  // même adresse qu'avant : c'est l'alerte revenue qui prouve la page redessinée
+  await lignePgm("critere-b5-09").locator(".ligne-programme-alerte").waitFor();
+  // Un niveau ajouté depuis la page d'une filière s'y rattache, et l'on y revient.
+  await page.goto(BASE + "/admin/filieres/sterilisation");
+  const ajoutNiveauIci = page.locator("form", { hasText: "Ajouter un niveau à cette filière" });
+  await ajoutNiveauIci.locator("input[name=code]").fill("S2");
+  await ajoutNiveauIci.locator("input[name=libelle]").fill("S2 — stérilisation (confirmé)");
+  await ajoutNiveauIci.locator('button:has-text("Ajouter le niveau")').click();
+  await page.waitForURL(/\/admin\/filieres\/sterilisation\?ok=niveau/);
+  await page.locator('#niveaux .etiquette--neutre:text-is("S2")').waitFor();
+  // Une page restée ouverte ne défait pas ce qu'un autre onglet a fait depuis :
+  // B6-10 ajouté dans un second onglet reste, bien que la page le montre hors programme.
+  const autreOnglet = await page.context().newPage();
+  await autreOnglet.goto(BASE + "/admin/filieres/sterilisation");
+  await autreOnglet.click("#programme summary:has-text(\"Ajouter des modules d'autres filières\")");
+  await autreOnglet.locator('#programme li.ligne-programme[data-module="critere-b6-10"] input[type=checkbox][name=dans]').check();
+  await autreOnglet.click("button:has-text('Enregistrer le programme')");
+  await autreOnglet.waitForURL(/ok=programme&n=1/);
+  await autreOnglet.close();
+  // Retirer B6-01 : la filière et son niveau S1 quittent le module, qui revient à la fiche.
+  await lignePgm("critere-b6-01").locator("input[type=checkbox][name=dans]").uncheck();
+  await page.click("button:has-text('Enregistrer le programme')");
+  await page.waitForURL(/ok=programme&n=1/);
+  await lignePgm("critere-b6-01").locator("input[type=checkbox][name=dans]:not(:checked)").waitFor({ state: "attached" });
+  assert.equal(
+    await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]:checked").count(),
+    1,
+    "B6-10, ajouté dans l'autre onglet, reste au programme : seule la case changée a compté",
+  );
+  await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]").uncheck();
+  await page.click("button:has-text('Enregistrer le programme')");
+  await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]:not(:checked)").waitFor({ state: "attached" });
+  await page.goto(BASE + "/admin/modules");
+  await page.click("summary:has-text('réglé(s)')");
+  assert.match(await reglageB601.locator(".libelle").textContent(), /fiche, seuil/, "B6-01 revenu à la fiche : filière et niveau retirés ensemble");
+  await page.goto(BASE + "/admin/referentiel");
+  await carteNiveau("S2").locator("summary:has-text('Modifier')").click();
+  await carteNiveau("S2").locator("button:has-text('Supprimer le dépôt')").click();
+  await codeNiveau("S2").waitFor({ state: "detached" });
+  // Créée depuis la liste, une filière s'ouvre sur sa page ; son dépôt supprimé, retour à la liste.
+  await page.goto(BASE + "/admin/filieres");
+  const ajoutFiliereIci = page.locator("form", { hasText: "Ajouter une filière" });
+  await ajoutFiliereIci.locator("input[name=libelle]").fill("Parcours Témoin 80");
+  await ajoutFiliereIci.locator('button:has-text("Ajouter la filière")').click();
+  await page.waitForURL(/\/admin\/filieres\/parcours-temoin-80\?ok=filiere/);
+  await page.locator("h1", { hasText: "Parcours Témoin 80" }).waitFor();
+  assert.match(await page.locator("#programme").textContent(), /n'a pas encore de niveau/, "filière neuve : l'absence de niveau est dite");
+  assert.match(await page.locator("#citations").textContent(), /0 module au programme/, "ce qui la cite : rien encore");
+  await page.click("#fiche summary:has-text('Modifier')");
+  await page.click("#fiche button:has-text('Supprimer le dépôt')");
+  await page.waitForURL(/\/admin\/filieres\?ok=filiere-supprimee/);
+  assert.equal(await page.locator('code:text-is("parcours-temoin-80")').count(), 0, "filière supprimée de la liste");
+  ok("filières (question 80, choix a) : page par filière depuis le menu et le Référentiel ; programme enregistré dans le réglage du module (même écart sur l'écran Modules), niveaux de la filière par module, dernière filière refusée par le serveur, tout ou rien, seules les cases changées comptent (second onglet) ; niveau ajouté depuis la filière ; filière créée puis supprimée depuis sa page");
+
   // arborescence de la banque : filière → niveau → module, avec les comptes
   await page.goto(BASE + "/admin/questions?vue=liste");
   await page.waitForSelector("text=Couverture de la banque");
