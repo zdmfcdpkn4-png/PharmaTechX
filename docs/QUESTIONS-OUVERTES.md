@@ -376,6 +376,36 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+75. **Menu sur téléphone : la place laissée à « Aller à »** — posée le
+    25/09/2026, sur demande (« sur bandeau de menu la zone de défilement est
+    trop limitée : pouvoir replier la partie À faire ou réduire l'espacement
+    pour garder un espace confortable pour le reste du menu »). Mesuré sur
+    gabarit, en administration, banque de questions ouverte : l'en-tête, la
+    recherche, « Reprendre » et « À faire » ne défilent pas et prennent
+    497 px ; il reste à « Aller à » 161 px sur un iPhone 15 dans Safari
+    (gabarit 393 × 659), 55 px sur un iPhone SE (375 × 553), 16 px sur ce
+    dernier en mode zone. Le titre repris s'étale sur quatre lignes, sa
+    mention « lecture, section 1 sur 5 » occupant la moitié droite : dans
+    les trois choix, elle passe sous le titre, qui tient en deux lignes
+    (21 px de gagnés). Trois choix :
+    - **a (recommandé)** : « À faire » repliable. Son intitulé devient un
+      bouton ; replié, il porte le total en attente ; l'état est gardé sur
+      l'appareil. « Aller à » disposerait de 391 px sur iPhone 15, de
+      285 px sur iPhone SE, de 278 px en mode zone. Cibles inchangées
+      (44 px, 52 px en mode zone).
+    - **b** : espacement resserré : lignes de « À faire » de 32 px au lieu
+      de 44, hors mode zone, qui garde ses 52 px pour les gants. « Aller
+      à » : 244 px sur iPhone 15, 138 px sur iPhone SE, 41 px en mode zone.
+    - **c** : un seul défilement sur téléphone : sous la recherche, tout le
+      tiroir défile d'un tenant, sans rien replier ni resserrer. Zone qui
+      défile : 551 px sur iPhone 15, 445 px sur iPhone SE, 437 px en mode
+      zone ; à l'ouverture, « Aller à » commence au même endroit
+      qu'aujourd'hui.
+
+    Second point du même message, posé ensuite en question 76 : les quatre
+    intitulés « Administration · … » d'« Aller à » (synonyme, ou mot
+    remplacé par une vignette ou une icône).
+
 74. **Une question dans plusieurs blocs et plusieurs profils** — posée le
     24/09/2026, sur demande (« pouvoir positionner une question dans
     plusieurs blocs de compétences et plusieurs profils »). Aujourd'hui, une
