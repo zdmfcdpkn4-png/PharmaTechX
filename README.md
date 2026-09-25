@@ -346,6 +346,17 @@ sceau) ; le registre cumulatif s'exporte depuis `/admin/rapports`, et
 `/admin/personnel` tient les identifiants d'agents (création, clôture) et le
 répertoire par identifiant et par critère (export CSV).
 
+**Statistiques de réussite** (décision du 25/09/2026, question 78, choix a) :
+`/admin/statistiques`, pour le tutorat et l'administration, classe les
+modules sur la réussite au premier essai, avec son intervalle de confiance à
+95 %. La fiche d'un module détaille les questions (difficulté,
+discrimination), les réponses manquées, les mauvaises réponses que personne ne
+choisit et les sources du support ; elle compare la réussite avant et après
+chaque action d'amélioration consignée. Elle lit les évaluations conservées
+des agents rattachés et les rapports émis, sans double compte. Aucune donnée
+individuelle, aucun taux sous cinq agents distincts ; tableurs agrégés depuis
+les mêmes écrans.
+
 ## 9. Où éditer quoi
 
 | Besoin | Fichier |
@@ -363,6 +374,7 @@ répertoire par identifiant et par critère (export CSV).
 | Règle de décision (bande de garde, non concluant) | `lib/decision.ts` |
 | Registre, répertoire, JSON d'archive, zip | `lib/registre.ts`, `lib/zip.ts` |
 | Signature du pharmacien | `lib/signatures.ts`, `app/admin/signature` |
+| Statistiques de réussite (calculs, lecture, écrans) | `lib/statistiques.ts`, `lib/statistiques-db.ts`, `app/admin/statistiques` |
 | Schéma de la base | `lib/schema.ts` (appliqué par `lib/db.ts`) |
 | Stockage des documents | `lib/stockage.ts` ; images `lib/images.ts` |
 | Rôles, codes, sessions, limiteur | `lib/auth.ts`, `lib/limiteur.ts` |

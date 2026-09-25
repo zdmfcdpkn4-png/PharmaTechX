@@ -11,8 +11,10 @@ import {
   ContenuQuestion,
   EtiquettesQuestion,
   RattachementQuestion,
+  StatistiqueQuestion,
   TraceQuestion,
   type LecturesRattachement,
+  type StatQuestion,
 } from "./question-banque";
 
 /**
@@ -32,6 +34,8 @@ interface Contexte {
   /** Cumul d'une branche, chaque question une fois (question 74). */
   cumul: Cumul;
   lectures: LecturesRattachement;
+  /** Statistiques de réussite par question (question 78). */
+  stats: ReadonlyMap<string, StatQuestion>;
   signales: Record<string, number>;
   session: CodeActeur;
   etat: EtatPlis;
@@ -64,7 +68,13 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
     <li>
       <details id={ancreDe(chemin)} className="arbo-noeud arbo-question" open={estOuvert(chemin, 4, ctx.etat)}>
         <summary>
-          <EtiquettesQuestion q={q} signalements={ctx.signales[q.id] ?? 0} ici={bm.module.id} horsProfil={horsProfil} />
+          <EtiquettesQuestion
+            q={q}
+            signalements={ctx.signales[q.id] ?? 0}
+            ici={bm.module.id}
+            horsProfil={horsProfil}
+            stat={ctx.stats.get(q.id)}
+          />
           <span className="arbo-enonce">{q.enonce}</span>
         </summary>
         <div className="arbo-corps">
@@ -72,6 +82,7 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
             <TraceQuestion q={q} />
           </p>
           <RattachementQuestion q={q} lectures={ctx.lectures} ici={bm.module.id} />
+          <StatistiqueQuestion q={q} stat={ctx.stats.get(q.id)} ici={bm.module.id} />
           <ContenuQuestion q={q} />
           <ActionsQuestion
             q={q}
@@ -174,6 +185,7 @@ export function ArborescenceBanque({
   comptes,
   cumul = (liste) => cumuler(liste, comptes),
   lectures,
+  stats = new Map(),
   signales,
   session,
   etat,
@@ -185,6 +197,7 @@ export function ArborescenceBanque({
   comptes: Comptes;
   cumul?: Cumul;
   lectures: LecturesRattachement;
+  stats?: ReadonlyMap<string, StatQuestion>;
   signales: Record<string, number>;
   session: CodeActeur;
   etat: EtatPlis;
@@ -196,6 +209,7 @@ export function ArborescenceBanque({
     comptes,
     cumul,
     lectures,
+    stats,
     signales,
     session,
     etat,

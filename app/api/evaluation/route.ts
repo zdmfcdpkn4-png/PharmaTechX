@@ -116,6 +116,17 @@ export interface DetailQuestion {
   niveauQuestion?: NiveauQuestion | null;
   choixApprenant: string[];
   reponsesAttendues: string[];
+  /**
+   * QCM et QIM : toutes les propositions présentées, pour l'analyse des
+   * réponses (statistiques, question 78, 25/09/2026). Absent des résultats antérieurs.
+   */
+  propositions?: string[];
+  /**
+   * QIM en Vrai/Faux : propositions laissées sans jugement (« je ne sais
+   * pas »), qu'on ne distinguait pas jusque-là d'une proposition jugée fausse.
+   * Absent des résultats antérieurs.
+   */
+  sansJugement?: string[];
   justification: string;
   sources: string[];
   /** Schéma à compléter : le détail par légende. */
@@ -414,6 +425,12 @@ export async function POST(request: Request) {
         (r) => `${r.source} — ${r.libelle}${r.localisation ? ` (${r.localisation})` : ""}`,
       ),
     };
+
+    if (q.type === "QCM" || q.type === "QIM") {
+      base.propositions = q.options.map((o) => o.texte);
+      const jugees = rep.juges;
+      if (q.type === "QIM" && jugees) base.sansJugement = libelle(q.options.filter((o) => !jugees.includes(o.id)).map((o) => o.id));
+    }
 
     if (q.type === "ORD") {
       // L'ordre juste est celui de `bonnesReponses` ; la réponse de

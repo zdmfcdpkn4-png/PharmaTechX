@@ -45,7 +45,12 @@ export default function DonneesPersonnelles() {
             tentatives. Jamais votre nom — la correspondance est tenue hors du site.
           </dd>
           <dt>Pourquoi</dt>
-          <dd>Tracer l&apos;étape 2 de l&apos;habilitation. Base légale : {aCompleter} avec le DPO (pas le consentement).</dd>
+          <dd>
+            Tracer l&apos;étape 2 de l&apos;habilitation. Améliorer les formations : vos évaluations conservées
+            entrent, agrégées, dans des statistiques de réussite par module et par question — sans nom, sans
+            décision sur vous, aucun taux sous cinq agents. Base légale : {aCompleter} avec le DPO (pas le
+            consentement).
+          </dd>
           <dt>Qui y accède</dt>
           <dd>Tuteurs, pharmacien responsable, administrateur du site ; aucun tiers. Hébergement : {aCompleter}.</dd>
           <dt>Combien de temps</dt>

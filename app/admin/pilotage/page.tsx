@@ -7,7 +7,7 @@ import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { blocsCompetence, criteres, maintien } from "@/content/habilitation";
 import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
-import { LIBELLES_ATTENTE, attenteDe, classerCriteres, libelleAnciennete, moisContinus, part, questionsDifficiles, quizAnciens, tranchesScores } from "@/lib/pilotage";
+import { LIBELLES_ATTENTE, PERIODES, attenteDe, classerCriteres, libelleAnciennete, moisContinus, part, questionsDifficiles, quizAnciens, tranchesScores } from "@/lib/pilotage";
 import {
   anciennetesQuiz,
   bilanParCritere,
@@ -46,13 +46,6 @@ export const dynamic = "force-dynamic";
  * Aucun nom n'y paraît : les rapports sont rattachés à un identifiant d'agent
  * (question 6, choix a), et la correspondance se tient hors du site.
  */
-
-const PERIODES: { cle: string; libelle: string; jours: number | null }[] = [
-  { cle: "30", libelle: "30 derniers jours", jours: 30 },
-  { cle: "90", libelle: "3 derniers mois", jours: 90 },
-  { cle: "365", libelle: "12 derniers mois", jours: 365 },
-  { cle: "tout", libelle: "Depuis le début", jours: null },
-];
 
 export default async function Pilotage({
   searchParams,
@@ -132,6 +125,12 @@ export default async function Pilotage({
           Où en est l&apos;unité, ce qui attend une signature, et où les résultats accrochent. Aucun
           nom : les rapports sont rattachés à un identifiant d&apos;agent.
         </p>
+        {conservation && (
+          <p className="legende">
+            Ce tableau lit les rapports émis, d&apos;ordinaire l&apos;essai qui réussit. La réussite au premier essai,
+            question par question et réponse par réponse, est aux <Link href="/admin/statistiques">Statistiques</Link>.
+          </p>
+        )}
       </section>
 
       <form method="get" className="carte filtres-pilotage">
@@ -297,6 +296,12 @@ export default async function Pilotage({
                       <span className="legende" style={{ marginLeft: "auto" }}>
                         {c.taux} % acquis · {c.n} rapport{c.n > 1 ? "s" : ""}
                         {c.score_moyen !== null ? ` · score moyen ${c.score_moyen} %` : ""}
+                        {c.module_id && (
+                          <>
+                            {" · "}
+                            <Link href={`/admin/statistiques/${encodeURIComponent(c.module_id)}`}>Analyse</Link>
+                          </>
+                        )}
                       </span>
                     </div>
                     <BarreVerdicts r={c} />
@@ -338,6 +343,10 @@ export default async function Pilotage({
                       <p className="legende" style={{ margin: ".25rem 0 0" }}>
                         <Link href={`/admin/questions?module=${encodeURIComponent(q.module_id)}`}>
                           Voir dans la banque
+                        </Link>
+                        {" · "}
+                        <Link href={`/admin/statistiques/${encodeURIComponent(q.module_id)}#q-${encodeURIComponent(q.question_id)}`}>
+                          Analyse de la question
                         </Link>
                       </p>
                     )}

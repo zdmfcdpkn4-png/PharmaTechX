@@ -8,6 +8,14 @@ import type { StatutRapport } from "./rapports";
  * Module pur (pas de `server-only`) — les requêtes sont dans `lib/pilotage-db.ts`.
  */
 
+/** Périodes proposées par le Pilotage et les Statistiques, dans cet ordre. */
+export const PERIODES: { cle: string; libelle: string; jours: number | null }[] = [
+  { cle: "30", libelle: "30 derniers jours", jours: 30 },
+  { cle: "90", libelle: "3 derniers mois", jours: 90 },
+  { cle: "365", libelle: "12 derniers mois", jours: 365 },
+  { cle: "tout", libelle: "Depuis le début", jours: null },
+];
+
 /** Ce que le rapport attend pour avancer, du point de vue de celui qui pilote. */
 export type Attente = "arbitrage" | "visa-tuteur" | "visa-pharmacien";
 
@@ -66,6 +74,8 @@ export interface BilanCritere {
   cle: string;
   libelle: string;
   critere_id: string | null;
+  /** Module évalué, pour ouvrir sa fiche statistique (question 78) ; absent des bilans construits à la main. */
+  module_id?: string;
   n: number;
   acquis: number;
   non_acquis: number;

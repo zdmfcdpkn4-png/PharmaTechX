@@ -174,6 +174,8 @@ export default async function RootLayout({
             titre: "Suivi",
             liens: [
               { href: "/admin/pilotage", libelle: "Pilotage" },
+              // Statistiques de réussite (question 78, choix a) : sans conservation, aucun essai à analyser.
+              ...(conservation ? [{ href: "/admin/statistiques", libelle: "Statistiques" }] : []),
               ...(conservation
                 ? [{ href: "/admin/rapports", libelle: "Rapports", compte: actesRapports }]
                 : []),

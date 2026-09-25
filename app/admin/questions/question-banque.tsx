@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LigneQuestion } from "@/content/banque-db";
 import { peutValider, validationParAuteur, type CodeActeur } from "@/content/quatre-yeux";
 import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
+import { CONSEILS_REPERE, LIBELLES_REPERE, SEUILS_STAT, questionARevoir, type Repere, type Taux } from "@/lib/statistiques";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT } from "./commun";
 
@@ -22,11 +23,14 @@ export function EtiquettesQuestion({
   signalements,
   ici,
   horsProfil = false,
+  stat,
 }: {
   q: LigneQuestion;
   signalements: number;
   ici?: string;
   horsProfil?: boolean;
+  /** Statistiques de réussite (question 78), tous modules confondus. */
+  stat?: StatQuestion;
 }) {
   return (
     <>
@@ -66,7 +70,43 @@ export function EtiquettesQuestion({
           {horsProfil ? "Hors du profil de cette branche" : "Profils limités"}
         </span>
       )}
+      {stat && questionARevoir(stat.reperes) && <span className="etiquette etiquette--attention">À revoir (statistiques)</span>}
     </>
+  );
+}
+
+/** Réussite et discrimination d'une question sur les essais conservés (question 78, choix a). */
+export interface StatQuestion {
+  reussite: Taux;
+  discrimination: number | null;
+  reperes: Repere[];
+}
+
+/**
+ * Ce que disent les essais d'une question, et le lien vers sa ligne dans la
+ * fiche statistique de son module. Rien tant qu'elle n'a pas été posée.
+ */
+export function StatistiqueQuestion({ q, stat, ici }: { q: LigneQuestion; stat?: StatQuestion; ici?: string }) {
+  if (!stat || stat.reussite.n === 0) return null;
+  const moduleVu = ici ?? q.module_id;
+  const r = stat.reussite;
+  return (
+    <p className="legende stat-question">
+      Statistiques :{" "}
+      {r.taux === null
+        ? `posée ${r.n} fois — un taux à partir de ${SEUILS_STAT.effectif} agents`
+        : `réussie ${r.taux} % (IC 95 % ${r.bas}–${r.haut}) sur ${r.n} essais`}
+      {stat.discrimination !== null && ` · discrimination ${String(stat.discrimination).replace(".", ",")}`}
+      {stat.reperes.map((x: Repere) => (
+        <span key={x}>
+          {" · "}
+          <strong>{LIBELLES_REPERE[x]}</strong>
+          {x !== "tres-facile" && ` : ${CONSEILS_REPERE[x]}`}
+        </span>
+      ))}
+      {" · "}
+      <Link href={`/admin/statistiques/${encodeURIComponent(moduleVu)}#q-${encodeURIComponent(q.id)}`}>Analyse</Link>
+    </p>
   );
 }
 

@@ -86,12 +86,13 @@ export async function comptesPilotage(f: FiltrePilotage): Promise<ComptesPilotag
 /** Un bilan par critère (à défaut, par module), tel qu'il se lit sur la fiche d'habilitation. */
 export async function bilanParCritere(f: FiltrePilotage): Promise<BilanCritere[]> {
   const r = await requete<{
-    cle: string; libelle: string; critere_id: string | null; n: number;
+    cle: string; libelle: string; critere_id: string | null; module_id: string; n: number;
     acquis: number; non_acquis: number; indetermine: number; non_concluant: number; score_moyen: string | null;
   }>(
     `SELECT COALESCE(r.critere_id, r.module_id) AS cle,
        MIN(r.module_titre) AS libelle,
        MAX(r.critere_id) AS critere_id,
+       MIN(r.module_id) AS module_id,
        COUNT(*)::int AS n,
        COUNT(*) FILTER (WHERE ${VERDICT_RETENU} = 'acquis')::int        AS acquis,
        COUNT(*) FILTER (WHERE ${VERDICT_RETENU} = 'non_acquis')::int    AS non_acquis,

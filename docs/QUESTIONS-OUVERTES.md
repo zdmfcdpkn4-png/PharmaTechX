@@ -407,6 +407,24 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : a, et les identifiants d'agents visibles dans les
       statistiques, pour cibler un accompagnement individuel.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre :
+    - l'écran « Statistiques » (Suivi) et une fiche par module ;
+    - des repères dans la banque et sur la page du module (tutorat et
+      administration), des renvois depuis le Pilotage ;
+    - des tableurs, et des actions d'amélioration datées.
+
+    Ce qui compte comme essai :
+    - les évaluations conservées des agents rattachés ;
+    - les rapports émis sans évaluation conservée ;
+    - une évaluation émise ne compte qu'une fois ;
+    - un essai dont le seul rapport est annulé est écarté.
+
+    Aucun taux sous cinq agents distincts, même pour une question, une
+    réponse ou une source. Les « profils » de la proposition se lisent par
+    les filtres filière, niveau et bloc du classement, et, sur la fiche, par
+    niveau visé à l'évaluation. Détail dans `DECISIONS.md` ; finalité RGPD
+    `[à valider avec le DPO]`.
+
 77. **Menu : un pictogramme par thème** — posée le 25/09/2026, sur demande
     (« prévoir des icônes différentes pour chaque tête de menu, en lien
     avec le thème du menu »). Depuis la question 76, les quatre sous-menus

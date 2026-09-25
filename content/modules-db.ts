@@ -178,6 +178,8 @@ export async function supprimerModuleDepose(id: string): Promise<{ ok: true } | 
   await sql`DELETE FROM modules_deposes WHERE id = ${id}`;
   // Rattachements de questions retirées : sans module, ils ne mènent plus nulle part (question 74).
   await sql`DELETE FROM questions_modules WHERE module_id = ${id}`;
+  // Ses actions d'amélioration n'ont plus de fiche où se lire (question 78).
+  await sql`DELETE FROM actions_formation WHERE module_id = ${id}`;
   return { ok: true };
 }
 

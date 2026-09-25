@@ -49,6 +49,7 @@ export const TABLES = [
   "ordres_profil",
   "ordres_agent",
   "questions_modules",
+  "actions_formation",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -477,6 +478,20 @@ export const SCHEMA: string[] = [
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS blocs JSONB NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS profil_filieres JSONB NOT NULL DEFAULT '[]'::jsonb`,
   `ALTER TABLE questions ADD COLUMN IF NOT EXISTS profil_niveaux JSONB NOT NULL DEFAULT '[]'::jsonb`,
+
+  // ── statistiques de réussite (question 78, choix a, 25/09/2026) ───────────
+  // Actions d'amélioration d'un module, datées : la fiche statistique compare
+  // la réussite au premier essai avant et après chacune. Aucune donnée
+  // d'agent ; l'auteur est le libellé du code de session, comme au journal.
+  `CREATE TABLE IF NOT EXISTS actions_formation (
+     id          SERIAL PRIMARY KEY,
+     module_id   TEXT NOT NULL,
+     faite_le    DATE NOT NULL,
+     description TEXT NOT NULL,
+     auteur      TEXT NOT NULL,
+     cree_le     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS actions_formation_module ON actions_formation (module_id, faite_le)`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

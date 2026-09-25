@@ -14,6 +14,9 @@ import { Badge } from "@/components/Badge";
 import { badgeEffectif } from "@/content/badges";
 import { LectureModule } from "@/components/LectureModule";
 import { NoterConsultation } from "@/components/NoterConsultation";
+import { conservationActive } from "@/lib/config";
+import { SEUILS_STAT, bilanModule } from "@/lib/statistiques";
+import { lireEssais } from "@/lib/statistiques-db";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +58,11 @@ export default async function PageModule({
   // Le profil suit de page en page, même sans ordre propre : son niveau est le niveau cible du tirage (question 62).
   const requete = dansProgramme ? `?programme=${idProgramme}` : profil ? requeteProfil(profil) : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));
+  // Statistiques de réussite (question 78) : un repère pour le tutorat et l'administration, jamais pour l'apprenant.
+  const stat =
+    (session?.role === "tuteur" || session?.role === "admin") && baseConfiguree() && conservationActive()
+      ? bilanModule(mod.id, mod.titre, await lireEssais([mod.id]).catch(() => []))
+      : null;
 
   const contenu = (
     <>
@@ -265,6 +273,19 @@ export default async function PageModule({
         <p className="encart encart--attention">
           Module déposé au statut « {STATUTS_MODULE[mod.statut ?? "brouillon"]} » : visible des tuteurs et
           administrateurs seulement, absent du programme des apprenants.
+        </p>
+      )}
+
+      {stat && stat.agents > 0 && (
+        <p className="encart stat-bandeau">
+          <strong>Statistiques</strong> (tutorat et administration) :{" "}
+          {stat.premierEssai.taux === null
+            ? `${stat.agents} agent${stat.agents > 1 ? "s" : ""} évalué${stat.agents > 1 ? "s" : ""} — un taux à partir de ${SEUILS_STAT.effectif}`
+            : `réussite au premier essai ${stat.premierEssai.taux} % (IC 95 % ${stat.premierEssai.bas}–${stat.premierEssai.haut}) sur ${stat.premierEssai.n} agents`}
+          {stat.essaisPourReussir !== null && ` · ${String(stat.essaisPourReussir).replace(".", ",")} essai(s) pour réussir`}
+          {stat.aRevoir && " · à revoir"}
+          {" · "}
+          <Link href={`/admin/statistiques/${encodeURIComponent(mod.id)}`}>Voir l&apos;analyse</Link>
         </p>
       )}
 

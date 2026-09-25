@@ -3933,6 +3933,248 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("h1");
   ok("liens vers les modules : signalements et Repères ouvrent le module ; un critère à rédiger reste du texte (rapports et pilotage : étape 10f)");
 
+  // 14d sexies. statistiques de réussite (question 78, choix a) : un module dédié, trois questions,
+  //             cinq agents, sept essais. Trois agents échouent au premier essai, deux d'entre eux
+  //             réussissent au second ; deux réussissent d'emblée, l'un rattaché qui émet aussi son
+  //             rapport (compté une fois), l'autre sans rattachement, par son seul rapport émis. Le
+  //             barème conclut ici à trois questions, pour que ces rapports puissent être émis.
+  //             Classement, fiche, banque, page du module, Pilotage et tableurs lisent les mêmes
+  //             chiffres ; aucun taux sous cinq agents distincts.
+  await page.goto(BASE + "/admin/bareme");
+  await page.fill("input[name=minQuestions]", "3");
+  await page.click("button:has-text('Enregistrer le barème')");
+  await page.waitForURL(/ok=enregistre/);
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module statistiques test");
+  await page.fill("input[name=objectif]", "Mesurer la réussite des agents.");
+  await page.fill("textarea[name=presentation]", "Module dédié aux statistiques de réussite.");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1c]");
+  await page.fill("input[name=seuil]", "60");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idStat = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+  const TEXTE_STAT = `QCM 1. Statistiques : quelle est la réponse de référence ?
+A. Réponse de référence (V)
+B. Piège fréquent (F)
+C. Leurre ignoré (F)
+D. Autre erreur (F)
+Justification : la réponse de référence.
+Source : Procédure statistiques — section 2
+
+QIM 2. Statistiques : indiquer les propositions exactes.
+A. Énoncé juste alpha (V)
+B. Énoncé faux bêta (F)
+C. Énoncé juste gamma (V)
+Justification : alpha et gamma.
+Source : Procédure statistiques — section 2
+
+QCM 3. Statistiques : question que personne ne réussit ?
+A. Réponse ignorée de tous (V)
+B. Réponse répandue (F)
+C. Réponse rare (F)
+Justification : un piège de formulation.
+Source : Procédure statistiques — section 5`;
+  await page.goto(BASE + "/admin/questions/import?module=" + idStat);
+  await page.selectOption("select[name=moduleId]", idStat);
+  await page.fill("textarea[name=texte]", TEXTE_STAT);
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 3 questions')");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=3 questions ajoutées");
+  // L'administration valide ses propres questions (tracé comme tel).
+  for (let i = 0; i < 4; i++) {
+    await page.goto(BASE + "/admin/questions?vue=liste&module=" + idStat + "&statut=a_verifier");
+    const valider = page.locator(".question-ligne form button:has-text('Valider')").first();
+    if (!(await valider.count())) break;
+    await Promise.all([
+      page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+      valider.click(),
+    ]);
+  }
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idStat + "&statut=valide");
+  assert.equal(await page.locator(".question-ligne").count(), 3, "statistiques : trois questions validées");
+  // Avant tout essai : ni ligne de statistiques dans la banque, ni bandeau sur la page du module.
+  assert.equal(await page.locator(".stat-question").count(), 0, "banque : rien tant que la question n'a pas été posée");
+  await page.goto(BASE + "/module/" + idStat);
+  assert.equal(await page.locator(".stat-bandeau").count(), 0, "module jamais évalué : aucun bandeau");
+
+  const agentsStat = [];
+  for (let i = 0; i < 5; i++) {
+    await page.goto(BASE + "/admin/personnel");
+    await page.click("button:has-text('Créer un identifiant')");
+    await page.waitForURL(/ok=cree&identifiant=AG-\d+/);
+    agentsStat.push(new URL(page.url()).searchParams.get("identifiant"));
+  }
+  const rattacherStat = async (identifiant) => {
+    await page.goto(BASE + "/#progression");
+    await page.fill("#progression input[name=identifiant]", identifiant);
+    await page.click("#progression button:has-text('Reprendre ma progression')");
+    await page.waitForURL(new RegExp("premiere=" + identifiant));
+    await page.fill("input[name=nouveauCode]", "2468");
+    await page.fill("input[name=confirmation]", "2468");
+    await page.click("button:has-text('Choisir ce code')");
+    await page.waitForURL(/progression=ok/);
+  };
+  const detacherStat = async () => {
+    await page.goto(BASE + "/#progression");
+    await page.click("#progression button:has-text('Se détacher')");
+    await page.waitForSelector("#progression button:has-text('Reprendre ma progression')");
+  };
+  /** Un essai : `faux` est la mauvaise réponse choisie au QCM 1 (échec), `null` pour réussir. */
+  const passerStat = async (faux) => {
+    await page.goto(BASE + "/module/" + idStat + "/evaluation");
+    await page.click("button:has-text('Commencer')");
+    await page.waitForSelector("fieldset.question");
+    const fs = page.locator("fieldset.question");
+    assert.equal(await fs.count(), 3, "statistiques : les trois questions du module sont tirées");
+    for (let i = 0; i < 3; i++) {
+      const f = fs.nth(i);
+      if (await f.locator(".proposition").count()) {
+        // L'échec juge vraie la proposition fausse.
+        for (const [texte, vrai] of [["Énoncé juste alpha", true], ["Énoncé faux bêta", false], ["Énoncé juste gamma", true]]) {
+          await f.locator(".proposition", { hasText: texte }).locator(`label:has-text('${vrai || faux ? "Vrai" : "Faux"}') input`).check();
+        }
+      } else if ((await f.locator(".question-enonce").innerText()).includes("personne ne réussit")) {
+        await f.locator("label.option", { hasText: "Réponse répandue" }).locator("input").check();
+      } else {
+        await f.locator("label.option", { hasText: faux ?? "Réponse de référence" }).locator("input").check();
+      }
+    }
+    await validerEvaluation();
+    await page.waitForSelector(".resultat-entete");
+    const obtenu = Number((await page.locator(".resultat-entete .score").innerText()).replace(/[^\d,]/g, "").replace(",", "."));
+    assert.ok(faux ? obtenu < 60 : obtenu >= 60, `statistiques : score ${obtenu} % pour un essai ${faux ? "raté" : "réussi"}`);
+  };
+  const emettreStat = async (identifiant) => {
+    // Navigation client : la mémoire de session garde l'essai.
+    await page.click("a:has-text('Rapport de session')");
+    await page.waitForSelector("#rapport");
+    if (identifiant) await page.fill("input[name=identifiant]", identifiant);
+    const ligneEmise = page.locator(".ligne-rapport", { hasText: "Module statistiques test" }).last();
+    await ligneEmise.locator("button:has-text('Émettre et enregistrer')").click();
+    await ligneEmise.locator("text=émis sous le n° RAP-").waitFor();
+  };
+  // Agents 1 et 2 : raté (piège choisi), puis réussi. Agent 3 : raté, sans reprise.
+  for (const [i, faux, reprise] of [[0, "Piège fréquent", true], [1, "Piège fréquent", true], [2, "Autre erreur", false]]) {
+    await rattacherStat(agentsStat[i]);
+    await passerStat(faux);
+    if (reprise) await passerStat(null);
+    await detacherStat();
+  }
+  // Agent 4 : réussi d'emblée, rattaché, et émis — une seule fois compté.
+  await rattacherStat(agentsStat[3]);
+  await passerStat(null);
+  await emettreStat(null);
+  await detacherStat();
+  // Agent 5 : réussi d'emblée, sans rattachement : son rapport émis est son seul essai connu.
+  await passerStat(null);
+  await emettreStat(agentsStat[4]);
+
+  // Classement : le plus faible d'abord ; seul module à cinq agents, il ouvre la liste.
+  const normal = (s) => (s ?? "").replace(/\s+/g, " ").trim();
+  await page.goto(BASE + "/admin/statistiques");
+  const ligneStat = page.locator(".liste-stats > li", { hasText: "Module statistiques test" });
+  const texteLigneStat = normal(await ligneStat.textContent());
+  assert.match(texteLigneStat, /^À revoir/, "classement : module à revoir, sous 60 % au premier essai");
+  assert.match(texteLigneStat, /5 agents · 7 essais/, "classement : sept essais, l'évaluation émise comptée une fois");
+  assert.match(texteLigneStat, /Premier essai : 40 % IC 95 % 12–77/, "classement : deux premiers essais réussis sur cinq, et leur intervalle");
+  assert.match(texteLigneStat, /Final : 80 % IC 95 % 38–96/, "classement : quatre agents sur cinq finissent par réussir");
+  assert.equal(normal(await page.locator(".liste-stats > li").first().locator("a").textContent()), "Module statistiques test");
+  assert.ok((await page.locator("#volet-principal a[href='/admin/statistiques']").count()) >= 1, "menu Suivi : Statistiques");
+
+  // Fiche du module.
+  await ligneStat.locator("a").click();
+  await page.waitForURL(new RegExp(`/admin/statistiques/${idStat}$`));
+  const cartoucheStat = async (libelle) =>
+    normal(await page.locator(".cartouche", { has: page.locator(".cartouche-libelle", { hasText: libelle }) }).locator(".cartouche-valeur").textContent());
+  assert.equal(await cartoucheStat("Agents évalués"), "5");
+  assert.equal(await cartoucheStat("Réussite au premier essai"), "40 %");
+  assert.equal(await cartoucheStat("Réussite finale"), "80 %");
+  assert.equal(await cartoucheStat("Essais pour réussir"), "—", "quatre agents ont réussi : pas de moyenne sous cinq");
+  const lignesQStat = page.locator("#questions tbody tr");
+  assert.equal(await lignesQStat.count(), 3);
+  assert.match(normal(await page.locator("#questions .compte").textContent()), /3 question\(s\) · 1 à revoir/);
+  // La moins réussie d'abord : personne ne la réussit. Cellules : question, posée, réussie, discrimination, sans réponse.
+  const cellulesStat = async (ligne) => (await ligne.locator("td").allTextContents()).map(normal);
+  const dure = await cellulesStat(lignesQStat.first());
+  assert.match(dure[0], /personne ne réussit.*Très difficile.*vérifier que le module enseigne ce point/, "question très difficile, et quoi en faire");
+  assert.deepEqual(dure.slice(1), ["7", "0 % IC 95 % 0–35", "—", "0 %"], "posée sept fois, jamais réussie ; discrimination indéfinie");
+  const reference = await cellulesStat(lignesQStat.filter({ hasText: "quelle est la réponse de référence" }));
+  assert.deepEqual(reference.slice(1), ["7", "57 % IC 95 % 25–84", "1", "0 %"], "réussie 4 fois sur 7, discrimination 1");
+  const manquesStat = normal(await page.locator("#manques").textContent());
+  assert.match(manquesStat, /43 %\s*Proposition fausse jugée vraie : Énoncé faux bêta\s*3 sur 7 essais/);
+  assert.match(manquesStat, /29 %\s*Mauvaise réponse choisie : Piège fréquent\s*2 sur 7 essais/);
+  assert.match(manquesStat, /Mauvaises réponses que personne ne choisit/);
+  assert.match(manquesStat, /« Leurre ignoré »/);
+  assert.match(manquesStat, /« Réponse rare »/);
+  assert.doesNotMatch(manquesStat, /« Autre erreur »/, "choisie une fois sur sept : elle piège encore");
+  const sourcesStat = page.locator("#sources li");
+  assert.equal(await sourcesStat.count(), 2);
+  assert.match(normal(await sourcesStat.first().textContent()), /section 5\s*0 % IC 95 % 0–35 · 1 question$/);
+  assert.match(normal(await sourcesStat.nth(1).textContent()), /section 2\s*57 % IC 95 % 33–79 · 2 questions$/);
+
+  // Action d'amélioration : consignée, comparée avant / après, supprimée par l'administration.
+  await page.fill("#actions input[name=description]", "Question 3 reformulée");
+  await page.click("#actions button:has-text('Consigner')");
+  await page.waitForURL(/ok=action/);
+  const actionStat = page.locator("#actions li", { hasText: "Question 3 reformulée" });
+  assert.match(normal(await actionStat.textContent()), /Avant : — \(0 premier essai, 5 requis\) · Après : 40 % IC 95 % 12–77/);
+  await actionStat.locator("button:has-text('Supprimer cette action')").click();
+  await page.waitForURL(/ok=suppression/);
+  assert.equal(await page.locator("#actions li", { hasText: "Question 3 reformulée" }).count(), 0, "action supprimée");
+
+  // Tableurs : agrégés, aux chiffres de l'écran.
+  const csvStat = async (q) => {
+    const r = await page.request.get(BASE + "/admin/statistiques/export.csv?" + q);
+    assert.equal(r.status(), 200, "tableur " + q);
+    assert.match(r.headers()["content-type"], /^text\/csv/);
+    return r.text();
+  };
+  assert.match(await csvStat("type=modules"), new RegExp(`\\r\\nModule statistiques test;${idStat};5;7;5;40;12;77;80;;\\d+;oui\\r\\n`));
+  assert.match(await csvStat(`type=questions&module=${idStat}`), /question que personne ne réussit \?;[^;]+;QCM;7;0;0;35;;0;Très difficile/);
+  assert.match(await csvStat(`type=elements&module=${idStat}`), /;distracteur;Leurre ignoré;7;0;0;0;0;oui/);
+  assert.equal((await page.request.get(BASE + "/admin/statistiques/export.csv?type=elements")).status(), 400, "tableur des réponses : module requis");
+
+  // Banque : la ligne de chaque question, les mêmes repères, le filtre « à revoir ».
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idStat);
+  const ligneDure = page.locator(".question-ligne", { hasText: "personne ne réussit" });
+  await ligneDure.locator(".etiquette", { hasText: "À revoir (statistiques)" }).waitFor();
+  assert.match(normal(await ligneDure.locator(".stat-question").textContent()), /réussie 0 % \(IC 95 % 0–35\) sur 7 essais · Très difficile/);
+  assert.match(await ligneDure.locator(".stat-question a").getAttribute("href"), new RegExp(`^/admin/statistiques/${idStat}#q-`));
+  const ligneReference = page.locator(".question-ligne", { hasText: "quelle est la réponse de référence" });
+  assert.match(normal(await ligneReference.locator(".stat-question").textContent()), /réussie 57 % \(IC 95 % 25–84\) sur 7 essais · discrimination 1 · Analyse$/, "même discrimination que la fiche, calculée par la base");
+  assert.equal(await ligneReference.locator(".etiquette", { hasText: "À revoir (statistiques)" }).count(), 0);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=" + idStat + "&stat=a-revoir");
+  assert.equal(await page.locator(".question-ligne").count(), 1, "filtre « à revoir » : la seule question très difficile");
+  await page.locator(".question-ligne", { hasText: "personne ne réussit" }).waitFor();
+
+  // Page du module (tutorat et administration) et Pilotage.
+  await page.goto(BASE + "/module/" + idStat);
+  assert.match(normal(await page.locator(".stat-bandeau").textContent()), /réussite au premier essai 40 % \(IC 95 % 12–77\) sur 5 agents · à revoir · Voir l'analyse$/);
+  await page.goto(BASE + "/admin/pilotage");
+  assert.equal(await page.locator(".panneau-titre a[href='/admin/statistiques']").count(), 1, "Pilotage : renvoi aux Statistiques");
+  assert.ok((await page.locator(`a[href='/admin/statistiques/${idStat}']`).count()) >= 1, "Pilotage : le module des rapports émis ouvre son analyse");
+  await page.goto(BASE + "/admin/journal");
+  for (const action of ["statistiques:action", "statistiques:action-supprimee", "export:statistiques"]) {
+    await page.waitForSelector(`code:text-is('${action}')`);
+  }
+  await page.goto(BASE + "/admin/bareme");
+  await page.click("button:has-text('Rétablir les valeurs par défaut')");
+  await page.waitForURL(/ok=defaut/);
+
+  // Le tutorat lit les statistiques et consigne une action ; il n'en supprime pas.
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/statistiques/" + idStat);
+  await page.fill("#actions input[name=description]", "Section 2 relue avec l'équipe");
+  await page.click("#actions button:has-text('Consigner')");
+  await page.waitForURL(/ok=action/);
+  await page.locator("#actions li", { hasText: "Section 2 relue avec l'équipe" }).waitFor();
+  assert.equal(await page.locator("#actions button:has-text('Supprimer cette action')").count(), 0, "tutorat : aucune suppression");
+  ok("statistiques de réussite : sept essais de cinq agents (émis et conservé comptés une fois, rapport seul compté) ; classement, fiche, banque, page du module, Pilotage et tableurs concordent ; premier essai 40 % (IC 12–77), final 80 % ; question très difficile, piège qui accroche, mauvaises réponses que personne ne choisit ; action consignée, comparée, supprimée par l'administration seule ; journalisé");
+
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");

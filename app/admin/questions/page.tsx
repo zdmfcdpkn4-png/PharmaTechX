@@ -25,6 +25,9 @@ import {
   type ModuleDeRattachement,
 } from "@/content/rattachement-question";
 import { RetourBranche } from "@/components/RetourBranche";
+import { conservationActive } from "@/lib/config";
+import { questionARevoir, reperes, tauxAgents } from "@/lib/statistiques";
+import { reperesBanque } from "@/lib/statistiques-db";
 import { SectionFiches } from "./fiches";
 import { ArborescenceBanque } from "./arborescence";
 import {
@@ -32,8 +35,10 @@ import {
   ContenuQuestion,
   EtiquettesQuestion,
   RattachementQuestion,
+  StatistiqueQuestion,
   TraceQuestion,
   type LecturesRattachement,
+  type StatQuestion,
 } from "./question-banque";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +77,8 @@ export default async function Questions({
     bloc?: string;
     filiere?: string;
     habilitation?: string;
+    /** Question 78 : « a-revoir », les questions que leurs statistiques signalent. */
+    stat?: string;
     vue?: string;
     plis?: string;
     ouvrir?: string;
@@ -96,7 +103,7 @@ export default async function Questions({
       : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
         ? (p.niveau as NiveauQuestion)
         : undefined;
-  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier, auCompte] = await Promise.all([
+  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier, auCompte, brutStats] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
@@ -106,7 +113,16 @@ export default async function Questions({
     moduleId ? listerFiches({ moduleId }) : statut === "a_verifier" ? listerFiches({ statut: "a_verifier" }) : Promise.resolve([]),
     compterFichesAVerifier(),
     questionsAuCompte(),
+    // Statistiques de réussite (question 78) : réussite et discrimination de chaque question, sur les essais conservés.
+    conservationActive() ? reperesBanque().catch(() => new Map()) : Promise.resolve(new Map()),
   ]);
+  const stats = new Map<string, StatQuestion>(
+    [...brutStats.values()].map((s) => {
+      const reussite = tauxAgents(s.justes, s.n, s.agents);
+      return [s.question_id, { reussite, discrimination: s.r, reperes: reperes(reussite, s.r) }];
+    }),
+  );
+  const seulesARevoir = p.stat === "a-revoir";
   // Question 74 (choix c) : filtres par bloc et par profil. Un bloc se lit sur les modules de la
   // question et sur ses étiquettes ; un profil, sur ses modules et ses étiquettes de profil.
   const filtreBloc = blocsCompetence.find((b) => String(b.numero) === p.bloc)?.numero;
@@ -127,6 +143,7 @@ export default async function Questions({
       (!filtreNiveau || (filtreNiveau === "a_preciser" ? !q.niveau_question : q.niveau_question === filtreNiveau)) &&
       (!seulesObligatoires || q.obligatoire) &&
       (filtreBloc === undefined || blocsDeLaQuestion(q, rattachements).includes(filtreBloc)) &&
+      (!seulesARevoir || questionARevoir(stats.get(q.id)?.reperes ?? [])) &&
       (!(filtreFiliere || filtreHabilitation) ||
         poseeAuProfil(dansLeModule(q), { filiere: filtreFiliere ?? null, niveau: filtreHabilitation ?? null }, rattachements)),
   );
@@ -157,6 +174,7 @@ export default async function Questions({
     ...(filtreBloc !== undefined ? [["bloc", String(filtreBloc)] as [string, string]] : []),
     ...(filtreFiliere ? [["filiere", filtreFiliere] as [string, string]] : []),
     ...(filtreHabilitation ? [["habilitation", filtreHabilitation] as [string, string]] : []),
+    ...(seulesARevoir ? [["stat", "a-revoir"] as [string, string]] : []),
   ];
   const retour = `/admin/questions?${new URLSearchParams([["vue", "liste"], ...filtres]).toString()}`;
   const titreModule = (id: string) => titreDe(modules, id);
@@ -177,7 +195,7 @@ export default async function Questions({
   // Adresse de la vue courante, filtres compris : un geste ou une création y ramène.
   const retourVue = vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour;
   const filtreQuestions = Boolean(
-    statut || filtreNiveau || seulesObligatoires || filtreBloc !== undefined || filtreFiliere || filtreHabilitation,
+    statut || filtreNiveau || seulesObligatoires || filtreBloc !== undefined || filtreFiliere || filtreHabilitation || seulesARevoir,
   );
   const complet = vueArbre
     ? construireArbre(
@@ -344,6 +362,13 @@ export default async function Questions({
               ))}
             </select>
           </label>
+          <label className="champ">
+            <span>Statistiques</span>
+            <select name="stat" defaultValue={seulesARevoir ? "a-revoir" : ""}>
+              <option value="">Toutes les questions</option>
+              <option value="a-revoir">À revoir d&apos;après les essais</option>
+            </select>
+          </label>
         </div>
         <div className="actions">
           <button type="submit" className="bouton bouton--compact bouton--secondaire">
@@ -381,6 +406,7 @@ export default async function Questions({
             comptes={comptes}
             cumul={cumul}
             lectures={lectures}
+            stats={stats}
             signales={signales}
             session={session}
             etat={{ plis, ouvrir, filtre: filtreQuestions || Boolean(moduleId) }}
@@ -407,11 +433,12 @@ export default async function Questions({
                 {liste.map((q) => (
                   <li key={q.id} className="carte question-ligne">
                     <div className="etape-tete">
-                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} />
+                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} stat={stats.get(q.id)} />
                       <TraceQuestion q={q} />
                     </div>
                     <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
                     <RattachementQuestion q={q} lectures={lectures} ici={mid} />
+                    <StatistiqueQuestion q={q} stat={stats.get(q.id)} ici={mid} />
                     <ContenuQuestion q={q} />
                     {/* Modifier ou supprimer depuis la liste y ramène : l'arborescence est la vue par défaut. */}
                     <ActionsQuestion

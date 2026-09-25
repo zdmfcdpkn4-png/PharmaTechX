@@ -4509,6 +4509,177 @@ poste, les titres des pages et le nom du profil le disent toujours.
   « administration » ramène les quatre, et le volet garde son groupe
   « Administration ».
 
+## Statistiques de réussite des modules (25/09/2026, question 78, choix a)
+
+**Demande** : « ajouter un module de statistiques pour identifier les modules
+les mieux et les moins bien répondus ; imaginer le meilleur système pour
+analyser la réussite des apprenants et ajuster les formations relatives aux
+modules ; l'intégrer au mieux au reste du site ».
+
+**Constaté.** Le Pilotage agrège les rapports émis. Or un agent émet
+d'ordinaire l'essai qui réussit : les rapports ne disent ni la réussite au
+premier essai, ni le nombre d'essais. Les évaluations des agents rattachés
+sont, elles, toutes conservées dans leur progression, avec le détail scellé
+de chaque réponse.
+
+**Tranché (question 78, choix a, réponse « À »).** Toutes les évaluations
+conservées des agents rattachés, premiers essais compris, sans double compte
+avec les rapports émis. La finalité est ajoutée à `docs/RGPD.md` et à la page
+RGPD.
+
+**Écartés.**
+- **b, les rapports émis seulement** : une réussite surestimée, ni premier
+  essai ni nombre d'essais.
+- **c, les identifiants d'agents visibles** : l'écran servirait alors à
+  juger des personnes, non des formations. Le suivi individuel reste sur
+  « Personnel ».
+
+**Ce qui compte comme essai** (`lib/statistiques-db.ts`) :
+- toute évaluation conservée d'un agent rattaché, réussie ou non, émise ou
+  non ;
+- tout rapport émis dont l'évaluation n'est pas conservée (agent non
+  rattaché qui émet sous son identifiant) ;
+- une évaluation émise ne compte qu'une fois : l'horodatage scellé du
+  résultat relie le rapport à l'évaluation ;
+- un essai dont le seul rapport a été annulé est écarté ; réémis, il compte
+  une fois.
+
+Ni les entraînements, ni le mode test, ni une évaluation passée sans
+identifiant, ni rattachée ni émise, n'y figurent.
+
+**Ce qui est calculé** (`lib/statistiques.ts`, module pur, testé).
+- Par module :
+  - la réussite au premier essai de chaque agent, avec son intervalle de
+    confiance à 95 % (score de Wilson) ;
+  - la réussite finale (agents ayant atteint le seuil à un essai au moins) ;
+  - les essais moyens jusqu'à la première réussite ;
+  - le score médian au premier essai ;
+  - « à revoir » sous 60 % au premier essai.
+- Le classement va du plus faible au plus fort, ou l'inverse. Les modules
+  sans taux (effectif insuffisant) viennent après : ils attendent.
+- Sur la fiche d'un module :
+  - la réussite au premier essai par trimestre et par niveau visé à
+    l'évaluation ;
+  - par question : la réussite, l'indice de discrimination (point-bisériale
+    corrigée : la question contre le score de l'essai sans elle) et la part
+    de « sans réponse » ;
+  - ce qui accroche, élément par élément : proposition mal jugée, mauvaise
+    réponse choisie, bonne réponse oubliée, légende, étape ou trou manqués ;
+  - les mauvaises réponses que personne ne choisit ;
+  - la réussite par source du support ;
+  - les actions d'amélioration.
+- Avant et après une action, la réussite au premier essai se compare sur des
+  périodes bornées par les actions voisines : l'effet d'une action ne se mêle
+  pas à celui de la suivante.
+
+**Repères et leurs sources.**
+- Intervalle de Wilson : les méthodes « score » sont celles que recommande
+  la comparaison de Newcombe (Stat Med 1998;17(8):857-72,
+  doi:10.1002/(sici)1097-0258(19980430)17:8<857::aid-sim777>3.0.co;2-e).
+- Mauvaise réponse choisie par moins de 5 % des essais : définition du
+  distracteur non fonctionnel chez Tarrant, Ware et Mohammed (BMC Med Educ
+  2009;9:40, doi:10.1186/1472-6920-9-40). Leur second critère, un indice de
+  discrimination de l'option positif, n'est pas appliqué.
+- Indices de difficulté et de discrimination : Tavakol et Dennick (Med Teach
+  2011;33(6):447-58, doi:10.3109/0142159X.2011.564682).
+- Les seuils 90 % (très facile), 30 % (très difficile), 0,2 (discrimine peu)
+  et 60 % (module à revoir) sont des conventions de lecture retenues ici, non
+  des normes `[à vérifier]` contre la littérature d'analyse d'items ;
+  l'écran les dit tels.
+
+**Garde-fous.**
+- Aucune donnée individuelle : l'agent sert à reconnaître les essais d'une
+  même personne, jamais à l'afficher. Les tableurs sont agrégés comme
+  l'écran.
+- Aucun taux sous cinq agents distincts, pour un module, une question, une
+  réponse, une source, et pour la réussite globale du classement. En
+  dessous, les effectifs restent lisibles.
+- Tutorat et administration seulement. Le bandeau de la page du module ne
+  paraît jamais à l'apprenant, ni en mode test.
+- Les cellules de texte des tableurs qui commencent par `=`, `+`, `-`, `@`
+  sont préfixées d'une apostrophe : le tableur ne les exécute pas comme
+  formules.
+
+**Intégration.**
+- Menu Suivi › Statistiques, quand la conservation est active.
+- Pilotage : une phrase dit ce qu'il lit et renvoie aux Statistiques ;
+  chaque ligne de critère a un lien « Analyse », chaque question manquée un
+  lien « Analyse de la question ».
+- Banque :
+  - une ligne de statistiques par question déjà posée ;
+  - l'étiquette « À revoir (statistiques) » ;
+  - le filtre « À revoir d'après les essais ».
+
+  Ces repères sont calculés dans la base, selon la même définition que la
+  fiche.
+- Page du module : un bandeau pour le tutorat et l'administration, avec le
+  lien vers la fiche.
+- Journal : `statistiques:action`, `statistiques:action-supprimee`,
+  `export:statistiques`.
+
+**Choix faits sans nouvelle question.**
+- « Réussir » un essai, c'est atteindre le seuil du module sans échouer à
+  une question éliminatoire, et non le verdict d'habilitation. La bande de
+  garde et la règle du tirage concluant protègent une décision sur une
+  personne ; pour juger une formation, le seuil suffit, et il vaut pour tout
+  essai, même un tirage trop court pour conclure.
+- Le seuil de cinq s'entend en agents distincts, partout. La première
+  version comptait des essais pour une question : un agent qui repasse cinq
+  fois aurait affiché son propre taux. La réussite globale du classement
+  additionnait les premiers essais : un agent évalué sur cinq modules aussi.
+  Les deux défauts ont été vus au rendu, corrigés et testés avant ce commit.
+- Le trimestre plutôt que le mois pour l'évolution : à l'échelle d'une unité,
+  un mois compte rarement cinq premiers essais sur un module. Les dates se
+  rangent au jour de Paris : un essai à 0 h 30 le 1er octobre compte en
+  octobre.
+- Les « profils » de la proposition se lisent par les filtres filière, niveau
+  et bloc du classement (même lecture que le Pilotage) et, sur la fiche, par
+  niveau visé à l'évaluation.
+- Les actions d'amélioration : le tutorat les consigne, l'administration
+  seule en supprime une saisie par erreur. Table `actions_formation`, sans
+  donnée d'agent, supprimée avec le module déposé.
+- Le résultat scellé d'une évaluation porte désormais les propositions
+  présentées (QCM, QIM) et celles laissées sans jugement (QIM). Pour un QIM
+  plus ancien, une proposition non cochée a pu être jugée fausse ou laissée
+  en « je ne sais pas » : elle est dite « non départagée ».
+- Sur téléphone, le tableau des questions de la fiche s'empile : l'énoncé
+  prend la largeur, les chiffres passent en dessous, deux par ligne, sous
+  leur intitulé. À 390 px, l'énoncé tenait en une colonne de quelques
+  lettres.
+
+**Limites.**
+- Une unité évalue peu : beaucoup de modules resteront longtemps sous cinq
+  agents. L'écran le dit, effectifs à l'appui.
+- Sur quelques dizaines d'essais, l'indice de discrimination est instable :
+  un repère pour relire une question, pas un verdict sur elle.
+- Avant et après une action ne prouve pas son effet : d'autres changements,
+  ou d'autres agents, peuvent l'expliquer.
+- Une évaluation passée sans rattachement et jamais émise échappe aux
+  statistiques.
+- Finalité ajoutée au registre : fondement (RGPD, art. 5 § 1 b et
+  art. 89 § 1) `[à vérifier]`, finalité `[à valider avec le DPO]`.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 375 tests, dont 21 pour les statistiques.
+- `npm run build`.
+- Requête des essais, sur données synthétiques dans un schéma jetable :
+  évaluation conservée et émise comptée une fois ; seul rapport annulé,
+  écartée ; annulée puis réémise, une fois ; émise sans rattachement,
+  comptée ; deux rapports du même essai, une fois ; deux agents au même
+  horodatage, deux essais.
+- Deux passes de bout en bout de 98 étapes, sans erreur de page ni erreur
+  serveur. Étape
+  ajoutée (14d sexies) : un module dédié, trois questions, cinq agents, sept
+  essais. Elle contrôle :
+  - le classement : premier essai 40 % (IC 12–77), final 80 % ;
+  - la fiche, la banque, la page du module, le Pilotage et les tableurs, qui
+    donnent les mêmes chiffres ;
+  - la question très difficile, le piège qui accroche, les mauvaises
+    réponses que personne ne choisit ;
+  - l'action consignée, comparée, puis supprimée par l'administration ; le
+    tutorat n'en supprime pas ;
+  - le journal.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
