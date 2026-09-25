@@ -376,6 +376,54 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+80. **Filières : les créer, les gérer, les modifier** — posée le
+    25/09/2026, sur demande (« créer la possibilité de créer et gérer et
+    modifier les filières »). Existant, Réglages › Référentiel,
+    administration seule :
+    - « Ajouter une filière » : libellé, identifiant (déduit du libellé),
+      métier, description, pictogramme, rang, blocs de compétence ;
+    - sur chaque filière, « Modifier » les mêmes champs, la désactiver
+      (case « Proposée dans les listes de rattachement ») ou « Supprimer le
+      dépôt » : une filière ajoutée disparaît, une filière de la fiche
+      reprend son libellé d'origine.
+
+    Ce qui ne se fait pas depuis la filière :
+    - ses modules se cochent module par module, dans le réglage de chacun
+      (Modules › Modules) ; son ordre se règle dans Modules › Ordre, ses
+      niveaux dans la section Niveaux du Référentiel ;
+    - avant de la désactiver ou de supprimer son dépôt, rien ne dit ce qui
+      la cite : modules, documents, codes de poste, ordres, questions
+      étiquetées ;
+    - son identifiant ne change plus après la création ;
+    - aucun lien des menus ne dit « Filières ».
+
+    Trois choix :
+    - **a (recommandé)** : une page par filière, ouverte depuis le
+      Référentiel et depuis un lien « Filières » du menu Modules :
+      - sa fiche : les champs actuels ;
+      - ses niveaux, avec l'ajout d'un niveau déjà rattaché à elle ;
+      - son programme : tous les modules, à cocher ou décocher ici, le
+        tronc commun listé à part. Le rattachement reste enregistré dans le
+        réglage du module, le même qu'à l'écran Modules ;
+      - ce qui la cite, lu avant de la désactiver ou de la supprimer, et un
+        lien vers son ordre.
+
+      Contre : deux chemins mènent au même rattachement ; un module du
+      code ainsi changé devient un écart à la fiche, signalé comme
+      aujourd'hui ; un module ne peut pas y perdre sa dernière filière (il
+      reviendrait à celles de la fiche, ou passerait au tronc commun) : la
+      page le refuse et dit pourquoi.
+    - **b** : rendre l'existant visible : le lien « Filières » ouvre la
+      section du Référentiel, où chaque filière liste ses modules en
+      lecture, avec un lien vers le réglage de chacun. Contre : composer
+      une filière reste un aller-retour module par module.
+    - **c** : a, et changer l'identifiant d'une filière, reporté dans tout
+      ce qui le cite (réglages, modules et documents déposés, niveaux,
+      ordres, codes de poste, questions). Contre : huit tables à reporter,
+      des rapports émis qui gardent l'ancien, pour un identifiant que l'on
+      ne lit guère — le libellé se modifie déjà. Le renommage d'un niveau
+      (question 65) s'est fait à la main pour ces raisons.
+
 79. **Tableurs du registre et du répertoire : l'injection de formule** —
     posée le 25/09/2026, sur un constat fait en vérifiant les tableurs des
     statistiques (question 78).
