@@ -1281,6 +1281,10 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
   text-align: left;
 }
 button.ar-groupe { cursor: pointer; }
+/* Sous-menus d'administration (question 76, choix a) : l'écusson tient lieu de
+   « Administration · », que le nom lu garde ; le bandeau tient sur une ligne. */
+.ar-groupe-titre--ecusson { display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.ar-picto { flex: none; }
 .ar-chevron::before {
   content: "›";
   display: inline-block;

@@ -1594,6 +1594,32 @@ Justification : justification deux.`;
   assert.equal(await page.evaluate(() => localStorage.getItem("fp-a-faire-replie")), null, "déplié : rien de gardé sur le poste");
   ok("« À faire » repliable : total porté par l'intitulé, état gardé, place rendue à « Aller à », recherche entière");
 
+  // Question 76 (choix a, 25/09/2026) : un écusson remplace « Administration · »
+  // en tête des sous-menus ; le nom lu et la recherche gardent le mot ; sur
+  // poste, chaque bandeau tient sur une ligne.
+  const bandeauxAdmin = page.locator(".acces-rapide button.ar-groupe:has(.ar-picto)");
+  assert.deepEqual(
+    (await bandeauxAdmin.locator(".ar-groupe-court").allTextContents()).map((s) => s.trim()),
+    ["Suivi", "Questions", "Modules", "Réglages"],
+    "quatre sous-menus d'administration, chacun sous son seul nom",
+  );
+  assert.match(await bandeauxAdmin.nth(1).textContent(), /Administration · Questions/, "le nom lu garde « Administration »");
+  const hauteursAdmin = await bandeauxAdmin.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
+  assert.ok(hauteursAdmin.every((h) => h <= 40), `une ligne par bandeau sur poste (${hauteursAdmin.join(", ")} px)`);
+  await page.fill(".ar-recherche input", "administration");
+  assert.equal(
+    await page.locator(".acces-rapide .ar-defilant span.ar-groupe:has(.ar-picto)").count(),
+    4,
+    "la recherche « administration » trouve encore les écrans des quatre sous-menus",
+  );
+  await page.fill(".ar-recherche input", "");
+  assert.equal(
+    await page.locator("#volet-principal summary:has-text('Administration')").count(),
+    1,
+    "le volet de poste garde son groupe « Administration »",
+  );
+  ok("sous-menus d'administration : écusson à la place du mot répété, nom lu et recherche inchangés, une ligne sur poste");
+
   // critère 6 : la tabulation ne sort pas du panneau
   for (let i = 0; i < 25; i++) await page.keyboard.press("Tab");
   assert.equal(

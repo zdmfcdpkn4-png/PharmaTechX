@@ -403,6 +403,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       pour un écran d'administration. 352 px sur poste, 443 px sur
       iPhone 15 (une ligne de plus).
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : les
+    bandeaux s'intitulent « Suivi », « Questions », « Modules » et
+    « Réglages », précédés de l'écusson ; le lecteur d'écran entend toujours
+    « Administration · Suivi », et la recherche « administration » trouve
+    leurs écrans. Sur poste, chaque bandeau tient sur une ligne : « Aller
+    à » passe de 389 à 324 px. Le volet de poste ne change pas. Détail dans
+    `DECISIONS.md`.
+
 75. **Menu sur téléphone : la place laissée à « Aller à »** — posée le
     25/09/2026, sur demande (« sur bandeau de menu la zone de défilement est
     trop limitée : pouvoir replier la partie À faire ou réduire l'espacement

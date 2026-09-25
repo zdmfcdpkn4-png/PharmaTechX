@@ -20,6 +20,11 @@ demande, son intitulé portant alors le total de la file, et l'état est gardé
 sur le poste. Complétés : § 3.1, § 3.2 et § 5.1 ; critère 11 ajouté au § 8,
 vérifié de bout en bout.
 
+**Révisée le 25/09/2026** (question 76, choix a) : dans « Aller à », un écusson
+remplace « Administration · » en tête des quatre sous-menus ; le mot reste
+dans le nom lu et dans la recherche. Complétés : § 2 d et § 3.3 ; critère 12
+ajouté au § 8, vérifié de bout en bout.
+
 ---
 
 ## 1. Le problème que ce composant règle — et celui qu'il ne règle pas
@@ -90,6 +95,10 @@ maximum** dans le panneau.
 **d. Reconnaître plutôt que se rappeler.** Sixième heuristique de Nielsen
 (1994). Les intitulés du panneau sont **ceux du volet, mot pour mot** : pas
 de synonyme, pas d'abréviation, pas de vocabulaire propre au raccourci.
+Seule exception, visuelle (question 76, choix a) : le nom du groupe
+« Administration », que le volet porte une fois au-dessus de ses
+sous-menus, est remplacé à l'écran par un écusson en tête de chacun ; il
+reste dans le nom lu et dans la recherche.
 
 **e. L'ordre est fixe, jamais adaptatif.** Un menu qui se réorganise selon
 l'usage détruit la mémoire spatiale qu'il prétend servir : Mitchell &
@@ -182,6 +191,13 @@ lui-même, c'est l'utilisateur qui replie la zone entière.
 Les trois groupes du volet, repliés, avec leurs sous-parties. **Même code,
 mêmes intitulés, même ordre** (`components/Navigation.tsx`). Sous 62 rem,
 c'est déjà ce que fait le tiroir : la zone y est le tiroir.
+
+Chaque sous-menu d'administration y est un bandeau. Jusqu'au 25/09/2026, il
+s'intitulait « Administration · Suivi », « · Questions », « · Modules »,
+« · Réglages » : quatre bandeaux ouverts par le même mot, trois passant sur
+deux lignes dans le tiroir de poste. Depuis la question 76 (choix a), un
+écusson tient lieu du mot, qui reste pour le lecteur d'écran et la
+recherche : « Aller à » passe de 389 à 324 px sur poste, groupes repliés.
 
 ### 3.4 Le champ de recherche
 
@@ -342,6 +358,7 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 | 9 | Ouverture perçue < 100 ms, aucun appel réseau | les compteurs voyagent avec la page |
 | 10 | Sur poste, le tiroir recouvre le volet et laisse la colonne de lecture découverte, ni assombrie ni floutée ; un clic sur la page le ferme sans suivre le lien (question 61) | e2e à 1 280 px : bords du tiroir, du volet et de la colonne mesurés ; calque transparent ; clic sur un lien de la page → adresse inchangée, focus au hamburger |
 | 11 | « À faire » se replie : l'intitulé porte alors le total de la file, « Aller à » récupère la place, l'état tient d'une ouverture à l'autre, une recherche en montre quand même les résultats (question 75) | e2e : repli, total égal à la somme des compteurs, hauteur d'« Aller à », fermeture et réouverture, recherche, dépli |
+| 12 | Les sous-menus d'administration portent l'écusson et leur seul nom à l'écran, « Administration » restant dans le nom lu et dans la recherche ; une ligne par bandeau sur poste ; le volet garde son groupe « Administration » (question 76) | e2e à 1 280 px : noms visibles, nom lu, hauteur des bandeaux, recherche « administration », volet |
 
 ---
 

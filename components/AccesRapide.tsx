@@ -42,6 +42,11 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * iPhone SE. Replié, l'intitulé porte le total de la file ; l'état est gardé
  * sur le poste, comme le mode zone. Pendant une recherche, ses résultats
  * s'affichent quand même, comme ceux d'un groupe replié.
+ *
+ * Sous-menus d'administration (question 76, choix a, 25/09/2026) : un écusson
+ * remplace « Administration · », qui ouvrait quatre bandeaux de suite et les
+ * faisait passer sur deux lignes sur poste. Le mot reste dans le nom lu et
+ * dans la recherche ; le volet de poste garde son groupe « Administration ».
  */
 
 /** Repli de « À faire », mémorisé sur le poste seulement. */
@@ -66,6 +71,8 @@ interface Entree {
   groupe?: string;
   /** Groupe repliable de « Aller à » ; absent pour une entrée directe (onglet RGPD). */
   repli?: { cle: string; porteLaPage: boolean };
+  /** Sous-menu d'administration : l'écusson tient lieu du nom du groupe (question 76). */
+  administration?: { groupe: string; sousMenu: string };
 }
 
 const sansAccent = (s: string) =>
@@ -104,11 +111,39 @@ function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null
           href: l.href,
           groupe: `${g.titre} · ${s.titre}`,
           repli: repliSous,
+          ...(g.id === "administration" ? { administration: { groupe: g.titre, sousMenu: s.titre } } : {}),
         });
       }
     }
   }
   return out;
+}
+
+/**
+ * Écusson des sous-menus d'administration (question 76, choix a). Dessiné ici,
+ * monochrome, à la couleur du bandeau, comme les pictogrammes de
+ * `components/Badge.tsx` — hors de leur banque, pour qu'il ne s'offre pas comme
+ * badge de module.
+ */
+function Ecusson() {
+  return (
+    <svg
+      className="ar-picto"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M12 3l7 3v5c0 4.6-3 8.3-7 10-4-1.7-7-5.4-7-10V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
 }
 
 export function AccesRapide({
@@ -304,13 +339,31 @@ export function AccesRapide({
   const classe = (e: Entree) => `ar-item${presel && rang(e) === choisi ? " ar-item--choisi" : ""}`;
 
   // « Aller à » : liens consécutifs d'un même groupe réunis sous son intitulé.
-  const blocs: { cle: string; titre: string; repli?: Entree["repli"]; entrees: Entree[] }[] = [];
+  const blocs: {
+    cle: string;
+    titre: string;
+    repli?: Entree["repli"];
+    administration?: Entree["administration"];
+    entrees: Entree[];
+  }[] = [];
   for (const e of allerA) {
     const cle = e.repli?.cle ?? e.cle;
     const dernier = blocs[blocs.length - 1];
     if (dernier && dernier.cle === cle) dernier.entrees.push(e);
-    else blocs.push({ cle, titre: e.groupe ?? "", repli: e.repli, entrees: [e] });
+    else blocs.push({ cle, titre: e.groupe ?? "", repli: e.repli, administration: e.administration, entrees: [e] });
   }
+  // Intitulé d'un bandeau. Sous-menu d'administration : l'écusson et le seul
+  // nom du sous-menu à l'écran, le nom complet pour le lecteur d'écran.
+  const intitule = (b: (typeof blocs)[number]) =>
+    b.administration ? (
+      <span className="ar-groupe-titre ar-groupe-titre--ecusson">
+        <Ecusson />
+        <span className="lecture-seule">{b.administration.groupe} · </span>
+        <span className="ar-groupe-court">{b.administration.sousMenu}</span>
+      </span>
+    ) : (
+      <span className="ar-groupe-titre">{b.titre}</span>
+    );
   const lienAller = (e: Entree) => (
     <Link
       key={e.cle}
@@ -473,7 +526,7 @@ export function AccesRapide({
                     {/* Pendant une recherche, les groupes restent ouverts :
                         l'intitulé n'est plus qu'un titre. */}
                     {recherche ? (
-                      <span className="ar-groupe">{b.titre}</span>
+                      <span className="ar-groupe">{intitule(b)}</span>
                     ) : (
                       <button
                         type="button"
@@ -482,7 +535,7 @@ export function AccesRapide({
                         aria-controls={idListe}
                         onClick={() => setReplis((r) => ({ ...r, [repli.cle]: !deplie }))}
                       >
-                        <span className="ar-groupe-titre">{b.titre}</span>
+                        {intitule(b)}
                         <span className="ar-chevron" aria-hidden="true" />
                       </button>
                     )}

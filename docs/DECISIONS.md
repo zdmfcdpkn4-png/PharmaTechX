@@ -4449,6 +4449,66 @@ intitulé portant le total de la file, l'état gardé sur l'appareil.
   file pour un profil de poste » serait devenu vrai d'office.
 - Mesures ci-dessus ; aucun débordement horizontal du tiroir.
 
+## Sous-menus d'administration : un écusson à la place du mot répété (25/09/2026, question 76, choix a)
+
+**Demande**, second point du message de la question 75 : « trouver un
+synonyme pour les groupes de fonctions qui commencent tous par administrer,
+ou supprimer administrer et le remplacer par une vignette ou une icône ».
+
+**Constaté.** Dans « Aller à », quatre bandeaux commençaient par le même
+mot : « Administration · Suivi », « · Questions », « · Modules »,
+« · Réglages ». Le mot qui les distingue venait en dernier. Dans le tiroir de
+poste (228 px utiles), trois passaient sur deux lignes : 55 px au lieu de 33.
+Le volet de poste, lui, range ces sous-menus sous un seul groupe
+« Administration ».
+
+**Tranché (question 76, choix a, réponse « À »).** « Administration · »
+retiré des bandeaux, remplacé par un pictogramme d'écusson.
+
+**Écartés.**
+- **b, synonyme « Gestion »** : le mot restait répété quatre fois, et le
+  menu aurait dit « Gestion » quand le titre des pages et le nom du profil
+  disent « Administration ».
+- **c, « Administration » écrit une fois en sous-titre** : une ligne de plus
+  sur téléphone, et l'onglet RGPD à déplacer pour ne pas passer pour un
+  écran d'administration.
+
+**Ce qui est fait** (`components/AccesRapide.tsx`, `app/globals.css`).
+- Les quatre bandeaux s'intitulent « Suivi », « Questions », « Modules » et
+  « Réglages », précédés de l'écusson : monochrome, à la couleur du bandeau,
+  dessiné sur la grille des pictogrammes du site mais hors de leur banque,
+  pour qu'il ne s'offre pas comme badge de module.
+- Le lecteur d'écran entend toujours « Administration · Suivi » (texte
+  réservé aux lecteurs d'écran) ; l'écusson lui est caché.
+- La recherche porte toujours sur le nom complet : « administration »
+  trouve les écrans des quatre sous-menus.
+- Pendant une recherche, l'intitulé devenu simple titre garde l'écusson.
+- Le volet de poste ne change pas : son groupe « Administration » est écrit
+  une fois, au-dessus de ses sous-menus.
+- Choix fait sans nouvelle question : l'écusson plutôt qu'une clé, qu'on
+  aurait prise pour l'écran « Accès » (codes d'accès). Il figurait sur les
+  maquettes soumises avec la question.
+
+**Mesuré après** (hauteur d'« Aller à », groupes repliés, code
+d'administration) :
+- poste, 1 280 × 800 : 324 px au lieu de 389 ; les six bandeaux à 33 px ;
+- iPhone 15 : 413 px, inchangé (les bandeaux tenaient déjà sur une ligne) ;
+- aucun débordement horizontal, en mode normal comme en mode zone.
+
+**Limite.** L'écusson s'apprend : rien, à l'écran, ne dit plus en toutes
+lettres que ces quatre bandeaux sont ceux de l'administration. Le volet de
+poste, les titres des pages et le nom du profil le disent toujours.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 354 tests.
+- `npm run build`.
+- Deux passes de bout en bout de 97 étapes, sans erreur de page ni erreur
+  serveur. Étape ajoutée à l'accès rapide, sur poste : les quatre bandeaux
+  portent l'écusson et leur seul nom, le nom lu garde « Administration »,
+  chaque bandeau tient sur une ligne (40 px au plus), la recherche
+  « administration » ramène les quatre, et le volet garde son groupe
+  « Administration ».
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
