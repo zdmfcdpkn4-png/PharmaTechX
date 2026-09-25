@@ -376,6 +376,24 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+77. **Menu : un pictogramme par thème** — posée le 25/09/2026, sur demande
+    (« prévoir des icônes différentes pour chaque tête de menu, en lien
+    avec le thème du menu »). Depuis la question 76, les quatre sous-menus
+    d'administration portent le même écusson ; Formation, Repères et RGPD
+    n'en portent aucun. Jeu proposé, dessiné sur la grille des pictogrammes
+    du site (monochrome, couleur du bandeau) : toque (Formation), boussole
+    (Repères), courbe (Suivi), bulle « ? » (Questions), couches (Modules),
+    curseurs (Réglages), cadenas (RGPD) ; l'écusson ne resterait que sur le
+    groupe « Administration » du volet de poste, seul endroit où ce groupe
+    a un intitulé. Chaque pictogramme reste remplaçable. Trois choix :
+    - **a (recommandé)** : les pictogrammes sur chaque tête de menu, dans le
+      tiroir et dans le volet de poste, le même pour un même thème.
+    - **b** : dans le tiroir seulement ; le volet de poste garde ses
+      intitulés sans pictogramme.
+    - **c** : dans le tiroir, et dans le volet sur les seuls groupes de
+      premier niveau (Formation, Repères, Administration, RGPD), sans
+      pictogramme sur les sous-menus.
+
 76. **Menu : les quatre intitulés « Administration · … »** — posée le
     25/09/2026, second point de la demande de la question 75 (« trouver un
     synonyme pour les groupes de fonctions qui commencent tous par
