@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PictoMenu } from "./PictoMenu";
 
 /**
  * Contenu du volet avant connexion (demande du 19/09/2026).
@@ -34,7 +35,10 @@ export function VoletConnexion() {
 
       {/* L'onglet RGPD, comme une fois connecté : seul écran ouvert sans code. */}
       <Link href="/donnees-personnelles" className="rail-onglet">
-        RGPD
+        <span className="rail-onglet-titre">
+          <PictoMenu theme="rgpd" taille={15} />
+          RGPD
+        </span>
         <span className="rail-onglet-detail">Vos données et vos droits</span>
       </Link>
     </>

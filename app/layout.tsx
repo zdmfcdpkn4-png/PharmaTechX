@@ -172,6 +172,8 @@ export default async function RootLayout({
         sous: [
           {
             titre: "Suivi",
+            // Pictogramme de l'intitulé, dans le volet et dans « Aller à » (question 77, choix a).
+            picto: "suivi",
             liens: [
               { href: "/admin/pilotage", libelle: "Pilotage" },
               // Statistiques de réussite (question 78, choix a) : sans conservation, aucun essai à analyser.
@@ -191,6 +193,7 @@ export default async function RootLayout({
           // coupé en deux sous-menus de quatre (audit du 22/09/2026).
           {
             titre: "Questions",
+            picto: "questions",
             liens: [
               {
                 href: "/admin/questions",
@@ -206,6 +209,7 @@ export default async function RootLayout({
           },
           {
             titre: "Modules",
+            picto: "modules",
             liens: [
               { href: "/admin/modules", libelle: "Modules" },
               { href: "/admin/documents", libelle: "Documents" },
@@ -215,6 +219,7 @@ export default async function RootLayout({
           },
           {
             titre: "Réglages",
+            picto: "reglages",
             liens: [
               { href: "/admin", libelle: "Accès" },
               ...(session?.role === "admin"

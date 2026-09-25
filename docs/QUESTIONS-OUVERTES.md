@@ -443,6 +443,17 @@ telle. Ordre : ce qui change le déploiement en premier.
       premier niveau (Formation, Repères, Administration, RGPD), sans
       pictogramme sur les sous-menus.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : le jeu
+    proposé, tel que sur les maquettes.
+    - Chaque bandeau d'« Aller à » porte le pictogramme de son thème, et
+      l'entrée RGPD un cadenas.
+    - Dans le volet de poste : les groupes, les sous-menus d'administration
+      et l'onglet RGPD, y compris avant connexion.
+    - L'écusson ne reste que sur le groupe « Administration » du volet.
+
+    Pictogrammes décoratifs, cachés au lecteur d'écran. Hauteurs inchangées,
+    sauf l'onglet RGPD du volet (+1 px). Détail dans `DECISIONS.md`.
+
 76. **Menu : les quatre intitulés « Administration · … »** — posée le
     25/09/2026, second point de la demande de la question 75 (« trouver un
     synonyme pour les groupes de fonctions qui commencent tous par

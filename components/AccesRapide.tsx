@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ContexteMenu } from "./Menu";
 import type { GroupeRail } from "./Navigation";
+import { PictoMenu, type ThemeMenu } from "./PictoMenu";
 import { nomAccessible, totalEnAttente, type ItemAttente } from "@/content/acces-rapide";
 import { groupePorteLaPage, relevePage } from "@/lib/rail";
 import { DERNIER, type DernierModule } from "./LectureModule";
@@ -43,10 +44,15 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * sur le poste, comme le mode zone. Pendant une recherche, ses résultats
  * s'affichent quand même, comme ceux d'un groupe replié.
  *
- * Sous-menus d'administration (question 76, choix a, 25/09/2026) : un écusson
- * remplace « Administration · », qui ouvrait quatre bandeaux de suite et les
- * faisait passer sur deux lignes sur poste. Le mot reste dans le nom lu et
- * dans la recherche ; le volet de poste garde son groupe « Administration ».
+ * Sous-menus d'administration (question 76, choix a, 25/09/2026) : « Administration · »
+ * ouvrait quatre bandeaux de suite et les faisait passer sur deux lignes sur
+ * poste ; un pictogramme en tient lieu. Le mot reste dans le nom lu et dans la
+ * recherche ; le volet de poste garde son groupe « Administration ».
+ *
+ * Un pictogramme par thème (question 77, choix a, 25/09/2026) : chaque bandeau
+ * porte celui de son thème (`components/PictoMenu.tsx`), le même que dans le
+ * volet de poste ; l'entrée RGPD, le cadenas. L'écusson ne reste que sur le
+ * groupe « Administration » du volet, seul endroit où ce groupe a un intitulé.
  */
 
 /** Repli de « À faire », mémorisé sur le poste seulement. */
@@ -71,8 +77,10 @@ interface Entree {
   groupe?: string;
   /** Groupe repliable de « Aller à » ; absent pour une entrée directe (onglet RGPD). */
   repli?: { cle: string; porteLaPage: boolean };
-  /** Sous-menu d'administration : l'écusson tient lieu du nom du groupe (question 76). */
+  /** Sous-menu d'administration : le pictogramme tient lieu du nom du groupe (question 76). */
   administration?: { groupe: string; sousMenu: string };
+  /** Pictogramme du thème (question 77) : celui du groupe, du sous-menu ou de l'entrée directe. */
+  picto?: ThemeMenu;
 }
 
 const sansAccent = (s: string) =>
@@ -92,12 +100,12 @@ function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null
       // Entrée directe, comme l'onglet du volet : l'intitulé du groupe, puis
       // celui de la page. Les deux restent dans le texte que filtre la recherche.
       const l = g.liens?.[0];
-      if (l) out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: g.titre, detail: l.libelle, href: l.href, groupe: l.libelle });
+      if (l) out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: g.titre, detail: l.libelle, href: l.href, groupe: l.libelle, picto: g.id });
       continue;
     }
     const repli = { cle: g.id, porteLaPage: groupePorteLaPage(g.id, chemin) };
     for (const l of g.liens ?? []) {
-      out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: l.libelle, href: l.href, groupe: g.titre, repli });
+      out.push({ cle: `${g.id}:${l.href}`, zone: "aller", libelle: l.libelle, href: l.href, groupe: g.titre, repli, picto: g.id });
     }
     for (const s of g.sous ?? []) {
       // Un sous-menu d'administration est un groupe du Menu, ouvert s'il porte
@@ -111,39 +119,13 @@ function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null
           href: l.href,
           groupe: `${g.titre} · ${s.titre}`,
           repli: repliSous,
+          picto: s.picto,
           ...(g.id === "administration" ? { administration: { groupe: g.titre, sousMenu: s.titre } } : {}),
         });
       }
     }
   }
   return out;
-}
-
-/**
- * Écusson des sous-menus d'administration (question 76, choix a). Dessiné ici,
- * monochrome, à la couleur du bandeau, comme les pictogrammes de
- * `components/Badge.tsx` — hors de leur banque, pour qu'il ne s'offre pas comme
- * badge de module.
- */
-function Ecusson() {
-  return (
-    <svg
-      className="ar-picto"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M12 3l7 3v5c0 4.6-3 8.3-7 10-4-1.7-7-5.4-7-10V6l7-3z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
 }
 
 export function AccesRapide({
@@ -344,26 +326,31 @@ export function AccesRapide({
     titre: string;
     repli?: Entree["repli"];
     administration?: Entree["administration"];
+    picto?: ThemeMenu;
     entrees: Entree[];
   }[] = [];
   for (const e of allerA) {
     const cle = e.repli?.cle ?? e.cle;
     const dernier = blocs[blocs.length - 1];
     if (dernier && dernier.cle === cle) dernier.entrees.push(e);
-    else blocs.push({ cle, titre: e.groupe ?? "", repli: e.repli, administration: e.administration, entrees: [e] });
+    else blocs.push({ cle, titre: e.groupe ?? "", repli: e.repli, administration: e.administration, picto: e.picto, entrees: [e] });
   }
-  // Intitulé d'un bandeau. Sous-menu d'administration : l'écusson et le seul
-  // nom du sous-menu à l'écran, le nom complet pour le lecteur d'écran.
-  const intitule = (b: (typeof blocs)[number]) =>
-    b.administration ? (
-      <span className="ar-groupe-titre ar-groupe-titre--ecusson">
-        <Ecusson />
-        <span className="lecture-seule">{b.administration.groupe} · </span>
-        <span className="ar-groupe-court">{b.administration.sousMenu}</span>
-      </span>
-    ) : (
-      <span className="ar-groupe-titre">{b.titre}</span>
-    );
+  // Intitulé d'un bandeau : le pictogramme de son thème, puis son nom. Sous-menu
+  // d'administration : le seul nom du sous-menu à l'écran, le nom complet pour
+  // le lecteur d'écran.
+  const intitule = (b: (typeof blocs)[number]) => (
+    <span className="ar-groupe-titre">
+      {b.picto ? <PictoMenu theme={b.picto} /> : null}
+      {b.administration ? (
+        <>
+          <span className="lecture-seule">{b.administration.groupe} · </span>
+          <span className="ar-groupe-court">{b.administration.sousMenu}</span>
+        </>
+      ) : (
+        b.titre
+      )}
+    </span>
+  );
   const lienAller = (e: Entree) => (
     <Link
       key={e.cle}
@@ -372,6 +359,8 @@ export function AccesRapide({
       onClick={suivre}
       onMouseEnter={() => setChoisi(rang(e))}
     >
+      {/* Entrée directe (onglet RGPD) : son pictogramme en tête, faute de bandeau. */}
+      {!e.repli && e.picto ? <PictoMenu theme={e.picto} /> : null}
       <span className="ar-libelle">{e.libelle}</span>
       {e.detail ? <span className="ar-detail">{e.detail}</span> : null}
     </Link>

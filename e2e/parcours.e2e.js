@@ -195,6 +195,7 @@ Justification : cf. procédure interne.`,
   assert.equal(await volet.locator('a[href="/donnees-personnelles"]').count(), 1, "volet de connexion : lien public conservé");
   assert.equal(await volet.locator("a").count(), 1, "volet de connexion : un seul lien, le public");
   assert.equal(await volet.locator("a.rail-onglet").count(), 1, "volet de connexion : ce lien est l'onglet RGPD");
+  assert.equal(await volet.locator("a.rail-onglet .picto-menu--rgpd").count(), 1, "volet de connexion : cadenas de l'onglet RGPD (question 77)");
   assert.equal(await page.locator("main a[href='/donnees-personnelles']").count(), 0, "connexion : plus de ligne RGPD dans la page");
   ok("volet de connexion : aucun raccourci gardé, trois blocs d'information");
 
@@ -1594,21 +1595,55 @@ Justification : justification deux.`;
   assert.equal(await page.evaluate(() => localStorage.getItem("fp-a-faire-replie")), null, "déplié : rien de gardé sur le poste");
   ok("« À faire » repliable : total porté par l'intitulé, état gardé, place rendue à « Aller à », recherche entière");
 
-  // Question 76 (choix a, 25/09/2026) : un écusson remplace « Administration · »
+  // Question 76 (choix a, 25/09/2026) : un pictogramme remplace « Administration · »
   // en tête des sous-menus ; le nom lu et la recherche gardent le mot ; sur
   // poste, chaque bandeau tient sur une ligne.
-  const bandeauxAdmin = page.locator(".acces-rapide button.ar-groupe:has(.ar-picto)");
+  const bandeauxAdmin = page.locator(".acces-rapide button.ar-groupe:has(.ar-groupe-court)");
   assert.deepEqual(
     (await bandeauxAdmin.locator(".ar-groupe-court").allTextContents()).map((s) => s.trim()),
     ["Suivi", "Questions", "Modules", "Réglages"],
     "quatre sous-menus d'administration, chacun sous son seul nom",
   );
   assert.match(await bandeauxAdmin.nth(1).textContent(), /Administration · Questions/, "le nom lu garde « Administration »");
-  const hauteursAdmin = await bandeauxAdmin.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
-  assert.ok(hauteursAdmin.every((h) => h <= 40), `une ligne par bandeau sur poste (${hauteursAdmin.join(", ")} px)`);
+  // Question 77 (choix a, 25/09/2026) : chaque tête de menu porte le pictogramme de
+  // son thème, le même dans le tiroir et dans le volet ; l'écusson ne reste que sur
+  // le groupe « Administration » du volet.
+  const themes = (loc) =>
+    loc.evaluateAll((els) =>
+      els.map((el) => {
+        const p = el.querySelector(".picto-menu");
+        return p ? [...p.classList].find((c) => c.startsWith("picto-menu--")).slice("picto-menu--".length) : null;
+      }),
+    );
+  const bandeauxTiroir = page.locator(".acces-rapide .ar-defilant button.ar-groupe");
+  assert.deepEqual(
+    await themes(bandeauxTiroir),
+    ["formation", "reperes", "suivi", "questions", "modules", "reglages"],
+    "tiroir : un pictogramme par bandeau, celui de son thème",
+  );
+  assert.equal(await page.locator(".acces-rapide .ar-defilant a.ar-item:has(.picto-menu--rgpd)").count(), 1, "tiroir : cadenas de l'entrée RGPD");
+  assert.equal(await page.locator(".acces-rapide .picto-menu--administration").count(), 0, "tiroir : plus d'écusson");
+  assert.deepEqual(
+    await themes(page.locator("#volet-principal details.rail-groupe > summary")),
+    ["formation", "reperes", "administration"],
+    "volet : pictogramme des groupes, écusson pour « Administration »",
+  );
+  assert.deepEqual(
+    await themes(page.locator("#volet-principal .rail-sous-titre")),
+    ["suivi", "questions", "modules", "reglages"],
+    "volet : les sous-menus portent les mêmes pictogrammes que le tiroir",
+  );
+  assert.equal(await page.locator("#volet-principal a.rail-onglet .picto-menu--rgpd").count(), 1, "volet : cadenas de l'onglet RGPD");
+  assert.equal(
+    await page.locator(".acces-rapide .picto-menu[aria-hidden='true'], #volet-principal .picto-menu[aria-hidden='true']").count(),
+    await page.locator(".acces-rapide .picto-menu, #volet-principal .picto-menu").count(),
+    "pictogrammes décoratifs, cachés au lecteur d'écran",
+  );
+  const hauteursBandeaux = await bandeauxTiroir.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
+  assert.ok(hauteursBandeaux.every((h) => h <= 40), `une ligne par bandeau sur poste (${hauteursBandeaux.join(", ")} px)`);
   await page.fill(".ar-recherche input", "administration");
   assert.equal(
-    await page.locator(".acces-rapide .ar-defilant span.ar-groupe:has(.ar-picto)").count(),
+    await page.locator(".acces-rapide .ar-defilant span.ar-groupe:has(.ar-groupe-court)").count(),
     4,
     "la recherche « administration » trouve encore les écrans des quatre sous-menus",
   );
@@ -1618,7 +1653,7 @@ Justification : justification deux.`;
     1,
     "le volet de poste garde son groupe « Administration »",
   );
-  ok("sous-menus d'administration : écusson à la place du mot répété, nom lu et recherche inchangés, une ligne sur poste");
+  ok("têtes de menu : un pictogramme par thème, le même dans le tiroir et le volet, écusson sur le seul groupe « Administration » du volet ; nom lu et recherche inchangés, une ligne sur poste");
 
   // critère 6 : la tabulation ne sort pas du panneau
   for (let i = 0; i < 25; i++) await page.keyboard.press("Tab");

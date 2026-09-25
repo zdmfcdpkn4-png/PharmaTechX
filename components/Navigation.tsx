@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { PictoMenu, type ThemeMenu } from "./PictoMenu";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
 import { groupePorteLaPage, relevePage, type IdGroupe } from "@/lib/rail";
 
@@ -29,6 +30,8 @@ export interface LienRail {
 export interface SousGroupeRail {
   titre: string;
   liens: LienRail[];
+  /** Pictogramme de l'intitulé (question 77) ; un groupe prend celui de son `id`. */
+  picto?: ThemeMenu;
 }
 
 
@@ -127,7 +130,10 @@ export function Navigation({
         className="rail-onglet"
         aria-current={courant(l.href) ? "page" : undefined}
       >
-        {g.titre}
+        <span className="rail-onglet-titre">
+          <PictoMenu theme={g.id} taille={15} />
+          {g.titre}
+        </span>
         <span className="rail-onglet-detail">{l.libelle}</span>
       </Link>
     );
@@ -140,7 +146,10 @@ export function Navigation({
       open={estOuvert(g.id)}
       onToggle={(e) => basculer(g.id, e.currentTarget.open)}
     >
-      <summary>{g.titre}</summary>
+      <summary>
+        <PictoMenu theme={g.id} taille={15} />
+        {g.titre}
+      </summary>
       <div className="rail-liens">
         {g.liens?.map(lien)}
         {g.sous?.map((s) => {
@@ -156,7 +165,10 @@ export function Navigation({
               onToggle={(e) => basculer(cleSous(g, s), e.currentTarget.open)}
             >
               <summary>
-                <span className="rail-sous-titre">{s.titre}</span>
+                <span className="rail-sous-titre">
+                  {s.picto ? <PictoMenu theme={s.picto} taille={13} /> : null}
+                  {s.titre}
+                </span>
                 {!ouvert && enAttente > 0 ? (
                   <>
                     <span className="compte-attente" aria-hidden="true">{enAttente}</span>

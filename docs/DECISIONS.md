@@ -4680,6 +4680,76 @@ identifiant, ni rattachée ni émise, n'y figurent.
     tutorat n'en supprime pas ;
   - le journal.
 
+## Un pictogramme par thème de menu (25/09/2026, question 77, choix a)
+
+**Demande** : « prévoir des icônes différentes pour chaque tête de menu, en
+lien avec le thème du menu ».
+
+**Constaté.** Depuis la question 76, les quatre sous-menus d'administration
+portaient le même écusson dans « Aller à » ; Formation, Repères et RGPD n'en
+portaient aucun, et le volet de poste aucun non plus.
+
+**Tranché (question 77, choix a, réponse « À »).** Un pictogramme sur chaque
+tête de menu, dans le tiroir et dans le volet de poste, le même pour un même
+thème.
+
+**Écartés.**
+- **b, le tiroir seulement** : les deux surfaces auraient divergé, alors
+  qu'elles portent les mêmes intitulés, dans le même ordre (§ 2 d de
+  `docs/ACCES-RAPIDE.md`).
+- **c, sans pictogramme sur les sous-menus du volet** : les quatre
+  sous-menus sont justement ceux que le tiroir montre avec un pictogramme.
+
+**Ce qui est fait** (`components/PictoMenu.tsx`, `components/AccesRapide.tsx`,
+`components/Navigation.tsx`, `components/VoletConnexion.tsx`,
+`app/layout.tsx`, `app/globals.css`).
+- Le jeu des maquettes soumises avec la question, monochrome, à la couleur
+  de l'intitulé :
+  - toque (Formation), boussole (Repères) ;
+  - écusson (Administration), cadenas (RGPD) ;
+  - courbe (Suivi), bulle et point d'interrogation (Questions) ;
+  - couches (Modules), curseurs (Réglages).
+- Un seul composant les dessine pour les deux surfaces : un pictogramme se
+  remplace à un seul endroit.
+- Tiroir « Aller à » : chaque bandeau porte le pictogramme de son thème ;
+  l'entrée RGPD, le cadenas. L'écusson n'y paraît plus.
+- Volet de poste : les groupes Formation, Repères et Administration (écusson),
+  les quatre sous-menus d'administration et l'onglet RGPD.
+- Volet d'avant connexion : l'onglet RGPD porte aussi le cadenas.
+- Le thème d'un sous-menu est déclaré avec ses liens, dans le gabarit ;
+  celui d'un groupe est son identifiant.
+- Pictogrammes décoratifs : cachés au lecteur d'écran, qui entend les
+  intitulés comme avant.
+
+**Choix faits sans nouvelle question.**
+- Le cadenas aussi sur l'onglet RGPD du volet d'avant connexion : c'est la
+  même tête de menu.
+- Tailles : 16 px dans le tiroir, 15 px sur les groupes du volet, 13 px sur
+  ses sous-menus, celles des maquettes.
+- Un trait de 2 plutôt que de 1,5 comme les badges de module : le trait fin
+  se lisait mal à ces tailles.
+
+**Mesuré** (avant → après, code d'administration, groupes repliés).
+- Poste, 1 280 × 800 : « Aller à » 324 px, inchangé ; bandeaux à 33 px.
+- Volet de poste, sur la banque : 544 → 545 px (onglet RGPD 40 → 41 px) ;
+  groupes et sous-menus inchangés.
+- iPhone 15, iPhone SE, 360 px : « Aller à » 413 px, 469 px en mode zone,
+  inchangés.
+- Mode zone sur poste : « Aller à » 455 px, volet 710 px, inchangés.
+- Aucun débordement horizontal.
+
+**Limite.** Un pictogramme s'apprend, et aucun n'est universel : la courbe du
+Suivi ou les couches des Modules ne se devinent pas sans l'intitulé. Il
+accompagne le mot et ne le remplace nulle part.
+
+**Vérifié le 25/09/2026.**
+- `npm run verifier` : 375 tests.
+- `npm run build`.
+- Deux passes de bout en bout de 98 étapes, sans erreur de page ni erreur
+  serveur. L'étape de l'accès rapide sur poste contrôle le pictogramme de
+  chaque bandeau, groupe, sous-menu et onglet RGPD, leur masquage au lecteur
+  d'écran et la hauteur des bandeaux ; le volet de connexion, son cadenas.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

@@ -880,6 +880,9 @@ details.rail-groupe > .rail-liens {
 .rail-sous { display: flex; flex-direction: column; }
 .rail-sous + .rail-sous { margin-top: 0.375rem; }
 .rail-sous-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -953,6 +956,8 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
   background: var(--marque-clair);
   box-shadow: inset 3px 0 0 var(--hdv-rose);
 }
+/* Pictogramme de l'onglet (question 77) : sur la ligne de l'intitulé. */
+.rail-onglet-titre { display: inline-flex; align-items: center; gap: 0.5rem; }
 .rail-onglet-detail {
   font-size: 0.75rem;
   font-weight: 500;
@@ -1281,10 +1286,12 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
   text-align: left;
 }
 button.ar-groupe { cursor: pointer; }
-/* Sous-menus d'administration (question 76, choix a) : l'écusson tient lieu de
-   « Administration · », que le nom lu garde ; le bandeau tient sur une ligne. */
-.ar-groupe-titre--ecusson { display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; }
-.ar-picto { flex: none; }
+/* Un pictogramme par thème en tête de chaque bandeau (question 77, choix a),
+   comme dans le volet de poste. Sous-menu d'administration : il tient lieu de
+   « Administration · », que le nom lu garde (question 76) ; le bandeau tient
+   sur une ligne. */
+.ar-groupe-titre { display: inline-flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.picto-menu { flex: none; }
 .ar-chevron::before {
   content: "›";
   display: inline-block;
