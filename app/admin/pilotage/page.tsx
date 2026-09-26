@@ -5,7 +5,8 @@ import { getSession } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { blocsCompetence, criteres, maintien } from "@/content/habilitation";
+import { criteres, maintien } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
 import { LIBELLES_ATTENTE, PERIODES, attenteDe, classerCriteres, libelleAnciennete, moisContinus, part, questionsDifficiles, quizAnciens, tranchesScores } from "@/lib/pilotage";
 import {
@@ -54,17 +55,18 @@ export default async function Pilotage({
 }) {
   const p = await searchParams;
   const session = await getSession();
-  const [{ filieres, niveaux }, modules, totalBanque, signalements] = await Promise.all([
+  const [{ filieres, niveaux }, modules, totalBanque, signalements, blocs] = await Promise.all([
     getReferentiel(),
     getTousModulesAvecDeposes({ publiesSeulement: false }),
     // Chaque question une fois, même posée dans plusieurs modules (question 74).
     totauxQuestions().catch(() => ({ valides: 0, aVerifier: 0 })),
     compterSignalementsOuverts().catch(() => 0),
+    listeBlocs(),
   ]);
 
   const filiere = filieres.some((f) => f.id === p.filiere) ? p.filiere! : "";
   const niveau = niveaux.some((n) => n.code === p.niveau) ? p.niveau! : "";
-  const bloc = blocsCompetence.some((b) => String(b.numero) === p.bloc) ? Number(p.bloc) : null;
+  const bloc = blocs.some((b) => String(b.numero) === p.bloc) ? Number(p.bloc) : null;
   const moduleId = modules.some((m) => m.id === p.module) ? p.module! : "";
   const periode = PERIODES.find((x) => x.cle === p.periode) ?? PERIODES[3];
 
@@ -157,7 +159,7 @@ export default async function Pilotage({
             <span>Bloc de compétence</span>
             <select name="bloc" defaultValue={bloc === null ? "" : String(bloc)}>
               <option value="">Tous</option>
-              {blocsCompetence.map((b) => (
+              {blocs.map((b) => (
                 <option key={b.numero} value={b.numero}>{b.numero}. {b.titre}</option>
               ))}
             </select>

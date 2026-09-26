@@ -1,6 +1,6 @@
-import { LIBELLES_PLAFOND } from "./bareme";
 import { ORDRE_NIVEAUX } from "./tirage";
 import type { NiveauQuestion } from "./types";
+import { LIBELLES_NIVEAU_QUESTION, compteDeNiveau, plafondEnPhrase, type LibellesNiveaux } from "./niveaux-questions";
 
 /**
  * Tirage selon le niveau cible, scellé dans le résultat d'une évaluation
@@ -32,21 +32,22 @@ export interface CibleScellee {
    */
   horsProfil?: number;
   filiere?: string | null;
+  /**
+   * Question 81 (choix a, 26/09/2026) : les noms des niveaux de question au
+   * moment de l'évaluation, s'ils n'étaient plus ceux d'origine ; absent,
+   * ce sont ceux d'origine. Le rapport se relit avec eux, même renommés
+   * depuis.
+   */
+  noms?: LibellesNiveaux;
 }
-
-const NOMS: Record<NiveauQuestion | "a_preciser", [string, string]> = {
-  initial: ["initiale", "initiales"],
-  intermediaire: ["intermédiaire", "intermédiaires"],
-  avance: ["avancée", "avancées"],
-  a_preciser: ["sans niveau", "sans niveau"],
-};
 
 /** « Niveau cible N2 : questions initiales et intermédiaires. Posées : 4 initiales, 6 intermédiaires ; 2 obligatoires. » */
 export function libelleCible(c: CibleScellee): string {
-  const tete = `Niveau cible ${c.niveau ?? "non précisé"} : ${LIBELLES_PLAFOND[c.plafond]}`;
+  const l = c.noms ?? LIBELLES_NIVEAU_QUESTION;
+  const tete = `Niveau cible ${c.niveau ?? "non précisé"} : ${plafondEnPhrase(c.plafond, l)}`;
   const posees = [...ORDRE_NIVEAUX, "a_preciser" as const]
     .filter((n) => (c.parNiveau[n] ?? 0) > 0)
-    .map((n) => `${c.parNiveau[n]} ${NOMS[n][c.parNiveau[n] > 1 ? 1 : 0]}`)
+    .map((n) => compteDeNiveau(n, c.parNiveau[n], l))
     .join(", ");
   const obligatoires = c.obligatoires > 0 ? ` ; ${c.obligatoires} obligatoire${c.obligatoires > 1 ? "s" : ""}` : "";
   const n = c.horsProfil ?? 0;

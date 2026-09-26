@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
-import { enregistrerBareme, retablirBareme } from "@/lib/bareme-db";
-import { ORDRE_NIVEAUX } from "@/content/tirage";
+import { enregistrerBareme, lireBareme, retablirBareme } from "@/lib/bareme-db";
+import { BAREME_DEFAUT, estBaremeDefaut } from "@/content/bareme";
 
 /**
  * Réglage du barème (décision du 18/09/2026, question 10) — administration
@@ -26,15 +26,10 @@ export async function actionEnregistrerBareme(formData: FormData) {
     min: v(`${cle}-min`),
     max: v(`${cle}-max`),
   });
-  // Tirage selon le niveau cible (questions 62 et 63) : un plafond par niveau
-  // listé, des parts par plafond ; codes et valeurs vérifiés à la normalisation.
-  const plafonds: Record<string, string> = {};
-  for (const [cle, valeur] of formData.entries()) {
-    if (cle.startsWith("plafond-")) plafonds[cle.slice("plafond-".length)] = String(valeur);
-  }
-  const repartitions = Object.fromEntries(
-    ORDRE_NIVEAUX.map((p) => [p, Object.fromEntries(ORDRE_NIVEAUX.map((n) => [n, v(`part-${p}-${n}`)]))]),
-  );
+  // Le tirage selon le niveau cible (questions 62 et 63) se règle depuis la
+  // question 81 dans Niveaux des questions : ce formulaire ne le porte plus,
+  // il garde le réglage en vigueur.
+  const { plafonds, repartitions } = await lireBareme();
   const bareme = await enregistrerBareme(
     {
       qcm: format("qcm"),
@@ -56,9 +51,13 @@ export async function actionEnregistrerBareme(formData: FormData) {
   redirect("/admin/bareme?ok=enregistre");
 }
 
+/** Valeurs par défaut, sauf le tirage selon le niveau cible, qui se rétablit dans Niveaux des questions. */
 export async function actionRetablirBareme() {
   const s = await sessionRequise("admin");
-  await retablirBareme();
+  const { plafonds, repartitions } = await lireBareme();
+  const suivant = { ...BAREME_DEFAUT, plafonds, repartitions };
+  if (estBaremeDefaut(suivant)) await retablirBareme();
+  else await enregistrerBareme(suivant, s);
   await journaliser(s, "bareme:defaut", "bareme");
   revalidatePath("/");
   redirect("/admin/bareme?ok=defaut");

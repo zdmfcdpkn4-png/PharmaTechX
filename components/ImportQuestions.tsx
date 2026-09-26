@@ -4,7 +4,7 @@ import Link from "next/link";
 import { startTransition, useActionState, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { ETAT_IMPORT_INITIAL, type EtatImport, type QuestionImporteeAvecImage } from "@/app/admin/questions/import-etat";
 import type { ModuleChoix } from "./EditeurQuestion";
-import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
+import { LIBELLES_NIVEAU_QUESTION, type LibellesNiveaux } from "@/content/niveaux-questions";
 import { bilanPreparation } from "@/content/preparation-image";
 import { alertesFormat, indiceFormat } from "@/lib/import-format";
 import { preparerChamp } from "./preparerImage";
@@ -58,11 +58,14 @@ export function ImportQuestions({
   moduleInitial,
   analyser,
   confirmer,
+  libellesNiveaux = LIBELLES_NIVEAU_QUESTION,
 }: {
   modules: ModuleChoix[];
   moduleInitial?: string;
   analyser: ActionImport;
   confirmer: ActionImport;
+  /** Noms des niveaux de question en vigueur (question 81), pour l'aperçu. */
+  libellesNiveaux?: LibellesNiveaux;
 }) {
   const [analyse, actionAnalyse, enAnalyse] = useActionState(analyser, ETAT_IMPORT_INITIAL);
   const [confirmation, actionConfirme, enConfirmation] = useActionState(confirmer, ETAT_IMPORT_INITIAL);
@@ -116,6 +119,7 @@ export function ImportQuestions({
         erreur={confirmation.erreur}
         confirmer={actionConfirme}
         enConfirmation={enConfirmation}
+        libellesNiveaux={libellesNiveaux}
       />
     );
   }
@@ -209,12 +213,14 @@ function ApercuImport({
   erreur,
   confirmer,
   enConfirmation,
+  libellesNiveaux,
 }: {
   analyse: EtatImport;
   modules: ModuleChoix[];
   erreur?: string;
   confirmer: (fd: FormData) => void;
   enConfirmation: boolean;
+  libellesNiveaux: LibellesNiveaux;
 }) {
   const questions = analyse.questions;
   const [choix, setChoix] = useState<string[]>(() => questions.map((q) => q.moduleId ?? ""));
@@ -317,7 +323,7 @@ function ApercuImport({
                 </label>
                 <span className="etiquette etiquette--site">{libelleFormat(formats[i])}</span>
                 {q.niveauQuestion ? (
-                  <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveauQuestion]}</span>
+                  <span className="etiquette etiquette--neutre">{libellesNiveaux[q.niveauQuestion]}</span>
                 ) : (
                   <span className="etiquette etiquette--attention">Niveau à préciser</span>
                 )}

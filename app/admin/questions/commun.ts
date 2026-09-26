@@ -1,8 +1,9 @@
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { A_PRECISER, type Module } from "@/content/types";
 import { reperesModules, type ModuleRepere } from "@/lib/import-module";
-import { blocsCompetence } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { getReferentiel } from "@/content/referentiel-db";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
 import type { ChoixEtiquettes, ModuleChoix } from "@/components/EditeurQuestion";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { QuestionInitiale } from "@/components/EditeurQuestion";
@@ -20,16 +21,18 @@ export async function choixModules(): Promise<ModuleChoix[]> {
 }
 
 /**
- * Étiquettes qu'une question peut porter (question 74, choix c) : les sept
- * blocs de la fiche, les filières de poste (le socle n'en est pas une) et les
- * niveaux d'habilitation du référentiel.
+ * Étiquettes qu'une question peut porter (question 74, choix c) : les blocs
+ * servis — fiche et dépôts, question 81 —, les filières de poste (le socle
+ * n'en est pas une) et les niveaux d'habilitation du référentiel.
  */
 export async function choixEtiquettes(): Promise<ChoixEtiquettes> {
-  const { filieres, niveaux } = await getReferentiel();
+  const [{ filieres, niveaux }, blocs, nomsNiveaux] = await Promise.all([getReferentiel(), listeBlocs(), lireNomsNiveaux()]);
   return {
-    blocs: blocsCompetence.map((b) => ({ numero: b.numero, titre: b.titre })),
+    blocs: blocs.map((b) => ({ numero: b.numero, titre: b.titre })),
     filieres: filieres.filter((f) => f.id !== "socle").map((f) => ({ id: f.id, libelle: f.libelle })),
     niveaux: niveaux.map((n) => ({ code: String(n.code), libelle: n.libelle })),
+    // Noms des niveaux de question en vigueur (question 81), pour le choix du niveau.
+    nomsNiveaux,
   };
 }
 

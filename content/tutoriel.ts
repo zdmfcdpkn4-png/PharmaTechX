@@ -102,7 +102,7 @@ const TUTEUR: EtapeTutoriel[] = [
   {
     titre: "Modules et documents",
     texte:
-      "Déposer un module, lui rattacher ses documents, choisir son illustration et l'ordre dans lequel il paraît. La publication demande elle aussi un second code.",
+      "Déposer un module, lui rattacher ses documents, choisir son illustration ; l'ordre dans lequel il paraît se règle dans le sous-menu Squelette. La publication demande elle aussi un second code.",
     href: "/admin/modules",
     lien: "Ouvrir les modules",
   },
@@ -151,9 +151,9 @@ const ADMIN: EtapeTutoriel[] = [
     lien: "Gérer les accès",
   },
   {
-    titre: "Le référentiel et le barème",
+    titre: "Le squelette de la formation et le barème",
     texte:
-      "Les critères d'habilitation, leur rattachement aux filières et aux niveaux, puis les réglages de la décision : seuil, bande de garde, points par type de question.",
+      "Filières, niveaux, blocs et critères, niveaux des questions et rattachement des modules : le sous-menu Squelette. Le barème règle la décision : seuil, bande de garde, points par type de question.",
     href: "/admin/bareme",
     lien: "Ouvrir le barème",
   },

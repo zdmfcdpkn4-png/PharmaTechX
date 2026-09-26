@@ -35,6 +35,8 @@ export interface LigneModuleDepose {
   objectif: string;
   presentation: string;
   critere_id: string | null;
+  /** Bloc d'un module hors fiche (question 81) ; celui d'un critère prime. */
+  bloc: number | null;
   filieres: string[];
   niveaux: string[];
   parcours: string[];
@@ -58,6 +60,8 @@ export interface ModuleDeposeAEnregistrer {
   objectif: string;
   presentation: string;
   critereId: string | null;
+  /** Bloc d'un module hors fiche ; ignoré quand un critère est choisi. */
+  bloc: number | null;
   filieres: string[];
   niveaux: string[];
   parcours: TypeParcours[];
@@ -114,7 +118,7 @@ export function filtrerParcours(parcours: unknown): TypeParcours[] {
 const POSEE_ICI = `(q.module_id = m.id OR EXISTS (SELECT 1 FROM questions_modules qm WHERE qm.question_id = q.id AND qm.module_id = m.id))`;
 
 const COLONNES = `
-  m.id, m.titre, m.objectif, m.presentation, m.critere_id, m.filieres, m.niveaux, m.parcours,
+  m.id, m.titre, m.objectif, m.presentation, m.critere_id, m.bloc, m.filieres, m.niveaux, m.parcours,
   m.seuil, m.duree_minutes, m.statut, m.cree_par, m.cree_le::text, m.edite_le::text,
   m.publie_le::text, m.version, m.badge,
   (SELECT COUNT(*)::int FROM questions q WHERE ${POSEE_ICI} AND q.statut <> 'retire') AS nb_questions,
@@ -144,14 +148,14 @@ export async function enregistrerModuleDepose(
   const ident = id ?? nouvelId("mod");
   const par = `${acteur.role} · ${acteur.libelle}`;
   await sql`
-    INSERT INTO modules_deposes (id, titre, objectif, presentation, critere_id, filieres, niveaux, parcours,
+    INSERT INTO modules_deposes (id, titre, objectif, presentation, critere_id, bloc, filieres, niveaux, parcours,
       seuil, duree_minutes, badge, cree_par)
-    VALUES (${ident}, ${m.titre}, ${m.objectif}, ${m.presentation}, ${m.critereId},
+    VALUES (${ident}, ${m.titre}, ${m.objectif}, ${m.presentation}, ${m.critereId}, ${m.critereId ? null : m.bloc},
       ${JSON.stringify(m.filieres)}::jsonb, ${JSON.stringify(m.niveaux)}::jsonb, ${JSON.stringify(m.parcours)}::jsonb,
       ${m.seuil}, ${m.dureeMinutes}, ${m.badge}, ${par})
     ON CONFLICT (id) DO UPDATE SET
       titre = EXCLUDED.titre, objectif = EXCLUDED.objectif, presentation = EXCLUDED.presentation,
-      critere_id = EXCLUDED.critere_id, filieres = EXCLUDED.filieres, niveaux = EXCLUDED.niveaux,
+      critere_id = EXCLUDED.critere_id, bloc = EXCLUDED.bloc, filieres = EXCLUDED.filieres, niveaux = EXCLUDED.niveaux,
       parcours = EXCLUDED.parcours, seuil = EXCLUDED.seuil, duree_minutes = EXCLUDED.duree_minutes,
       badge = EXCLUDED.badge,
       edite_le = NOW(), version = modules_deposes.version + 1`;
@@ -204,7 +208,8 @@ export function versModule(l: LigneModuleDepose): Module {
     id: l.id,
     titre: l.titre,
     objectif: l.objectif || `Module déposé par les tuteurs : ${l.titre}.`,
-    bloc: critere?.bloc ?? A_PRECISER,
+    // Le bloc d'un critère de la fiche prime ; un module hors fiche porte le sien (question 81).
+    bloc: critere?.bloc ?? (typeof l.bloc === "number" ? l.bloc : A_PRECISER),
     affectation: filieres.length === 0 ? "tronc-commun" : "poste",
     critereId: critere?.id ?? A_PRECISER,
     postes: filieres,

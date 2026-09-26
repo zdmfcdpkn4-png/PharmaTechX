@@ -421,6 +421,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       cesse d'être la seule référence, et chaque critère ajouté ouvre un
       module à rédiger. Peut suivre a, dans un second temps.
 
+    Tranchée le 26/09/2026 (choix a, réponse « 81 À ») et mise en œuvre :
+    sous-menu Squelette ; Filières et Niveaux ; blocs créables et
+    modifiables, un module déposé rangé dans un bloc ; niveaux des questions
+    renommables, leurs noms copiés dans le résultat scellé, le tirage par
+    niveau cible réglé sur leur page ; réglage des modules du code sur la
+    page Rattachement des modules. La lecture de « niveaux d'avancement »
+    n'a pas été corrigée par la réponse. Détail dans `DECISIONS.md`.
+
 80. **Filières : les créer, les gérer, les modifier** — posée le
     25/09/2026, sur demande (« créer la possibilité de créer et gérer et
     modifier les filières »). Existant, Réglages › Référentiel,

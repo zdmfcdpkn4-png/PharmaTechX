@@ -17,6 +17,7 @@ export default async function Programmes() {
   return (
     <>
       <section className="panneau-titre">
+        <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Programmes à la carte</h1>
         <p>
           Pour un profil qui ne suit pas la fiche d&apos;habilitation — intérimaire, remplaçant —, un programme

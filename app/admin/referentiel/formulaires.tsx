@@ -1,4 +1,4 @@
-import { blocsCompetence, metiers, metierOuDefaut, parMetier } from "@/content/habilitation";
+import { metiers, metierOuDefaut, parMetier } from "@/content/habilitation";
 import type { Filiere } from "@/content/habilitation";
 import { ChoixBadge } from "@/components/ChoixBadge";
 import { actionEnregistrerFiliere, actionEnregistrerNiveau, actionSupprimerFiliere } from "./actions";
@@ -18,8 +18,7 @@ export const RAPPEL_PREFIXES = metiers
   .map((m) => `${m.prefixe} ${m.libelle.toLowerCase()}`)
   .join(", ");
 
-/** Numéros des blocs de la fiche et préfixes seuls, rappelés sous les champs d'une filière. */
-const PLAGE_BLOCS = `${blocsCompetence[0].numero} à ${blocsCompetence[blocsCompetence.length - 1].numero}`;
+/** Préfixes seuls, rappelés sous les champs d'une filière. */
 const PREFIXES = metiers.filter((m) => m.prefixe).map((m) => m.prefixe).join(", ");
 
 function ChampRetour({ retour }: { retour?: Retour }) {
@@ -30,14 +29,16 @@ function ChampRetour({ retour }: { retour?: Retour }) {
  * Ce que fait chaque champ d'une filière (demande du 24/09/2026). Aucun écran
  * ne lit les blocs : le dire évite de croire qu'ils composent le programme,
  * qui vient des modules. Une filière de la fiche garde sa place et son métier.
+ * `plageBlocs` : les numéros des blocs servis — fiche et blocs ajoutés
+ * (question 81, choix a) —, calculés par la page (`plageDesBlocs`).
  */
-export function AideFiliere({ id, fiche = false }: { id: string; fiche?: boolean }) {
+export function AideFiliere({ id, fiche = false, plageBlocs }: { id: string; fiche?: boolean; plageBlocs: string }) {
   return (
     <ul className="liste-nue legende">
       <li id={`${id}-blocs`}>
-        <strong>Blocs de compétence</strong> : numéros des blocs de la fiche d&apos;habilitation ({PLAGE_BLOCS}) que
+        <strong>Blocs de compétence</strong> : numéros des blocs ({plageBlocs} ; voir Blocs et critères) que
         couvre la filière, pour mémoire. Le site ne s&apos;en sert pas : le programme de la filière vient des modules
-        qui la cochent dans leur réglage (menu Modules).
+        qui la cochent, sur sa page ou dans leur réglage (Rattachement des modules).
       </li>
       <li id={`${id}-rang`}>
         <strong>Rang</strong> :{" "}
@@ -61,12 +62,14 @@ export function FormulaireFiliere({
   rang,
   actif,
   fiche,
+  plageBlocs,
   retour,
 }: {
   filiere: Pick<Filiere, "id" | "libelle" | "description" | "blocs" | "badge" | "metier">;
   rang: number;
   actif: boolean;
   fiche: boolean;
+  plageBlocs: string;
   retour?: Retour;
 }) {
   const f = filiere;
@@ -88,7 +91,7 @@ export function FormulaireFiliere({
           <input name="rang" type="number" min={0} max={999} defaultValue={rang} aria-describedby={`aide-filiere-${f.id}-rang`} />
         </label>
       </div>
-      <AideFiliere id={`aide-filiere-${f.id}`} fiche={fiche} />
+      <AideFiliere id={`aide-filiere-${f.id}`} fiche={fiche} plageBlocs={plageBlocs} />
       <label className="champ">
         <span>Description</span>
         <textarea name="description" defaultValue={f.description} maxLength={400} rows={2} />
@@ -130,7 +133,7 @@ export function SupprimerDepotFiliere({ id, retour }: { id: string; retour?: Ret
 }
 
 /** « Ajouter une filière ». */
-export function FormulaireNouvelleFiliere({ retour }: { retour?: Retour }) {
+export function FormulaireNouvelleFiliere({ plageBlocs, retour }: { plageBlocs: string; retour?: Retour }) {
   return (
     <form action={actionEnregistrerFiliere} className="carte">
       <h3 style={{ fontSize: "1rem", margin: 0 }}>Ajouter une filière</h3>
@@ -161,7 +164,7 @@ export function FormulaireNouvelleFiliere({ retour }: { retour?: Retour }) {
           </select>
         </label>
       </div>
-      <AideFiliere id="aide-nouvelle-filiere" />
+      <AideFiliere id="aide-nouvelle-filiere" plageBlocs={plageBlocs} />
       <label className="champ">
         <span>Description</span>
         <textarea name="description" maxLength={400} rows={2} />

@@ -10,7 +10,7 @@ import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, type IndexModules } from "@/lib/import-module";
 import { schemaPret, type Legende } from "@/content/schema";
 import { getTousModulesAvecDeposes, moduleExiste } from "@/content/store";
-import { blocsCompetence } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { identifiantsConnus } from "@/content/referentiel-db";
 import { lireBlocs, lireIdentifiants, modulesDeLaQuestion } from "@/content/rattachement-question";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
@@ -187,12 +187,12 @@ export async function actionEnregistrerQuestion(
   }
 
   // Question 74 (choix c) : autres modules, blocs et profils — seuls les identifiants connus sont gardés.
-  const [tousModules, connus] = await Promise.all([getTousModulesAvecDeposes(), identifiantsConnus()]);
+  const [tousModules, connus, blocsServis] = await Promise.all([getTousModulesAvecDeposes(), identifiantsConnus(), listeBlocs()]);
   const modulesConnus = new Set(tousModules.map((m) => m.id));
   const aussiDans = lireIdentifiants(formData.getAll("aussiDans"))
     .filter((m) => modulesConnus.has(m) && m !== moduleId)
     .slice(0, 80);
-  const numerosBlocs = new Set(blocsCompetence.map((b) => b.numero));
+  const numerosBlocs = new Set(blocsServis.map((b) => b.numero));
   const blocs = lireBlocs(formData.getAll("blocs")).filter((n) => numerosBlocs.has(n));
   const profilFilieres = lireIdentifiants(formData.getAll("profilFilieres")).filter(
     (f) => f !== "socle" && connus.filieres.includes(f),

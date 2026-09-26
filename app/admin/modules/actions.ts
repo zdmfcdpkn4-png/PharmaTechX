@@ -9,6 +9,7 @@ import { getModule } from "@/content/store";
 import { LIMITES_BAREME } from "@/content/bareme";
 import { NOMS_ILLUSTRATION, NOMS_PICTOGRAMME, SANS_BADGE } from "@/content/badges";
 import { identifiantsConnus } from "@/content/referentiel-db";
+import { listeBlocs } from "@/content/blocs-db";
 import { listeConnue, niveauxConnus, parcoursConnus } from "@/content/reglages";
 import {
   changerStatutModule,
@@ -74,11 +75,15 @@ export async function actionEnregistrerModule(formData: FormData) {
 
   const { filieres, niveaux } = await filtrerProfils(formData.getAll("filieres"), formData.getAll("niveaux"));
   const parcours = filtrerParcours(formData.getAll("parcours"));
+  // Bloc d'un module hors fiche (question 81) : un numéro servi, sinon aucun.
+  const blocSaisi = Number.parseInt(chaine(formData, "bloc", 3), 10);
+  const bloc = (await listeBlocs()).some((b) => b.numero === blocSaisi) ? blocSaisi : null;
   const m = {
     titre,
     objectif: chaine(formData, "objectif", 300),
     presentation: chaine(formData, "presentation", 20000),
     critereId: critere?.id ?? null,
+    bloc: critere ? null : bloc,
     filieres,
     niveaux,
     parcours,
@@ -90,6 +95,7 @@ export async function actionEnregistrerModule(formData: FormData) {
   await journaliser(s, id ? "module:modification" : "module:creation", ident, {
     titre,
     critere: m.critereId,
+    bloc: m.bloc,
     filieres,
     niveaux,
     parcours,
@@ -136,12 +142,12 @@ export async function actionSupprimerModule(formData: FormData) {
 export async function actionReglerSeuil(formData: FormData) {
   const s = await sessionRequise("admin");
   const moduleId = chaine(formData, "moduleId", 80);
-  if (!getModule(moduleId)) redirect("/admin/modules?erreur=inconnu#seuils");
+  if (!getModule(moduleId)) redirect("/admin/rattachement?erreur=inconnu");
   if (String(formData.get("mode") ?? "") === "defaut") {
     await enregistrerReglageModule(moduleId, {}, s);
     await journaliser(s, "module:reglage", moduleId, { reglage: "fiche" });
     rafraichir();
-    redirect("/admin/modules?ok=seuil#seuils");
+    redirect("/admin/rattachement?ok=seuil");
   }
   const liste = (cle: string) => formData.getAll(cle).map((v) => String(v));
   // Le référentiel servi, dépôts compris : c'est lui que le formulaire propose.
@@ -160,5 +166,5 @@ export async function actionReglerSeuil(formData: FormData) {
     parcours: reglage.parcours ?? "fiche",
   });
   rafraichir();
-  redirect("/admin/modules?ok=seuil#seuils");
+  redirect("/admin/rattachement?ok=seuil");
 }

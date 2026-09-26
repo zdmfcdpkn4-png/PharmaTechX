@@ -186,7 +186,8 @@ moins qu'un autre. L'administrateur règle en plus le seuil de réussite par
 défaut, le minimum de questions pour
 conclure, la taille des tirages Découverte et Habilitation et la bande de
 garde (poids d'une question, d'une demi-question ou largeur fixe). Le seuil
-d'un module du code se règle module par module depuis `/admin/modules`, avec
+d'un module du code se règle module par module depuis `/admin/rattachement`
+(écran Modules jusqu'à la question 81), avec
 désormais ses **filières**, ses **niveaux** et sa présence en **intégration**
 ou en **maintien** (décision du 19/09/2026, question 36) : le texte du critère
 reste versionné, son rattachement se règle. Tout écart à la fiche
@@ -240,13 +241,36 @@ brouillon et modification d'un module publié : administration seulement
 des questions ou des documents s'y rattachent.
 
 `/admin/filieres` — une **page par filière** (25/09/2026, question 80,
-choix a), depuis le menu Modules ou le Référentiel : sa fiche, ses niveaux
+choix a), depuis le menu Squelette ou la liste des filières : sa fiche, ses niveaux
 (ajout d'un niveau déjà rattaché), son **programme** et ce qui la cite. Le
 programme se compose en cochant les modules et, par module, les niveaux de la
 filière ; il s'enregistre dans le réglage du module du code ou dans la ligne
 du module déposé, comme depuis l'écran Modules, qui montre la même chose.
 Administration seulement ; tout ou rien ; un module n'y perd jamais sa
 dernière filière, et le tronc commun s'y lit sans s'y régler.
+
+**Squelette de la formation** (26/09/2026, question 81, choix a) : un
+sous-menu de l'Administration rassemble ce qui compose la formation, une page
+par élément. Droits inchangés : le tutorat lit les filières et garde l'ordre
+et les programmes ; le reste est réservé à l'administration.
+- `/admin/filieres` et `/admin/niveaux` : l'ancien Référentiel, scindé ; une
+  filière se modifie sur sa carte ou sur sa page. `/admin/referentiel` renvoie
+  aux filières.
+- `/admin/blocs` : les **blocs de compétence** se corrigent ou s'ajoutent
+  comme les filières ; un bloc de la fiche ne quitte pas les listes, un bloc
+  ajouté reçoit des modules déposés (champ « Bloc » du module) et ne se
+  supprime pas tant qu'il en porte. Les critères s'y lisent sous leur bloc,
+  sans s'y modifier.
+- `/admin/niveaux-questions` : les trois **niveaux des questions** se
+  renomment (nom, définition) ; leur nombre reste trois. Un résultat scellé
+  garde les noms de son époque ; le dépôt de questions garde les mots-clés
+  initial, intermédiaire, avancé. Le **tirage selon le niveau cible**
+  (plafond, répartition) s'y règle, venu de l'écran du barème, où il reste
+  rangé.
+- `/admin/rattachement` : le réglage des modules du code, venu de l'écran
+  Modules, et les deux parcours en lecture.
+- `/admin/ordonnancement` et `/admin/programmes` : l'ordre et les programmes
+  à la carte, inchangés.
 
 `/admin/documents` — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
@@ -373,10 +397,14 @@ les mêmes écrans.
 | Blocs, critères, niveaux, filières, étapes, maintien | `content/habilitation.ts` |
 | Un module rédigé (texte + banque versionnée) | `content/modules/*.ts` |
 | Formats, notation | `content/types.ts`, `content/schema.ts` |
-| Barème (valeurs par défaut, règles, libellés) | `content/bareme.ts` ; réglage `/admin/bareme`, lecture `lib/bareme-db.ts` |
+| Barème (valeurs par défaut, règles, libellés) | `content/bareme.ts` ; réglage `/admin/bareme` (tirage par niveau cible : `/admin/niveaux-questions`), lecture `lib/bareme-db.ts` |
+| Niveaux des questions (noms, phrases, copie scellée) | `content/niveaux-questions.ts` ; réglage `/admin/niveaux-questions`, lecture `lib/niveaux-questions-db.ts` |
+| Blocs de compétence déposés | `content/blocs.ts` (fusion), `content/blocs-db.ts`, `app/admin/blocs` |
+| Réglage des modules du code (seuil, filières, niveaux, parcours) | `app/admin/rattachement` ; action `app/admin/modules/actions.ts` |
 | Banque déposée (requêtes) | `content/banque-db.ts` |
 | Modules déposés | `content/modules-db.ts`, `app/admin/modules` ; fusion `content/store.ts` |
-| Page d'une filière (programme, ce qui la cite) | `app/admin/filieres` ; règles `content/programme-filiere.ts` ; formulaires communs au Référentiel `app/admin/referentiel/formulaires.tsx` |
+| Page d'une filière (programme, ce qui la cite) | `app/admin/filieres` ; règles `content/programme-filiere.ts` ; formulaires communs aux Filières et aux Niveaux `app/admin/referentiel/formulaires.tsx` |
+| Niveaux d'habilitation déposés | `app/admin/niveaux` ; actions `app/admin/referentiel/actions.ts`, base `content/referentiel-db.ts` |
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
 | Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |

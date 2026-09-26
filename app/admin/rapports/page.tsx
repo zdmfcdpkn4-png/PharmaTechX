@@ -154,7 +154,7 @@ export default async function Rapports({
 
       {session?.role === "admin" && (
         <section className="carte" style={{ marginTop: "1.5rem" }}>
-          <h3>Purge manuelle</h3>
+          <h2 style={{ fontSize: "1.15rem" }}>Purge manuelle</h2>
           <p className="legende">
             Aucune purge automatique (décision du 18/09/2026) : les rapports sont conservés jusqu&apos;à ce
             que l&apos;administrateur les supprime. Seuls les rapports clos ou annulés sont concernés ;

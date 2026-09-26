@@ -21,6 +21,7 @@ export type ThemeMenu =
   | "suivi"
   | "questions"
   | "modules"
+  | "squelette"
   | "reglages";
 
 const TRACES: Record<ThemeMenu, ReactNode> = {
@@ -75,6 +76,15 @@ const TRACES: Record<ThemeMenu, ReactNode> = {
       <path d="M12 3l9 4.5-9 4.5-9-4.5z" />
       <path d="M3 12l9 4.5 9-4.5" />
       <path d="M3 16.5L12 21l9-4.5" />
+    </>
+  ),
+  // Arborescence : le squelette de la formation — filières, niveaux, blocs (question 81).
+  squelette: (
+    <>
+      <rect x="9" y="3" width="6" height="5" rx="1" />
+      <rect x="3" y="16" width="6" height="5" rx="1" />
+      <rect x="15" y="16" width="6" height="5" rx="1" />
+      <path d="M12 8v4M6 16v-4h12v4" />
     </>
   ),
   // Curseurs : les réglages.

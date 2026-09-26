@@ -660,6 +660,73 @@ Déroulé : observer sans aider, noter les hésitations et les erreurs.
 | 5. Parcours de l'apprenant | E3 à E6, Z3, Z4 | Le test dira ce qui gêne vraiment |
 | 6. Après la mise en service | S1, S2, S3 | Ces propositions demandent des données d'usage ; S2 et S3 touchent la fiche RGPD |
 
+## 7. Vérification globale du 26/09/2026
+
+Demandée avec la question 81 : « vérifie le fonctionnement et ergonomie
+globale ». Faite après la mise en œuvre de cette question, sur le site
+entier.
+
+**Méthode.**
+- **Fonctionnement** : la chaîne complète — 397 tests unitaires, build, puis
+  le parcours de bout en bout en deux passes de 100 étapes sur base neuve
+  (administration, tutorat, poste, agent rattaché, rapports, statistiques,
+  en-têtes de sécurité, limiteur).
+- **Ergonomie** : un balayage automatique de 162 écrans — 33 pour
+  l'administration, 16 pour le tutorat, 5 pour le poste —, chacun à trois
+  largeurs : poste 1366 px, iPad 820 px, iPhone 390 px, ces deux derniers en
+  écran tactile émulé. Parmi les 16 du tutorat, six écrans réservés à
+  l'administration, dont il doit être renvoyé. Pour chaque écran :
+  - erreurs de page et de console ;
+  - débordement horizontal ;
+  - identifiants en double ;
+  - références d'aide orphelines (`aria-describedby`, `aria-labelledby`,
+    `aria-controls`, `label for`) ;
+  - un seul titre de niveau 1, et aucun niveau de titre sauté ;
+  - images sans texte de remplacement ;
+  - champs et commandes sans nom ;
+  - cibles tactiles sous 24 px sans l'espacement que prévoit WCAG 2.2
+    (critère 2.5.8, niveau AA).
+- Captures pleine page des écrans du squelette, du barème et des modules,
+  aux trois largeurs, relues.
+
+**Résultats.**
+- Aucune erreur de page, de console ou de serveur ; aucun débordement ;
+  aucun identifiant en double ; aucune référence orpheline ; un titre de
+  niveau 1 par écran ; aucune image sans texte de remplacement ; aucun champ
+  ni commande sans nom ; aucune cible tactile trop petite sur iPad et
+  iPhone.
+- Les six écrans réservés renvoient le tutorat : à l'accueil, ou à Accès
+  pour le journal.
+
+**Corrigé en passant.**
+- Deux titres sautaient un niveau : « Purge manuelle » (Rapports) et « Image
+  de signature » (Signature), de niveau 3 sous le titre de la page. Passés au
+  niveau 2, à la même taille.
+- Textes qui renvoyaient encore aux anciens emplacements : visites guidées de
+  l'administration et du tutorat, page d'une filière, aide des champs d'une
+  filière, barème (seuil d'un module).
+- « Squelette de la formation » en tête d'Ordre et de Programmes à la carte,
+  comme sur les autres pages du sous-menu. Deux titres de même taille sur
+  Rattachement des modules.
+- Test de bout en bout : la sortie de l'étape des statistiques, qui pouvait
+  échouer selon le temps de défilement (détail dans `DECISIONS.md`,
+  question 81).
+
+**Relevé, non corrigé.**
+- Les trois défauts du § 4 restent en l'état, par décision (question 73,
+  « ne rien faire »). « Nouvelle question » annonce toujours qu'une question
+  « validée » est posée immédiatement, alors que l'éditeur ne propose que
+  « À vérifier » ou « Retirée ».
+
+**Limites.**
+- Les contrastes ne sont pas mesurés par ce balayage, et aucun lecteur
+  d'écran réel n'a été utilisé.
+- Mesure : dans Chromium, une capture pleine page fait perdre l'émulation
+  tactile à la page qui la prend. Les mesures sont donc prises dans des
+  contextes sans capture, et les captures à part.
+- Un balayage automatique ne remplace ni la revue experte ni le test avec
+  des agents (§ 5), toujours à organiser.
+
 ## Références
 
 Articles vérifiés sur PubMed le 24/09/2026 :
@@ -727,8 +794,8 @@ Articles vérifiés sur PubMed le 24/09/2026 :
     [doi:10.3109/0142159X.2014.889290](https://doi.org/10.3109/0142159X.2014.889290)
 
 Autres sources :
-- W3C. Web Content Accessibility Guidelines (WCAG) 2.2, 2023, critères 2.5.7
-  et 4.1.3. <https://www.w3.org/TR/WCAG22/>
+- W3C. Web Content Accessibility Guidelines (WCAG) 2.2, 2023, critères 2.5.7,
+  2.5.8 et 4.1.3. <https://www.w3.org/TR/WCAG22/>
 - Décret n° 2019-768 du 24 juillet 2019 relatif à l'accessibilité aux
   personnes handicapées des services de communication au public en ligne.
   <https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000038811937/>. Texte non

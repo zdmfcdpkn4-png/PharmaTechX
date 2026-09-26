@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getReferentiel } from "@/content/referentiel-db";
+import { listeBlocs } from "@/content/blocs-db";
 import { getModule, getTousModulesAvecDeposes } from "@/content/store";
 import { listerQuestions } from "@/content/banque-db";
 import { banqueDuModule } from "@/content/types";
@@ -37,15 +38,17 @@ export async function GET(req: NextRequest) {
   if (type !== "modules" && type !== "questions" && type !== "elements") {
     return new NextResponse("Type de tableur inconnu.", { status: 400 });
   }
-  const [{ filieres, niveaux }, modules] = await Promise.all([
+  const [{ filieres, niveaux }, modules, blocs] = await Promise.all([
     getReferentiel(),
     getTousModulesAvecDeposes({ publiesSeulement: false }),
+    listeBlocs(),
   ]);
   const f = resoudreFiltre(
     { filiere: q.get("filiere") ?? undefined, niveau: q.get("niveau") ?? undefined, bloc: q.get("bloc") ?? undefined, periode: q.get("periode") ?? undefined },
     modules,
     filieres,
     niveaux,
+    blocs,
   );
   const moduleId = q.get("module");
   if (type === "elements" && !moduleId) return new NextResponse("Module requis.", { status: 400 });

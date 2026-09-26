@@ -8,7 +8,8 @@ import { questionsRenseignees } from "@/content/en-cours";
 import { lireModuleDepose } from "@/content/modules-db";
 import { Reprendre, type EtapeReprise } from "@/components/Reprendre";
 import { Progression } from "@/components/Progression";
-import { blocsCompetence, criteres } from "@/content/habilitation";
+import { criteres } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { getReferentiel } from "@/content/referentiel-db";
 import { badgeEffectif } from "@/content/badges";
 import type { Module, TypeParcours } from "@/content/types";
@@ -64,12 +65,14 @@ export default async function Accueil({
   const parcours = getParcours(parcoursId)!;
   const conservation = modeConservation();
   const { filieres, niveaux } = await getReferentiel();
-  const [enBase, programme, session, ratt, programmesValides] = await Promise.all([
+  const [enBase, programme, session, ratt, programmesValides, blocsServis] = await Promise.all([
     comptesQuestionsBase(),
     composerProgramme(parcoursId),
     getSession(),
     conservation === "pseudonyme" ? rattachement() : Promise.resolve(null),
     baseConfiguree() ? listerProgrammes("valide").catch((): Programme[] => []) : Promise.resolve<Programme[]>([]),
+    // Blocs servis (question 81) : fiche corrigée et blocs ajoutés, pour grouper et filtrer.
+    listeBlocs(),
   ]);
 
   // Programme à la carte (question 50) : demandé dans l'adresse, ou porté par
@@ -280,7 +283,7 @@ export default async function Accueil({
             libelle: n.libelle,
             filiere: n.filiere,
           }))}
-          blocs={blocsCompetence.map((b) => ({
+          blocs={blocsServis.map((b) => ({
             numero: String(b.numero),
             titre: b.titre,
           }))}

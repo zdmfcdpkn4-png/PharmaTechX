@@ -207,7 +207,11 @@ recherche : « Aller à » passe de 389 à 324 px sur poste, groupes repliés.
 Depuis la question 77 (choix a), chaque bandeau porte celui de son thème —
 toque (Formation), boussole (Repères), courbe (Suivi), bulle (Questions),
 couches (Modules), curseurs (Réglages) — et l'entrée RGPD un cadenas, comme
-dans le volet ; aucune hauteur ne change.
+dans le volet ; aucune hauteur ne change. Depuis la question 81 (choix a,
+26/09/2026), un cinquième sous-menu, « Squelette », se range entre Modules et
+Réglages, sous trois cadres reliés : filières, niveaux, blocs et critères,
+niveaux des questions, rattachement des modules, ordre et programmes à la
+carte.
 
 ### 3.4 Le champ de recherche
 

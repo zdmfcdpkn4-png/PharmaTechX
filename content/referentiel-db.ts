@@ -509,6 +509,7 @@ export async function niveauxOrphelins(): Promise<NiveauOrphelin[]> {
   for (const l of codes.rows) pousser("Code d'accès", l.libelle, inconnus([l.niveau]));
   // Un niveau cible sans plafond tombe sur « avancé » : un plafond resté sous
   // l'ancien code d'un niveau renommé laisserait le nouveau tirer sans limite.
-  if (bareme) pousser("Barème, plafond par niveau cible", "barème", inconnus(Object.keys(bareme.plafonds)));
+  // Rangé dans le barème, réglé depuis la question 81 dans Niveaux des questions.
+  if (bareme) pousser("Tirage selon le niveau cible (Niveaux des questions)", "plafond", inconnus(Object.keys(bareme.plafonds)));
   return orphelins;
 }

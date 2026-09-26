@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { blocsCompetence } from "@/content/habilitation";
 import type { Module } from "@/content/types";
 import { PERIODES } from "@/lib/pilotage";
 import { LIBELLES_REPERE, SEUILS_STAT, type Repere, type Taux } from "@/lib/statistiques";
@@ -40,10 +39,12 @@ export function resoudreFiltre(
   modules: Module[],
   filieres: { id: string }[],
   niveaux: { code: string }[],
+  /** Blocs servis, fiche et dépôts (question 81) : le filtre n'accepte qu'eux. */
+  blocs: { numero: number }[],
 ): FiltreStat {
   const filiere = filieres.some((f) => f.id === p.filiere) ? p.filiere! : "";
   const niveau = niveaux.some((n) => n.code === p.niveau) ? p.niveau! : "";
-  const bloc = blocsCompetence.some((b) => String(b.numero) === p.bloc) ? Number(p.bloc) : null;
+  const bloc = blocs.some((b) => String(b.numero) === p.bloc) ? Number(p.bloc) : null;
   const periode = PERIODES.find((x) => x.cle === p.periode) ?? PERIODES[3];
   const retenus = modules.filter(
     (m) =>

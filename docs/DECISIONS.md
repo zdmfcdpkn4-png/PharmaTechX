@@ -4921,6 +4921,128 @@ demande à tout le squelette de la formation (question 81, restée ouverte).
   aucune aide orpheline ; sur téléphone, code et titre d'un module tiennent
   sur une ligne.
 
+## Squelette de la formation : un sous-menu, blocs et niveaux des questions modifiables (26/09/2026, question 81, choix a)
+
+**Demande.** « Rassembler dans un même menu la création modification pour
+les filières, les niveaux, les blocs, les niveaux d'avancement… tout ce qui
+est en lien avec le squelette de la formation. » Réponse « 81 À puis vérifie
+le fonctionnement et ergonomie globale ». La question lisait « niveaux
+d'avancement » comme les trois niveaux des questions et leurs paliers par
+niveau cible, `[à confirmer]` ; la réponse ne l'a pas corrigé.
+
+**Ce qui est fait.**
+- Un sous-menu « Squelette » dans l'Administration, entre Modules et
+  Réglages, sous son pictogramme (trois cadres reliés) :
+  - Filières, pour le tutorat et l'administration ;
+  - Niveaux, Blocs et critères, Niveaux des questions, Rattachement des
+    modules, pour l'administration seule ;
+  - Ordre et Programmes à la carte, pour le tutorat et l'administration,
+    comme avant.
+
+  Modules garde Modules et Documents ; Réglages garde Accès, Barème,
+  Signature et Journal. Les droits ne changent pas.
+- Le Référentiel se scinde :
+  - `/admin/filieres` : chaque carte se modifie sur place (« Modifier »,
+    « Supprimer le dépôt ») ; « Ajouter une filière » ouvre la page de la
+    nouvelle filière ;
+  - `/admin/niveaux` : les niveaux par métier, leur rang, « Modifier »,
+    « Supprimer le dépôt », « Ajouter un niveau », et l'encart des
+    rattachements qui citent un niveau inconnu ;
+  - `/admin/referentiel` renvoie aux filières, pour les liens anciens.
+- **Rattachement des modules** (`/admin/rattachement`) : le réglage des
+  modules du code — seuil, filières, niveaux, parcours, « Rétablir la
+  fiche » — quitte l'écran Modules, qui y renvoie. Les deux parcours s'y
+  lisent, sans se modifier.
+- **Blocs et critères** (`/admin/blocs`), comme les filières (table
+  `blocs_deposes`, règle de fusion dans `content/blocs.ts`, testée) :
+  - un dépôt au numéro d'un bloc de la fiche le corrige — titre, référence,
+    filière. Un bloc de la fiche ne quitte pas les listes : ses critères en
+    dépendent. « Supprimer le dépôt » lui rend ses valeurs d'origine ;
+  - un numéro nouveau ajoute un bloc. Désactivé, il quitte les listes ; il
+    ne se désactive ni ne se supprime tant qu'un module déposé s'y range ;
+  - un module déposé sans critère reçoit un bloc (champ « Bloc » de son
+    formulaire, colonne `modules_deposes.bloc`) ; avec un critère, c'est le
+    bloc du critère ;
+  - les critères se lisent sous leur bloc, versionnés avec le site, sans se
+    modifier ;
+  - la filière d'un bloc est pour mémoire, comme les blocs d'une filière :
+    le programme d'une filière vient des modules qui la cochent ;
+  - les écrans qui lisent les blocs passent sur la liste servie : accueil,
+    Repères (un bloc ajouté s'y lit avec ses modules publiés), page d'un
+    module, banque (filtre, étiquettes, éditeur), programmes à la carte,
+    statistiques et leur export, pilotage, page d'une filière et aide de ses
+    champs (plage des numéros).
+- **Niveaux des questions** (`/admin/niveaux-questions`, règles dans
+  `content/niveaux-questions.ts`, testées) :
+  - les trois niveaux se renomment, nom et définition, rangés dans
+    `parametres` (clé `niveaux_questions`). Leur nombre reste trois, et les
+    valeurs rangées en base (`initial`, `intermediaire`, `avance`) ne
+    changent pas. Deux noms égaux, casse et accents mis à part, sont
+    refusés ; un champ vidé reprend sa valeur d'origine ;
+  - les noms en vigueur s'affichent dans la banque (étiquette, filtre,
+    arborescence), l'éditeur de question, l'aperçu d'un dépôt, l'écran
+    d'évaluation, le barème en vigueur, les Repères et le message d'un
+    tirage non conforme ;
+  - les phrases gardent leur tournure tant que les trois noms sont ceux
+    d'origine. Un nom changé, elles citent chaque niveau par son nom, entre
+    guillemets (« 4 de niveau « Base » ») : aucun accord ne dépend d'un mot
+    choisi à l'écran ;
+  - un résultat d'évaluation copie les noms en vigueur quand ils ne sont
+    plus ceux d'origine (`CibleScellee.noms`) : un rapport se relit avec les
+    noms de son époque. Sans copie, il se lit avec ceux d'origine, ce qui
+    vaut pour tous les résultats antérieurs ;
+  - le dépôt de questions et le prompt de génération gardent les mots-clés
+    d'origine — initial, intermédiaire, avancé — : un fichier préparé avant
+    un renommage s'importe toujours ;
+  - le **tirage selon le niveau cible** (questions 62 et 63) quitte l'écran
+    du barème pour cette page, avec son enregistrement et son « Rétablir »
+    propres. Il reste rangé dans le barème, copié dans chaque résultat
+    scellé. Le formulaire du barème garde le réglage en vigueur, et son
+    « Rétablir » ne touche plus au tirage ;
+  - l'encart des niveaux inconnus nomme la ligne « Tirage selon le niveau
+    cible (Niveaux des questions) ».
+- Métiers, critères et parcours s'affichent en lecture : les métiers rangent
+  filières et niveaux, avec leurs préfixes de code rappelés à l'ajout d'un
+  niveau ; les critères sous leur bloc ; les parcours sur la page
+  Rattachement des modules.
+
+**Limites.**
+- Un bloc ajouté reste vide tant qu'aucun module déposé ne s'y range ; les
+  critères ne changent pas de bloc (choix c écarté).
+- Les niveaux des questions restent trois.
+- Les métiers n'ont pas de page à eux : ils ne se créent ni ne se modifient.
+
+**Vérifié le 26/09/2026.**
+- `npm run verifier` : 397 tests, dont 4 pour la fusion des blocs et 7 pour
+  les niveaux des questions (noms, phrases, copie scellée), plus le message
+  d'un tirage non conforme sous des noms changés.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 100 étapes, sans erreur de page
+  ni erreur serveur ; en console, les trois lignes attendues (deux refus 403
+  et le refus d'encadrement). Les étapes touchées suivent les écrans
+  déplacés — Filières, Niveaux, Rattachement des modules, Niveaux des
+  questions, sous-menu Squelette — et deux s'ajoutent :
+  - blocs : bloc de la fiche corrigé puis rétabli, sans case pour le
+    retirer ; bloc ajouté, numéro déjà pris refusé ; module déposé rangé
+    dans le bloc ajouté, lu sur sa page et aux Repères ; suppression refusée
+    tant qu'il porte un module, puis faite ;
+  - niveaux des questions : « Avancé » renommé « Expert », nom en double
+    refusé, nom lu dans le filtre de la banque et à l'évaluation, copié dans
+    le résultat scellé ; noms d'origine rétablis, un résultat nouveau n'en
+    porte plus de copie.
+- Une première chaîne a échoué en passe 2 sur « quitter », après
+  l'enregistrement d'une action d'amélioration (étape des statistiques,
+  question 78) : la redirection vers `…#actions` fait défiler la page en
+  douceur, ce défilement pouvait l'emporter sur le retour en haut, et
+  l'en-tête, masqué à la descente, gardait le bouton hors de l'écran. La
+  course est reproduite : sur six essais, 300 ms après le retour en haut
+  demandé, la page n'y était qu'une fois ; le masquage de l'en-tête ne s'est
+  pas reproduit à la taille d'écran de l'essai. Sans rapport avec cette
+  question. L'étape quitte désormais depuis une page sans ancre, comme les
+  autres changements de profil.
+- Balayage des écrans : voir la vérification globale du même jour
+  (`AUDIT-ERGONOMIE.md`, § 7).
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

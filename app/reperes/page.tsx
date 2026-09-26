@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { lireBareme } from "@/lib/bareme-db";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
+import { libellesDe } from "@/content/niveaux-questions";
 import {
   libelleCaches,
   libelleOrdre,
@@ -12,7 +14,6 @@ import {
 } from "@/content/bareme";
 import {
   arbitrageEnAttente,
-  blocsCompetence,
   criteres,
   etapes,
   maintien,
@@ -20,6 +21,7 @@ import {
   parMetier,
 } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
+import { listeBlocs, modulesDeposesParBloc } from "@/content/blocs-db";
 import { LienModule } from "@/components/LienModule";
 
 // Le barème est lu à chaque requête : la page annonce les règles en vigueur,
@@ -114,7 +116,15 @@ const questionsFrequentes = [
 export default async function Reperes() {
   // Niveaux du référentiel servi, comme sur les autres écrans : un niveau
   // déposé ou corrigé au Référentiel doit s'y lire aussi (23/09/2026).
-  const [bareme, { niveaux }] = await Promise.all([lireBareme(), getReferentiel()]);
+  // Blocs servis (question 81) : un bloc corrigé ou ajouté se lit ici aussi,
+  // avec ses modules hors fiche publiés.
+  const [bareme, { niveaux }, blocs, horsFiche, nomsNiveaux] = await Promise.all([
+    lireBareme(),
+    getReferentiel(),
+    listeBlocs(),
+    modulesDeposesParBloc(),
+    lireNomsNiveaux(),
+  ]);
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
   const deLaFiche = new Map(niveauxFiche.map((n) => [String(n.code), n]));
   // Ce qui ne se lit plus tel que dans la fiche est dit : cette section cite le chapitre III.
@@ -193,7 +203,7 @@ export default async function Reperes() {
           ))}
         </div>
         <p className="legende" style={{ marginTop: ".75rem" }}>
-          {resumeBareme(bareme).slice(5).join(" ")}
+          {resumeBareme(bareme, libellesDe(nomsNiveaux)).slice(5).join(" ")}
         </p>
       </section>
 
@@ -207,8 +217,10 @@ export default async function Reperes() {
           pharmacien : {arbitrageEnAttente.marquageObligatoire}{" "}
           {arbitrageEnAttente.correspondanceBlocsNiveaux}
         </p>
-        {blocsCompetence.map((b) => {
+        {blocs.map((b) => {
           const items = criteres.filter((x) => x.bloc === b.numero);
+          const publies = (horsFiche[b.numero] ?? []).filter((m) => m.statut === "publie");
+          if (items.length === 0 && publies.length === 0) return null;
           return (
             <details key={b.numero} className="bloc">
               <summary>
@@ -217,13 +229,25 @@ export default async function Reperes() {
                   className="etiquette etiquette--neutre"
                   style={{ marginLeft: ".5rem" }}
                 >
-                  {items.length} critères
+                  {items.length} critère{items.length > 1 ? "s" : ""}
+                  {publies.length > 0 ? ` · ${publies.length} hors fiche` : ""}
                 </span>
               </summary>
               <div className="contenu-bloc">
-                <p className="legende" style={{ margin: "0 0 .5rem" }}>
-                  Réf. : {b.reference}
-                </p>
+                {b.reference && (
+                  <p className="legende" style={{ margin: "0 0 .5rem" }}>
+                    Réf. : {b.reference}
+                  </p>
+                )}
+                {publies.map((m) => (
+                  <div key={m.id} className="ligne-critere">
+                    <span className="code">—</span>
+                    <span className="libelle">
+                      <LienModule id={m.id}>{m.titre}</LienModule>
+                    </span>
+                    <span className="etiquette etiquette--neutre">hors fiche</span>
+                  </div>
+                ))}
                 {items.map((x) => (
                   <div key={x.id} className="ligne-critere">
                     <span className="code">{x.id}</span>

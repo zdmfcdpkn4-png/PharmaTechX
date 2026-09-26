@@ -75,17 +75,11 @@ export type TypeParcours = "integration" | "maintien";
  */
 export const NIVEAUX_QUESTION = ["initial", "intermediaire", "avance"] as const;
 export type NiveauQuestion = (typeof NIVEAUX_QUESTION)[number];
-export const LIBELLES_NIVEAU_QUESTION: Record<NiveauQuestion, string> = {
-  initial: "Initial",
-  intermediaire: "Intermédiaire",
-  avance: "Avancé",
-};
-/** Ce que chaque palier évalue — repris du prompt de génération. */
-export const DEFINITIONS_NIVEAU_QUESTION: Record<NiveauQuestion, string> = {
-  initial: "restitution",
-  intermediaire: "reformulation, comparaison",
-  avance: "raisonnement, piège",
-};
+/**
+ * Libellés et définitions d'origine ; ceux en vigueur se renomment depuis la
+ * question 81 (choix a) — voir `content/niveaux-questions.ts`.
+ */
+export { DEFINITIONS_NIVEAU_QUESTION, LIBELLES_NIVEAU_QUESTION } from "./niveaux-questions";
 
 /** « Initial », « intermédiaire », « base » (ancien libellé) → valeur rangée ; sinon `null`. */
 export function lireNiveauQuestion(brut: unknown): NiveauQuestion | null {

@@ -3,18 +3,21 @@ import { getSession } from "@/lib/auth";
 import { getReferentiel, toutesLesFilieres } from "@/content/referentiel-db";
 import { metiers, metierOuDefaut } from "@/content/habilitation";
 import { getTousModulesAvecDeposes } from "@/content/store";
+import { listeBlocs } from "@/content/blocs-db";
+import { plageDesBlocs } from "@/content/blocs";
 import { codesDeLaFiliere, repartir, SOCLE } from "@/content/programme-filiere";
 import { Badge } from "@/components/Badge";
-import { FormulaireNouvelleFiliere } from "../referentiel/formulaires";
+import { FormulaireFiliere, FormulaireNouvelleFiliere, SupprimerDepotFiliere } from "../referentiel/formulaires";
 import { ERREURS, MESSAGES } from "../referentiel/messages";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Filières (question 80, choix a, 25/09/2026) : une page par filière, pour
- * la créer, la modifier et composer son programme. Rangées par métier, comme
- * au Référentiel ; les filières désactivées restent listées, pour être
- * rouvertes.
+ * la créer, la modifier et composer son programme. Depuis la question 81
+ * (choix a, 26/09/2026), cette liste reprend aussi la moitié « filières » de
+ * l'ancien Référentiel : chaque carte se modifie sur place. Rangées par
+ * métier ; les filières désactivées restent listées, pour être rouvertes.
  */
 export default async function Filieres({
   searchParams,
@@ -24,11 +27,13 @@ export default async function Filieres({
   const p = await searchParams;
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [liste, { niveaux }, modulesTous] = await Promise.all([
+  const [liste, { niveaux }, modulesTous, blocs] = await Promise.all([
     toutesLesFilieres(),
     getReferentiel(),
     getTousModulesAvecDeposes(),
+    listeBlocs(),
   ]);
+  const plageBlocs = plageDesBlocs(blocs);
   const modules = modulesTous.filter((m) => m.statut !== "retire");
   const programme = (id: string) => {
     const r = repartir(modules, id);
@@ -39,11 +44,14 @@ export default async function Filieres({
   return (
     <>
       <section className="panneau-titre">
+        <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Filières</h1>
         <p>
-          Une page par filière : sa fiche, ses niveaux, son programme de modules et ce qui la cite. Ce qui s&apos;y
-          enregistre est ce que montrent le <Link href="/admin/referentiel">Référentiel</Link> et l&apos;écran{" "}
-          <Link href="/admin/modules">Modules</Link> : les mêmes données, un autre accès.
+          Les profils de poste, rangés par métier. La fiche d&apos;habilitation livrée avec le site reste la
+          référence : une filière déposée la <strong>corrige</strong> quand son identifiant existe déjà, et
+          l&apos;<strong>étend</strong> sinon. Chaque filière a sa page — fiche, niveaux, programme de modules
+          et ce qui la cite. Les rapports déjà émis portent leur propre copie des libellés : les modifier ici
+          ne les réécrit pas.
         </p>
       </section>
 
@@ -82,17 +90,25 @@ export default async function Filieres({
                         {!active ? (fiche ? "Fiche, désactivée" : "Déposée, inactive") : depot ? (fiche ? "Fiche, corrigée" : "Déposée") : "Fiche"}
                       </span>
                     </div>
+                    {f.description && <p className="legende">{f.description}</p>}
                     <p className="legende" style={{ margin: ".25rem 0 0" }}>
                       {n} module{n > 1 ? "s" : ""} {f.id === SOCLE ? "au tronc commun" : "au programme"}
                       {codes.length > 0 ? ` · niveaux : ${codes.join(", ")}` : " · aucun niveau"}
                     </p>
+                    {estAdmin && (
+                      <details>
+                        <summary className="legende">Modifier</summary>
+                        <FormulaireFiliere filiere={f} rang={depot?.rang ?? 0} actif={active} fiche={fiche} plageBlocs={plageBlocs} />
+                        {depot && <SupprimerDepotFiliere id={f.id} />}
+                      </details>
+                    )}
                   </li>
                 );
               }),
             ];
           })}
         </ul>
-        {estAdmin && <FormulaireNouvelleFiliere retour="filieres" />}
+        {estAdmin && <FormulaireNouvelleFiliere plageBlocs={plageBlocs} retour="filieres" />}
       </section>
     </>
   );

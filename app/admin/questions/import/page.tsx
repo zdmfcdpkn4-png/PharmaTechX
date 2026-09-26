@@ -5,12 +5,14 @@ import { PromptGeneration } from "@/components/PromptGeneration";
 import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
 import { actionAnalyserImport, actionConfirmerImport } from "../actions";
 import { choixModules, listeModulesPourPrompt } from "../commun";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
+import { libellesDe } from "@/content/niveaux-questions";
 
 export const dynamic = "force-dynamic";
 
 export default async function Import({ searchParams }: { searchParams: Promise<{ module?: string }> }) {
   const p = await searchParams;
-  const [modules, modulesPrompt] = await Promise.all([choixModules(), listeModulesPourPrompt()]);
+  const [modules, modulesPrompt, noms] = await Promise.all([choixModules(), listeModulesPourPrompt(), lireNomsNiveaux()]);
   return (
     <>
       <p className="fil">
@@ -52,6 +54,7 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
         moduleInitial={p.module}
         analyser={actionAnalyserImport}
         confirmer={actionConfirmerImport}
+        libellesNiveaux={libellesDe(noms)}
       />
     </>
   );

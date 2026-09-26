@@ -7,14 +7,13 @@ import { preparerChamp } from "./preparerImage";
 import type { EtatFormulaireQuestion } from "@/app/admin/questions/import-etat";
 import type { Legende } from "@/content/schema";
 import {
-  DEFINITIONS_NIVEAU_QUESTION,
-  LIBELLES_NIVEAU_QUESTION,
   NIVEAUX_QUESTION,
   trousDuTexte,
   type ModeReponse,
   type NiveauQuestion,
   type TypeQuestion,
 } from "@/content/types";
+import { NOMS_NIVEAUX_DEFAUT, type NomsNiveauxQuestions } from "@/content/niveaux-questions";
 import { EditeurSchema } from "./EditeurSchema";
 
 /**
@@ -40,6 +39,8 @@ export interface ChoixEtiquettes {
   blocs: { numero: number; titre: string }[];
   filieres: { id: string; libelle: string }[];
   niveaux: { code: string; libelle: string }[];
+  /** Noms et définitions des niveaux de question en vigueur (question 81) ; absents, ceux d'origine. */
+  nomsNiveaux?: NomsNiveauxQuestions;
 }
 
 export interface SituationChoix {
@@ -584,7 +585,7 @@ export function EditeurQuestion({
           <option value="">À préciser</option>
           {NIVEAUX_QUESTION.map((n) => (
             <option key={n} value={n}>
-              {LIBELLES_NIVEAU_QUESTION[n]} — {DEFINITIONS_NIVEAU_QUESTION[n]}
+              {(etiquettes.nomsNiveaux ?? NOMS_NIVEAUX_DEFAUT)[n].libelle} — {(etiquettes.nomsNiveaux ?? NOMS_NIVEAUX_DEFAUT)[n].definition}
             </option>
           ))}
         </select>

@@ -9,6 +9,8 @@ import { A_PRECISER, banquePublique } from "@/content/types";
 import { baseConfiguree } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
+import { libellesDe } from "@/content/niveaux-questions";
 import { questionsSignalees } from "@/content/banque-db";
 import { getReferentiel } from "@/content/referentiel-db";
 import { Evaluation } from "@/components/Evaluation";
@@ -30,12 +32,13 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   const idProgramme = lireIdProgramme(sp.programme);
   const profil = idProgramme ? null : lireProfilDemande(sp);
-  const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }] = await Promise.all([
+  const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }, nomsNiveaux] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
     idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
     rattachement(),
     getReferentiel(),
+    lireNomsNiveaux(),
   ]);
   // L'apprenant rattaché suit son ordre propre sur ce profil, s'il en a un (question 56).
   const dansProfil = profil
@@ -104,6 +107,7 @@ export default async function PageEvaluation({
         filiere={filiere ? { id: filiere.id, libelle: filiere.libelle } : null}
         signalees={signalees}
         dejaVues={dejaVues}
+        libellesNiveaux={libellesDe(nomsNiveaux)}
       />
     </article>
   );

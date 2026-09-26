@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { LigneQuestion } from "@/content/banque-db";
 import { peutValider, validationParAuteur, type CodeActeur } from "@/content/quatre-yeux";
-import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
+import { LIBELLES_NIVEAU_QUESTION, type LibellesNiveaux } from "@/content/niveaux-questions";
 import { CONSEILS_REPERE, LIBELLES_REPERE, SEUILS_STAT, questionARevoir, type Repere, type Taux } from "@/lib/statistiques";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT } from "./commun";
@@ -24,6 +24,7 @@ export function EtiquettesQuestion({
   ici,
   horsProfil = false,
   stat,
+  libellesNiveaux = LIBELLES_NIVEAU_QUESTION,
 }: {
   q: LigneQuestion;
   signalements: number;
@@ -31,6 +32,8 @@ export function EtiquettesQuestion({
   horsProfil?: boolean;
   /** Statistiques de réussite (question 78), tous modules confondus. */
   stat?: StatQuestion;
+  /** Noms des niveaux de question en vigueur (question 81). */
+  libellesNiveaux?: LibellesNiveaux;
 }) {
   return (
     <>
@@ -47,7 +50,7 @@ export function EtiquettesQuestion({
         </span>
       )}
       {q.niveau_question ? (
-        <span className="etiquette etiquette--neutre">{LIBELLES_NIVEAU_QUESTION[q.niveau_question]}</span>
+        <span className="etiquette etiquette--neutre">{libellesNiveaux[q.niveau_question]}</span>
       ) : (
         <span className="etiquette etiquette--attention">Niveau à préciser</span>
       )}

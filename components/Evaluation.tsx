@@ -6,9 +6,14 @@ import type { QuestionPublique } from "@/content/types";
 import { ORDRE_NIVEAUX, bilanTirage, repartir, tirer, type ContexteTirage, type Difficulte } from "@/content/tirage";
 import { annoncePlusieurs, libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
 import { questionsRenseignees, type EtatEnCours } from "@/content/en-cours";
-import { LIBELLES_PLAFOND, libelleBande, plafondDuNiveau, type Bareme } from "@/content/bareme";
+import { libelleBande, plafondDuNiveau, type Bareme } from "@/content/bareme";
 import { libelleCible, libelleEcartees } from "@/content/cible";
-import { LIBELLES_NIVEAU_QUESTION } from "@/content/types";
+import {
+  LIBELLES_NIVEAU_QUESTION,
+  nomDansPhrase,
+  plafondEnPhrase,
+  type LibellesNiveaux,
+} from "@/content/niveaux-questions";
 import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
 import { marquesOptions, marquesQim } from "@/content/marques";
@@ -48,6 +53,9 @@ import { PastillesQuestions } from "./PastillesQuestions";
  */
 
 type Mode = "evaluation" | "entrainement";
+
+/** Première lettre en capitale : une phrase du barème en tête de ligne. */
+const majuscule = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 /** Les trois tirages ; leurs tailles viennent du barème réglé (`/admin/bareme`). */
 function difficultes(b: Bareme): Record<Difficulte, { libelle: string; description: string; nb: number | null }> {
@@ -458,6 +466,7 @@ export function Evaluation({
   filiere = null,
   signalees = [],
   dejaVues = [],
+  libellesNiveaux = LIBELLES_NIVEAU_QUESTION,
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -497,6 +506,8 @@ export function Evaluation({
   signalees?: string[];
   /** Réservées déjà vues corrigées par l'agent rattaché : tirées en dernier (question 71, choix b). */
   dejaVues?: string[];
+  /** Noms des niveaux de question en vigueur (question 81). */
+  libellesNiveaux?: LibellesNiveaux;
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -1047,11 +1058,11 @@ export function Evaluation({
             </select>
           </label>
           <p className="legende" style={{ margin: ".25rem 0 0" }}>
-            {LIBELLES_PLAFOND[plafond][0].toUpperCase() + LIBELLES_PLAFOND[plafond].slice(1)}, selon le barème ; tirage
+            {majuscule(plafondEnPhrase(plafond, libellesNiveaux))}, selon le barème ; tirage
             Habilitation :{" "}
             {ORDRE_NIVEAUX.map((n) => ({ n, k: repartir(bareme.tirages.habilitation, bareme.repartitions[plafond], plafond)[n] }))
               .filter(({ k }) => k > 0)
-              .map(({ n, k }) => `${LIBELLES_NIVEAU_QUESTION[n].toLowerCase()} ${k}`)
+              .map(({ n, k }) => `${nomDansPhrase(n, libellesNiveaux)} ${k}`)
               .join(", ")}
             . Les questions sans niveau complètent les places qu&apos;un niveau ne peut pas remplir.
           </p>

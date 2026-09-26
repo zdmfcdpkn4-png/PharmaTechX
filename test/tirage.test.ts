@@ -282,6 +282,10 @@ test("conformité : plafond, questions toujours posées et composition vérifié
   const c = tirageConforme(faussee, avec, n2);
   assert.equal(c.ok, false);
   if (!c.ok) assert.match(c.raison, /6 questions de niveau intermédiaire attendues, 5 posées/);
+  // niveaux renommés (question 81) : le message les cite par leur nom
+  const renomme = tirageConforme(faussee, avec, n2, { initial: "Base", intermediaire: "Reformulation", avance: "Expert" });
+  assert.equal(renomme.ok, false);
+  if (!renomme.ok) assert.match(renomme.raison, /6 questions de niveau « Reformulation » attendues, 5 posées/);
   // entraînement : rien de plus que les réservées, la correction va question par question
   assert.equal(tirageConforme([avec[12]], avec, { ...n2, mode: "entrainement" }).ok, true);
 });

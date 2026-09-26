@@ -1278,7 +1278,9 @@ Justification : justification deux.`;
     (await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0,
     "le critère figure au parcours d'intégration selon la fiche",
   );
-  await page.goto(BASE + "/admin/modules");
+  // Depuis la question 81 (choix a), le réglage quitte l'écran Modules pour
+  // Squelette › Rattachement des modules.
+  await page.goto(BASE + "/admin/rattachement");
   // la liste des modules du code et le détail « Profils » sont deux replis
   await page.click("summary:has-text('réglé(s)')");
   const ligneZac = page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) });
@@ -1297,7 +1299,7 @@ Justification : justification deux.`;
   );
   await page.goto(BASE + "/?parcours=maintien");
   assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "il reste au maintien");
-  await page.goto(BASE + "/admin/modules");
+  await page.goto(BASE + "/admin/rattachement");
   await page.click("summary:has-text('réglé(s)')");
   await page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) }).locator("button:has-text('Rétablir la fiche')").click();
   await page.waitForURL(/ok=seuil/);
@@ -1351,20 +1353,21 @@ Justification : justification deux.`;
     "les écrans d'administration sont portés par le volet",
   );
   // Sous-parties de l'administration (choix b) : Suivi, Questions, Modules, Réglages
-  // (« Contenu » coupé en deux le 22/09/2026).
+  // (« Contenu » coupé en deux le 22/09/2026), et Squelette depuis la question
+  // 81 (choix a, 26/09/2026).
   await page.click("#volet-principal summary:has-text('Administration')");
   await page.waitForSelector("#volet-principal .rail-sous-titre", { state: "visible" });
   const sousParties = await page.locator("#volet-principal .rail-sous-titre").allInnerTexts();
   assert.deepEqual(
     sousParties.map((t) => t.toLowerCase()),
-    ["suivi", "questions", "modules", "réglages"],
+    ["suivi", "questions", "modules", "squelette", "réglages"],
     "sous-parties de l'administration",
   );
-  ok("volet : l'administration rangée en Suivi, Questions, Modules et Réglages");
+  ok("volet : l'administration rangée en Suivi, Questions, Modules, Squelette et Réglages");
   // Sous-menus repliables (22/09/2026) : sur l'accueil, aucun ne porte la
-  // page — les trois restent repliés, leurs liens hors de vue.
+  // page — tous restent repliés, leurs liens hors de vue.
   const sousMenu = (titre) => page.locator(`#volet-principal details.rail-sous:has(.rail-sous-titre:text-is("${titre}"))`);
-  for (const titre of ["Suivi", "Questions", "Modules", "Réglages"]) {
+  for (const titre of ["Suivi", "Questions", "Modules", "Squelette", "Réglages"]) {
     assert.equal(await sousMenu(titre).getAttribute("open"), null, `sous-menu ${titre} replié sur l'accueil`);
   }
   assert.equal(
@@ -1604,8 +1607,8 @@ Justification : justification deux.`;
   const bandeauxAdmin = page.locator(".acces-rapide button.ar-groupe:has(.ar-groupe-court)");
   assert.deepEqual(
     (await bandeauxAdmin.locator(".ar-groupe-court").allTextContents()).map((s) => s.trim()),
-    ["Suivi", "Questions", "Modules", "Réglages"],
-    "quatre sous-menus d'administration, chacun sous son seul nom",
+    ["Suivi", "Questions", "Modules", "Squelette", "Réglages"],
+    "cinq sous-menus d'administration, chacun sous son seul nom",
   );
   assert.match(await bandeauxAdmin.nth(1).textContent(), /Administration · Questions/, "le nom lu garde « Administration »");
   // Question 77 (choix a, 25/09/2026) : chaque tête de menu porte le pictogramme de
@@ -1621,7 +1624,7 @@ Justification : justification deux.`;
   const bandeauxTiroir = page.locator(".acces-rapide .ar-defilant button.ar-groupe");
   assert.deepEqual(
     await themes(bandeauxTiroir),
-    ["formation", "reperes", "suivi", "questions", "modules", "reglages"],
+    ["formation", "reperes", "suivi", "questions", "modules", "squelette", "reglages"],
     "tiroir : un pictogramme par bandeau, celui de son thème",
   );
   assert.equal(await page.locator(".acces-rapide .ar-defilant a.ar-item:has(.picto-menu--rgpd)").count(), 1, "tiroir : cadenas de l'entrée RGPD");
@@ -1633,7 +1636,7 @@ Justification : justification deux.`;
   );
   assert.deepEqual(
     await themes(page.locator("#volet-principal .rail-sous-titre")),
-    ["suivi", "questions", "modules", "reglages"],
+    ["suivi", "questions", "modules", "squelette", "reglages"],
     "volet : les sous-menus portent les mêmes pictogrammes que le tiroir",
   );
   assert.equal(await page.locator("#volet-principal a.rail-onglet .picto-menu--rgpd").count(), 1, "volet : cadenas de l'onglet RGPD");
@@ -1647,8 +1650,8 @@ Justification : justification deux.`;
   await page.fill(".ar-recherche input", "administration");
   assert.equal(
     await page.locator(".acces-rapide .ar-defilant span.ar-groupe:has(.ar-groupe-court)").count(),
-    4,
-    "la recherche « administration » trouve encore les écrans des quatre sous-menus",
+    5,
+    "la recherche « administration » trouve encore les écrans des cinq sous-menus",
   );
   await page.fill(".ar-recherche input", "");
   assert.equal(
@@ -2392,8 +2395,11 @@ Justification : cf. procédure interne.`,
   // 12k. référentiel déposé (question 38, choix b) et arborescence de la banque
   //      Une filière et un niveau ajoutés en base doivent apparaître dans les
   //      listes de rattachement d'un module, sans livraison de code.
+  // Depuis la question 81 (choix a), le Référentiel s'est scindé en Filières
+  // et Niveaux, dans le sous-menu Squelette.
   await page.goto(BASE + "/admin/referentiel");
-  await page.waitForSelector("text=Référentiel : filières et niveaux");
+  await page.waitForURL(/\/admin\/filieres$/);
+  await page.waitForSelector("h1:text-is('Filières')");
   const avantFilieres = await page.locator(".arbre-groupe, li.carte").count();
   const ajoutFiliere = page.locator("form", { hasText: "Ajouter une filière" });
   // Aide des champs d'une filière (24/09/2026) : chaque champ désigne la ligne
@@ -2408,9 +2414,11 @@ Justification : cf. procédure interne.`,
   await ajoutFiliere.locator("input[name=blocs]").fill("1, 3");
   await ajoutFiliere.locator('input[name=badge][value="sas"]').check();
   await ajoutFiliere.locator('button:has-text("Ajouter la filière")').click();
-  await page.waitForURL(/ok=filiere/);
+  // Ajoutée depuis la liste, elle s'ouvre sur sa page (question 80, choix a).
+  await page.waitForURL(/\/admin\/filieres\/sterilisation\?ok=filiere/);
   assert.ok(avantFilieres >= 0);
-  await page.waitForSelector("text=Parcours Stérilisation");
+  await page.waitForSelector("h1:text-is('Parcours Stérilisation')");
+  await page.goto(BASE + "/admin/filieres");
   // Le badge choisi est rendu dans l'en-tête de la filière. La recherche est
   // faite dans sa carte : les formulaires de modification des autres filières
   // portent eux aussi tous les pictogrammes, repliés dans leur `<details>`.
@@ -2421,6 +2429,8 @@ Justification : cf. procédure interne.`,
     "badge de la filière rendu dans sa carte",
   );
 
+  await page.goto(BASE + "/admin/niveaux");
+  await page.waitForSelector("h1:text-is('Niveaux')");
   const ajoutNiveau = page.locator("form", { hasText: "Ajouter un niveau" });
   await ajoutNiveau.locator("input[name=code]").fill("S1");
   await ajoutNiveau.locator("input[name=libelle]").fill("S1 — stérilisation (base)");
@@ -2442,7 +2452,7 @@ Justification : cf. procédure interne.`,
   // Écrans reliés (23/09/2026) : le réglage d'un module de la fiche garde le
   // niveau et la filière déposés — ils étaient proposés puis écartés en
   // silence —, et les Repères lisent le référentiel, plus la fiche seule.
-  await page.goto(BASE + "/admin/modules");
+  await page.goto(BASE + "/admin/rattachement");
   await page.click("summary:has-text('réglé(s)')");
   const ligneReglage = () => page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) });
   await ligneReglage().locator("summary").click();
@@ -2473,13 +2483,14 @@ Justification : cf. procédure interne.`,
   // (question 46, choix a) : le préfixe du métier s'ajoute, celui d'un autre
   // est refusé ; la casse des codes de la fiche tient — « Modifier » N1a
   // enregistrait un niveau « N1A », un prérequis N1a coché « N1A » (23/09/2026).
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/filieres");
   const ajoutFiliereAide = page.locator("form", { hasText: "Ajouter une filière" });
   await ajoutFiliereAide.locator("input[name=libelle]").fill("Aide en pharmacie");
   await ajoutFiliereAide.locator("input[name=id]").fill("aide-pharmacie");
   await ajoutFiliereAide.locator("select[name=metier]").selectOption("aide");
   await ajoutFiliereAide.locator('button:has-text("Ajouter la filière")').click();
   await page.waitForURL(/ok=filiere/);
+  await page.goto(BASE + "/admin/niveaux");
   const ajouterNiveau = async (code, filiere) => {
     const f = page.locator("form", { hasText: "Ajouter un niveau" });
     await f.locator("input[name=code]").fill(code);
@@ -2536,7 +2547,7 @@ Justification : cf. procédure interne.`,
   // Une filière qui porte des niveaux garde son métier ; désactivée, ses
   // niveaux gardent le leur, et « Modifier » AP-N1 ne se heurte plus au
   // préfixe (le métier était lu sur les seules filières servies).
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/filieres");
   const carteAide = page.locator("li.carte", { has: page.locator('code:text-is("aide-pharmacie")') });
   await carteAide.locator("summary:has-text('Modifier')").click();
   await carteAide.locator("select[name=metier]").selectOption("pharmacien");
@@ -2544,12 +2555,13 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/erreur=metier-filiere/);
   await page.locator("[role=alert]", { hasText: "elle garde son métier" }).waitFor();
   // rechargée : le formulaire ouvert garderait « pharmacien » choisi
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/filieres");
   await carteAide.locator("summary:has-text('Modifier')").click();
   await carteAide.locator("input[name=actif]").uncheck();
   await carteAide.locator("button:has-text('Enregistrer')").click();
   await page.waitForURL(/ok=filiere/);
   await carteAide.locator(".etiquette", { hasText: "Déposée, inactive" }).waitFor();
+  await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("AP-N1").locator("summary:has-text('Modifier')").click();
   await carteNiveau("AP-N1").locator("textarea[name=condition]").fill("Condition sous filière inactive.");
   await carteNiveau("AP-N1").locator("button:has-text('Enregistrer')").click();
@@ -2563,7 +2575,7 @@ Justification : cf. procédure interne.`,
     "Repères : AP-N1 reste à l'aide, sa filière désactivée",
   );
   // retour à l'état d'avant : dépôts de N1a, AP-N1 et de la filière supprimés, prérequis de S1 ôté
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("AP-N1").locator("summary:has-text('Modifier')").click();
   await carteNiveau("AP-N1").locator("button:has-text('Supprimer le dépôt')").click();
   await page.waitForURL(/niveau-supprime/);
@@ -2575,6 +2587,7 @@ Justification : cf. procédure interne.`,
   await carteNiveau("S1").locator('input[name=prerequis][value="N1a"]').uncheck();
   await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
   await carteNiveau("S1").locator(".legende", { hasText: "prérequis : N1a" }).waitFor({ state: "detached" });
+  await page.goto(BASE + "/admin/filieres");
   await carteAide.locator("summary:has-text('Modifier')").click();
   await carteAide.locator("button:has-text('Supprimer le dépôt')").click();
   await page.waitForURL(/filiere-supprimee/);
@@ -2583,7 +2596,7 @@ Justification : cf. procédure interne.`,
 
   // Ordre des niveaux et renommage à la main (tâche 66, recommandations retenues
   // le 23/09/2026). Un rang de 45 glisse S1 entre N2 et N3, sur tous les écrans.
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/niveaux");
   assert.equal(await carteNiveau("N2").locator(".niveau-rang").innerText(), "rang 40", "rang d'un niveau de la fiche");
   assert.equal(await carteNiveau("S1").locator(".niveau-rang").innerText(), "sans rang", "niveau ajouté, sans rang");
   await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
@@ -2604,8 +2617,8 @@ Justification : cf. procédure interne.`,
     "Repères : S1 entre N2 et N3",
   );
   // Un niveau supprimé laisse dans l'encart ce qui le citait, code d'accès et
-  // plafond du barème compris ; l'encart s'éteint une fois chaque ligne reprise.
-  await page.goto(BASE + "/admin/referentiel");
+  // plafond du tirage compris ; l'encart s'éteint une fois chaque ligne reprise.
+  await page.goto(BASE + "/admin/niveaux");
   const ajoutTemoin = page.locator("form", { hasText: "Ajouter un niveau" });
   await ajoutTemoin.locator("input[name=code]").fill("T9");
   await ajoutTemoin.locator("input[name=libelle]").fill("T9 — niveau témoin");
@@ -2613,17 +2626,18 @@ Justification : cf. procédure interne.`,
   await ajoutTemoin.locator('button:has-text("Ajouter le niveau")').click();
   await page.waitForURL(/ok=niveau/);
   await codeNiveau("T9").waitFor({ state: "attached" });
-  await page.goto(BASE + "/admin/bareme");
+  // Le plafond par niveau cible se règle depuis la question 81 dans Niveaux des questions.
+  await page.goto(BASE + "/admin/niveaux-questions");
   await page.selectOption("select[name='plafond-T9']", "initial");
-  await page.click("button:has-text('Enregistrer le barème')");
-  await page.waitForURL(/ok=/);
+  await page.click("button:has-text('Enregistrer le tirage')");
+  await page.waitForURL(/ok=tirage/);
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
   await page.fill("input[name=libelle]", "Poste témoin T9");
   await page.selectOption("select[name=niveau]", "T9");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("T9").locator("summary:has-text('Modifier')").click();
   await carteNiveau("T9").locator("button:has-text('Supprimer le dépôt')").click();
   await page.waitForURL(/niveau-supprime/);
@@ -2635,34 +2649,33 @@ Justification : cf. procédure interne.`,
     "code d'accès du niveau supprimé signalé — " + lignesInconnues,
   );
   assert.ok(
-    lignesInconnues.some((t) => t.includes("Barème") && t.includes("T9")),
+    lignesInconnues.some((t) => t.includes("Tirage selon le niveau cible") && t.includes("T9")),
     "plafond du niveau supprimé signalé — " + lignesInconnues,
   );
-  await page.goto(BASE + "/admin/bareme");
-  await page.click("button:has-text('Rétablir les valeurs par défaut')");
-  await page.waitForURL(/ok=defaut/);
+  await page.goto(BASE + "/admin/niveaux-questions");
+  await page.click("button:has-text(\"Rétablir le tirage d'origine\")");
+  await page.waitForURL(/ok=tirage-defaut/);
   await page.goto(BASE + "/admin");
   const carteTemoin = page.locator("li.carte", { hasText: "Poste témoin T9" });
   await carteTemoin.locator("button:has-text('Révoquer')").click();
   await carteTemoin.locator("text=révoqué").waitFor();
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/niveaux");
   assert.equal(await page.locator(".encart--attention:has-text('niveau inconnu')").count(), 0, "encart éteint, chaque ligne reprise");
   // S1 revient sans rang : la suite du parcours le retrouve après N3.
   await carteNiveau("S1").locator("summary:has-text('Modifier')").click();
   await carteNiveau("S1").locator("input[name=rang]").fill("0");
   await carteNiveau("S1").locator("button:has-text('Enregistrer')").click();
   await carteNiveau("S1").locator(".niveau-rang", { hasText: "sans rang" }).waitFor();
-  ok("ordre des niveaux : rang de la fiche lu, S1 au rang 45 entre N2 et N3 (prérequis, Repères) ; niveau supprimé : code d'accès et plafond du barème signalés, encart éteint après reprise");
+  ok("ordre des niveaux : rang de la fiche lu, S1 au rang 45 entre N2 et N3 (prérequis, Repères) ; niveau supprimé : code d'accès et plafond du tirage signalés, encart éteint après reprise");
 
   // Question 80 (choix a, 25/09/2026) : une page par filière — fiche, niveaux,
   // programme, ce qui la cite. Le programme s'enregistre dans le réglage du
   // module, le même que sur l'écran Modules ; tout ou rien, et jamais la
   // dernière filière d'un module, même sa case grisée forcée.
-  await page.goto(BASE + "/admin/referentiel");
-  assert.equal(await page.locator("li.carte a[href='/admin/filieres/sterilisation']").count(), 1, "Référentiel : la filière mène à sa page");
   await page.goto(BASE + "/admin/filieres");
   await page.waitForSelector("h1:has-text('Filières')");
-  assert.equal(await page.locator("#volet-principal a[href='/admin/filieres']").count(), 1, "lien « Filières » du menu Modules");
+  assert.equal(await page.locator("li.carte a[href='/admin/filieres/sterilisation']").count(), 1, "Filières : la filière mène à sa page");
+  assert.equal(await page.locator("#volet-principal a[href='/admin/filieres']").count(), 1, "lien « Filières » du menu Squelette");
   const carteSterListe = page.locator("li.carte", { has: page.locator('code:text-is("sterilisation")') });
   assert.match(await carteSterListe.textContent(), /0 module au programme · niveaux : S1/, "liste : programme et niveaux de la filière déposée");
   await carteSterListe.locator("a", { hasText: "Parcours Stérilisation" }).click();
@@ -2677,12 +2690,12 @@ Justification : cf. procédure interne.`,
   assert.equal(await lignePgm("critere-b6-01").locator("input[name=dans]:checked").count(), 1, "B6-01 au programme de la stérilisation");
   assert.match(await page.locator("#programme").textContent(), /S1 — 1 de la filière/, "B6-01 proposé au niveau S1");
   assert.match(await lignePgm("critere-b6-01").textContent(), /aussi : Parcours Préparatoire/, "sa première filière rappelée");
-  await page.goto(BASE + "/admin/modules");
+  await page.goto(BASE + "/admin/rattachement");
   await page.click("summary:has-text('réglé(s)')");
   const reglageB601 = page.locator("form.ligne-critere", { hasText: "Habillage et règles d'hygiène au préparatoire" });
   const ecartB601 = await reglageB601.locator(".libelle").textContent();
-  assert.match(ecartB601, /filières : preparatoire, sterilisation/, "écran Modules : la filière ajoutée — " + ecartB601);
-  assert.match(ecartB601, /niveaux : N1b, S1/, "écran Modules : le niveau coché — " + ecartB601);
+  assert.match(ecartB601, /filières : preparatoire, sterilisation/, "Rattachement des modules : la filière ajoutée — " + ecartB601);
+  assert.match(ecartB601, /niveaux : N1b, S1/, "Rattachement des modules : le niveau coché — " + ecartB601);
   // B5-01 n'a que la chimiothérapie : sa case grisée, forcée, fait tout refuser,
   // y compris le niveau coché sur une autre ligne.
   await page.goto(BASE + "/admin/filieres/chimiotherapie");
@@ -2748,10 +2761,10 @@ Justification : cf. procédure interne.`,
   await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]").uncheck();
   await page.click("button:has-text('Enregistrer le programme')");
   await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]:not(:checked)").waitFor({ state: "attached" });
-  await page.goto(BASE + "/admin/modules");
+  await page.goto(BASE + "/admin/rattachement");
   await page.click("summary:has-text('réglé(s)')");
   assert.match(await reglageB601.locator(".libelle").textContent(), /fiche, seuil/, "B6-01 revenu à la fiche : filière et niveau retirés ensemble");
-  await page.goto(BASE + "/admin/referentiel");
+  await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("S2").locator("summary:has-text('Modifier')").click();
   await carteNiveau("S2").locator("button:has-text('Supprimer le dépôt')").click();
   await codeNiveau("S2").waitFor({ state: "detached" });
@@ -2768,7 +2781,66 @@ Justification : cf. procédure interne.`,
   await page.click("#fiche button:has-text('Supprimer le dépôt')");
   await page.waitForURL(/\/admin\/filieres\?ok=filiere-supprimee/);
   assert.equal(await page.locator('code:text-is("parcours-temoin-80")').count(), 0, "filière supprimée de la liste");
-  ok("filières (question 80, choix a) : page par filière depuis le menu et le Référentiel ; programme enregistré dans le réglage du module (même écart sur l'écran Modules), niveaux de la filière par module, dernière filière refusée par le serveur, tout ou rien, seules les cases changées comptent (second onglet) ; niveau ajouté depuis la filière ; filière créée puis supprimée depuis sa page");
+  ok("filières (question 80, choix a) : page par filière depuis le menu et la liste des filières ; programme enregistré dans le réglage du module (même écart sur l'écran Rattachement des modules), niveaux de la filière par module, dernière filière refusée par le serveur, tout ou rien, seules les cases changées comptent (second onglet) ; niveau ajouté depuis la filière ; filière créée puis supprimée depuis sa page");
+
+  // Question 81 (choix a, 26/09/2026) : blocs de compétence. Un bloc de la
+  // fiche se corrige, sans case pour le retirer des listes ; un bloc ajouté
+  // reçoit un module déposé, se lit aux Repères et sur la page du module, et
+  // ne se supprime pas tant qu'il porte un module.
+  await page.goto(BASE + "/admin/blocs");
+  await page.waitForSelector("h1:text-is('Blocs et critères')");
+  const carteBloc = (n) => page.locator(`li#bloc-${n}`);
+  const titreBloc1 = (await carteBloc(1).locator(".etape-tete strong").textContent()).trim();
+  await carteBloc(1).locator("summary:has-text('Modifier')").click();
+  assert.equal(await carteBloc(1).locator("input[name=actif]").count(), 0, "bloc de la fiche : toujours proposé");
+  await carteBloc(1).locator("input[name=titre]").fill("Socle transversal (corrigé par l'unité)");
+  await carteBloc(1).locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=bloc/);
+  await carteBloc(1).locator(".etiquette", { hasText: "Fiche, corrigée" }).waitFor();
+  await carteBloc(1).locator("summary:has-text('Modifier')").click();
+  await carteBloc(1).locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/ok=bloc-supprime/);
+  assert.equal((await carteBloc(1).locator(".etape-tete strong").textContent()).trim(), titreBloc1, "dépôt supprimé : titre de la fiche rétabli");
+  const ajoutBloc = page.locator("form", { hasText: "Ajouter un bloc" });
+  const numeroBloc = await ajoutBloc.locator("input[name=numero]").inputValue();
+  assert.ok(Number(numeroBloc) > 7, "numéro proposé : après ceux de la fiche — " + numeroBloc);
+  await ajoutBloc.locator("input[name=titre]").fill("Bloc témoin 81");
+  await ajoutBloc.locator("button:has-text('Ajouter le bloc')").click();
+  await page.waitForURL(/ok=bloc/);
+  await carteBloc(numeroBloc).locator(".etiquette", { hasText: "Déposé" }).waitFor();
+  await ajoutBloc.locator("input[name=numero]").fill("2");
+  await ajoutBloc.locator("input[name=titre]").fill("Doublon du bloc 2");
+  await ajoutBloc.locator("button:has-text('Ajouter le bloc')").click();
+  await page.waitForURL(/erreur=numero-pris/);
+  await page.locator("[role=alert]", { hasText: "existe déjà" }).waitFor();
+  // le module déposé de l'étape 12b se range dans le bloc ajouté
+  await page.goto(BASE + "/admin/modules/" + idModule);
+  const formModule = page.locator("form:has(select[name=bloc])");
+  await formModule.locator("select[name=bloc]").selectOption(numeroBloc);
+  await formModule.locator("button[type=submit]").click();
+  await page.waitForURL(/ok=modifie/);
+  await page.goto(BASE + "/module/" + idModule);
+  await page.locator("li.legende", { hasText: `Bloc ${numeroBloc} —` }).waitFor();
+  await page.goto(BASE + "/reperes#programme");
+  const blocReperes = page.locator("section#programme details.bloc", { hasText: `Bloc ${numeroBloc} — Bloc témoin 81` });
+  assert.match(await blocReperes.locator("summary").textContent(), /0 critère · 1 hors fiche/, "Repères : le bloc ajouté et son module publié");
+  await page.goto(BASE + "/admin/blocs");
+  await carteBloc(numeroBloc).locator("summary", { hasText: "1 module hors fiche" }).waitFor({ state: "attached" });
+  await carteBloc(numeroBloc).locator("summary:has-text('Modifier')").click();
+  await carteBloc(numeroBloc).locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/erreur=bloc-occupe/);
+  await page.locator("[role=alert]", { hasText: "porte encore des modules" }).waitFor();
+  // remise en ordre : le module revient sans bloc, le bloc ajouté disparaît
+  await page.goto(BASE + "/admin/modules/" + idModule);
+  await formModule.locator("select[name=bloc]").selectOption("");
+  await formModule.locator("button[type=submit]").click();
+  await page.waitForURL(/ok=modifie/);
+  await page.goto(BASE + "/admin/blocs");
+  await carteBloc(numeroBloc).locator("summary:has-text('Modifier')").click();
+  await carteBloc(numeroBloc).locator("button:has-text('Supprimer le dépôt')").click();
+  await page.waitForURL(/ok=bloc-supprime/);
+  assert.equal(await carteBloc(numeroBloc).count(), 0, "bloc ajouté supprimé");
+  ok("blocs (question 81, choix a) : bloc de la fiche corrigé puis rétabli, jamais retiré des listes ; bloc ajouté, numéro déjà pris refusé ; module déposé rangé dans le bloc ajouté, lu sur sa page et aux Repères ; suppression refusée tant qu'il porte un module, puis faite");
 
   // arborescence de la banque : filière → niveau → module, avec les comptes
   await page.goto(BASE + "/admin/questions?vue=liste");
@@ -3064,16 +3136,35 @@ Justification : cf. procédure interne.`,
     await page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("a:has-text('Modifier')").getAttribute("href"),
     BASE,
   ).pathname.split("/").pop();
-  // Barème : un plafond par niveau cible, avec ses valeurs par défaut.
+  // Niveaux des questions (question 81, choix a, 26/09/2026) : le tirage selon
+  // le niveau cible a quitté l'écran du barème ; un plafond par niveau cible,
+  // avec ses valeurs par défaut.
   await page.goto(BASE + "/admin/bareme");
+  assert.equal(await page.locator("select[name='plafond-N2']").count(), 0, "plus de plafond à l'écran du barème");
+  await page.locator("a[href='/admin/niveaux-questions#tirage']").waitFor();
+  await page.goto(BASE + "/admin/niveaux-questions");
   await page.waitForSelector("h2:has-text('Tirage selon le niveau cible')");
   assert.equal(await page.locator("select[name='plafond-N1c']").inputValue(), "initial");
   assert.equal(await page.locator("select[name='plafond-N2']").inputValue(), "intermediaire");
   assert.equal(await page.locator("select[name='plafond-N3']").inputValue(), "avance");
+  // Deux niveaux au même nom sont refusés ; « Avancé » renommé « Expert » se lit
+  // partout, et le résultat scellé en garde la copie.
+  await page.fill("input[name='libelle-intermediaire']", "avancé");
+  await page.click("button:has-text('Enregistrer les noms')");
+  await page.waitForURL(/erreur=doublon/);
+  await page.locator("[role=alert]", { hasText: "même nom" }).waitFor();
+  await page.fill("input[name='libelle-intermediaire']", "Intermédiaire");
+  await page.fill("input[name='libelle-avance']", "Expert");
+  await page.click("button:has-text('Enregistrer les noms')");
+  await page.waitForURL(/ok=noms/);
+  await page.locator("h3", { hasText: "Questions de tous niveaux — Habilitation : « Initial »" }).waitFor();
+  await page.goto(BASE + "/admin/questions?vue=liste");
+  assert.equal((await page.locator("select[name=niveau] option[value=avance]").textContent()).trim(), "Expert", "banque : le filtre dit le nom en vigueur");
   // Évaluation : le niveau cible règle le tirage.
   await page.goto(BASE + "/module/comportement-zac/evaluation");
   const libelleCompletCible = async () => (await page.locator("fieldset.choix-difficulte label").nth(2).innerText()).replace(/\s+/g, " ");
   await page.selectOption("select[name=niveauCible]", "N3");
+  await page.locator("p.legende", { hasText: "« Expert »" }).waitFor();
   assert.match(await libelleCompletCible(), /Complet — 11 questions/, "N3 : tous les niveaux, l'avancée comprise");
   await page.selectOption("select[name=niveauCible]", "N2");
   assert.match(await libelleCompletCible(), /Complet — 10 questions/, "N2 : l'avancée est au-dessus du niveau cible");
@@ -3091,8 +3182,8 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector(".resultat-entete");
   assert.match(
     await page.locator("p.legende", { hasText: "Niveau cible N3" }).innerText(),
-    /questions de tous niveaux\. Posées : 1 avancée, 9 sans niveau ; 1 obligatoire\./,
-    "le résultat scellé dit le tirage",
+    /questions de tous niveaux\. Posées : 1 de niveau « Expert », 9 sans niveau ; 1 obligatoire\./,
+    "le résultat scellé dit le tirage, sous le nom en vigueur",
   );
   // Serveur : obligatoire omise, question au-dessus du niveau cible, refusées.
   const corrigerCible = (corps) => page.request.post(BASE + "/api/evaluation", { data: { moduleId: "comportement-zac", reponses: {}, ...corps } });
@@ -3100,12 +3191,18 @@ Justification : cf. procédure interne.`,
   const idsBanque = toutN3.detail.map((d) => d.questionId);
   assert.equal(idsBanque.length, 11);
   assert.deepEqual(toutN3.cible.parNiveau, { initial: 0, intermediaire: 0, avance: 1, a_preciser: 10 });
+  assert.deepEqual(toutN3.cible.noms, { initial: "Initial", intermediaire: "Intermédiaire", avance: "Expert" }, "noms scellés avec le résultat");
   const refusOubli = await corrigerCible({ questionIds: idsBanque.filter((id) => id !== idObligatoire), mode: "evaluation", difficulte: "complet", niveauCible: "N3" });
   assert.equal(refusOubli.status(), 400);
   assert.match((await refusOubli.json()).erreur, /obligatoire non posée/);
   const refusPlafond = await corrigerCible({ questionIds: idsBanque, mode: "evaluation", difficulte: "complet", niveauCible: "N2" });
   assert.equal(refusPlafond.status(), 400);
   assert.match((await refusPlafond.json()).erreur, /au-dessus du niveau cible/);
+  // Noms d'origine rétablis : un résultat nouveau n'en porte plus de copie.
+  await page.goto(BASE + "/admin/niveaux-questions");
+  await page.click("button:has-text(\"Rétablir les noms d'origine\")");
+  await page.waitForURL(/ok=noms-defaut/);
+  assert.equal(await page.locator("input[name='libelle-avance']").inputValue(), "Avancé");
   // Signalement ouvert : l'obligatoire quitte tout tirage, et le résultat le dit.
   const statutSignalement = await page.evaluate(async (id) => {
     const r = await fetch("/api/signalement", {
@@ -3124,6 +3221,7 @@ Justification : cf. procédure interne.`,
   const apresSignalement = await (await corrigerCible({ mode: "evaluation", difficulte: "complet", niveauCible: "N3" })).json();
   assert.ok(!apresSignalement.detail.some((d) => d.questionId === idObligatoire), "écartée de la correction sans liste");
   assert.deepEqual(apresSignalement.cible.ecartees.map((e) => [e.questionId, e.remplacee]), [[idObligatoire, false]]);
+  assert.equal(apresSignalement.cible.noms, undefined, "noms d'origine : aucune copie scellée");
   // Remise en ordre : signalement clos, question retirée.
   await page.goto(BASE + "/admin/signalements");
   const carteTirage = page.locator("li.carte", { hasText: "Signalement e2e du tirage" });
@@ -3135,7 +3233,7 @@ Justification : cf. procédure interne.`,
     page.locator(".question-ligne", { hasText: ENONCE_OBLIGATOIRE }).locator("form button:has-text('Retirer')").click(),
   ]);
   await rebrancher(codeTuteur);
-  ok("tirage selon le niveau cible : plafonds du barème, obligatoire posée et étiquetée, niveau cible dans le résultat scellé, obligatoire omise ou question au-dessus du plafond refusées (400), question signalée écartée de tout tirage et dite sans remplaçante");
+  ok("tirage selon le niveau cible : plafonds réglés dans Niveaux des questions ; niveau renommé lu dans la banque, à l'évaluation et dans le résultat scellé qui en garde la copie, nom en double refusé, noms d'origine rétablis ; obligatoire posée et étiquetée, niveau cible dans le résultat scellé, obligatoire omise ou question au-dessus du plafond refusées (400), question signalée écartée de tout tirage et dite sans remplaçante");
 
   // 14a ter. banque en arborescence (question 64, choix b) : bascule Liste | Arborescence, filière → niveau →
   //          module → question, repli par défaut, Tout déplier / Tout replier, module rattaché à deux niveaux
@@ -4329,6 +4427,11 @@ Source : Procédure statistiques — section 5`;
   assert.equal(await page.locator("#actions button:has-text('Supprimer cette action')").count(), 0, "tutorat : aucune suppression");
   ok("statistiques de réussite : sept essais de cinq agents (émis et conservé comptés une fois, rapport seul compté) ; classement, fiche, banque, page du module, Pilotage et tableurs concordent ; premier essai 40 % (IC 12–77), final 80 % ; question très difficile, piège qui accroche, mauvaises réponses que personne ne choisit ; action consignée, comparée, supprimée par l'administration seule ; journalisé");
 
+  // Quitter depuis une page sans ancre, comme `rebrancher` : l'adresse « #actions »
+  // fait défiler la page après son rendu, en douceur, et ce défilement pouvait
+  // l'emporter sur le retour en haut — l'en-tête, masqué à la descente, gardait
+  // alors « quitter » hors de l'écran (échec de la passe 2 du 26/09/2026).
+  await page.goto(BASE + "/");
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");

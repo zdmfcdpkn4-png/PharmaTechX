@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { citationsDeLaFiliere, getReferentiel, listerNiveauxDeposes, toutesLesFilieres } from "@/content/referentiel-db";
-import { blocsCompetence, metierOuDefaut, niveaux as NIVEAUX_FICHE } from "@/content/habilitation";
+import { metierOuDefaut, niveaux as NIVEAUX_FICHE } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
+import { plageDesBlocs, type BlocServi } from "@/content/blocs";
 import { rangEffectif } from "@/content/ordre-niveaux";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { STATUTS_MODULE } from "@/content/modules-db";
@@ -31,7 +33,7 @@ const REFUS: Record<string, string> = {
   "derniere-filiere":
     "c'est sa seule filière : sans elle, un module du code reprendrait les filières de la fiche, et un module déposé passerait au tronc commun. Rattachez-le d'abord à une autre filière.",
   "tronc-commun":
-    "il est au tronc commun : le rattacher ici le retirerait de toutes les autres filières. Il se règle depuis l'écran Modules.",
+    "il est au tronc commun : le rattacher ici le retirerait de toutes les autres filières. Il se règle depuis Rattachement des modules, ou dans son formulaire s'il est déposé.",
   "aucun-niveau": "il n'aurait plus aucun niveau : gardez-en au moins un coché.",
 };
 
@@ -45,12 +47,13 @@ function lireRefus(brut: string | undefined): { raison: string; id: string }[] {
     .filter((x): x is { raison: string; id: string } => x !== null && x.raison in REFUS);
 }
 
-/** Modules groupés par bloc de la fiche, dans l'ordre des blocs ; ceux sans bloc en dernier. */
-function parBloc(modules: readonly Module[]): { cle: string; titre: string; modules: Module[] }[] {
-  const groupes = blocsCompetence
+/** Modules groupés par bloc servi, dans l'ordre des blocs ; ceux sans bloc en dernier. */
+function parBloc(modules: readonly Module[], blocs: readonly BlocServi[]): { cle: string; titre: string; modules: Module[] }[] {
+  const groupes = blocs
     .map((b) => ({ cle: `bloc-${b.numero}`, titre: `Bloc ${b.numero} — ${b.titre}`, modules: modules.filter((m) => m.bloc === b.numero) }))
     .filter((g) => g.modules.length > 0);
-  const sansBloc = modules.filter((m) => typeof m.bloc !== "number");
+  const connus = new Set(blocs.map((b) => b.numero));
+  const sansBloc = modules.filter((m) => typeof m.bloc !== "number" || !connus.has(m.bloc));
   return sansBloc.length > 0 ? [...groupes, { cle: "sans-bloc", titre: "Modules déposés sans bloc", modules: sansBloc }] : groupes;
 }
 
@@ -162,12 +165,13 @@ export default async function PageFiliere({
   if (!/^[a-z0-9-]{1,40}$/.test(id)) notFound();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [liste, { niveaux: servis }, deposes, modulesTous, citations] = await Promise.all([
+  const [liste, { niveaux: servis }, deposes, modulesTous, citations, blocs] = await Promise.all([
     toutesLesFilieres(),
     getReferentiel(),
     listerNiveauxDeposes(true),
     getTousModulesAvecDeposes(),
     citationsDeLaFiliere(id),
+    listeBlocs(),
   ]);
   const entree = liste.find((x) => x.filiere.id === id);
   if (!entree) notFound();
@@ -212,7 +216,7 @@ export default async function PageFiliere({
     <>
       <section className="panneau-titre">
         <p className="legende" style={{ margin: 0 }}>
-          <Link href="/admin/filieres">Filières</Link> · <Link href="/admin/referentiel">Référentiel</Link>
+          Squelette de la formation · <Link href="/admin/filieres">Filières</Link> · <Link href="/admin/niveaux">Niveaux</Link>
         </p>
         <div className="etape-tete">
           <Badge nom={f.badge} />
@@ -268,7 +272,7 @@ export default async function PageFiliere({
             <p className="legende">
               Avant de la désactiver ou de supprimer son dépôt, voir <a href="#citations">ce qui la cite</a>.
             </p>
-            <FormulaireFiliere filiere={f} rang={depot?.rang ?? 0} actif={active} fiche={fiche} retour="filiere" />
+            <FormulaireFiliere filiere={f} rang={depot?.rang ?? 0} actif={active} fiche={fiche} plageBlocs={plageDesBlocs(blocs)} retour="filiere" />
             {depot && <SupprimerDepotFiliere id={f.id} retour="filiere" />}
           </details>
         )}
@@ -312,7 +316,7 @@ export default async function PageFiliere({
           </ul>
         )}
         <p className="legende">
-          Un niveau se modifie, se range ou se supprime au <Link href="/admin/referentiel">Référentiel</Link>.
+          Un niveau se modifie, se range ou se supprime dans <Link href="/admin/niveaux">Niveaux</Link>.
         </p>
         {estAdmin && (
           <FormulaireNouveauNiveau
@@ -335,15 +339,15 @@ export default async function PageFiliere({
           <p className="legende">
             Le socle transversal est le tronc commun : un module y figure quand il n&apos;a aucune autre filière, et il est
             alors proposé à toutes. Il se règle module par module, depuis l&apos;écran{" "}
-            <Link href="/admin/modules#seuils">Modules</Link>.
+            <Link href="/admin/rattachement">Rattachement des modules</Link>.
           </p>
         ) : (
           <>
             <p className="legende">
               Le programme d&apos;une filière, ce sont les modules qui la cochent. Cochés ici, ils l&apos;enregistrent dans
-              leur propre réglage, le même que sur l&apos;écran <Link href="/admin/modules#seuils">Modules</Link> : les deux
+              leur propre réglage, le même que sur l&apos;écran <Link href="/admin/rattachement">Rattachement des modules</Link> : les deux
               écrans montrent toujours la même chose. Un module du code ainsi réglé s&apos;écarte de la fiche, et
-              l&apos;écran Modules le signale. Les niveaux cochés sur sa ligne disent à quels niveaux cibles de la filière
+              Rattachement des modules le signale. Les niveaux cochés sur sa ligne disent à quels niveaux cibles de la filière
               il est proposé ; retiré de la filière, un module perd aussi ces niveaux, sauf s&apos;il n&apos;en a pas
               d&apos;autre.
             </p>
@@ -371,7 +375,7 @@ export default async function PageFiliere({
                 {dans.length === 0 ? (
                   <p className="legende">Aucun module au programme pour l&apos;instant.</p>
                 ) : (
-                  parBloc(dans).map((g) => (
+                  parBloc(dans, blocs).map((g) => (
                     <fieldset key={g.cle} className="groupe">
                       <legend className="champ-titre">{g.titre}</legend>
                       <ul className="liste-programme">
@@ -386,7 +390,7 @@ export default async function PageFiliere({
                   <details className="bloc">
                     <summary>Ajouter des modules d&apos;autres filières ({autres.length})</summary>
                     <div className="contenu-bloc">
-                      {parBloc(autres).map((g) => (
+                      {parBloc(autres, blocs).map((g) => (
                         <fieldset key={g.cle} className="groupe">
                           <legend className="champ-titre">{g.titre}</legend>
                           <ul className="liste-programme">
@@ -404,7 +408,7 @@ export default async function PageFiliere({
                 </div>
               </form>
             ) : (
-              parBloc(dans).map((g) => (
+              parBloc(dans, blocs).map((g) => (
                 <fieldset key={g.cle} className="groupe">
                   <legend className="champ-titre">{g.titre}</legend>
                   <ul className="liste-programme">
@@ -421,7 +425,7 @@ export default async function PageFiliere({
           <details className="bloc" open={f.id === SOCLE}>
             <summary>Tronc commun, proposé à toutes les filières ({troncCommun.length})</summary>
             <div className="contenu-bloc">
-              {parBloc(troncCommun).map((g) => (
+              {parBloc(troncCommun, blocs).map((g) => (
                 <fieldset key={g.cle} className="groupe">
                   <legend className="champ-titre">{g.titre}</legend>
                   <ul className="liste-programme">

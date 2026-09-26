@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
 import { lireProfilDemande, requeteProfil } from "@/content/ordres";
-import { getCritere, blocsCompetence } from "@/content/habilitation";
+import { getCritere } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { A_PRECISER, libelleNature } from "@/content/types";
 import { baseConfiguree, compterDepotsDuModule, depotsDuModule } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -35,7 +36,8 @@ export default async function PageModule({
   const depose = mod.origine === "base";
 
   const critere = typeof mod.critereId === "string" ? getCritere(mod.critereId) : undefined;
-  const bloc = typeof mod.bloc === "number" ? blocsCompetence.find((b) => b.numero === mod.bloc) : undefined;
+  // Bloc servi (question 81) : un bloc corrigé ou ajouté se lit sous son titre du moment.
+  const bloc = typeof mod.bloc === "number" ? (await listeBlocs()).find((b) => b.numero === mod.bloc) : undefined;
   const nbQuestions = mod.questions.length + mod.misesEnSituation.reduce((s, x) => s + x.questions.length, 0);
   const nbElim =
     mod.questions.filter((q) => q.eliminatoire).length +

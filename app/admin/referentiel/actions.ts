@@ -42,22 +42,23 @@ const entier = (f: FormData, cle: string) => {
 };
 
 /**
- * Page où revenir (question 80, choix a) : le Référentiel, la liste des
- * filières ou la page d'une filière. Lue dans une liste fermée, jamais
- * recopiée telle quelle dans une adresse.
+ * Page où revenir (question 80, choix a) : la liste des filières, la page
+ * d'une filière, ou la page de départ par défaut — liste des filières ou des
+ * niveaux depuis que le Référentiel s'est scindé (question 81, choix a). Lue
+ * dans une liste fermée, jamais recopiée telle quelle dans une adresse.
  */
-function pageDeRetour(formData: FormData, filiere: string): string {
+function pageDeRetour(formData: FormData, filiere: string, parDefaut: string): string {
   const retour = String(formData.get("retour") ?? "");
   if (retour === "filieres") return "/admin/filieres";
   if (retour === "filiere" && filiere) return `/admin/filieres/${encodeURIComponent(filiere)}`;
-  return "/admin/referentiel";
+  return parDefaut;
 }
 
 export async function actionEnregistrerFiliere(formData: FormData) {
   const s = await sessionRequise("admin");
   const propose = texte(formData, "id", 40);
   const libelle = texte(formData, "libelle", 120);
-  const retour = pageDeRetour(formData, normaliserIdentifiant(propose));
+  const retour = pageDeRetour(formData, normaliserIdentifiant(propose), "/admin/filieres");
   if (!libelle) redirect(`${retour}?erreur=libelle`);
   // Un identifiant vide se déduit du libellé ; il ne change plus ensuite.
   const id = normaliserIdentifiant(propose || libelle);
@@ -97,19 +98,20 @@ export async function actionEnregistrerFiliere(formData: FormData) {
   );
   await journaliser(s, "referentiel:filiere", id, { libelle, metier: metierId });
   revalidatePath("/");
-  // Ajoutée depuis la liste des filières, elle s'ouvre sur sa page : son
-  // programme et ses niveaux restent à composer.
+  // Ajoutée depuis la liste, elle s'ouvre sur sa page : son programme et ses
+  // niveaux restent à composer. Modifiée sur sa carte, on reste sur la liste.
+  const demande = String(formData.get("retour") ?? "");
   redirect(
-    retour === "/admin/referentiel"
-      ? "/admin/referentiel?ok=filiere"
-      : `/admin/filieres/${encodeURIComponent(id)}?ok=filiere`,
+    demande === "filieres" || demande === "filiere"
+      ? `/admin/filieres/${encodeURIComponent(id)}?ok=filiere`
+      : "/admin/filieres?ok=filiere",
   );
 }
 
 export async function actionEnregistrerNiveau(formData: FormData) {
   const s = await sessionRequise("admin");
   const filiereId = normaliserIdentifiant(texte(formData, "filiereId", 40));
-  const retour = pageDeRetour(formData, filiereId);
+  const retour = pageDeRetour(formData, filiereId, "/admin/niveaux");
   const saisi = normaliserCode(texte(formData, "code", 12));
   if (saisi.length < 1) redirect(`${retour}?erreur=code`);
   const libelle = texte(formData, "libelle", 120);
@@ -169,7 +171,7 @@ export async function actionSupprimerFiliere(formData: FormData) {
   // Depuis sa page : une filière de la fiche y reste, avec ses valeurs
   // d'origine ; une filière ajoutée n'a plus de page, retour à la liste.
   const depuisSaPage = formData.get("retour") === "filiere";
-  const cible = !depuisSaPage ? "/admin/referentiel" : deLaFiche ? pageDeRetour(formData, id) : "/admin/filieres";
+  const cible = depuisSaPage && deLaFiche ? pageDeRetour(formData, id, "/admin/filieres") : "/admin/filieres";
   redirect(`${cible}?ok=filiere-supprimee`);
 }
 
@@ -181,5 +183,5 @@ export async function actionSupprimerNiveau(formData: FormData) {
     deLaFiche: NIVEAUX_CODE.some((n) => n.code === code),
   });
   revalidatePath("/");
-  redirect("/admin/referentiel?ok=niveau-supprime");
+  redirect("/admin/niveaux?ok=niveau-supprime");
 }

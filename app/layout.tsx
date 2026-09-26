@@ -213,9 +213,25 @@ export default async function RootLayout({
             liens: [
               { href: "/admin/modules", libelle: "Modules" },
               { href: "/admin/documents", libelle: "Documents" },
-              { href: "/admin/ordonnancement", libelle: "Ordre" },
-              // Une page par filière : fiche, niveaux, programme (question 80, choix a).
+            ],
+          },
+          // Squelette de la formation (question 81, choix a, 26/09/2026) : tout ce
+          // qui compose la formation, en un sous-menu. Droits inchangés : le
+          // tutorat garde l'ordre et les programmes, et lit les filières.
+          {
+            titre: "Squelette",
+            picto: "squelette",
+            liens: [
               { href: "/admin/filieres", libelle: "Filières" },
+              ...(session?.role === "admin"
+                ? [
+                    { href: "/admin/niveaux", libelle: "Niveaux" },
+                    { href: "/admin/blocs", libelle: "Blocs et critères" },
+                    { href: "/admin/niveaux-questions", libelle: "Niveaux des questions" },
+                    { href: "/admin/rattachement", libelle: "Rattachement des modules" },
+                  ]
+                : []),
+              { href: "/admin/ordonnancement", libelle: "Ordre" },
               { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],
           },
@@ -226,7 +242,6 @@ export default async function RootLayout({
               { href: "/admin", libelle: "Accès" },
               ...(session?.role === "admin"
                 ? [
-                    { href: "/admin/referentiel", libelle: "Référentiel" },
                     { href: "/admin/bareme", libelle: "Barème" },
                     { href: "/admin/signature", libelle: "Signature" },
                     { href: "/admin/journal", libelle: "Journal" },

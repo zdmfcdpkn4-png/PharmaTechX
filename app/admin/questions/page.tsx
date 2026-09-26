@@ -12,10 +12,12 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { etiquetteModule, moduleOuvrable, titreModule as titreDe } from "./commun";
 import { getReferentiel } from "@/content/referentiel-db";
 import { ArbreBanque } from "@/components/ArbreBanque";
-import { LIBELLES_NIVEAU_QUESTION, NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
+import { NIVEAUX_QUESTION, type NiveauQuestion } from "@/content/types";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
+import { libellesDe } from "@/content/niveaux-questions";
 import { compterFichesAVerifier, listerFiches } from "@/lib/fiches-db";
 import { ancreDe, construireArbre, cumulDistinct, elaguer, lireChemin, lirePlis } from "@/content/arbre-banque";
-import { blocsCompetence } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import {
   blocsDeLaQuestion,
   etiquettesProfil,
@@ -103,7 +105,7 @@ export default async function Questions({
       : (NIVEAUX_QUESTION as readonly string[]).includes(p.niveau ?? "")
         ? (p.niveau as NiveauQuestion)
         : undefined;
-  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier, auCompte, brutStats] = await Promise.all([
+  const [toutes, comptes, referentiel, signales, fiches, fichesAVerifier, auCompte, brutStats, blocsServis, nomsNiveaux] = await Promise.all([
     listerQuestions({ moduleId, statut }),
     comptesParModule(),
     getReferentiel(),
@@ -115,7 +117,12 @@ export default async function Questions({
     questionsAuCompte(),
     // Statistiques de réussite (question 78) : réussite et discrimination de chaque question, sur les essais conservés.
     conservationActive() ? reperesBanque().catch(() => new Map()) : Promise.resolve(new Map()),
+    // Blocs servis, fiche et dépôts (question 81) : ceux que le filtre propose et accepte.
+    listeBlocs(),
+    // Noms des niveaux de question en vigueur (question 81).
+    lireNomsNiveaux(),
   ]);
+  const libellesNiveaux = libellesDe(nomsNiveaux);
   const stats = new Map<string, StatQuestion>(
     [...brutStats.values()].map((s) => {
       const reussite = tauxAgents(s.justes, s.n, s.agents);
@@ -125,7 +132,7 @@ export default async function Questions({
   const seulesARevoir = p.stat === "a-revoir";
   // Question 74 (choix c) : filtres par bloc et par profil. Un bloc se lit sur les modules de la
   // question et sur ses étiquettes ; un profil, sur ses modules et ses étiquettes de profil.
-  const filtreBloc = blocsCompetence.find((b) => String(b.numero) === p.bloc)?.numero;
+  const filtreBloc = blocsServis.find((b) => String(b.numero) === p.bloc)?.numero;
   const filtreFiliere = referentiel.filieres.find((f) => f.id !== "socle" && f.id === p.filiere)?.id;
   const filtreHabilitation = referentiel.niveaux.map((n) => String(n.code)).find((c) => c === p.habilitation);
   const rattachements = new Map<string, ModuleDeRattachement>(
@@ -314,7 +321,7 @@ export default async function Questions({
             <select name="niveau" defaultValue={filtreNiveau ?? ""}>
               <option value="">Tous</option>
               {NIVEAUX_QUESTION.map((n) => (
-                <option key={n} value={n}>{LIBELLES_NIVEAU_QUESTION[n]}</option>
+                <option key={n} value={n}>{libellesNiveaux[n]}</option>
               ))}
               <option value="a_preciser">À préciser</option>
             </select>
@@ -331,7 +338,7 @@ export default async function Questions({
             <span>Bloc de compétence</span>
             <select name="bloc" defaultValue={filtreBloc !== undefined ? String(filtreBloc) : ""}>
               <option value="">Tous</option>
-              {blocsCompetence.map((b) => (
+              {blocsServis.map((b) => (
                 <option key={b.numero} value={b.numero}>
                   {b.numero} — {b.titre.slice(0, 50)}
                 </option>
@@ -411,6 +418,7 @@ export default async function Questions({
             session={session}
             etat={{ plis, ouvrir, filtre: filtreQuestions || Boolean(moduleId) }}
             parametres={parametresArbre}
+            libellesNiveaux={libellesNiveaux}
           />
           {/* La redirection d'une action perd l'ancre : on ramène à la branche du geste. */}
           {ouvrir && <RetourBranche ancre={ancreDe(ouvrir)} />}
@@ -433,7 +441,7 @@ export default async function Questions({
                 {liste.map((q) => (
                   <li key={q.id} className="carte question-ligne">
                     <div className="etape-tete">
-                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} stat={stats.get(q.id)} />
+                      <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} stat={stats.get(q.id)} libellesNiveaux={libellesNiveaux} />
                       <TraceQuestion q={q} />
                     </div>
                     <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>

@@ -1,5 +1,6 @@
 import { criteres } from "@/content/habilitation";
 import { getReferentiel } from "@/content/referentiel-db";
+import { listeBlocs } from "@/content/blocs-db";
 import type { LigneModuleDepose } from "@/content/modules-db";
 import { LIMITES_BAREME } from "@/content/bareme";
 import { badgeSuggere, SANS_BADGE } from "@/content/badges";
@@ -19,7 +20,7 @@ export async function FormulaireModule({
   /** Seuil par défaut du barème, proposé à la création. */
   seuilDefaut: number;
 }) {
-  const { filieres, niveaux } = await getReferentiel();
+  const [{ filieres, niveaux }, blocs] = await Promise.all([getReferentiel(), listeBlocs()]);
   const coche = (liste: string[] | undefined, v: string, defaut = false) => (liste ? liste.includes(v) : defaut);
   return (
     <form action={action} className="carte">
@@ -43,6 +44,18 @@ export async function FormulaireModule({
             {criteres.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.id} — {x.libelle.slice(0, 70)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {/* Question 81 (choix a) : un module hors fiche se range dans un bloc, déposé ou de la fiche. */}
+        <label className="champ">
+          <span>Bloc (module hors fiche ; un critère choisi donne le sien)</span>
+          <select name="bloc" defaultValue={initiale?.bloc != null ? String(initiale.bloc) : ""}>
+            <option value="">À préciser</option>
+            {blocs.map((b) => (
+              <option key={b.numero} value={b.numero}>
+                {b.numero} — {b.titre.slice(0, 60)}
               </option>
             ))}
           </select>

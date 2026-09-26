@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Cartouche } from "@/components/Graphiques";
 import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
-import { blocsCompetence } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { conservationActive } from "@/lib/config";
 import { PERIODES } from "@/lib/pilotage";
 import { SEUILS_STAT, bilansModules, classerModules, premierEssaiGlobal, type OrdreClassement } from "@/lib/statistiques";
@@ -24,11 +24,12 @@ export const dynamic = "force-dynamic";
  */
 export default async function Statistiques({ searchParams }: { searchParams: Promise<ParametresStat> }) {
   const p = await searchParams;
-  const [{ filieres, niveaux }, modules] = await Promise.all([
+  const [{ filieres, niveaux }, modules, blocs] = await Promise.all([
     getReferentiel(),
     getTousModulesAvecDeposes({ publiesSeulement: false }),
+    listeBlocs(),
   ]);
-  const f = resoudreFiltre(p, modules, filieres, niveaux);
+  const f = resoudreFiltre(p, modules, filieres, niveaux, blocs);
   const ordre: OrdreClassement = p.ordre === "fort" ? "fort" : "faible";
   const conservation = conservationActive();
   const essais = conservation ? await lireEssais(f.modules) : [];
@@ -77,7 +78,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
             <span>Bloc de compétence</span>
             <select name="bloc" defaultValue={f.bloc === null ? "" : String(f.bloc)}>
               <option value="">Tous</option>
-              {blocsCompetence.map((b) => (
+              {blocs.map((b) => (
                 <option key={b.numero} value={b.numero}>{b.numero}. {b.titre}</option>
               ))}
             </select>

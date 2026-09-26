@@ -6,6 +6,7 @@ import type { LigneQuestion } from "@/content/banque-db";
 import type { CodeActeur } from "@/content/quatre-yeux";
 import { etiquettesProfil } from "@/content/rattachement-question";
 import { admiseAuProfil, type ProfilTirage } from "@/content/tirage";
+import type { LibellesNiveaux } from "@/content/niveaux-questions";
 import {
   ActionsQuestion,
   ContenuQuestion,
@@ -41,6 +42,8 @@ interface Contexte {
   etat: EtatPlis;
   /** Adresse qui rouvre une branche et y ramène, vue, filtres et repli gardés. */
   adresse: (chemin: string) => string;
+  /** Noms des niveaux de question en vigueur (question 81). */
+  libellesNiveaux?: LibellesNiveaux;
 }
 
 const AUCUNE = { valides: 0, aVerifier: 0, reservees: 0 };
@@ -74,6 +77,7 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
             ici={bm.module.id}
             horsProfil={horsProfil}
             stat={ctx.stats.get(q.id)}
+            libellesNiveaux={ctx.libellesNiveaux}
           />
           <span className="arbo-enonce">{q.enonce}</span>
         </summary>
@@ -190,6 +194,7 @@ export function ArborescenceBanque({
   session,
   etat,
   parametres,
+  libellesNiveaux,
 }: {
   /** L'arbre à montrer, déjà élagué sous un filtre. */
   arbre: BrancheFiliere[];
@@ -203,6 +208,7 @@ export function ArborescenceBanque({
   etat: EtatPlis;
   /** Vue, filtres et repli courants, que chaque lien et chaque geste gardent. */
   parametres: [string, string][];
+  libellesNiveaux?: LibellesNiveaux;
 }) {
   const ctx: Contexte = {
     parModule,
@@ -213,6 +219,7 @@ export function ArborescenceBanque({
     signales,
     session,
     etat,
+    libellesNiveaux,
     adresse: (chemin) => {
       const q = new URLSearchParams(parametres);
       q.set("ouvrir", chemin);

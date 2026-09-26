@@ -50,6 +50,7 @@ export const TABLES = [
   "ordres_agent",
   "questions_modules",
   "actions_formation",
+  "blocs_deposes",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -492,6 +493,21 @@ export const SCHEMA: string[] = [
      cree_le     TIMESTAMPTZ NOT NULL DEFAULT NOW()
    )`,
   `CREATE INDEX IF NOT EXISTS actions_formation_module ON actions_formation (module_id, faite_le)`,
+
+  // ── blocs de compétence déposés (question 81, choix a, 26/09/2026) ────────
+  // Même règle que les filières déposées : un numéro de la fiche la corrige
+  // (titre, référence, filière), un numéro nouveau ajoute un bloc. Un module
+  // déposé sans critère de la fiche reçoit son bloc (`modules_deposes.bloc`).
+  `CREATE TABLE IF NOT EXISTS blocs_deposes (
+     numero      INTEGER PRIMARY KEY CHECK (numero BETWEEN 1 AND 99),
+     titre       TEXT NOT NULL,
+     reference   TEXT NOT NULL DEFAULT '',
+     filiere     TEXT NOT NULL DEFAULT 'socle',
+     actif       BOOLEAN NOT NULL DEFAULT TRUE,
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
+  `ALTER TABLE modules_deposes ADD COLUMN IF NOT EXISTS bloc INTEGER`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

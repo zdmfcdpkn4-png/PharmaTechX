@@ -6,6 +6,8 @@ import type { NiveauQuestion, Question, ReponseApprenant } from "@/content/types
 import { sceller } from "@/lib/sceau";
 import { decider, type Verdict } from "@/lib/decision";
 import { lireBareme } from "@/lib/bareme-db";
+import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
+import { libellesClassiques, libellesDe } from "@/content/niveaux-questions";
 import {
   admissibles,
   bilanTirage,
@@ -295,6 +297,9 @@ export async function POST(request: Request) {
   // écartées, éliminatoires et obligatoires posées. Un niveau cible inconnu
   // vaut « non précisé » : aucun plafond.
   const bareme = await lireBareme();
+  // Noms des niveaux de question en vigueur (question 81) : message de
+  // conformité, et copie dans le résultat scellé s'ils ne sont plus ceux d'origine.
+  const libellesNiveaux = libellesDe(await lireNomsNiveaux());
   const niveauDemande = typeof corps.niveauCible === "string" ? corps.niveauCible.slice(0, 12) : "";
   const filiereDemandee = typeof corps.filiere === "string" ? corps.filiere.slice(0, 40) : "";
   const connus = niveauDemande || filiereDemandee ? await identifiantsConnus() : { niveaux: [], filieres: [] };
@@ -336,7 +341,7 @@ export async function POST(request: Request) {
   if (posees.length === 0) {
     return NextResponse.json({ erreur: "Aucune question valide dans la soumission." }, { status: 400 });
   }
-  const conformite = tirageConforme(posees, banque, contexte);
+  const conformite = tirageConforme(posees, banque, contexte, libellesNiveaux);
   if (!conformite.ok) return NextResponse.json({ erreur: conformite.raison }, { status: 400 });
 
   // Schémas à découvrir (question 52, choix b) : les jugements portés sur les
@@ -515,6 +520,7 @@ export async function POST(request: Request) {
               : null,
           }
         : {}),
+      ...(libellesClassiques(libellesNiveaux) ? {} : { noms: libellesNiveaux }),
     };
   }
 

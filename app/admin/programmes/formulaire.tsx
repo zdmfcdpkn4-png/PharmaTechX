@@ -1,4 +1,4 @@
-import { blocsCompetence } from "@/content/habilitation";
+import { listeBlocs } from "@/content/blocs-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { A_PRECISER, type Module } from "@/content/types";
 import { MAX_MODULES_PROGRAMME, MENTION_DEGRADE, type Programme } from "@/content/programmes";
@@ -18,18 +18,21 @@ export async function FormulaireProgramme({
   action: (formData: FormData) => Promise<void>;
   libelleBouton: string;
 }) {
-  const modules = await getTousModulesAvecDeposes({ publiesSeulement: true });
+  const [modules, blocs] = await Promise.all([getTousModulesAvecDeposes({ publiesSeulement: true }), listeBlocs()]);
   const rangDe = new Map((initiale?.modules ?? []).map((id, i) => [id, i + 1]));
+  // Par bloc servi (question 81) : un module déposé rangé dans un bloc y figure
+  // avec les critères de la fiche ; les autres restent groupés à part.
+  const numeros = new Set(blocs.map((b) => b.numero));
   const groupes: { cle: string; titre: string; modules: Module[] }[] = [
-    ...blocsCompetence.map((b) => ({
+    ...blocs.map((b) => ({
       cle: String(b.numero),
       titre: `Bloc ${b.numero} — ${b.titre}`,
-      modules: modules.filter((m) => m.origine !== "base" && m.bloc === b.numero),
+      modules: modules.filter((m) => m.bloc === b.numero),
     })),
     {
       cle: "deposes",
       titre: "Modules déposés",
-      modules: modules.filter((m) => m.origine === "base"),
+      modules: modules.filter((m) => m.origine === "base" && !(typeof m.bloc === "number" && numeros.has(m.bloc))),
     },
   ].filter((g) => g.modules.length > 0);
 

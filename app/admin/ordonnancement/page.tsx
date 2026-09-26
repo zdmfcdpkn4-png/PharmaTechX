@@ -137,6 +137,7 @@ export default async function Ordonnancement({
   return (
     <>
       <section className="panneau-titre">
+        <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Ordonnancement des modules</h1>
         <p>
           Choisissez un profil de poste, son niveau cible et le parcours : seuls les modules de ce profil —

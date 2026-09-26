@@ -40,7 +40,7 @@ export default async function Signature({ searchParams }: { searchParams: Promis
         </p>
       ) : (
         <section className="carte">
-          <h3>Image de signature</h3>
+          <h2 style={{ fontSize: "1.15rem" }}>Image de signature</h2>
           <DepotSignature courante={courante ? dataUri(courante) : null} />
           {courante && (
             <form action={actionRetirerSignature} style={{ marginTop: "1rem" }}>

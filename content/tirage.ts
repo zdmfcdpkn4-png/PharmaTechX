@@ -1,4 +1,5 @@
 import type { NiveauQuestion } from "./types";
+import { LIBELLES_NIVEAU_QUESTION, nomDansPhrase, type LibellesNiveaux } from "./niveaux-questions";
 
 /**
  * Tirage des questions d'un module, et contrôle de sa conformité.
@@ -42,13 +43,6 @@ export type ModeTirage = "evaluation" | "entrainement";
 
 /** Les trois niveaux de question, du plus simple au plus exigeant — ceux de `NIVEAUX_QUESTION`. */
 export const ORDRE_NIVEAUX: readonly NiveauQuestion[] = ["initial", "intermediaire", "avance"];
-
-/** Nom d'un niveau dans une phrase ; `types.ts` ne s'importe pas ici, il importe le barème qui importe ce module. */
-const NOM_NIVEAU: Record<NiveauQuestion, string> = {
-  initial: "initial",
-  intermediaire: "intermédiaire",
-  avance: "avancé",
-};
 
 /** Part de chaque niveau de question dans un tirage, en pourcentage. */
 export type Repartition = Record<NiveauQuestion, number>;
@@ -346,6 +340,8 @@ export function tirageConforme(
   posees: readonly QuestionTirable[],
   banque: readonly QuestionTirable[],
   c: ContexteTirage,
+  /** Noms des niveaux de question en vigueur (question 81), pour le message. */
+  noms: LibellesNiveaux = LIBELLES_NIVEAU_QUESTION,
 ): Conformite {
   const avecReservees = reserveesAdmises(c.mode, c.difficulte);
   if (!avecReservees && posees.some((q) => q.reservee)) {
@@ -417,7 +413,7 @@ export function tirageConforme(
       if (pose < attendu) {
         return {
           ok: false,
-          raison: `Tirage non conforme : ${attendu} question${s(attendu)} ${n ? `de niveau ${NOM_NIVEAU[n]}` : "sans niveau"} attendue${s(attendu)}, ${pose} posée${s(pose)}. Recommencez l'évaluation.`,
+          raison: `Tirage non conforme : ${attendu} question${s(attendu)} ${n ? `de niveau ${nomDansPhrase(n, noms)}` : "sans niveau"} attendue${s(attendu)}, ${pose} posée${s(pose)}. Recommencez l'évaluation.`,
         };
       }
     }
