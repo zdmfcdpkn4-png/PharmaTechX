@@ -3613,6 +3613,13 @@ d'administration :
 6. L'encart disparaît quand plus rien ne cite N2RESTREINT. Les rapports déjà
    émis gardent N2RESTREINT : ils sont scellés.
 
+**Fait le 26/09/2026**, par l'utilisateur, en base (réponse « N2R corrigé en
+base »). Depuis la question 81, le Référentiel est devenu Squelette ›
+Niveaux, et le plafond d'un niveau cible se règle dans Squelette › Niveaux
+des questions. Restent à constater à l'écran : l'encart « niveau inconnu »
+vide sur la page Niveaux, et le plafond de N2R, sans quoi N2R tire des
+questions de tous niveaux.
+
 **Limites.**
 - Le renommage reste un geste manuel en plusieurs endroits ; le journal
   montrera un ajout puis une suppression, pas un renommage.
@@ -4810,7 +4817,9 @@ tableurs.
 
 **Limite.** La parade est donnée par l'OWASP pour Excel ; elle « peut différer
 dans d'autres tableurs », selon la même page. Ouverture dans Excel et
-LibreOffice non essayée ici `[à vérifier]`.
+LibreOffice non essayée ici. Contrôle fait sous Excel par l'utilisateur le
+26/09/2026 (réponse « 79 Excel »), sans anomalie signalée ; LibreOffice non
+essayé `[à vérifier]`.
 
 **Vérifié le 25/09/2026.**
 - `npm run verifier` : 375 tests, dont les cas de `champCsv` : variantes,

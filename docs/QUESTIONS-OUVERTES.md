@@ -521,7 +521,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     parade est dans `csv` (`lib/registre.ts`), pour toute cellule de texte de
     tous les tableurs ; les nombres restent des nombres. Le parcours de bout
     en bout le vérifie sur le registre, avec un motif d'arbitrage qui commence
-    par un tiret. Détail dans `DECISIONS.md`.
+    par un tiret. Détail dans `DECISIONS.md`. Contrôlé sous Excel par
+    l'utilisateur le 26/09/2026 (« 79 Excel ») ; LibreOffice non essayé.
 
 78. **Statistiques de réussite : sur quelles données** — posée le
     25/09/2026, sur demande (« ajouter un module de statistiques pour
@@ -866,7 +867,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     les recommandations ») : renommage à la main (a), l'encart couvrant
     désormais les codes d'accès actifs et les plafonds du barème ; ordre
     par le rang, fiche comprise (10, 20…), métier par métier. Détail et
-    procédure dans `DECISIONS.md`.
+    procédure dans `DECISIONS.md`. Renommage N2RESTREINT → N2R fait par
+    l'utilisateur, en base, le 26/09/2026.
 
 64. **Banque en arborescence** — demandé le 23/09/2026 : « dans la
     présentation de la banque de questions, proposer l'alternative d'une
