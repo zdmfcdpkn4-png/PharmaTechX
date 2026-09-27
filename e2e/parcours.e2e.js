@@ -161,12 +161,12 @@ Justification : cf. procédure interne.`,
 
   // 0 bis. introduction animée (27/09/2026, components/Introduction.tsx) :
   //    jouée à l'ouverture d'une session de navigation. Un clic ou un toucher
-  //    ne la passe pas : il floute le pourtour et montre « Passer
-  //    l'introduction » en bas à droite, aux couleurs du site. Le bouton, une
-  //    touche, Échap, un clic pendant le vol final ou sa propre fin la passent ;
-  //    jamais rejouée dans la session, absente en mouvement réduit. Chaque cas
-  //    part d'un contexte neuf, sans le cookie `fp_intro` que portent d'avance
-  //    les autres contextes du parcours.
+  //    ne la passe jamais : il floute le pourtour et montre « Passer
+  //    l'introduction » en bas à droite, aux couleurs du site ; pendant le vol
+  //    final, il ne fait rien (question 82). Le bouton, une touche, Échap ou sa
+  //    propre fin la passent ; jamais rejouée dans la session, absente en
+  //    mouvement réduit. Chaque cas part d'un contexte neuf, sans le cookie
+  //    `fp_intro` que portent d'avance les autres contextes du parcours.
   {
     const ouvrir = async (options) => {
       const c = await browser.newContext(options);
@@ -277,16 +277,27 @@ Justification : cf. procédure interne.`,
     await p.click("input[name=code]");
     await c.close();
 
-    // d bis. vol final : le bouton sorti, un clic passe directement
+    // d bis. vol final : le bouton sorti, un clic ne fait rien ; l'introduction
+    //    finit seule. Le composant apprend la sortie du bouton par l'événement
+    //    `animationstart`, qui suit le style calculé d'une image ou deux : on
+    //    l'attend avant de cliquer.
     ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
     await monte(c);
-    await p.evaluate(() =>
+    await p.evaluate(() => {
+      addEventListener("animationstart", (e) => {
+        if (e.animationName === "intro-bouton-sort") window.boutonSorti = true;
+      });
       document.getAnimations().forEach((a) => {
         a.currentTime = 13400;
-      }),
+      });
+    });
+    await p.waitForFunction(
+      () => window.boutonSorti && getComputedStyle(document.querySelector(".intro-passer")).visibility === "hidden",
     );
-    await p.waitForFunction(() => getComputedStyle(document.querySelector(".intro-passer")).visibility === "hidden");
     await p.mouse.click(640, 400);
+    await p.waitForTimeout(300);
+    assert.equal(await p.getAttribute(".intro", "data-etat"), "joue", "un clic pendant le vol final ne passe pas");
+    assert.equal(await p.getAttribute(".intro", "data-revele"), null, "ni ne montre le flou et le bouton");
     await p.waitForSelector(".intro", { state: "detached" });
     await c.close();
 
@@ -296,7 +307,7 @@ Justification : cf. procédure interne.`,
     await p.click("input[name=code]");
     await c.close();
   }
-  ok("introduction : couvre la page à l'ouverture ; un clic ou un toucher floute le pourtour et montre « Passer l'introduction » en bas à droite aux couleurs du site, sans passer ; passée par le bouton (souris, toucher, Entrée), une touche gardée, Échap, un clic pendant le vol final ou sa fin ; pas rejouée dans la session ; absente en mouvement réduit");
+  ok("introduction : couvre la page à l'ouverture ; un clic ou un toucher floute le pourtour et montre « Passer l'introduction » en bas à droite aux couleurs du site, sans passer, et rien pendant le vol final ; passée par le bouton (souris, toucher, Entrée), une touche gardée, Échap ou sa fin ; pas rejouée dans la session ; absente en mouvement réduit");
 
   // 1. connexion de l'administrateur initial
   //    Amorçage par la variable ADMIN_INITIAL (décision du 19/09/2026) : plus

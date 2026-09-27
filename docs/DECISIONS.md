@@ -5245,6 +5245,44 @@ l'introduction (couleur du thème) ».
 - Captures avant et après clic, sur poste (1280 × 800) et sur téléphone
   (390 × 844), à 1,5, 3,3, 5,6, 8,2, 10,3 et 12,2 s.
 
+## Introduction : un clic ne ferme jamais (27/09/2026, question 82, choix a)
+
+**Demande.** « Mais ne quitte pas direct », en réponse à la section
+précédente. La phrase pouvait viser le clic seul, aussi la molette, ou la
+façon de sortir : question 82, tranchée « À » (choix a).
+
+**Retenu.** Un clic ou un toucher ne ferme jamais l'introduction. Pour le
+vol final, ceci remplace la section précédente : à partir de 13 s, le
+bouton déjà sorti, un clic ne fait rien et l'introduction finit seule, à
+15 s. Inchangés : le bouton, une touche, Échap et la molette la passent,
+par un fondu de 0,4 s.
+
+**Fait** (`components/Introduction.tsx`). Le clic du vol final ne montre
+pas non plus le flou ni le bouton, qui sortent à 13 s avec le vol : rien ne
+change à l'écran.
+
+**Limites.**
+- Qui clique dans les deux dernières secondes pour passer n'a aucun signe
+  de prise en compte : il attend la fin, 2 s au plus.
+- La molette ferme toujours directement : un défilement au pavé tactile
+  passe encore l'introduction (le « contre » du choix a).
+
+**Vérifié le 27/09/2026.**
+- `npm run verifier` (397 tests), `npm run build`.
+- Parcours de bout en bout : deux passes de 101 étapes, sans erreur de page
+  ni erreur serveur, avec les trois lignes de console attendues.
+- L'étape « introduction » vérifie qu'un clic pendant le vol final ne passe
+  pas, ne montre ni flou ni bouton, et que l'introduction finit seule.
+  - Le cas qu'il remplace ne distinguait pas un clic qui passe de la fin
+    naturelle, 1,6 s plus tard.
+  - Il attend l'événement par lequel le composant apprend la sortie du
+    bouton. Sans cette attente, le clic le devançait 4 fois sur 5.
+- Contrôles à part, sur un serveur local : clic à 13,05 s, pendant la sortie
+  du bouton ; toucher sur téléphone à 13,4 s ; clic en temps réel, sans
+  avance des animations, dès la sortie du bouton. Chaque fois, rien ne
+  change et l'introduction finit seule. Échap passe toujours pendant le vol
+  final.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

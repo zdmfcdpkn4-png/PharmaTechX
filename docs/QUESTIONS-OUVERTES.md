@@ -403,6 +403,13 @@ telle. Ordre : ce qui change le déploiement en premier.
       Contre : passer prend 1,5 s de plus, et le saut vers le logo est une
       coupe.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : un
+    clic ou un toucher ne ferme jamais l'introduction. Dans les deux
+    dernières secondes, il ne fait rien, pas même montrer le flou ou le
+    bouton : l'introduction finit seule. Bouton, touches, Échap et molette
+    inchangés. Le parcours de bout en bout le vérifie. Détail dans
+    `DECISIONS.md`.
+
 81. **Squelette de la formation : un menu, et jusqu'où le rendre
     modifiable** — posée le 25/09/2026, sur la réponse à la question 80.
     Aujourd'hui :

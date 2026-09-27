@@ -33,8 +33,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Toujours passable : une touche n'importe où, la molette, ou le bouton
  * « Passer l'introduction ». Le bouton ne paraît qu'à la demande (27/09/2026) :
  * un clic ou un toucher pendant la séquence floute le pourtour de l'écran et
- * le montre en bas à droite, aux couleurs du site. Le clic ne passe plus
- * lui-même, sauf pendant le vol final, le bouton déjà sorti. La touche frappée
+ * le montre en bas à droite, aux couleurs du site. Le clic ne passe jamais
+ * lui-même (question 82) : pendant le vol final, le bouton déjà sorti, il ne
+ * fait rien et l'introduction finit seule. La touche frappée
  * n'est pas perdue — sauf Échap, Entrée et Espace, qui ne servent alors qu'à
  * passer — : sur la page de connexion, le premier caractère du code entre dans
  * le champ. Au clavier, le bouton est le premier arrêt et paraît avec le
@@ -248,7 +249,7 @@ export function Introduction({ afficher }: { afficher: boolean }) {
   const racine = useRef<HTMLDivElement>(null);
   const boite = useRef<HTMLDivElement>(null);
   const bouton = useRef<HTMLButtonElement>(null);
-  // Le bouton sort avec le vol final (`--t-bouton`) : un clic passe alors.
+  // Le bouton sort avec le vol final (`--t-bouton`) : un clic n'y fait plus rien.
   const boutonSorti = useRef(false);
 
   const passer = useCallback(() => setEtat((e) => (e === "joue" ? "passe" : e)), []);
@@ -354,8 +355,7 @@ export function Introduction({ afficher }: { afficher: boolean }) {
       style={{ ...VARIABLES_TEMPS, "--montee": MONTEE, "--reduction": REDUCTION } as React.CSSProperties}
       onPointerDown={(e) => {
         if (e.target === bouton.current || bouton.current?.contains(e.target as Node)) return;
-        if (boutonSorti.current) passer();
-        else setRevele(true);
+        if (!boutonSorti.current) setRevele(true);
       }}
       onWheel={passer}
       onAnimationStart={(e) => {
