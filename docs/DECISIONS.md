@@ -5174,6 +5174,77 @@ au titre de l'article 82 de la loi Informatique et Libertés.
 - Une vidéo de 15,6 s en 1920 × 1080 (H.264) a été tirée du site local,
   image par image, et remise à part.
 
+## Introduction : un clic floute le pourtour et montre « Passer l'introduction » (27/09/2026, demande directe)
+
+**Demande.** « En cas de clic lors de la séquence met un effet de blur tout
+autour de l'écran et affiche dans le coin inférieur droit un bouton passer
+l'introduction (couleur du thème) ».
+
+**Lecture retenue, sans question posée.** Elle est à revoir sur simple demande.
+- Un clic ou un toucher pendant la séquence ne la passe plus : il montre le
+  moyen de la passer, et c'est le bouton qui passe. Pour le clic et le
+  toucher, ceci remplace la section précédente.
+- « Tout autour de l'écran » : le pourtour. Le centre, où se joue
+  l'animation, reste net.
+- « Affiche … un bouton » : le bouton reste caché jusque-là. Il était
+  auparavant visible dès 0,4 s, en blanc translucide.
+- « Couleur du thème » : le bleu HdV `--marque` (#005586) des boutons
+  principaux du site, texte blanc (contraste 7,9:1). Le libellé, la place et
+  l'anneau d'avancée ne changent pas ; l'anneau passe en blanc.
+- Une fois montrés, le flou et le bouton restent jusqu'au vol final. Un
+  second clic hors du bouton ne fait rien.
+
+**Fait** (`components/Introduction.tsx`, section « Introduction animée » de
+`globals.css`).
+- Un calque `.intro-flou` recouvre la scène : flou d'arrière-plan de 10 px,
+  sous un masque en ellipse, net jusqu'à 45 % du rayon et plein aux coins.
+- Sur le papier uni du pourtour, un flou seul ne se verrait pas. Le calque
+  porte donc aussi un voile de l'encre du logo (#1A3C43 à 12 %), sous le même
+  masque.
+- Un premier essai assombrissait le pourtour par un filtre de luminosité. Il
+  laissait au bord de l'écran une frange claire, relevée sur les captures ;
+  il a été abandonné.
+- Le bouton caché a une opacité nulle, pas `visibility: hidden`. Il reste
+  ainsi dans l'ordre de tabulation et lisible par une aide technique. Il ne
+  capte pas le clic tant qu'il est caché : un clic dans le coin montre le
+  bouton au lieu de passer à l'aveugle.
+- Au clavier, le bouton paraît avec le focus (WCAG 2.2, critère 2.4.7).
+  - Sur une page sans champ focalisé d'avance, Tab y mène d'abord.
+  - Sur la page de connexion, le focus est déjà dans le champ du code. Une
+    touche passe l'introduction et entre dans le champ, comme avant.
+- Pendant le vol final, à partir de 13 s, le bouton est déjà sorti. Un clic
+  passe alors directement, comme avant. Le flou sort avec le bouton, pour
+  que la page arrive nette.
+- Inchangés :
+  - une touche, Échap ou la molette passent l'introduction ;
+  - il n'y a pas d'introduction en mouvement réduit, en contraste forcé ni à
+    l'impression.
+
+**Limites.**
+- Sur téléphone, passer demande deux touchers au lieu d'un.
+- Le bouton caché ne se découvre que par un clic, une tabulation ou une aide
+  technique. Une touche passe toujours sans lui.
+- Avec VoiceOver, la première activation du bouton caché risque de seulement
+  le montrer `[à vérifier]`.
+- Sous une animation, le flou d'arrière-plan (`backdrop-filter`) se
+  recalcule à chaque image. Il n'est actif qu'après un clic. Sa tenue n'a pas
+  été mesurée sur les postes du CHD, l'iPad ni l'iPhone `[à vérifier]`.
+
+**Vérifié le 27/09/2026.**
+- `npm run verifier` (397 tests), `npm run build`.
+- Parcours de bout en bout : deux passes de 101 étapes, sans erreur de page
+  ni erreur serveur, avec les trois lignes de console attendues.
+- L'étape « introduction » vérifie en plus :
+  - le bouton caché avant le clic ;
+  - après un clic : le pourtour flouté, le bouton visible en bas à droite, en
+    #005586 ;
+  - qu'un second clic hors du bouton ne passe pas, et que le bouton passe ;
+  - le toucher sur téléphone ;
+  - le focus clavier, puis Entrée ;
+  - le clic pendant le vol final.
+- Captures avant et après clic, sur poste (1280 × 800) et sur téléphone
+  (390 × 844), à 1,5, 3,3, 5,6, 8,2, 10,3 et 12,2 s.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

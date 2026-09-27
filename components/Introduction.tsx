@@ -30,12 +30,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * cookie de session, valeur « 1 », rien d'autre. Recharger la page pendant
  * l'animation ne la rejoue pas.
  *
- * Toujours passable : bouton « Passer l'introduction », un clic ou une touche
- * n'importe où, la molette. La touche frappée n'est pas perdue — sauf Échap,
- * Entrée et Espace, qui ne servent alors qu'à passer — : sur la page de
- * connexion, le premier caractère du code entre dans le champ. Au clavier, le
- * bouton est le premier arrêt ; aller au-delà termine l'introduction, pour
- * qu'aucun élément ne prenne le focus sous elle (WCAG 2.2, critère 2.4.11).
+ * Toujours passable : une touche n'importe où, la molette, ou le bouton
+ * « Passer l'introduction ». Le bouton ne paraît qu'à la demande (27/09/2026) :
+ * un clic ou un toucher pendant la séquence floute le pourtour de l'écran et
+ * le montre en bas à droite, aux couleurs du site. Le clic ne passe plus
+ * lui-même, sauf pendant le vol final, le bouton déjà sorti. La touche frappée
+ * n'est pas perdue — sauf Échap, Entrée et Espace, qui ne servent alors qu'à
+ * passer — : sur la page de connexion, le premier caractère du code entre dans
+ * le champ. Au clavier, le bouton est le premier arrêt et paraît avec le
+ * focus ; aller au-delà termine l'introduction, pour qu'aucun élément ne
+ * prenne le focus sous elle (WCAG 2.2, critère 2.4.11).
  *
  * Jamais jouée : mouvement réduit demandé, contraste forcé, impression
  * (`globals.css`). Le décor est `aria-hidden` : une aide technique n'entend que
@@ -238,10 +242,14 @@ export function Introduction({ afficher }: { afficher: boolean }) {
   // l'animation en cours.
   const [etat, setEtat] = useState<Etat>(afficher ? "joue" : "fini");
   const [attente, setAttente] = useState(false);
+  // Pourtour flouté et bouton montrés : clic, toucher ou focus sur le bouton.
+  const [revele, setRevele] = useState(false);
   const auMontage = useRef(afficher);
   const racine = useRef<HTMLDivElement>(null);
   const boite = useRef<HTMLDivElement>(null);
   const bouton = useRef<HTMLButtonElement>(null);
+  // Le bouton sort avec le vol final (`--t-bouton`) : un clic passe alors.
+  const boutonSorti = useRef(false);
 
   const passer = useCallback(() => setEtat((e) => (e === "joue" ? "passe" : e)), []);
 
@@ -342,11 +350,17 @@ export function Introduction({ afficher }: { afficher: boolean }) {
       className="intro"
       data-etat={etat}
       data-attente={attente ? "" : undefined}
+      data-revele={revele ? "" : undefined}
       style={{ ...VARIABLES_TEMPS, "--montee": MONTEE, "--reduction": REDUCTION } as React.CSSProperties}
       onPointerDown={(e) => {
-        if (e.target !== bouton.current && !bouton.current?.contains(e.target as Node)) passer();
+        if (e.target === bouton.current || bouton.current?.contains(e.target as Node)) return;
+        if (boutonSorti.current) passer();
+        else setRevele(true);
       }}
       onWheel={passer}
+      onAnimationStart={(e) => {
+        if (e.animationName === "intro-bouton-sort") boutonSorti.current = true;
+      }}
       onAnimationEnd={(e) => {
         if (e.target === e.currentTarget && (e.animationName === "intro-fin" || e.animationName === "intro-sortie")) {
           setEtat("fini");
@@ -562,7 +576,9 @@ export function Introduction({ afficher }: { afficher: boolean }) {
         </div>
       </div>
 
-      <button type="button" ref={bouton} className="intro-passer" onClick={passer}>
+      <div className="intro-flou" aria-hidden="true" />
+
+      <button type="button" ref={bouton} className="intro-passer" onClick={passer} onFocus={() => setRevele(true)}>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="9" className="intro-passer-piste" />
           <path className="intro-passer-avance" pathLength={1} d="M 12 3 A 9 9 0 1 1 11.99 3" />

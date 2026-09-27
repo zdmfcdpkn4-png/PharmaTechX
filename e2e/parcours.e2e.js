@@ -160,10 +160,13 @@ Justification : cf. procédure interne.`,
   ok("santé : base joignable, conservation pseudonyme, horloge et étiquette d'instance exposées");
 
   // 0 bis. introduction animée (27/09/2026, components/Introduction.tsx) :
-  //    jouée à l'ouverture d'une session de navigation, passée par une touche,
-  //    le toucher, Échap ou sa propre fin, jamais rejouée dans la session,
-  //    absente en mouvement réduit. Chaque cas part d'un contexte neuf, sans le
-  //    cookie `fp_intro` que portent d'avance les autres contextes du parcours.
+  //    jouée à l'ouverture d'une session de navigation. Un clic ou un toucher
+  //    ne la passe pas : il floute le pourtour et montre « Passer
+  //    l'introduction » en bas à droite, aux couleurs du site. Le bouton, une
+  //    touche, Échap, un clic pendant le vol final ou sa propre fin la passent ;
+  //    jamais rejouée dans la session, absente en mouvement réduit. Chaque cas
+  //    part d'un contexte neuf, sans le cookie `fp_intro` que portent d'avance
+  //    les autres contextes du parcours.
   {
     const ouvrir = async (options) => {
       const c = await browser.newContext(options);
@@ -182,10 +185,15 @@ Justification : cf. procédure interne.`,
       const k = (await c.cookies()).find((x) => x.name === "fp_intro");
       assert.ok(k && k.value === "1" && k.expires === -1, "cookie de session fp_intro posé au montage");
     };
+    // Pourtour flouté et bouton montrés, transitions finies.
+    const revelee = (p) =>
+      p.waitForFunction(() =>
+        [".intro-flou", ".intro-passer"].every((s) => getComputedStyle(document.querySelector(s)).opacity === "1"),
+      );
 
     // a. elle couvre la page ; la touche qui la passe entre dans le champ ; pas de rejeu
     let { c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } });
-    await p.waitForSelector(".intro-passer", { state: "visible" });
+    await p.waitForSelector(".intro");
     await monte(c);
     assert.ok(
       await p.evaluate(() => !!document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest(".intro")),
@@ -199,13 +207,51 @@ Justification : cf. procédure interne.`,
     assert.equal(await p.locator(".intro").count(), 0, "pas rejouée dans la même session");
     await c.close();
 
-    // b. téléphone : toucher « Passer l'introduction » n'active rien dessous
-    ({ c, p } = await ouvrir({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }));
-    await p.waitForSelector(".intro-passer", { state: "visible" });
+    // b. un clic floute le pourtour et montre le bouton, en bas à droite, aux
+    //    couleurs du site ; un second clic hors du bouton ne passe pas ; le
+    //    bouton passe
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
     await monte(c);
+    assert.equal(await p.$eval(".intro-passer", (b) => getComputedStyle(b).opacity), "0", "bouton caché avant le clic");
+    await p.mouse.click(640, 400);
+    await revelee(p);
+    const vu = await p.$eval(".intro-passer", (b) => {
+      const r = b.getBoundingClientRect();
+      return {
+        droite: innerWidth - r.right,
+        bas: innerHeight - r.bottom,
+        fond: getComputedStyle(b).backgroundColor,
+        flou: getComputedStyle(document.querySelector(".intro-flou")).backdropFilter,
+      };
+    });
+    assert.ok(vu.droite >= 0 && vu.droite <= 24 && vu.bas >= 0 && vu.bas <= 24, "bouton dans le coin inférieur droit");
+    assert.equal(vu.fond, "rgb(0, 85, 134)", "bouton aux couleurs du site (--marque)");
+    assert.match(vu.flou, /blur/, "pourtour flouté");
+    await p.mouse.click(60, 120);
+    await p.waitForTimeout(300);
+    assert.equal(await p.getAttribute(".intro", "data-etat"), "joue", "un second clic hors du bouton ne passe pas");
+    await p.click(".intro-passer");
+    await p.waitForSelector(".intro", { state: "detached" });
+    await c.close();
+
+    // b bis. téléphone : un toucher montre le bouton ; le toucher du bouton passe
+    //    et n'active rien dessous
+    ({ c, p } = await ouvrir({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }));
+    await monte(c);
+    await p.touchscreen.tap(195, 422);
+    await revelee(p);
     await p.tap(".intro-passer");
     await p.waitForSelector(".intro", { state: "detached" });
     assert.match(p.url(), /\/connexion$/, "le toucher n'a rien activé sous l'introduction");
+    await c.close();
+
+    // b ter. clavier : le bouton paraît avec le focus ; Entrée passe
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
+    await monte(c);
+    await p.focus(".intro-passer");
+    await revelee(p);
+    await p.keyboard.press("Enter");
+    await p.waitForSelector(".intro", { state: "detached" });
     await c.close();
 
     // c. Échap
@@ -231,13 +277,26 @@ Justification : cf. procédure interne.`,
     await p.click("input[name=code]");
     await c.close();
 
+    // d bis. vol final : le bouton sorti, un clic passe directement
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
+    await monte(c);
+    await p.evaluate(() =>
+      document.getAnimations().forEach((a) => {
+        a.currentTime = 13400;
+      }),
+    );
+    await p.waitForFunction(() => getComputedStyle(document.querySelector(".intro-passer")).visibility === "hidden");
+    await p.mouse.click(640, 400);
+    await p.waitForSelector(".intro", { state: "detached" });
+    await c.close();
+
     // e. mouvement réduit : jamais jouée
     ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" }));
     await p.waitForFunction(() => !document.querySelector(".intro"));
     await p.click("input[name=code]");
     await c.close();
   }
-  ok("introduction : couvre la page à l'ouverture, passée par une touche gardée, le toucher, Échap ou sa fin, pas rejouée dans la session, absente en mouvement réduit");
+  ok("introduction : couvre la page à l'ouverture ; un clic ou un toucher floute le pourtour et montre « Passer l'introduction » en bas à droite aux couleurs du site, sans passer ; passée par le bouton (souris, toucher, Entrée), une touche gardée, Échap, un clic pendant le vol final ou sa fin ; pas rejouée dans la session ; absente en mouvement réduit");
 
   // 1. connexion de l'administrateur initial
   //    Amorçage par la variable ADMIN_INITIAL (décision du 19/09/2026) : plus

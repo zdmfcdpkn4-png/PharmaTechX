@@ -437,7 +437,7 @@ sceau, barème porté), registre CSV et JSON, archive zip.
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
 serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonyme`
 et `MISE_EN_SERVICE` posée :
-page de santé (base jointe en IPv4), introduction animée (jouée à l'ouverture, passable, pas rejouée, absente en mouvement réduit), absence de porte d'amorçage publique, entrée de l'administrateur initial, codes,
+page de santé (base jointe en IPv4), introduction animée (jouée à l'ouverture, un clic montre le bouton qui la passe, pas rejouée, absente en mouvement réduit), absence de porte d'amorçage publique, entrée de l'administrateur initial, codes,
 filière et niveau déposés au référentiel avec leur badge, arborescence de la banque, dépôt de la signature, création d'un identifiant d'agent,
 création et import de dix questions avec image, éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
