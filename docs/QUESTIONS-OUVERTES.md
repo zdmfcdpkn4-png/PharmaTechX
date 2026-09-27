@@ -376,6 +376,33 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+82. **Introduction : ce que vise « ne quitte pas direct »** — posée le
+    27/09/2026, sur la réponse « Mais ne quitte pas direct ». Aujourd'hui
+    (commit 24a4ea6) :
+    - un clic ou un toucher pendant la séquence ne ferme pas : il floute le
+      pourtour et montre « Passer l'introduction ». Le bouton ferme, par un
+      fondu de 0,4 s ;
+    - dans les deux dernières secondes, pendant que le logo rejoint
+      l'en-tête, le bouton est déjà sorti : un clic ferme directement ;
+    - une touche, Échap ou la molette ferment directement, à tout moment.
+      Sur la page de connexion, la touche frappée entre dans le champ du
+      code.
+
+    Trois lectures :
+    - **a (recommandé)** : un clic ne ferme plus jamais, même dans les deux
+      dernières secondes. Il n'y fait rien : l'introduction finit seule.
+      Touches, Échap et molette ne changent pas. Contre : si la demande
+      visait aussi la molette ou la sortie, elles restent telles quelles.
+    - **b** : a, et la molette ne ferme plus : comme le clic, elle floute le
+      pourtour et montre le bouton. Seules les touches ferment encore.
+      Contre : un défilement au pavé tactile ne suffit plus ; il faut viser
+      le bouton.
+    - **c** : a, et passer ne coupe plus net. Le bouton ou une touche mènent
+      à la fin de la séquence : le logo entier rejoint l'en-tête pendant que
+      le papier se replie. La sortie dure 1,9 s au lieu d'un fondu de 0,4 s.
+      Contre : passer prend 1,5 s de plus, et le saut vers le logo est une
+      coupe.
+
 81. **Squelette de la formation : un menu, et jusqu'où le rendre
     modifiable** — posée le 25/09/2026, sur la réponse à la question 80.
     Aujourd'hui :
