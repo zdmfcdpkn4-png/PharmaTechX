@@ -107,6 +107,9 @@ Justification : cf. procédure interne.`,
 (async () => {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  // Introduction animée (27/09/2026) : vérifiée à part (étape 0 bis) ; ici
+  // tenue pour vue, sinon elle couvrirait les quinze premières secondes.
+  await ctx.addCookies([{ name: "fp_intro", value: "1", url: BASE }]);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("ERREUR PAGE:", page.url(), e.message));
   page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE:", m.text()); });
@@ -155,6 +158,86 @@ Justification : cf. procédure interne.`,
     assert.equal(sante.base_instance, process.env.BASE_ATTENDUE, "étiquette inscrite dans la base");
   }
   ok("santé : base joignable, conservation pseudonyme, horloge et étiquette d'instance exposées");
+
+  // 0 bis. introduction animée (27/09/2026, components/Introduction.tsx) :
+  //    jouée à l'ouverture d'une session de navigation, passée par une touche,
+  //    le toucher, Échap ou sa propre fin, jamais rejouée dans la session,
+  //    absente en mouvement réduit. Chaque cas part d'un contexte neuf, sans le
+  //    cookie `fp_intro` que portent d'avance les autres contextes du parcours.
+  {
+    const ouvrir = async (options) => {
+      const c = await browser.newContext(options);
+      surveillerTiers(c);
+      const p = await c.newPage();
+      p.on("pageerror", (e) => console.log("ERREUR PAGE:", p.url(), e.message));
+      p.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE:", m.text()); });
+      await p.goto(BASE + "/connexion");
+      return { c, p };
+    };
+    // Le composant pose son cookie au montage : l'hydratation est faite.
+    const monte = async (c) => {
+      for (let i = 0; i < 50 && !(await c.cookies()).some((k) => k.name === "fp_intro"); i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      const k = (await c.cookies()).find((x) => x.name === "fp_intro");
+      assert.ok(k && k.value === "1" && k.expires === -1, "cookie de session fp_intro posé au montage");
+    };
+
+    // a. elle couvre la page ; la touche qui la passe entre dans le champ ; pas de rejeu
+    let { c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } });
+    await p.waitForSelector(".intro-passer", { state: "visible" });
+    await monte(c);
+    assert.ok(
+      await p.evaluate(() => !!document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest(".intro")),
+      "l'introduction couvre la page",
+    );
+    await p.focus("input[name=code]");
+    await p.keyboard.type("a");
+    await p.waitForSelector(".intro", { state: "detached" });
+    assert.equal(await p.inputValue("input[name=code]"), "a", "la touche qui passe l'introduction n'est pas perdue");
+    await p.reload();
+    assert.equal(await p.locator(".intro").count(), 0, "pas rejouée dans la même session");
+    await c.close();
+
+    // b. téléphone : toucher « Passer l'introduction » n'active rien dessous
+    ({ c, p } = await ouvrir({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }));
+    await p.waitForSelector(".intro-passer", { state: "visible" });
+    await monte(c);
+    await p.tap(".intro-passer");
+    await p.waitForSelector(".intro", { state: "detached" });
+    assert.match(p.url(), /\/connexion$/, "le toucher n'a rien activé sous l'introduction");
+    await c.close();
+
+    // c. Échap
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
+    await monte(c);
+    await p.keyboard.press("Escape");
+    await p.waitForSelector(".intro", { state: "detached" });
+    await c.close();
+
+    // d. fin naturelle, accélérée (animations menées à leur terme) : la page répond
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 } }));
+    await monte(c);
+    await p.evaluate(() =>
+      document.getAnimations().forEach((a) => {
+        try {
+          a.finish();
+        } catch {
+          // animation sans fin (vague de la fiole, décor du site)
+        }
+      }),
+    );
+    await p.waitForSelector(".intro", { state: "detached" });
+    await p.click("input[name=code]");
+    await c.close();
+
+    // e. mouvement réduit : jamais jouée
+    ({ c, p } = await ouvrir({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" }));
+    await p.waitForFunction(() => !document.querySelector(".intro"));
+    await p.click("input[name=code]");
+    await c.close();
+  }
+  ok("introduction : couvre la page à l'ouverture, passée par une touche gardée, le toucher, Échap ou sa fin, pas rejouée dans la session, absente en mouvement réduit");
 
   // 1. connexion de l'administrateur initial
   //    Amorçage par la variable ADMIN_INITIAL (décision du 19/09/2026) : plus
@@ -3524,6 +3607,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/nouveau=/);
   let codeJetable = new URL(page.url()).searchParams.get("nouveau");
   const ctx2 = await browser.newContext();
+  await ctx2.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
   surveillerTiers(ctx2);
   const page2 = await ctx2.newPage();
   const entrerJetable = async () => {
@@ -4055,6 +4139,7 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/connexion");
   // Un onglet laissé ouvert : l'horloge du navigateur avance de quatre heures.
   const ctx3 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await ctx3.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
   surveillerTiers(ctx3);
   const page3 = await ctx3.newPage();
   page3.on("pageerror", (e) => console.log("ERREUR PAGE:", page3.url(), e.message));

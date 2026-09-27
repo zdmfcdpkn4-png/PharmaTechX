@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
@@ -13,6 +13,7 @@ import { ModeZone } from "@/components/ModeZone";
 import { PageAnimee } from "@/components/PageAnimee";
 import { VoletConnexion } from "@/components/VoletConnexion";
 import { IndicateurNavigation } from "@/components/IndicateurNavigation";
+import { Introduction } from "@/components/Introduction";
 import { VeilleInactivite } from "@/components/VeilleInactivite";
 import { TutorielProvider } from "@/components/Tutoriel";
 import { etapesTutoriel } from "@/content/tutoriel";
@@ -76,6 +77,9 @@ export default async function RootLayout({
     : [[], []];
   const procedure = procedureReference();
   const enService = miseEnService();
+  // Introduction animée (27/09/2026) : une fois par session de navigation,
+  // tant que le cookie de session posé par le composant manque.
+  const introVue = (await cookies()).get("fp_intro")?.value === "1";
 
   // Visite guidée du premier passage (19/09/2026). `session.role` est de type
   // `Role` ; l'indexation échoue à la compilation si les trois profils de
@@ -259,6 +263,10 @@ export default async function RootLayout({
           site lui-même (`@font-face` en tête de globals.css, décision du
           23/09/2026). */}
       <body>
+        {/* Toujours rendue, jamais retirée par un rendu serveur ultérieur : le
+            composant fige son état au premier rendu. Premier élément du corps :
+            son bouton « Passer » est le premier arrêt au clavier. */}
+        <Introduction afficher={!introVue} />
         {/* Décor : quatre formes floutées en dérive très lente, derrière tout. */}
         <div className="fond-organique" aria-hidden="true">
           <span className="forme-1" />

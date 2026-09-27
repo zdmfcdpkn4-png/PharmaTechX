@@ -5052,6 +5052,128 @@ niveau cible, `[à confirmer]` ; la réponse ne l'a pas corrigé.
 - Balayage des écrans : voir la vérification globale du même jour
   (`AUDIT-ERGONOMIE.md`, § 7).
 
+## Introduction animée à l'ouverture (27/09/2026, demande directe)
+
+**Demande.** « Applique ce prompt pour générer une animation à l'ouverture
+avec le logo du site ». Prompt joint : « Make a dynamic 15-second motion
+graphics video that shows what an incredible motion designer you are, like
+it's your showreel for a résumé. Go all out ».
+
+**Lecture retenue, sans question posée.** Elle est à revoir sur simple demande.
+- « À l'ouverture » : au premier chargement d'une session de navigation. Ni à
+  chaque page, ni une seule fois par poste.
+- « Le logo du site » : l'emblème Pharmacotechnie, déjà icône d'onglet, avec
+  son nom et sa ligne d'unité. Le logo HdV reste dans l'en-tête, où
+  l'introduction se termine.
+- Quinze secondes, comme le prompt, et passables à tout instant.
+- Une animation du site (CSS et SVG), pas un fichier vidéo : un fichier
+  pèserait plus lourd, serait flou en grand et ne pourrait pas finir sur le
+  logo de l'en-tête. Une vidéo tirée de la même animation, image par image,
+  a été remise à part ; elle n'est pas dans le dépôt.
+
+**Fait** (`components/Introduction.tsx`, section « Introduction animée » de
+`globals.css`).
+- Cinq temps, sur le papier du logo (#F8F4EB) :
+  1. une goutte tombe dans la fiole du centre de l'emblème ; les rayons et les
+     circuits en partent, des gouttes de couleur éclosent en aquarelle ;
+  2. le nom du site en typographie animée : « Formation » monte et prend sa
+     graisse, l'esperluette se remplit comme la fiole, « habilitation »
+     bascule en place ;
+  3. le mandala se peint (ruban, pétales, anneau cuivre, flèches, barres,
+     hexagones), puis le logo paraît à sa place, par un diaphragme, avec un
+     reflet ;
+  4. le logo entier : emblème, nom « pharmacotechnie » tracé de gauche à
+     droite, ligne d'unité ;
+  5. l'emblème rejoint le logo de l'en-tête pendant que le papier se replie
+     sur lui. Sans logo visible dans l'en-tête (téléphone de moins de 24 rem),
+     il s'élève et s'efface.
+- Le logo n'est ni redessiné ni recoloré (charte). Trois images sont tirées
+  du fichier fourni le 18/09/2026, `pharmaco-logo.jpg`, sans autre retouche :
+  - `pharmaco-embleme.webp` : carré de 692 px centré sur l'anneau cuivre,
+    ramené à 640 px et détouré en disque ;
+  - `pharmaco-nom.webp` et `pharmaco-unite.webp` : le nom et la ligne d'unité,
+    détourés du papier. L'opacité suit l'écart au papier (#F8F4EB) et la
+    couleur est corrigée d'autant. Sur le papier, le rendu est celui du
+    fichier.
+
+  Ce qui se peint avant le logo en est une évocation, relevée sur l'emblème,
+  qui s'efface quand il paraît.
+- Quand elle est jouée :
+  - le gabarit rend l'introduction tant que le cookie `fp_intro` manque ;
+  - le composant pose ce cookie à son montage (valeur « 1 », session,
+    `SameSite=Lax`, `Secure` en HTTPS), si bien que recharger pendant
+    l'animation ne la rejoue pas ;
+  - l'état est figé au premier rendu : un rendu serveur ultérieur (action,
+    navigation) ne la coupe pas.
+- Elle reste toujours passable :
+  - par le bouton « Passer l'introduction », premier arrêt au clavier, avec
+    un anneau qui montre l'avancée ;
+  - par un clic ou un toucher n'importe où, ou par la molette ;
+  - par une touche. La touche frappée n'est pas perdue : sur la page de
+    connexion, le premier caractère du code entre dans le champ. Échap,
+    Entrée et Espace font exception : ils ne servent qu'à passer.
+  - Au clavier, aller au-delà du bouton la termine. Aucun élément ne prend
+    ainsi le focus sous elle (WCAG 2.2, critère 2.4.11). Un focus posé par
+    programme, comme l'ouverture de la visite guidée, ne la coupe pas.
+- Elle n'est jamais jouée en mouvement réduit, en contraste forcé ni à
+  l'impression. En mouvement réduit, la règle générale du site ramène les
+  animations à leur fin mais laisse les délais : l'écran resterait figé
+  quinze secondes.
+- Le décor est `aria-hidden` : une aide technique n'entend que le bouton.
+- Dans un onglet ouvert en arrière-plan, l'animation attend d'être vue.
+- Rien ne clignote : aucune alternance de luminance plus de trois fois par
+  seconde (critère 2.3.1). Le bouton « Passer » répond au critère 2.2.2.
+
+**Cookie et RGPD.** `fp_intro` ne porte aucune donnée personnelle : la
+valeur « 1 », pour la durée de la session. C'est un traceur de
+fonctionnement, de la même nature que les réglages déjà gardés sur le poste
+(visite guidée, mode zone). Lecture retenue : il est exempté de consentement
+au titre de l'article 82 de la loi Informatique et Libertés.
+- Source : lignes directrices de la CNIL, délibération n° 2020-091 du
+  17/09/2020 (Légifrance, JORFTEXT000042388179). Parmi les exemples de
+  traceurs exemptés, elles citent ceux qui personnalisent l'interface.
+- Le libellé exact et le paragraphe n'ont pas été relus : les sites de la
+  CNIL et de Légifrance étaient injoignables depuis l'environnement de
+  développement `[à vérifier]`.
+- À confirmer par le DPO, avec les autres traceurs du site `[à vérifier]`.
+
+**Limites.**
+- Quinze secondes, c'est long pour un outil de travail ouvert chaque jour ;
+  le rythme d'une fois par session et le bouton « Passer » l'atténuent. Une
+  version courte se ferait sans reprendre le reste.
+- La « session » dépend du navigateur :
+  - sur iPhone (Safari), ou dans un navigateur qui rouvre ses onglets, le
+    cookie de session peut vivre des jours, et l'introduction reparaît
+    rarement ;
+  - sur un poste partagé dont on ferme le navigateur, elle se joue à chaque
+    ouverture.
+- La fluidité n'a pas pu être mesurée. Dans le conteneur de développement
+  (Chromium sans carte graphique, 4 cœurs), la page tourne à 10 images par
+  seconde avec l'introduction comme sans elle : la mesure ne dit rien des
+  postes réels. Le rendu a été contrôlé image par image. Postes du CHD
+  (bureaux virtualisés, s'il y en a), iPad, iPhone `[à vérifier]`.
+
+**Vérifié le 27/09/2026.**
+- `npm run verifier` (397 tests), `npm run build`.
+- Parcours de bout en bout : deux passes de 101 étapes (une de plus que la
+  veille, l'introduction), sans erreur de page ni erreur serveur. En console,
+  les trois lignes attendues. L'étape « introduction » part de contextes
+  neufs et vérifie :
+  - que l'introduction couvre la page ;
+  - que la touche frappée reste dans le champ du code ;
+  - le toucher du bouton sur téléphone, sans rien activer dessous ;
+  - la touche Échap ;
+  - la fin naturelle (animations menées à leur terme), suivie d'un clic dans
+    le champ ;
+  - l'absence de rejeu après rechargement ;
+  - l'absence d'introduction en mouvement réduit.
+- Rendu contrôlé image par image sur poste (1280 × 800) et sur téléphone
+  (390 × 844, tactile). Un défaut, corrigé : les tracés non encore dessinés
+  peignaient un point à leur extrémité ronde (pointillé « 1 1 » décalé
+  de 1). Le pointillé est passé à « 1 2 », avec un départ à 1,02.
+- Une vidéo de 15,6 s en 1920 × 1080 (H.264) a été tirée du site local,
+  image par image, et remise à part.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
