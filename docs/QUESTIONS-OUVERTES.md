@@ -376,6 +376,46 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+83. **Table de correspondance identifiant ↔ agent : le fichier seul, ou
+    relié au site** — posée le 28/09/2026, sur « Crée une table de
+    correspondance local pour la mise en relation du N° anonymat et des
+    données nominatives de l'agent (conservation en local sur réseau
+    sécurisé) ». Déjà tranché : la correspondance est un fichier tenu par le
+    pharmacien responsable sur le réseau de l'établissement, dans un dossier
+    à droits restreints, lisible par les tuteurs qui visent, jamais sur le
+    site (question 28, choix a) ; le DPO en a validé le principe le
+    19/09/2026. Aucun modèle n'existe encore : à la création d'un
+    identifiant, le site dit seulement de noter la correspondance « dans la
+    liste tenue hors du site », et le nom se saisit à la main à chaque
+    édition de rapport.
+
+    Trois lectures :
+    - **a (recommandé)** : un classeur Excel vierge, que je fabrique et vous
+      remets ; le site ne change pas. Une ligne par identifiant : identifiant
+      (`AG-NNN`), nom, prénom, fonction, date de création de l'identifiant,
+      créé par, remis à l'agent le, clos le. Rien d'autre, ni matricule ni
+      date de naissance : le nom et le prénom suffisent à retrouver qui est
+      `AG-017`. Une feuille « Mode d'emploi » dit où le classeur est rangé,
+      qui y écrit, ce qu'on n'en fait jamais (l'envoyer par courriel, le
+      déposer sur le site) et qu'il se détruit avec le dossier
+      d'habilitation. Garde-fous : identifiant au format `AG-NNN`, doublon
+      refusé. Contre : tout reste à la main. L'identifiant se recopie à sa
+      création, un oubli ne se voit qu'en comparant avec l'écran Personnel,
+      et le nom se ressaisit à chaque édition.
+    - **b** : a, et le site lit le classeur dans le navigateur. Choisi dans
+      le dossier réseau à chaque usage, jamais envoyé au serveur ni gardé
+      par le navigateur, il affiche le nom à côté de l'identifiant dans
+      l'administration et préremplit le nom à l'édition. Contre : le code du
+      site manie alors les noms. Une version fautive ou compromise pourrait
+      les transmettre : le principe validé par le DPO s'affaiblit et devrait
+      lui être soumis à nouveau. Plus de code et d'essais.
+    - **c** : a, mais le classeur se télécharge depuis l'écran Personnel,
+      prérempli des identifiants existants (dates et état, aucun nom) ; les
+      noms se complètent dans le dossier réseau. Contre : le site change, et
+      chaque téléchargement fait une copie de plus. Deux versions peuvent
+      coexister, et une copie complétée peut rester dans « Téléchargements »,
+      hors du dossier protégé.
+
 82. **Introduction : ce que vise « ne quitte pas direct »** — posée le
     27/09/2026, sur la réponse « Mais ne quitte pas direct ». Aujourd'hui
     (commit 24a4ea6) :
