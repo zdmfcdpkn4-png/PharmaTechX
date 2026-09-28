@@ -5283,6 +5283,83 @@ change à l'écran.
   change et l'introduction finit seule. Échap passe toujours pendant le vol
   final.
 
+## Table de correspondance identifiant ↔ agent : un classeur hors du site (28/09/2026, question 83, choix a)
+
+**Demande.** « Crée une table de correspondance local pour la mise en
+relation du N° anonymat et des données nominatives de l'agent (conservation
+en local sur réseau sécurisé) ». Le support était tranché : un fichier sur
+le réseau de l'établissement, jamais sur le site (question 28, choix a).
+Restait ce que le site en fait : question 83, tranchée « a ».
+
+**Retenu.** Un classeur Excel vierge, tenu hors du site ; le site ne change
+pas. Écartés : le nom affiché et prérempli par le navigateur (choix b), qui
+mettait les noms entre les mains du code du site, et le classeur prérempli
+des identifiants (choix c), qui multipliait les copies.
+
+**Fait.**
+- `docs/modeles/table-correspondance-agents.xlsx`, fabriqué par
+  `scripts/modele-correspondance.py` (Python, openpyxl). Aucun nom dans le
+  modèle : le dépôt est public.
+- Feuille « Correspondance » : un titre de confidentialité, puis une ligne
+  par identifiant à partir de la ligne 3.
+  - Colonnes : identifiant, nom, prénom, fonction, identifiant créé le,
+    créé par, remis à l'agent le, clos le. Rien d'autre : ni matricule ni
+    date de naissance (minimisation, RGPD art. 5 § 1 c).
+  - En-têtes figés, filtre, dates au format jj/mm/aaaa, police Arial.
+- Garde-fous sur la colonne Identifiant, lignes 3 à 2000.
+  - Une saisie hors du format du site est refusée : `AG-` puis trois
+    chiffres au moins, sans zéro de tête au-delà, `AG-000` exclu, comme
+    `lib/identifiant.ts`. Un doublon aussi.
+  - Une valeur collée échappe à ce refus : la même règle la met en rouge.
+- Feuille « Mode d'emploi » :
+  - à quoi sert la table, où elle est rangée, qui y écrit ;
+  - les gestes : création d'un identifiant, édition d'un rapport, départ ;
+  - conservation, contrôle, ce qu'on n'en fait jamais, ce qu'elle ne
+    contient pas, droits des agents, sauvegarde ;
+  - un exemple fictif (`AG-000`, que le site ne génère jamais), l'origine du
+    modèle.
+- `test/modele-correspondance.test.ts` : deux feuilles, les huit colonnes
+  dans l'ordre, rien sous les en-têtes, règle présente dans la validation et
+  dans la mise en forme. Il échoue si une ligne remplie entre dans le
+  modèle.
+
+**Laissé à l'établissement,** marqué dans le mode d'emploi :
+- `[à compléter]` le chemin du dossier et qui attribue les droits ; la note
+  d'information remise avec l'identifiant.
+- `[à préciser]` si les tuteurs, qui créent aussi des identifiants
+  (question 27), écrivent eux-mêmes la ligne ; la périodicité du contrôle
+  avec l'écran Personnel.
+- `[à vérifier]` la durée de conservation du dossier d'habilitation ; la
+  sauvegarde du dossier réseau, auprès du service informatique.
+
+**Limites.**
+- Tout reste à la main (le « contre » du choix a) :
+  - l'identifiant se recopie à sa création ;
+  - un oubli ne se voit qu'en comparant avec l'écran Personnel ;
+  - le nom se ressaisit à chaque édition.
+- Le classeur n'est ni chiffré ni protégé par mot de passe : sa
+  confidentialité tient aux droits du dossier (question 28).
+- Contrôles faits sous LibreOffice seulement. `[à vérifier]` sous Excel :
+  doublon refusé à la saisie, valeur collée mise en rouge, lignes du mode
+  d'emploi à leur hauteur.
+
+**Vérifié le 28/09/2026.**
+- Le classeur, ses styles et ses deux feuilles sont conformes au schéma
+  SpreadsheetML de la norme ISO/IEC 29500-4:2016.
+- LibreOffice 24.2 ouvre le classeur et l'exporte en PDF. Le mode d'emploi
+  tient sur une page A4.
+- Règle d'identifiant recalculée par LibreOffice sur 24 cas, sans écart :
+  - acceptés : `AG-001`, `AG-017`, `AG-999`, `AG-1000`, `AG-12345` ;
+  - refusés : `AG-000`, `AG-0017`, `AG-17`, `ag-018`, `AG-`, espaces,
+    exposant, virgule, point, signe, lettre, nombre nu, doublon ;
+  - une cellule vide n'est pas mise en rouge.
+- Dans une copie, un doublon et un identifiant mal formé collés virent au
+  rouge.
+- `npm run verifier` : 401 tests, dont les 4 du modèle. Le test « vierge »
+  échoue sur une copie remplie, puis repasse sur le modèle régénéré.
+- Compilation et parcours de bout en bout non relancés : le site ne change
+  pas.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

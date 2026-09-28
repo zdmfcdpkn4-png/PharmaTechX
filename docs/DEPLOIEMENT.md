@@ -449,7 +449,8 @@ commit déployé (`commit` dans `/api/sante`, ou `git rev-parse HEAD`) :
    supprimée aussitôt après — puis remplacé par des codes
    nominaux de fonction (jamais des noms), codes tuteur, signature du
    pharmacien déposée, identifiants d'agents créés et correspondance tenue hors
-   du site.
+   du site (modèle : `docs/modeles/table-correspondance-agents.xlsx`,
+   question 83).
 7. **Sauvegarde** : un `pg_dump` réalisé par le pooler de session et restauré
    sur une base locale avant le premier rapport réel, puis un essai annuel
    (question 32 ; voir ci-dessous).

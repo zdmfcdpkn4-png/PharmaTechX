@@ -276,7 +276,8 @@ telle. Ordre : ce qui change le déploiement en premier.
     pharmacien responsable sur le réseau de l'établissement, dossier à droits
     restreints, lisible par les tuteurs qui visent, conservé et détruit avec
     le dossier d'habilitation. `[à préciser]` chemin, droits et qui les
-    attribue.
+    attribue. Modèle du fichier fourni le 28/09/2026 (question 83, choix a) :
+    `docs/modeles/table-correspondance-agents.xlsx`.
 
 ## F. Parcours de formation (transposition du Lecteur QIM · QCM)
 
@@ -415,6 +416,15 @@ telle. Ordre : ce qui change le déploiement en premier.
       chaque téléchargement fait une copie de plus. Deux versions peuvent
       coexister, et une copie complétée peut rester dans « Téléchargements »,
       hors du dossier protégé.
+
+    Tranchée le même jour (choix a, réponse « a ») et mise en œuvre :
+    `docs/modeles/table-correspondance-agents.xlsx`, fabriqué par
+    `scripts/modele-correspondance.py`. Feuille « Correspondance » aux huit
+    colonnes, identifiant contrôlé (format du site, doublon refusé, rouge si
+    collé) ; feuille « Mode d'emploi ». Le site ne change pas ; un test
+    garde le modèle vierge. Restent `[à compléter]` le chemin et les droits,
+    `[à préciser]` si les tuteurs écrivent la ligne, `[à vérifier]` le
+    comportement sous Excel. Détail dans `DECISIONS.md`.
 
 82. **Introduction : ce que vise « ne quitte pas direct »** — posée le
     27/09/2026, sur la réponse « Mais ne quitte pas direct ». Aujourd'hui

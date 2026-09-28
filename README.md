@@ -408,6 +408,7 @@ les mêmes écrans.
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
 | Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |
+| Table de correspondance identifiant ↔ agent, tenue hors du site (modèle vierge) | `scripts/modele-correspondance.py` → `docs/modeles/table-correspondance-agents.xlsx` |
 | Cadrage RGPD | `docs/RGPD.md`, `app/donnees-personnelles` |
 | Règle de décision (bande de garde, non concluant) | `lib/decision.ts` |
 | Registre, répertoire, JSON d'archive, zip | `lib/registre.ts`, `lib/zip.ts` |
@@ -431,7 +432,8 @@ exclusions, arbitrage, bande de garde réglable), barème réglable
 en cours (contrôle de forme), identifiants d'agents,
 famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
 table), voisins du parcours, constructeur de rapport (identifiant, nom hors
-sceau, barème porté), registre CSV et JSON, archive zip.
+sceau, barème porté), registre CSV et JSON, archive zip, modèle vierge de
+la table de correspondance.
 `npm run verifier` enchaîne typecheck, lint et tests.
 
 `npm run e2e` — parcours de bout en bout dans Chromium (Playwright) contre un
