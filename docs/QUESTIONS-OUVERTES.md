@@ -377,6 +377,38 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+84. **Illustrations dès le dépôt : les images du fichier Word** — posée le
+    01/10/2026, sur « Permettre l'ajout d'illustration d'image dès le
+    dépôt ». Aujourd'hui, une image n'arrive avec un dépôt qu'à deux
+    conditions : le fichier image est joint à part, dans le champ « Images »
+    du dépôt, et une ligne « Image : nom-du-fichier.png » de la question le
+    nomme. Les images collées dans un fichier Word sont ignorées. L'aperçu
+    dit alors « l'image se choisit dans l'éditeur », c'est-à-dire après
+    l'ajout, question par question. La banque du pool de manipulation compte
+    six questions illustrées et neuf images collées. Trois questions en
+    portent deux : la photographie d'un manomètre KIMO et le même tableau
+    des plages de référence. Le site n'accepte qu'une image par question.
+
+    Trois lectures :
+    - **a (recommandé)** : le site reprend les images collées dans le fichier
+      Word et rattache chacune à la question où elle se trouve, avec sa ligne
+      « Description de l'image ». L'aperçu permet aussi d'ajouter, de changer
+      ou de retirer l'image d'une question avant l'ajout à la banque. Une
+      question à deux images garde la première, la photographie ; la seconde
+      est signalée dans l'aperçu. Contre : le tableau des plages ne
+      s'affiche pas avec les trois questions KIMO, sauf à le fondre à la main
+      avec la photographie avant le dépôt ; leurs propositions citent déjà les
+      plages utiles. Les images du Word ne sont pas réduites : au-delà de
+      2 Mo, une image est refusée, et l'aperçu le dit.
+    - **b** : a, et une question à deux images les reçoit toutes les deux,
+      assemblées côte à côte en une seule image par le navigateur, à
+      l'aperçu. Contre : plus de code et d'essais. Sur téléphone, deux images
+      côte à côte deviennent petites ; l'agrandissement au toucher reste.
+    - **c** : l'aperçu seulement. L'image de chaque question s'y ajoute avant
+      l'ajout à la banque, sans lecture des images du Word. Contre : pour la
+      banque du pool, six images à enregistrer depuis Word, puis à choisir
+      une à une.
+
 83. **Table de correspondance identifiant ↔ agent : le fichier seul, ou
     relié au site** — posée le 28/09/2026, sur « Crée une table de
     correspondance local pour la mise en relation du N° anonymat et des
