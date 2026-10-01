@@ -36,10 +36,10 @@ export function PromptGeneration() {
         <p>
           Joignez le document (procédure, chapitre des BPP…) à une conversation avec l&apos;assistant,
           collez ce prompt, puis collez la réponse dans le dépôt ci-dessous. Chaque proposition doit
-          y être tranchée par un <strong>extrait du document recopié mot pour mot</strong> ; les
-          extraits, les pièges et la difficulté sont versés dans la justification, affichée à
-          l&apos;apprenant après la correction. Relisez chaque extrait contre le document : c&apos;est
-          ce que vérifie le second code avant de valider.
+          y être tranchée par un <strong>extrait du document recopié mot pour mot</strong> ;
+          l&apos;extrait et le piège de chaque proposition s&apos;affichent sous elle, à l&apos;apprenant,
+          après la correction. Relisez chaque extrait contre le document : c&apos;est ce que vérifie
+          le second code avant de valider.
         </p>
         <p className="legende">
           Une question peut s&apos;appuyer sur une figure ou une photographie du document : l&apos;assistant

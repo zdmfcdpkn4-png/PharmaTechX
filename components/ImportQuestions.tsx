@@ -491,6 +491,8 @@ function ApercuImport({
                     <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
                       <span className="num">{o.id.toUpperCase()}</span> {o.texte}{" "}
                       <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
+                      {/* Sa justification, telle qu'elle s'affichera sous elle (question 85, choix a). */}
+                      {o.justification && <span className="justif-proposition">{o.justification}</span>}
                     </li>
                   ))}
                 </ul>

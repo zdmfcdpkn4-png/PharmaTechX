@@ -260,9 +260,9 @@ export interface ImageQuestion {
 /**
  * Question d'évaluation.
  *
- * `bonnesReponses` et `justification` ne quittent JAMAIS le serveur avant
- * soumission : `sanitizeQuestion()` les retire pour l'envoi au navigateur,
- * et la correction est faite par la route API.
+ * `bonnesReponses`, `justification` et `justificationsOptions` ne quittent
+ * JAMAIS le serveur avant soumission : `sanitizeQuestion()` les retire pour
+ * l'envoi au navigateur, et la correction est faite par la route API.
  */
 export interface Question {
   id: string;
@@ -273,6 +273,12 @@ export interface Question {
   bonnesReponses: string[];
   /** Explication affichée après correction. */
   justification: string;
+  /**
+   * QCM et QIM (question 85, choix a, 01/10/2026) : justification de chaque
+   * proposition, par identifiant d'option, affichée sous elle à la
+   * correction — comme dans les quiz de Flore. Absente : aucune.
+   */
+  justificationsOptions?: Record<string, string>;
   /**
    * Question éliminatoire : une erreur invalide le module quel que soit le
    * score global (typiquement sécurité opérateur ou intégrité patient).
@@ -426,7 +432,7 @@ export interface LegendePublique {
 /** Question telle qu'elle est envoyée au navigateur : sans les réponses. */
 export type QuestionPublique = Omit<
   Question,
-  "bonnesReponses" | "justification" | "legendes"
+  "bonnesReponses" | "justification" | "justificationsOptions" | "legendes"
 > & {
   /** Vignette de rattachement, `null` pour une question isolée. */
   situation: { id: string; titre: string; contexte: string } | null;
@@ -458,7 +464,7 @@ export function sanitizeQuestion(
   q: Question,
   situation: QuestionPublique["situation"] = null,
 ): QuestionPublique {
-  const { bonnesReponses: _b, justification: _j, legendes, ...reste } = q;
+  const { bonnesReponses: _b, justification: _j, justificationsOptions: _jo, legendes, ...reste } = q;
   // Séquence et texte à trous : l'ordre de rangement des options porte la
   // réponse (l'ordre juste, les vignettes attendues d'abord). Il est mélangé
   // avant l'envoi — `bonnesReponses` est déjà retiré, mais pas l'ordre.

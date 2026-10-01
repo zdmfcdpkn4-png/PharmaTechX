@@ -2,6 +2,7 @@ import { poser, type Legende } from "@/content/schema";
 import { lireNiveauQuestion, trousDuTexte } from "@/content/types";
 import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
 import { indiceFormat, type FormatChoix } from "@/lib/import-format";
+import { JUSTIFICATION_PROPOSITION_MAX, composerJustification, lirePieges } from "@/content/justifications";
 
 /**
  * Import de questions depuis un texte — reprise, adaptée, de l'extraction
@@ -13,6 +14,8 @@ import { indiceFormat, type FormatChoix } from "@/lib/import-format";
  *   B. Proposition (F)
  *   Réponses : A C
  *   Justification : texte affiché après correction
+ *   Extrait B : « phrase du document qu'elle contredit »
+ *   Pièges : B inversion
  *   Source : ANSM — BPP 2023 — 21/07/2023 — https://…
  *   Éliminatoire : oui
  *   Réservée à l'évaluation : oui
@@ -30,6 +33,11 @@ import { indiceFormat, type FormatChoix } from "@/lib/import-format";
  * (`lib/docx.ts`, question 84, choix a). Une question ne porte qu'une image :
  * la première vaut, les suivantes sont signalées ; « Image : » seule annonce
  * une image à ajouter dans l'aperçu.
+ *
+ * Les lignes « Extrait B », le piège de B et une justification écrite lettre
+ * par lettre (« B. Faux : … » sous « Justification : ») vont à la
+ * proposition B, affichées sous elle à la correction (question 85, choix a,
+ * `content/justifications.ts`) ; le reste fait la justification de la question.
  *
  * Le mot-clé QCM ou QIM fixe le format ; sans lui, un intertitre « QCM » ou
  * « QIM » seul sur sa ligne vaut pour les questions qui suivent ; sans
@@ -93,6 +101,8 @@ export interface OptionImportee {
   id: string;
   texte: string;
   vrai: boolean;
+  /** QCM et QIM : justification de la proposition, affichée sous elle à la correction (question 85). */
+  justification?: string;
 }
 
 export interface QuestionImportee {
@@ -193,8 +203,8 @@ const RE_LEURRES = /^leurres?\s*[:–—-]\s*(.+)$/i;
  * Lignes du prompt de génération (22/09/2026). Sans elles, une ligne
  * « Extrait A : « … » » placée sous sa proposition était **collée au texte de
  * la proposition** — l'apprenant aurait lu la phrase du document qui donne la
- * réponse. Elles vont désormais dans la justification, affichée après la
- * correction.
+ * réponse. Elles vont désormais à la justification de leur proposition,
+ * affichée sous elle après la correction (question 85, choix a, 01/10/2026).
  */
 const RE_EXTRAIT = /^Extraits?\s+([A-Ea-e])\s*[:–—-]\s*(.+)$/i;
 /**
@@ -298,6 +308,8 @@ interface Brouillon {
   justification: string[];
   /** Extrait du document qui tranche chaque proposition, par lettre. */
   extraits: { lettre: string; texte: string }[];
+  /** Justification écrite lettre par lettre sous « Justification : » (« B. Faux : … »). */
+  justifsLettre: { lettre: string; texte: string }[];
   /** Extrait du document qui donne la réponse, pour la question entière. */
   extraitsQuestion: string[];
   pieges: string;
@@ -307,8 +319,8 @@ interface Brouillon {
   reservee: boolean;
   obligatoire: boolean;
   corrige: boolean;
-  /** « extrait » et « extrait-lettre » : une ligne sans libellé prolonge l'extrait coupé en deux. */
-  dernier: "enonce" | "prop" | "justif" | "legende" | "item" | "extrait" | "extrait-lettre" | "rien";
+  /** « extrait » et « extrait-lettre » : une ligne sans libellé prolonge l'extrait coupé en deux ; « justif-lettre », la justification de la dernière lettre. */
+  dernier: "enonce" | "prop" | "justif" | "justif-lettre" | "legende" | "item" | "extrait" | "extrait-lettre" | "rien";
 }
 
 /** Ce qui, lu avant l'en-tête d'une question, vaut pour elle. */
@@ -340,6 +352,7 @@ function nouveau(
     imagesEcartees: [],
     justification: [],
     extraits: [],
+    justifsLettre: [],
     extraitsQuestion: [],
     pieges: "",
     difficulte: "",
@@ -399,26 +412,67 @@ function prolongerExtrait(b: Brouillon, ligne: string): void {
 }
 
 /**
+ * « B. Faux : c'est l'inverse. » sous « Justification : » : la justification
+ * de la proposition B, si la question en a une ; `true` si la ligne est lue
+ * ainsi (question 85, choix a). La lettre est suivie d'un point ou d'une
+ * parenthèse, et le texte ne commence pas par une minuscule : « E. coli est
+ * un indicateur… » ou « D-dimères… » restent du texte.
+ */
+function lireJustifLettre(b: Brouillon, p: RegExpExecArray): boolean {
+  const lettre = p[1].toUpperCase();
+  if (b.genre !== "question" || !b.props.some((x) => x.lettre === lettre)) return false;
+  if (!/^[A-Ea-e]\s*[.)]/.test(p[0]) || /^\p{Ll}/u.test(p[2].trim())) return false;
+  b.justifsLettre.push({ lettre, texte: p[2].trim() });
+  b.dernier = "justif-lettre";
+  return true;
+}
+
+/**
  * Justification d'une question : la ligne « Justification » si elle existe,
  * puis l'extrait du document qui donne la réponse (tout format, 24/09/2026),
- * puis, pour un QCM ou une QIM, les extraits dans l'ordre des lettres et les
- * pièges. Tout est affiché à l'apprenant après la correction — l'extrait lui
- * montre la phrase qui tranche, le piège lui dit où était l'erreur — et au
- * relecteur avant la validation. Le niveau, lui, est un champ de la question
- * depuis le 22/09/2026.
+ * puis les extraits par lettre et les pièges. Tout est affiché à l'apprenant
+ * après la correction — l'extrait lui montre la phrase qui tranche, le piège
+ * lui dit où était l'erreur — et au relecteur avant la validation. Le niveau,
+ * lui, est un champ de la question depuis le 22/09/2026.
+ *
+ * QCM et QIM (question 85, choix a, 01/10/2026) : l'extrait et le piège d'une
+ * lettre vont à sa proposition (`rangees`) ; ne restent ici que ceux d'une
+ * lettre sans proposition, et les pièges sans lettre (« aucun »).
  */
-function justificationAssemblee(b: Brouillon): string {
+function justificationAssemblee(b: Brouillon, rangees?: { lettres: ReadonlySet<string>; piegesReste: string[] }): string {
   const parts: string[] = [];
   const libre = b.justification.join(" ").trim();
   if (libre) parts.push(libre);
   const duDocument = b.extraitsQuestion.map((t) => t.trim()).filter(Boolean);
   if (duDocument.length) parts.push(`Extrait du document : ${duDocument.join(" ; ").replace(/\.$/, "")}.`);
   const extraits = [...b.extraits]
+    .filter((x) => !rangees?.lettres.has(x.lettre))
     .sort((x, y) => x.lettre.localeCompare(y.lettre))
     .map((x) => `${x.lettre} : ${x.texte}`);
   if (extraits.length) parts.push(`${extraits.join(" ; ")}.`);
-  if (b.pieges) parts.push(`Pièges : ${b.pieges.replace(/\.$/, "")}.`);
+  const pieges = rangees ? rangees.piegesReste.join(", ") : b.pieges;
+  if (pieges) parts.push(`Pièges : ${pieges.replace(/\.$/, "")}.`);
   return parts.join(" ");
+}
+
+/**
+ * QCM et QIM : la justification de chaque lettre — justification écrite
+ * lettre par lettre, extrait, piège (question 85, choix a) — et les pièges
+ * qui ne se rangent sous aucune proposition.
+ */
+function justificationsParLettre(b: Brouillon): { parLettre: Map<string, string>; piegesReste: string[] } {
+  const lettres = b.props.map((p) => p.lettre);
+  const pieges = b.pieges ? lirePieges(b.pieges, lettres) : { parLettre: new Map<string, string>(), reste: [] };
+  const parLettre = new Map<string, string>();
+  for (const l of lettres) {
+    const j = composerJustification({
+      justification: b.justifsLettre.filter((x) => x.lettre === l).map((x) => x.texte).join(" "),
+      extrait: b.extraits.filter((x) => x.lettre === l).map((x) => x.texte).join(" ; "),
+      piege: pieges.parLettre.get(l),
+    });
+    if (j) parLettre.set(l, j.slice(0, JUSTIFICATION_PROPOSITION_MAX));
+  }
+  return { parLettre, piegesReste: pieges.reste };
 }
 
 function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): QuestionImportee | null {
@@ -553,7 +607,11 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
         : `${manquants} proposition${manquants > 1 ? "s" : ""} sans verdict, mise${manquants > 1 ? "s" : ""} à Faux.`,
     );
   }
-  const options: OptionImportee[] = b.props.map((p) => ({ id: p.lettre.toLowerCase(), texte: p.texte, vrai: p.v === true }));
+  const { parLettre, piegesReste } = justificationsParLettre(b);
+  const options: OptionImportee[] = b.props.map((p) => {
+    const justification = parLettre.get(p.lettre);
+    return { id: p.lettre.toLowerCase(), texte: p.texte, vrai: p.v === true, ...(justification ? { justification } : {}) };
+  });
   // Extraits : chaque proposition doit être tranchée par une phrase du
   // document. Une lettre sans proposition, ou une proposition sans extrait
   // quand les autres en ont, se signale au relecteur des quatre yeux.
@@ -581,7 +639,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     imageAlt: b.imageAlt,
     imageAnnoncee: b.imageAnnoncee,
     numeroSchema: b.numero,
-    justification: justificationAssemblee(b),
+    justification: justificationAssemblee(b, { lettres: new Set(b.props.map((p) => p.lettre)), piegesReste }),
     eliminatoire: b.eliminatoire,
     reservee: b.reservee,
     obligatoire: b.obligatoire,
@@ -838,19 +896,23 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       continue;
     }
     const p = RE_PROP.exec(ligne);
+    // Sous « Justification : », « B. Faux : … » est la justification de la
+    // proposition B, qui la porte (question 85, choix a). Une autre ligne en
+    // « X. » y reste du texte (« E. coli est… ») : avant, elle devenait une
+    // proposition de plus dès que la question en comptait moins de cinq.
+    const sousJustification = courant.dernier === "justif" || courant.dernier === "justif-lettre";
+    if (p && sousJustification && lireJustifLettre(courant, p)) continue;
     // Une sixième proposition trahit le plus souvent un en-tête manqué : la
     // question suivante entrait dans celle-ci, ses lignes collées à la
-    // dernière proposition ou au dernier extrait (01/10/2026). Sous une ligne
-    // « Justification : », une ligne « A. … » est une justification lettre
-    // par lettre : elle y reste, comme avant.
-    if (p && courant.props.length >= 5 && courant.dernier !== "justif") {
+    // dernière proposition ou au dernier extrait (01/10/2026).
+    if (p && courant.props.length >= 5 && !sousJustification) {
       avertissements.push(
         `Question « ${apercu(courant)} » : proposition « ${p[1].toUpperCase()} » au-delà de E, ignorée — l'en-tête d'une question manque-t-il ?`,
       );
       courant.dernier = "rien";
       continue;
     }
-    if (p && courant.props.length < 5) {
+    if (p && courant.props.length < 5 && !sousJustification) {
       const lettre = p[1].toUpperCase();
       let t = p[2].trim();
       let v: boolean | null = null;
@@ -891,8 +953,10 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     }
     const j = RE_JUSTIF.exec(ligne);
     if (j) {
-      courant.justification.push(j[1].trim());
       courant.dernier = "justif";
+      // « Justification : A. Vrai… » : la lettre commence sur la ligne même.
+      const pj = RE_PROP.exec(j[1].trim());
+      if (!(pj && lireJustifLettre(courant, pj)) && j[1].trim()) courant.justification.push(j[1].trim());
       continue;
     }
     const src = RE_SOURCE.exec(ligne);
@@ -924,7 +988,10 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       const derniere = courant.props[courant.props.length - 1];
       derniere.texte = `${derniere.texte} ${ligne}`.trim();
     } else if (courant.dernier === "justif") courant.justification.push(ligne);
-    else prolongerExtrait(courant, ligne);
+    else if (courant.dernier === "justif-lettre") {
+      const derniere = courant.justifsLettre[courant.justifsLettre.length - 1];
+      derniere.texte = `${derniere.texte} ${ligne}`.trim();
+    } else prolongerExtrait(courant, ligne);
   }
   clore();
 
@@ -973,8 +1040,25 @@ function optionsDe(q: QuestionJson): OptionImportee[] {
     const id = chaine(obj.id, LETTRES[k].toLowerCase()).toLowerCase();
     const vrai =
       typeof obj.vrai === "boolean" ? obj.vrai : typeof obj.verdict === "boolean" ? obj.verdict : bonnes.has(id);
-    return { id, texte: chaine(obj.texte, typeof o === "string" ? o : ""), vrai };
+    const justification = justificationJson(obj);
+    return { id, texte: chaine(obj.texte, typeof o === "string" ? o : ""), vrai, ...(justification ? { justification } : {}) };
   });
+}
+
+/**
+ * Justification d'une proposition JSON (question 85, choix a) : la sienne
+ * (`justification`, ou `j` du Lecteur QIM · QCM), et l'extrait de sa
+ * première référence au schéma 3.0 (`references[0].extrait`, avec fichier et
+ * page) — ce que le quiz de Flore affiche sous la proposition.
+ */
+function justificationJson(obj: Record<string, unknown>): string {
+  const ref = Array.isArray(obj.references) && obj.references[0] && typeof obj.references[0] === "object"
+    ? (obj.references[0] as Record<string, unknown>)
+    : null;
+  const brut = ref ? chaine(ref.extrait).trim() : "";
+  const lieu = ref ? [chaine(ref.fichier), typeof ref.page === "number" || typeof ref.page === "string" ? `p. ${ref.page}` : ""].filter(Boolean).join(", ") : "";
+  const extrait = brut ? `${/^[«"“]/.test(brut) ? brut : `« ${brut} »`}${lieu ? ` (${lieu})` : ""}` : "";
+  return composerJustification({ justification: chaine(obj.justification, chaine(obj.j)), extrait }).slice(0, JUSTIFICATION_PROPOSITION_MAX);
 }
 
 function referencesDe(q: QuestionJson): Reference[] {

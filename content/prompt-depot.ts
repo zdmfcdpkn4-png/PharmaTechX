@@ -168,8 +168,9 @@ TEXTE SOURCE À METTRE EN FORME
  * 4. Ni « Éliminatoire », ni « Réservée à l'évaluation », ni « Obligatoire » :
  *    ce sont des décisions du tuteur, prises dans l'éditeur, pas celles d'une IA.
  *
- * Les lignes « Extrait X » et « Pièges » sont lues par l'analyseur et
- * versées dans la justification, affichée après la correction ; la ligne
+ * Les lignes « Extrait X » et « Pièges » sont lues par l'analyseur : l'extrait
+ * et le piège de chaque lettre vont à sa proposition, affichés sous elle après
+ * la correction (question 85, choix a, 01/10/2026) ; la ligne
  * « Niveau » renseigne le niveau de la question — initial, intermédiaire ou
  * avancé, les trois paliers du site. `test/prompt-depot.test.ts` passe les
  * deux exemples dans l'analyseur réel.

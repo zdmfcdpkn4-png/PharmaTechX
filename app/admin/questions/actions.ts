@@ -6,6 +6,7 @@ import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
 import { IMAGE_MAX_OCTETS, enregistrerImage, imageExiste, majAltImage } from "@/lib/images";
 import { lireDocx, lireOctets, type ImageCollee } from "@/lib/docx";
+import { JUSTIFICATION_PROPOSITION_MAX } from "@/content/justifications";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, type IndexModules } from "@/lib/import-module";
 import { schemaPret, type Legende } from "@/content/schema";
@@ -52,7 +53,14 @@ function lireOptions(brut: string): OptionBase[] | null {
       const x = o as Record<string, unknown>;
       const texte = typeof x.texte === "string" ? x.texte.trim().slice(0, 500) : "";
       if (!texte) continue;
-      out.push({ id: String(x.id ?? "").slice(0, 4) || String.fromCharCode(97 + out.length), texte, vrai: x.vrai === true });
+      // Justification de la proposition (question 85, choix a) : gardée si écrite.
+      const justification = typeof x.justification === "string" ? x.justification.trim().slice(0, JUSTIFICATION_PROPOSITION_MAX) : "";
+      out.push({
+        id: String(x.id ?? "").slice(0, 4) || String.fromCharCode(97 + out.length),
+        texte,
+        vrai: x.vrai === true,
+        ...(justification ? { justification } : {}),
+      });
     }
     return out;
   } catch {
@@ -162,7 +170,7 @@ export async function actionEnregistrerQuestion(
     const lues = lireOptions(chaine(formData, "options", 20000));
     if (!lues || lues.length < 2) return { erreur: "Une séquence a au moins deux étapes." };
     if (lues.some((o) => !o.texte.trim())) return { erreur: "Chaque étape doit porter un texte." };
-    options = lues.map((o) => ({ ...o, vrai: true }));
+    options = lues.map(({ justification: _j, ...o }) => ({ ...o, vrai: true }));
   } else if (format === "TAT") {
     const lues = lireOptions(chaine(formData, "options", 20000));
     if (!lues) return { erreur: "Vignettes illisibles." };
@@ -178,7 +186,7 @@ export async function actionEnregistrerQuestion(
       return { erreur: "Chaque trou doit recevoir la vignette attendue." };
     }
     // Attendues d'abord, dans l'ordre des trous ; leurres ensuite.
-    options = [...attendues, ...lues.filter((o) => !o.vrai && o.texte.trim())];
+    options = [...attendues, ...lues.filter((o) => !o.vrai && o.texte.trim())].map(({ justification: _j, ...o }) => o);
   } else {
     const lues = lireOptions(chaine(formData, "options", 20000));
     if (!lues || lues.length < 2) return { erreur: "Il faut au moins deux propositions." };
@@ -386,7 +394,12 @@ async function enregistrerImageCollee(docx: Buffer, c: ImageCollee, avertissemen
 
 /** Texte d'une question tel que la proposition de module le compare : tout ce qu'elle dit. */
 function texteDeQuestion(q: QuestionImportee): string {
-  return [q.enonce, ...q.options.map((o) => o.texte), ...q.legendes.map((l) => l.attendu), q.justification].join(" ");
+  return [
+    q.enonce,
+    ...q.options.map((o) => `${o.texte} ${o.justification ?? ""}`),
+    ...q.legendes.map((l) => l.attendu),
+    q.justification,
+  ].join(" ");
 }
 
 /**
@@ -596,7 +609,18 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     situationId: null,
     format,
     enonce: q.enonce.slice(0, 2000),
-    options: q.format === "SCH" ? [] : q.options.map((o) => ({ id: o.id, texte: o.texte.slice(0, 500), vrai: o.vrai })),
+    options:
+      q.format === "SCH"
+        ? []
+        : q.options.map((o) => ({
+            id: o.id,
+            texte: o.texte.slice(0, 500),
+            vrai: o.vrai,
+            // Justification de la proposition (question 85, choix a) : QCM et QIM seulement.
+            ...((format === "QCM" || format === "QIM") && o.justification
+              ? { justification: o.justification.slice(0, JUSTIFICATION_PROPOSITION_MAX) }
+              : {}),
+          })),
     legendes: q.format === "SCH" ? q.legendes : [],
     modeReponse: "ecrire",
     imageId,

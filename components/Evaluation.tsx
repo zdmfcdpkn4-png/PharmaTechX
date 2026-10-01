@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { QuestionPublique } from "@/content/types";
 import { ORDRE_NIVEAUX, bilanTirage, repartir, tirer, type ContexteTirage, type Difficulte } from "@/content/tirage";
 import { annoncePlusieurs, libelleBareme, libelleFormat, type SyntheseDocument } from "@/content/types";
@@ -17,6 +17,7 @@ import {
 import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
 import { marquesOptions, marquesQim } from "@/content/marques";
+import { justificationsParOption } from "@/content/justifications";
 import { actionDetacher } from "@/app/actions-progression";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
 import { LIBELLES_VERDICT, decider, expliquerVerdict } from "@/lib/decision";
@@ -1174,7 +1175,8 @@ export function Evaluation({
    * correction ne répète ni l'énoncé ni l'image, et laisse aux propositions
    * marquées, ou au schéma révélé, ce qu'ils disent déjà. Ailleurs — fin
    * d'entraînement, résultat d'évaluation — elle reste complète : la question
-   * n'y est pas affichée.
+   * n'y est pas affichée, et la justification de chaque proposition (question
+   * 85, choix a) s'y lit sous son texte.
    */
   const rendreCorrection = (d: DetailQuestion, i: number, q: QuestionPublique | undefined, sousLaQuestion = false) => {
     const marques = sousLaQuestion && q ? marquesDe(q, d) : null;
@@ -1214,6 +1216,21 @@ export function Evaluation({
           Attendu&nbsp;: {d.reponsesAttendues.join(" · ")}
         </p>
       )}
+      {!reportee && d.propositions && d.justificationsPropositions && (
+        <ul className="justifs-propositions">
+          {d.propositions.map((texte, k) =>
+            d.justificationsPropositions?.[k] ? (
+              <li key={k}>
+                {texte}{" "}
+                <span className="legende">
+                  ({d.reponsesAttendues.includes(texte) ? (d.type === "QIM" ? "vraie" : "attendue") : d.type === "QIM" ? "fausse" : "non attendue"})
+                </span>
+                <span className="justif-proposition">{d.justificationsPropositions[k]}</span>
+              </li>
+            ) : null,
+          )}
+        </ul>
+      )}
       {d.justification && <p style={{ maxWidth: "66ch" }}>{d.justification}</p>}
       {d.sources.length > 0 && (
         <p className="source">Source&nbsp;: {d.sources.join(" ; ")}</p>
@@ -1242,6 +1259,10 @@ export function Evaluation({
     // Question corrigée (entraînement) : la correction se lit sur les propositions (E1).
     const corrigee = verrouille ? corrections[q.id] : undefined;
     const marques = corrigee ? marquesDe(q, corrigee) : null;
+    // Justification de chaque proposition, sous elle (question 85, choix a).
+    const justifs = marques && (marques.qim ?? marques.options) && corrigee
+      ? justificationsParOption(q.options, corrigee.propositions, corrigee.justificationsPropositions)
+      : null;
     return (
       <fieldset className="question" id={`question-${i + 1}`} disabled={verrouille}>
         <legend>
@@ -1341,6 +1362,7 @@ export function Evaluation({
                       {" · "}Attendu&nbsp;: {m.attendu ? "Vrai" : "Faux"}
                     </span>
                   )}
+                  {justifs?.[o.id] && <span className="justif-proposition">{justifs[o.id]}</span>}
                 </div>
               );
             })}
@@ -1349,21 +1371,24 @@ export function Evaluation({
           q.options.map((o) => {
             const m = marques?.options?.[o.id] ?? null;
             return (
-              <label key={o.id} className={`option${m ? ` option--${m}` : ""}`}>
-                <input
-                  type={estUneSeule(q) ? "radio" : "checkbox"}
-                  name={q.id}
-                  checked={(reponses[q.id] ?? []).includes(o.id)}
-                  onChange={() => basculer(q, o.id)}
-                />
-                <span>{o.texte}</span>
-                {m && (
-                  <span className="marque">
-                    <span aria-hidden="true">{m === "attendue" ? "✓ " : "✗ "}</span>
-                    {m === "attendue" ? "attendue" : "non attendue"}
-                  </span>
-                )}
-              </label>
+              <Fragment key={o.id}>
+                <label className={`option${m ? ` option--${m}` : ""}`}>
+                  <input
+                    type={estUneSeule(q) ? "radio" : "checkbox"}
+                    name={q.id}
+                    checked={(reponses[q.id] ?? []).includes(o.id)}
+                    onChange={() => basculer(q, o.id)}
+                  />
+                  <span>{o.texte}</span>
+                  {m && (
+                    <span className="marque">
+                      <span aria-hidden="true">{m === "attendue" ? "✓ " : "✗ "}</span>
+                      {m === "attendue" ? "attendue" : "non attendue"}
+                    </span>
+                  )}
+                </label>
+                {justifs?.[o.id] && <p className="justif-proposition justif-proposition--option">{justifs[o.id]}</p>}
+              </Fragment>
             );
           })
         )}

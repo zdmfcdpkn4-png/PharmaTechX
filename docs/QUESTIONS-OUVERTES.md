@@ -421,6 +421,15 @@ telle. Ordre : ce qui change le déploiement en premier.
       toujours un bloc après la correction, pas l'explication sous chaque
       proposition.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : au
+    dépôt, l'extrait, le piège et la justification écrite lettre par lettre
+    vont à leur proposition ; ils s'affichent sous elle à la correction, au
+    rapport, dans l'aperçu et en banque, et ne partent pas au navigateur
+    avant la réponse. Dans l'éditeur, un champ par proposition, et « Répartir
+    sous les propositions » pour une question au texte unique. Essayée sur
+    les 53 questions de la banque du pool, la répartition redonne exactement
+    le nouveau dépôt. Détail dans `DECISIONS.md`.
+
 84. **Illustrations dès le dépôt : les images du fichier Word** — posée le
     01/10/2026, sur « Permettre l'ajout d'illustration d'image dès le
     dépôt ». Aujourd'hui, une image n'arrive avec un dépôt qu'à deux

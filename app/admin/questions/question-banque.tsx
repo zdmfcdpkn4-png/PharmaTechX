@@ -177,6 +177,10 @@ export function ContenuQuestion({ q }: { q: LigneQuestion }) {
           {q.options.map((o) => (
             <li key={o.id} className={o.vrai ? "vraie" : "fausse"}>
               <span className="num">{o.id.toUpperCase()}</span> {o.texte} <span className="legende">({o.vrai ? "vrai" : "faux"})</span>
+              {/* La justification de la proposition, à confronter au document (question 85, choix a). */}
+              {(q.format === "QCM" || q.format === "QIM") && o.justification?.trim() && (
+                <span className="justif-proposition">{o.justification}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -194,11 +198,18 @@ export function ContenuQuestion({ q }: { q: LigneQuestion }) {
  */
 function JustificationQuestion({ q }: { q: LigneQuestion }) {
   const justification = q.justification.trim();
+  // QCM et QIM (question 85, choix a) : chaque proposition peut porter la sienne, ci-dessus.
+  const parProposition = (q.format === "QCM" || q.format === "QIM") && q.options.some((o) => o.justification?.trim());
   const contenu = (
     <>
       <p>
         <strong>Justification</strong> :{" "}
-        {justification || <span className="legende">aucune — à écrire dans l&apos;éditeur, d&apos;après le document</span>}
+        {justification ||
+          (parProposition ? (
+            <span className="legende">sous chaque proposition, ci-dessus</span>
+          ) : (
+            <span className="legende">aucune — à écrire dans l&apos;éditeur, d&apos;après le document</span>
+          ))}
       </p>
       {q.refs.length > 0 && (
         <p className="legende">

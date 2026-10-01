@@ -36,6 +36,8 @@ export interface OptionBase {
   id: string;
   texte: string;
   vrai: boolean;
+  /** QCM et QIM : justification de la proposition, affichée sous elle à la correction (question 85). */
+  justification?: string;
 }
 
 export interface LigneQuestion {
@@ -169,6 +171,13 @@ function normaliser(l: LigneQuestion): LigneQuestion {
   };
 }
 
+/** QCM et QIM : la justification de chaque proposition qui en a une (question 85, choix a). */
+function justificationsDesOptions(l: LigneQuestion): Pick<Question, "justificationsOptions"> {
+  if (l.format !== "QCM" && l.format !== "QIM") return {};
+  const avec = l.options.filter((o) => typeof o.justification === "string" && o.justification.trim() !== "");
+  return avec.length > 0 ? { justificationsOptions: Object.fromEntries(avec.map((o) => [o.id, o.justification!.trim()])) } : {};
+}
+
 /** Conversion d'une ligne en question du modèle de contenu. */
 export function versQuestion(l: LigneQuestion): Question {
   const base: Question = {
@@ -178,6 +187,7 @@ export function versQuestion(l: LigneQuestion): Question {
     options: l.format === "SCH" ? [] : l.options.map((o) => ({ id: o.id, texte: o.texte })),
     bonnesReponses: l.format === "SCH" ? [] : l.options.filter((o) => o.vrai).map((o) => o.id),
     justification: l.justification,
+    ...justificationsDesOptions(l),
     eliminatoire: l.eliminatoire,
     reservee: l.reservee,
     obligatoire: l.obligatoire,

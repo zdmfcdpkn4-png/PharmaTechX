@@ -1,5 +1,5 @@
 import { libelleBande, libelleBaremeCourt } from "../content/bareme";
-import type { ResultatEvaluation } from "@/app/api/evaluation/route";
+import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
 import {
   LIBELLES_COURTS_VERDICT,
   LIBELLES_VERDICT,
@@ -268,6 +268,21 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
     </tbody>
   </table>`;
 
+  // Justification de chaque proposition, sous son texte (question 85, choix a) ; absente des résultats antérieurs.
+  const justificationsPropositions = (d: DetailQuestion): string => {
+    const justifs = d.justificationsPropositions;
+    if (!d.propositions || !justifs || !justifs.some((j) => j.trim())) return "";
+    const verdict = (t: string) =>
+      d.reponsesAttendues.includes(t) ? (d.type === "QIM" ? "vraie" : "attendue") : d.type === "QIM" ? "fausse" : "non attendue";
+    return `<ul class="justifs">${d.propositions
+      .map((t, k) =>
+        justifs[k]?.trim()
+          ? `<li>${echapper(t)} <span class="petit">(${verdict(t)})</span><span class="justif-prop">${echapper(justifs[k]).replace(/\n/g, "<br>")}</span></li>`
+          : "",
+      )
+      .join("")}</ul>`;
+  };
+
   const details = r.detail
     .map((d, i) => {
       const exclusion = exclues.get(d.questionId);
@@ -286,7 +301,7 @@ function sectionCritere(r: ResultatRapport, entete: EnTeteRapport, o: OptionsRap
             )
             .join("")}</tbody></table>`
         : `<p class="rep">Réponse donnée : <span>${d.choixApprenant.length ? echapper(d.choixApprenant.join(" · ")) : "aucune"}</span></p>
-           <p class="rep">Attendu : <strong>${echapper(d.reponsesAttendues.join(" · "))}</strong></p>`;
+           <p class="rep">Attendu : <strong>${echapper(d.reponsesAttendues.join(" · "))}</strong></p>${justificationsPropositions(d)}`;
       return `<div class="detail" style="border-left-color:${couleurDe(d)}">
         <div class="detail-tete">
           <span class="mono num">Question ${i + 1}</span>
@@ -476,6 +491,9 @@ export function construireRapport(
   .rep { margin: 0 0 3px; font-size: 10.5pt; color: #566370; }
   .rep span, .rep strong { color: #16202a; }
   .justif { margin: 4px 0 5px; font-size: 11pt; line-height: 1.55; }
+  .justifs { list-style: none; margin: 4px 0 5px; padding: 0; font-size: 10.5pt; line-height: 1.5; }
+  .justifs li { margin: 0 0 4px; break-inside: avoid; }
+  .justif-prop { display: block; margin-top: 1px; padding-left: 8px; border-left: 2px solid #d8dde2; color: #566370; }
   .legendes { margin: 4px 0 6px; }
   .sources { margin: 0; padding-left: 20px; font-size: 10pt; line-height: 1.55; color: #566370; }
   .sources li { margin-bottom: 6px; }

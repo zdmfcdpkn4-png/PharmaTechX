@@ -803,6 +803,86 @@ Justification : cf. procédure interne.`,
   assert.equal(await illustrationDe("Image annoncée, non collée"), 1, "image ajoutée dans l'aperçu");
   ok("illustrations dès le dépôt : images du Word sur leur question, seconde image signalée, image ajoutée et retirée dans l'aperçu");
 
+  // 4c quater. justification par proposition (question 85, choix a) : l'extrait et le piège de
+  //            chaque lettre vont à sa proposition, dans l'aperçu, la banque et la correction ;
+  //            ils ne partent pas au navigateur avant la réponse. Une question au texte unique
+  //            se répartit dans l'éditeur.
+  await page.goto(BASE + "/admin/questions/import");
+  await page.fill(
+    "textarea[name=texte]",
+    [
+      "Module : B3-10",
+      "QIM 1. Justification par proposition : indiquez si les propositions suivantes sont vraies ou fausses.",
+      "A. La première proposition est vraie.",
+      "Extrait A : « phrase qui confirme la première »",
+      "B. La seconde proposition est fausse.",
+      "Extrait B : « phrase que la seconde contredit »",
+      "Réponses : A",
+      "Pièges : B inversion",
+    ].join("\n"),
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 1 question reconnue')");
+  assert.equal(await questionApercu(0).locator(".apercu-options .justif-proposition").count(), 2, "chaque proposition montre la sienne");
+  assert.match(
+    await questionApercu(0).locator(".apercu-options li").nth(1).innerText(),
+    /Extrait : « phrase que la seconde contredit »\s*Piège : inversion\./,
+  );
+  assert.equal(await questionApercu(0).locator("p.legende:has-text('Justification :')").count(), 0, "plus rien sous la question");
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=1 question ajoutée");
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b3-10&statut=a_verifier");
+  const ligneJustif = page.locator(".question-ligne", { hasText: "Justification par proposition" });
+  assert.equal(await ligneJustif.locator(".apercu-options .justif-proposition").count(), 2, "la banque montre la justification de chaque proposition");
+  await ligneJustif.locator("text=sous chaque proposition, ci-dessus").waitFor();
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    ligneJustif.locator("form button:has-text('Valider')").click(),
+  ]);
+  // Rien de la justification dans la page de l'évaluation, avant la réponse.
+  const pageEvaluation = await (await page.request.get(BASE + "/module/critere-b3-10/evaluation")).text();
+  assert.ok(pageEvaluation.includes("Justification par proposition"), "la question est bien servie");
+  assert.equal(pageEvaluation.includes("phrase que la seconde contredit"), false, "justification gardée au serveur avant la réponse");
+  await page.goto(BASE + "/module/critere-b3-10/evaluation");
+  await page.check("input[name=mode] >> nth=1");
+  await page.click("button:has-text('Commencer')");
+  const propositionDe = (texte) => page.locator(".proposition", { hasText: texte });
+  await propositionDe("La seconde proposition est fausse").waitFor();
+  await propositionDe("La première proposition est vraie").locator("label:has-text('Vrai') input").check();
+  await propositionDe("La seconde proposition est fausse").locator("label:has-text('Vrai') input").check();
+  await page.click("button:has-text('Vérifier')");
+  await page.waitForSelector(".proposition .justif-proposition");
+  assert.equal(
+    await propositionDe("La première proposition est vraie").locator(".justif-proposition").innerText(),
+    "Extrait : « phrase qui confirme la première »",
+  );
+  assert.match(
+    await propositionDe("La seconde proposition est fausse").locator(".justif-proposition").innerText(),
+    /^Extrait : « phrase que la seconde contredit »\s*Piège : inversion\.$/,
+    "sous la proposition jugée à tort, son extrait et son piège",
+  );
+  // Une question au texte unique, comme celles déposées avant : « Répartir sous les propositions ».
+  await page.goto(BASE + "/admin/questions/nouvelle?module=critere-b3-10");
+  await page.fill("textarea[name=enonce]", "Texte unique à répartir ?");
+  const champsRep = page.locator(".proposition--editeur input[type=text]");
+  await champsRep.nth(0).fill("Un");
+  await champsRep.nth(1).fill("Deux");
+  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+  await page.fill("textarea[name=justification]", "Selon la procédure. A : « un ; et la suite » ; B : « deux ». Pièges : B inversion.");
+  await page.click("button:has-text('Répartir sous les propositions')");
+  await page.waitForSelector("text=Réparti sous 2 propositions : relisez-les, puis enregistrez.");
+  assert.equal(await page.inputValue("textarea[name=justification]"), "Selon la procédure.");
+  assert.equal(await page.locator(".champ--justif-proposition textarea").nth(0).inputValue(), "Extrait : « un ; et la suite »");
+  assert.equal(await page.locator(".champ--justif-proposition textarea").nth(1).inputValue(), "Extrait : « deux »\nPiège : inversion.");
+  assert.equal(await page.locator("button:has-text('Répartir sous les propositions')").count(), 0, "une fois réparti, le bouton se retire");
+  await page.click("button:has-text('Créer la question')");
+  await page.waitForURL(/ok=creee/);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b3-10&statut=a_verifier");
+  await page.locator(".question-ligne", { hasText: "Texte unique à répartir" }).locator("a:has-text('Modifier')").click();
+  await page.waitForSelector("textarea[name=enonce]");
+  assert.equal(await page.locator(".champ--justif-proposition textarea").nth(1).inputValue(), "Extrait : « deux »\nPiège : inversion.", "enregistrée");
+  ok("justification par proposition : extrait et piège sous leur proposition au dépôt, en banque et à la correction, gardés au serveur avant la réponse ; texte unique réparti dans l'éditeur");
+
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {
     await page.goto(BASE + "/");

@@ -124,6 +124,13 @@ export interface DetailQuestion {
    */
   propositions?: string[];
   /**
+   * QCM et QIM : justification de chaque proposition, dans l'ordre de
+   * `propositions` (« » si elle n'en a pas), affichée sous elle à la
+   * correction et au rapport (question 85, choix a, 01/10/2026). Absent des
+   * résultats antérieurs, et d'une question dont aucune proposition n'en porte.
+   */
+  justificationsPropositions?: string[];
+  /**
    * QIM en Vrai/Faux : propositions laissées sans jugement (« je ne sais
    * pas »), qu'on ne distinguait pas jusque-là d'une proposition jugée fausse.
    * Absent des résultats antérieurs.
@@ -433,6 +440,8 @@ export async function POST(request: Request) {
 
     if (q.type === "QCM" || q.type === "QIM") {
       base.propositions = q.options.map((o) => o.texte);
+      const jo = q.justificationsOptions;
+      if (jo && q.options.some((o) => jo[o.id])) base.justificationsPropositions = q.options.map((o) => jo[o.id] ?? "");
       const jugees = rep.juges;
       if (q.type === "QIM" && jugees) base.sansJugement = libelle(q.options.filter((o) => !jugees.includes(o.id)).map((o) => o.id));
     }

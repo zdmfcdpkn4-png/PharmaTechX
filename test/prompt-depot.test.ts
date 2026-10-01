@@ -146,9 +146,11 @@ for (const type of ["QIM", "QCM"] as const) {
         false,
         "aucun extrait n'est collé au texte d'une proposition",
       );
-      assert.match(q.justification, /^A : « .+ » ; B : « .+ » ; C : « .+ » ; D : « .+ » ; E : « .+ »\./, "extraits dans l'ordre des lettres");
-      assert.match(q.justification, /Pièges : .+\.$/, "les pièges ferment la justification");
-      assert.equal(/Niveau|Difficulté/.test(q.justification), false, "le niveau n'est plus dans la justification");
+      // Question 85 (choix a) : chaque proposition porte son extrait, et son piège si elle en est un.
+      for (const o of q.options) assert.match(o.justification ?? "", /^Extrait : « .+ »(\nPiège : .+\.)?$/, `extrait sous la proposition ${o.id}`);
+      assert.ok(q.options.some((o) => /\nPiège : .+\.$/.test(o.justification ?? "")), "les pièges vont à leur proposition");
+      assert.equal(q.justification, "", "rien ne reste sous la question");
+      assert.equal(q.options.some((o) => /Niveau|Difficulté/.test(o.justification ?? "")), false, "le niveau n'est pas dans une justification");
       assert.ok(q.niveauQuestion && ["initial", "intermediaire", "avance"].includes(q.niveauQuestion), "le niveau est un champ");
       assert.equal(q.refs.length, 1, "source lue");
     }
@@ -183,7 +185,8 @@ test("génération QCM : « lesquelles sont fausses ? » — les lettres à coch
   const [, fausses] = analyserTexte(EXEMPLE_GENERATION.QCM, { formatDefaut: "QCM" }).questions;
   assert.match(fausses.enonce, /lesquelles sont fausses/);
   assert.deepEqual(fausses.options.filter((o) => o.vrai).map((o) => o.id), ["a", "c"]);
-  assert.match(fausses.justification, /Pièges : A valeur modifiée, C restriction\./);
+  assert.match(fausses.options[0].justification ?? "", /\nPiège : valeur modifiée\.$/);
+  assert.match(fausses.options[2].justification ?? "", /\nPiège : restriction\.$/);
 });
 
 test("génération : le prompt emploie les trois niveaux du site, et eux seuls", () => {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { bilanPreparation } from "@/content/preparation-image";
 import { preparerChamp } from "./preparerImage";
+import { JUSTIFICATION_PROPOSITION_MAX, repartirJustification } from "@/content/justifications";
 import type { EtatFormulaireQuestion } from "@/app/admin/questions/import-etat";
 import type { Legende } from "@/content/schema";
 import {
@@ -53,6 +54,8 @@ export interface OptionForm {
   id: string;
   texte: string;
   vrai: boolean;
+  /** QCM et QIM : justification de la proposition, affichée sous elle à la correction (question 85). */
+  justification?: string;
 }
 
 export interface QuestionInitiale {
@@ -138,6 +141,10 @@ export function EditeurQuestion({
     initiale?.options.length ? initiale.options : optionsVides(4),
   );
   const [enonce, setEnonce] = useState(initiale?.enonce ?? "");
+  // Justification de la question : tenue ici pour que « Répartir sous les
+  // propositions » (question 85, choix a) puisse la récrire.
+  const [justification, setJustification] = useState(initiale?.justification ?? "");
+  const [etatRepartition, setEtatRepartition] = useState("");
   const [legendes, setLegendes] = useState<Legende[]>(initiale?.legendes ?? []);
   const [image, setImage] = useState<{ url: string; w: number; h: number } | null>(
     initiale?.imageUrl ? { url: initiale.imageUrl, w: initiale.imageLargeur, h: initiale.imageHauteur } : null,
@@ -170,6 +177,22 @@ export function EditeurQuestion({
 
   const majOption = (i: number, patch: Partial<OptionForm>) =>
     setOptions((prec) => prec.map((o, k) => (k === i ? { ...o, ...patch } : o)));
+
+  // Question déposée avant la question 85 : son texte unique (« A : … ; B :
+  // … ». Pièges : …) se répartit sous les propositions, à relire avant
+  // d'enregistrer. Seulement tant qu'aucune proposition n'a la sienne.
+  const propositionsSansJustification = options.every((o) => !o.justification?.trim());
+  const repartir = () => {
+    const r = repartirJustification(justification, options.map((o) => o.id.toUpperCase()));
+    if (!r) {
+      setEtatRepartition("Rien à répartir : le texte ne porte ni extrait « A : … » ni piège par lettre. Écrivez la justification de chaque proposition ci-dessus.");
+      return;
+    }
+    setOptions((prec) => prec.map((o) => ({ ...o, justification: r.propositions[o.id.toUpperCase()] ?? o.justification })));
+    setJustification(r.question);
+    const n = Object.keys(r.propositions).length;
+    setEtatRepartition(`Réparti sous ${n} proposition${n > 1 ? "s" : ""} : relisez-les, puis enregistrez.`);
+  };
 
   // Séquence à ordonner : la liste est l'ordre juste ; l'apprenant la reçoit
   // mélangée. Les flèches suffisent — pas de glisser-déposer, inutilisable
@@ -497,34 +520,49 @@ export function EditeurQuestion({
           <legend className="champ-titre">
             Propositions — cocher {format === "QIM" ? "celles qui sont vraies" : "la ou les réponses exactes"}
           </legend>
+          <p className="legende" style={{ margin: 0 }}>
+            Sous chaque proposition, sa justification — extrait du document, piège : elle s&apos;affiche
+            sous la proposition, après la correction.
+          </p>
           {options.map((o, i) => (
-            <div key={o.id} className="proposition proposition--editeur">
-              <span className="num" aria-hidden="true">{o.id.toUpperCase()}</span>
-              <label className="champ" style={{ flex: "1 1 18rem", margin: 0 }}>
-                <span className="visually-hidden">Proposition {o.id.toUpperCase()}</span>
-                <input
-                  type="text"
-                  value={o.texte}
-                  maxLength={500}
-                  onChange={(e) => majOption(i, { texte: e.target.value })}
+            <div key={o.id} className="proposition-editee">
+              <div className="proposition proposition--editeur">
+                <span className="num" aria-hidden="true">{o.id.toUpperCase()}</span>
+                <label className="champ" style={{ flex: "1 1 18rem", margin: 0 }}>
+                  <span className="visually-hidden">Proposition {o.id.toUpperCase()}</span>
+                  <input
+                    type="text"
+                    value={o.texte}
+                    maxLength={500}
+                    onChange={(e) => majOption(i, { texte: e.target.value })}
+                  />
+                </label>
+                <label className="option option--compact">
+                  <input type="checkbox" checked={o.vrai} onChange={(e) => majOption(i, { vrai: e.target.checked })} />
+                  <span>{format === "QIM" ? "Vraie" : "Exacte"}</span>
+                </label>
+                {options.length > 2 && (
+                  <button
+                    type="button"
+                    className="bouton bouton--compact bouton--discret"
+                    onClick={() =>
+                      setOptions((prec) => prec.filter((_, k) => k !== i).map((x, k) => ({ ...x, id: LETTRES[k] })))
+                    }
+                    aria-label={`Retirer la proposition ${o.id.toUpperCase()}`}
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
+              <label className="champ champ--justif-proposition">
+                <span>Justification de {o.id.toUpperCase()}</span>
+                <textarea
+                  rows={2}
+                  maxLength={JUSTIFICATION_PROPOSITION_MAX}
+                  value={o.justification ?? ""}
+                  onChange={(e) => majOption(i, { justification: e.target.value })}
                 />
               </label>
-              <label className="option option--compact">
-                <input type="checkbox" checked={o.vrai} onChange={(e) => majOption(i, { vrai: e.target.checked })} />
-                <span>{format === "QIM" ? "Vraie" : "Exacte"}</span>
-              </label>
-              {options.length > 2 && (
-                <button
-                  type="button"
-                  className="bouton bouton--compact bouton--discret"
-                  onClick={() =>
-                    setOptions((prec) => prec.filter((_, k) => k !== i).map((x, k) => ({ ...x, id: LETTRES[k] })))
-                  }
-                  aria-label={`Retirer la proposition ${o.id.toUpperCase()}`}
-                >
-                  Retirer
-                </button>
-              )}
             </div>
           ))}
           {options.length < 5 && (
@@ -540,9 +578,22 @@ export function EditeurQuestion({
       )}
 
       <label className="champ">
-        <span>Justification affichée après correction</span>
-        <textarea name="justification" rows={4} maxLength={3000} defaultValue={initiale?.justification ?? ""} />
+        <span>
+          Justification affichée après correction
+          {format === "QCM" || format === "QIM" ? " — celle de la question entière ; chaque proposition a la sienne, ci-dessus" : ""}
+        </span>
+        <textarea name="justification" rows={4} maxLength={3000} value={justification} onChange={(e) => setJustification(e.target.value)} />
       </label>
+      {(format === "QCM" || format === "QIM") && justification.trim() !== "" && propositionsSansJustification && (
+        <div className="actions" style={{ marginTop: "-0.25rem" }}>
+          <button type="button" className="bouton bouton--compact bouton--secondaire" onClick={repartir}>
+            Répartir sous les propositions
+          </button>
+        </div>
+      )}
+      <p className="legende etat-repartition" role="status" aria-live="polite">
+        {etatRepartition}
+      </p>
 
       <label className="champ">
         <span>Références — une par ligne : Source — Libellé — Date — URL</span>

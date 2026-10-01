@@ -226,3 +226,23 @@ test("réservées déjà vues (question 71) : comptées sur la ligne de contexte
   assert.ok(html({ posees: 2, disponibles: 2 }).includes("2 questions réservées à l’évaluation sur 2</p>"), "rien de vu : ligne inchangée");
   assert.ok(!html({ posees: 0, disponibles: 2 }).includes("réservée à l’évaluation sur"), "rien de posé, rien de vu : ligne inchangée");
 });
+
+test("question 85 : la justification de chaque proposition s'imprime sous elle, échappée ; un résultat antérieur n'en a pas", () => {
+  const q85: ResultatRapport = {
+    ...resultat,
+    detail: [
+      {
+        ...resultat.detail[0],
+        type: "QIM",
+        choixApprenant: ["Un"],
+        reponsesAttendues: ["Un"],
+        propositions: ["Un", "Deux <i>"],
+        justificationsPropositions: ["Extrait : « un »", "Extrait : « deux »\nPiège : inversion."],
+      },
+    ],
+  };
+  const html = construireRapport({ nom: "", qualite: "", parcours: "" }, [q85]);
+  assert.ok(html.includes('<ul class="justifs"><li>Un <span class="petit">(vraie)</span><span class="justif-prop">Extrait : « un »</span></li>'));
+  assert.ok(html.includes("Deux &lt;i&gt; <span class=\"petit\">(fausse)</span><span class=\"justif-prop\">Extrait : « deux »<br>Piège : inversion.</span>"));
+  assert.equal(construireRapport({ nom: "", qualite: "", parcours: "" }, [resultat]).includes('class="justifs"'), false);
+});

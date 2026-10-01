@@ -796,6 +796,31 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
 .proposition--faux .marque { color: var(--echec); }
 .proposition--sans .marque { color: var(--texte-doux); }
 
+/* Justification de chaque proposition, sous elle à la correction (question 85,
+   choix a) : une ligne par élément — justification, extrait, piège. */
+.justif-proposition {
+  display: block;
+  flex: 1 1 100%;
+  margin: 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--bord);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--texte-doux);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.justif-proposition--option { margin: -0.5rem 0 0 1.25rem; }
+.justifs-propositions { list-style: none; margin: 0.25rem 0; padding: 0; display: grid; gap: 0.5rem; max-width: 66ch; }
+.justifs-propositions .justif-proposition { margin-top: 0.25rem; }
+.apercu-options li:has(.justif-proposition) { flex-wrap: wrap; }
+.apercu-options .justif-proposition { font-size: 0.8125rem; }
+/* Éditeur : la justification sous sa proposition. */
+.proposition-editee { display: grid; gap: 0.25rem; }
+.champ--justif-proposition { margin: 0 0 0.25rem 2.25rem; }
+.champ--justif-proposition > span { font-size: 0.8125rem; color: var(--texte-doux); }
+.etat-repartition:empty { display: none; }
+
 /* Cibles du défilement pendant la passation (audit du 24/09/2026, E2) : sous
    l'en-tête fixe, jamais derrière. */
 .passation :is(.encart, .vignette, fieldset.question) { scroll-margin-top: calc(var(--decalage) + 0.75rem); }

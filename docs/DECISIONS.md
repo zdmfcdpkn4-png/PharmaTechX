@@ -5442,7 +5442,8 @@ et moyens de protection », les cinq en-têtes trouvent leur module.
 - La justification d'une question déposée est un seul texte, affiché sous la
   correction : extraits A à E, puis pièges. Chez Flore, chaque proposition
   porte la sienne, avec l'extrait de son document. Question à poser après
-  la 84.
+  la 84 : posée (question 85), tranchée le 01/10/2026, choix a — voir
+  « Justification par proposition, comme dans les quiz de Flore ».
 
 **Vérifié le 01/10/2026.**
 - `npm run verifier` : 407 tests, dont 6 nouveaux :
@@ -5526,6 +5527,92 @@ question, et « figure-p15-1.png », nommée sans être jointe.
   par le test : deux questions reçoivent leur image collée et la seconde image est
   signalée ; une image s'ajoute à la troisième dans l'aperçu, celle de la
   première s'y retire ; la banque garde ces choix.
+
+## Justification par proposition, comme dans les quiz de Flore (01/10/2026, question 85, choix a)
+
+**Demande.** « Sur les 40 questions déposées en cours de vérification, y
+a-t-il bien un rattachement entre la question et la justification de la
+réponse ? Sinon, prévoir toujours ce rattachement comme pour les quiz de
+Flore ». Le rattachement existait, à la question entière : extraits A à E et
+pièges mis bout à bout en un seul texte, sous la correction. Chez Flore,
+chaque proposition porte sa justification et son extrait (`Prop.j`,
+`Prop.ref`, lus dans le dépôt Quiz-Flore). Réponse « À » : choix a.
+
+**Fait.**
+- `content/justifications.ts` (pur, testé) : la justification d'une
+  proposition se compose, une ligne chacun, de la justification écrite
+  lettre par lettre, de l'extrait (« Extrait : « … » ») et du piège
+  (« Piège : inversion. »).
+- Dépôt (`lib/import-questions.ts`), QCM et QIM :
+  - « Extrait B », le piège de B (« Pièges : B mauvaise attribution, … ») et
+    « B. Faux : … » sous « Justification : » vont à la proposition B ;
+  - ne restent à la question que la justification libre, l'extrait du
+    document, et ce qui ne se range sous aucune lettre (« Pièges : aucun ») ;
+  - une ligne « X. … » sous « Justification : » ne devient plus une
+    proposition de plus quand la question en compte moins de cinq. « E. coli
+    est… » ou « D-dimères… » y restent du texte ;
+  - un JSON au schéma 3.0 garde la justification de chaque proposition et
+    l'extrait de sa première référence, avec fichier et page.
+- Base : la justification d'une proposition est rangée avec elle, dans
+  `options`. Aucune migration.
+- Elle ne part pas au navigateur avant la réponse : `sanitizeQuestion` la
+  retire, comme le corrigé. Le serveur la renvoie avec la correction
+  (`justificationsPropositions`), dans l'ordre des propositions.
+- Correction : sous chaque proposition marquée, à l'entraînement ; en liste,
+  sous chaque proposition avec son verdict attendu, en fin de test et au
+  résultat. Le rapport A4 l'imprime de même.
+- Aperçu du dépôt et banque (écran de vérification) : sous chaque
+  proposition. La banque dit « sous chaque proposition » quand la question
+  n'a plus de justification propre.
+- Éditeur : un champ sous chaque proposition. Pour une question au texte
+  unique, « Répartir sous les propositions » remplit ces champs depuis ce
+  texte, à relire avant d'enregistrer. Le bouton ne s'offre que tant
+  qu'aucune proposition n'a la sienne.
+
+**Les 40 questions déjà déposées.** Elles gardent leur texte unique jusqu'à
+ce qu'on les répartisse, une par une, au moment de leur vérification :
+« Modifier », « Répartir sous les propositions », relire, enregistrer.
+Rien n'est récrit en base d'office. La répartition, essayée sur le texte que
+l'ancien dépôt écrivait pour les 53 questions de la banque du pool, redonne
+exactement ce que donne le nouveau dépôt : 53 sur 53, extrait et piège
+compris, y compris l'extrait qui contient lui-même un « ; ».
+
+**Limites.**
+- La répartition suit la forme qu'écrivait le dépôt (« A : … ; B : … » en
+  fin de texte, puis « Pièges : … »). Un texte retouché à la main peut s'en
+  écarter : le bouton dit alors « Rien à répartir », ou la coupe se relit
+  avant l'enregistrement.
+- Une justification lettre par lettre déjà fondue dans le texte unique
+  (« A. Vrai… B. Faux… ») n'est pas répartie : elle reste à la question.
+- Séquence, texte à trous et schéma gardent une justification unique.
+- Une question dont deux propositions ont le même texte n'affiche pas la
+  justification sous ses propositions, comme le marquage de la correction
+  (`content/marques.ts`) : elle s'affiche alors en liste.
+- Rien n'empêche de valider une question sans justification : Flore le
+  bloque, ce n'était pas dans la question posée.
+
+**Vérifié le 01/10/2026.**
+- Sur la banque du pool : les 265 propositions des 53 questions reçoivent
+  leur justification ; ne restent à la question que deux « Pièges : aucun ».
+- `npm run verifier` : 424 tests, dont 12 nouveaux ; 8 autres suivent la
+  nouvelle place des extraits et des pièges. Les nouveaux :
+  - composition, pièges, répartition (forme du dépôt, extrait contenant
+    « ; », lettres dans le désordre, rien à répartir) ;
+  - rapprochement des justifications à la correction ;
+  - la justification des propositions retirée avant l'envoi au navigateur ;
+  - au dépôt : extrait et piège par lettre, piège sans lettre, justification
+    lettre par lettre sous trois et cinq propositions, « E. coli » laissé en
+    texte ; JSON au schéma 3.0 ;
+  - au rapport : sous chaque proposition, échappée ; rien pour un résultat
+    antérieur.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 104 étapes, sans erreur de page
+  ni erreur serveur ; en console, les trois lignes attendues (deux refus 403
+  et le refus d'encadrement). L'étape ajoutée (4c quater) dépose une QIM à
+  extraits et piège, la retrouve en banque, la valide, vérifie que la page de
+  l'évaluation ne contient pas la justification avant la réponse, puis la lit
+  sous chaque proposition à la correction ; une question au texte unique s'y
+  répartit dans l'éditeur, et la répartition est enregistrée.
 
 ## Non fait
 

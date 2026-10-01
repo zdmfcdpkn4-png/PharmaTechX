@@ -108,6 +108,34 @@ test("JSON : export du site et banque 3.0 du pipeline", () => {
   const r2 = analyserTexte(pipeline, { formatDefaut: "QCM" });
   assert.equal(r2.questions[0].format, "QIM");
   assert.deepEqual(r2.questions[0].options.map((o) => o.vrai), [true, false]);
+  assert.deepEqual(r2.questions[0].options.map((o) => o.justification), ["ok", undefined], "la justification de la proposition est gardée");
+});
+
+test("JSON au schéma 3.0 : justification et extrait de la référence sous chaque proposition, comme chez Flore (question 85)", () => {
+  const pipeline = JSON.stringify({
+    schema_version: "3.0",
+    items: [
+      {
+        format: "QIM",
+        enonce: "À propos de la médiane :",
+        propositions: [
+          {
+            rang: "A",
+            texte: "Elle est sensible aux valeurs extrêmes.",
+            verdict: false,
+            justification: "Elle ne dépend que du rang des valeurs.",
+            references: [{ fichier: "Ch2.pdf", page: 14, extrait: "La médiane est un paramètre robuste." }],
+          },
+          { rang: "B", texte: "Elle partage la série en deux.", verdict: true, references: [{ extrait: "« La médiane partage la série. »" }] },
+        ],
+      },
+    ],
+  });
+  const [q] = analyserTexte(pipeline, { formatDefaut: "QCM" }).questions;
+  assert.deepEqual(q.options.map((o) => o.justification), [
+    "Elle ne dépend que du rang des valeurs.\nExtrait : « La médiane est un paramètre robuste. » (Ch2.pdf, p. 14)",
+    "Extrait : « La médiane partage la série. »",
+  ]);
 });
 
 test("lireReference découpe « Source — Libellé — Date — URL »", () => {
@@ -145,13 +173,14 @@ test("les marqueurs reconnus restent reconnus : (V), [F], Vrai, V isolé", () =>
 
 // ── Lignes du prompt de génération
 
-test("« Extrait X » sous sa proposition va dans la justification, jamais dans la proposition", () => {
+test("« Extrait X » va à la justification de sa proposition, jamais dans son texte (question 85)", () => {
   const [q] = analyserTexte(
     "QIM 1. Thème.\nA. Première\nExtrait A : « phrase une »\nB. Seconde\nExtrait B : « phrase deux »\nRéponses : A",
     { formatDefaut: "QIM" },
   ).questions;
   assert.deepEqual(q.options.map((o) => o.texte), ["Première", "Seconde"]);
-  assert.equal(q.justification, "A : « phrase une » ; B : « phrase deux ».");
+  assert.deepEqual(q.options.map((o) => o.justification), ["Extrait : « phrase une »", "Extrait : « phrase deux »"]);
+  assert.equal(q.justification, "", "plus rien sous la question");
 });
 
 test("« Extrait : » donne l'extrait du document pour une question de tout format, versé dans la justification (24/09/2026)", () => {
@@ -194,7 +223,8 @@ test("un extrait coupé en deux lignes garde sa fin, par lettre comme pour la qu
     { formatDefaut: "QIM" },
   ).questions;
   assert.deepEqual(q.options.map((o) => o.texte), ["Un", "Deux"]);
-  assert.equal(q.justification, "Extrait du document : « phrase suite ». A : « début de la phrase fin de la phrase » ; B : « b ».");
+  assert.deepEqual(q.options.map((o) => o.justification), ["Extrait : « début de la phrase fin de la phrase »", "Extrait : « b »"]);
+  assert.equal(q.justification, "Extrait du document : « phrase suite ».");
 });
 
 test("« Réponses vraies : aucune » et « Réponses vraies : A B » se lisent comme « Réponses : »", () => {
@@ -215,13 +245,27 @@ test("extrait sans proposition, proposition sans extrait : signalés au relecteu
   assert.match(av, /Proposition B sans extrait/);
 });
 
-test("les pièges vont à la justification ; le niveau devient un champ de la question", () => {
+test("un piège sans lettre reste à la question ; le niveau devient un champ de la question", () => {
   const [q] = analyserTexte(
     "QCM 1. x (plusieurs réponses possibles)\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait B : « b »\nRéponses : A B\nPièges : aucun\nNiveau : Avancé",
     { formatDefaut: "QCM" },
   ).questions;
-  assert.equal(q.justification, "A : « a » ; B : « b ». Pièges : aucun.");
+  assert.deepEqual(q.options.map((o) => o.justification), ["Extrait : « a »", "Extrait : « b »"]);
+  assert.equal(q.justification, "Pièges : aucun.");
   assert.equal(q.niveauQuestion, "avance");
+});
+
+test("le piège d'une lettre va à sa proposition, sous son extrait (question 85)", () => {
+  const [q] = analyserTexte(
+    "QIM 1. x\nA. Un\nExtrait A : « a »\nB. Deux\nExtrait B : « b »\nC. Trois\nRéponses : A\nPièges : B mauvaise attribution, C inversion, D restriction",
+    { formatDefaut: "QIM" },
+  ).questions;
+  assert.deepEqual(q.options.map((o) => o.justification), [
+    "Extrait : « a »",
+    "Extrait : « b »\nPiège : mauvaise attribution.",
+    "Piège : inversion.",
+  ]);
+  assert.equal(q.justification, "Pièges : D restriction.", "le piège d'une lettre sans proposition reste à la question");
 });
 
 test("« Niveau » et « Difficulté » se lisent tous deux ; « base » vaut « initial »", () => {
@@ -439,13 +483,35 @@ test("deux images nommées : la première vaut, la seconde est signalée (elle r
   assert.match(q.avertissements[0], /« tenue\.jpg » est gardée, « sas\.png » écartée/);
 });
 
-test("justification lettre par lettre sous cinq propositions : gardée, sans avertissement", () => {
+test("justification lettre par lettre sous cinq propositions : à chaque proposition la sienne, sans avertissement", () => {
   const r = analyserTexte(
     "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nD. d\nE. e\nRéponses : A C\nJustification :\nA. Vrai, d'après la procédure.\nB. Faux : c'est l'inverse.",
     { formatDefaut: "QCM" },
   );
-  assert.match(r.questions[0].justification, /A\. Vrai, d'après la procédure\. B\. Faux : c'est l'inverse\./);
+  const q = r.questions[0];
+  assert.deepEqual(q.options.map((o) => o.justification), ["Vrai, d'après la procédure.", "Faux : c'est l'inverse.", undefined, undefined, undefined]);
+  assert.equal(q.justification, "");
   assert.deepEqual(r.avertissements, []);
+});
+
+test("justification lettre par lettre sous trois propositions : elle ne devient plus une proposition (question 85)", () => {
+  const r = analyserTexte(
+    "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nRéponses : A\nJustification : A. Vrai, d'après la\nprocédure.\nB. Faux : c'est l'inverse.\nExtrait B : « l'inverse »",
+    { formatDefaut: "QCM" },
+  );
+  const q = r.questions[0];
+  assert.deepEqual(q.options.map((o) => o.texte), ["a", "b", "c"], "ni D ni E ajoutées");
+  assert.deepEqual(q.options.map((o) => o.justification), [
+    "Vrai, d'après la procédure.",
+    "Faux : c'est l'inverse.\nExtrait : « l'inverse »",
+    undefined,
+  ]);
+  assert.deepEqual(r.avertissements, []);
+  assert.deepEqual(
+    q.avertissements,
+    ["Propositions A, C sans extrait : vérifier qu'elles sont tranchées par le document."],
+    "B a son extrait : celles qui n'en ont pas restent signalées, comme avant",
+  );
 });
 
 test("corrigé lu dans les (V) / (F) : signalé comme tel, pour le QCM à rebours", () => {
@@ -467,4 +533,19 @@ test("JSON : le module et l'origine du format se lisent aussi", () => {
     ["QCM", "enonce", "B1-05"],
     ["QIM", "mot-cle", undefined],
   ]);
+});
+
+test("sous « Justification : », « E. coli … » ou « D-dimères … » restent du texte ; rien n'y ajoute de proposition", () => {
+  const cinq = analyserTexte(
+    "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nD. d\nE. e\nRéponses : A\nJustification :\nE. coli est un indicateur fécal.\nD-dimères : sans rapport.",
+    { formatDefaut: "QCM" },
+  );
+  assert.equal(cinq.questions[0].options.every((o) => !o.justification), true);
+  assert.equal(cinq.questions[0].justification, "E. coli est un indicateur fécal. D-dimères : sans rapport.");
+  assert.deepEqual(cinq.avertissements, [], "pas de « proposition au-delà de E »");
+  const trois = analyserTexte("QCM 1. Laquelle ?\nA. a\nB. b\nC. c\nRéponses : A\nJustification :\nE. coli est un indicateur fécal.", {
+    formatDefaut: "QCM",
+  });
+  assert.deepEqual(trois.questions[0].options.map((o) => o.texte), ["a", "b", "c"], "ni D ni E ajoutées");
+  assert.equal(trois.questions[0].justification, "E. coli est un indicateur fécal.");
 });
