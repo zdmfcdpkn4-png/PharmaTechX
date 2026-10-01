@@ -377,6 +377,50 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+85. **Justification d'une question déposée : un seul texte, ou une par
+    proposition comme chez Flore** — posée le 01/10/2026, sur « sur les 40
+    questions déposées en cours de vérification, y a-t-il bien un
+    rattachement entre la question et la justification de la réponse ? Sinon,
+    prévoir toujours ce rattachement comme pour les quiz de Flore ».
+    Aujourd'hui, le rattachement existe, mais à la question entière. Au
+    dépôt, les lignes « Extrait A : … » à « Extrait E : … » et « Pièges : … »
+    sont mises bout à bout en un seul texte. Ce texte s'affiche sous la
+    correction, après « Votre réponse » et « Attendu ». La banque du pool
+    porte un extrait pour chaque proposition de ses 53 questions ; 52 ont une
+    ligne « Pièges », 41 une source. Chez Flore, chaque proposition porte sa
+    justification et son extrait, affichés sous elle à la correction
+    (`Prop.j` et `Prop.ref`, dépôt Quiz-Flore).
+
+    Trois lectures :
+    - **a (recommandé)** : comme chez Flore, la justification se range par
+      proposition.
+      - Au dépôt, « Extrait B : … » et le piège de B (« B mauvaise
+        attribution ») vont à la proposition B. Une proposition sans extrait
+        est signalée dans l'aperçu.
+      - À la correction, chacun s'affiche sous sa proposition, marquée juste
+        ou fausse. La justification libre de la question et sa source restent
+        dessous, comme aujourd'hui.
+      - Dans l'éditeur, un champ par proposition. Pour une question déjà en
+        banque, un bouton « Répartir sous les propositions » remplit ces
+        champs depuis son texte unique ; on vérifie, puis on enregistre.
+      Contre : le modèle des questions, l'éditeur, la correction et l'écran
+      de vérification changent. Ces justifications restent au serveur
+      jusqu'à la réponse, comme le corrigé. Les 40 questions déposées
+      demandent chacune ce clic et une relecture, au moment de leur
+      vérification.
+    - **b** : rien ne change en base. À l'affichage, le texte unique est
+      découpé lettre par lettre (« A : … ; B : … »), et chaque morceau va
+      sous sa proposition, y compris pour les 40 déjà déposées. Contre : le
+      découpage devine les lettres dans un texte libre, que l'éditeur laisse
+      réécrire. Un texte retouché à la main (« A et B : … ») serait mal
+      coupé, sans que rien ne le signale, et personne ne relit la coupe :
+      l'éditeur garde un seul texte.
+    - **c** : le texte reste unique. Le dépôt signale, et l'écran de
+      vérification marque, toute question sans justification, sans extrait
+      pour l'une de ses propositions, ou sans source. Contre : l'agent lit
+      toujours un bloc après la correction, pas l'explication sous chaque
+      proposition.
+
 84. **Illustrations dès le dépôt : les images du fichier Word** — posée le
     01/10/2026, sur « Permettre l'ajout d'illustration d'image dès le
     dépôt ». Aujourd'hui, une image n'arrive avec un dépôt qu'à deux
