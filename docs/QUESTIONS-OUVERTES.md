@@ -409,6 +409,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       banque du pool, six images à enregistrer depuis Word, puis à choisir
       une à une.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : les
+    images collées dans un .docx arrivent sur leur question, avec leur
+    description ; la première d'une question vaut, les suivantes sont
+    signalées. Dans l'aperçu, hors schéma, une image s'ajoute, se change ou
+    se retire avant l'ajout à la banque. Relue sur la banque du pool : six
+    questions illustrées, les trois tableaux des plages signalés. Détail dans
+    `DECISIONS.md`.
+
 83. **Table de correspondance identifiant ↔ agent : le fichier seul, ou
     relié au site** — posée le 28/09/2026, sur « Crée une table de
     correspondance local pour la mise en relation du N° anonymat et des

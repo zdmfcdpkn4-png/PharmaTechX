@@ -81,6 +81,12 @@ export async function lireImage(
   return r.rows[0] ?? null;
 }
 
+/** L'image existe-t-elle encore ? (une image orpheline part au nettoyage après sept jours) */
+export async function imageExiste(id: string): Promise<boolean> {
+  const r = await sql<{ un: number }>`SELECT 1 AS un FROM images WHERE id = ${id}`;
+  return r.rows.length > 0;
+}
+
 export async function majAltImage(id: string, alt: string): Promise<void> {
   await sql`UPDATE images SET alt = ${alt} WHERE id = ${id}`;
 }

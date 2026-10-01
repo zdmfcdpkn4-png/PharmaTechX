@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
 import { journaliser } from "@/lib/journal";
-import { IMAGE_MAX_OCTETS, enregistrerImage, majAltImage } from "@/lib/images";
-import { texteDocx } from "@/lib/docx";
+import { IMAGE_MAX_OCTETS, enregistrerImage, imageExiste, majAltImage } from "@/lib/images";
+import { lireDocx, lireOctets, type ImageCollee } from "@/lib/docx";
 import { analyserTexte, type QuestionImportee } from "@/lib/import-questions";
 import { indexerModules, proposerModule, reperesModules, resoudreLigneModule, type IndexModules } from "@/lib/import-module";
 import { schemaPret, type Legende } from "@/content/schema";
@@ -342,7 +342,7 @@ function apparierImages(
         return {
           ...q,
           imageId: null,
-          avertissements: [...q.avertissements, `Image « ${q.imageNom} » non déposée : à choisir dans l'éditeur.`],
+          avertissements: [...q.avertissements, `Image « ${q.imageNom} » non déposée : ajoutez-la dans l'aperçu.`],
         };
       }
       return { ...q, imageId: images[n].id };
@@ -356,6 +356,32 @@ function apparierImages(
     }
     return { ...q, imageId: images[k].id, avertissements: q.avertissements.filter((a) => !a.startsWith("Image à choisir")) };
   });
+}
+
+/**
+ * Image collée dans le Word, lue dans l'archive et enregistrée (question 84,
+ * choix a) ; `null` si elle ne peut pas l'être, et l'avertissement dit
+ * pourquoi. Elle n'est pas réduite : au-delà de 2 Mo, elle s'ajoute dans
+ * l'aperçu, où l'appareil la réduit avant l'envoi.
+ */
+async function enregistrerImageCollee(docx: Buffer, c: ImageCollee, avertissements: string[]): Promise<string | null> {
+  let octets: Buffer;
+  try {
+    octets = lireOctets(docx, c.chemin);
+  } catch {
+    avertissements.push(`Image collée « ${c.nom} » introuvable dans le fichier : ajoutez-la dans l'aperçu.`);
+    return null;
+  }
+  if (octets.length > IMAGE_MAX_OCTETS) {
+    avertissements.push(`Image collée « ${c.nom} » refusée : plus de 2 Mo. Ajoutez-la dans l'aperçu, où elle est réduite avant l'envoi.`);
+    return null;
+  }
+  const im = await enregistrerImage(octets, c.nom.replace(/\.[a-z0-9]+$/i, ""));
+  if (!im) {
+    avertissements.push(`Image collée « ${c.nom} » refusée : ni PNG ni JPEG lisible. Ajoutez-la dans l'aperçu en PNG ou en JPEG.`);
+    return null;
+  }
+  return im.id;
 }
 
 /** Texte d'une question tel que la proposition de module le compare : tout ce qu'elle dit. */
@@ -424,6 +450,9 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
 
   let texte = chaine(formData, "texte", 400_000);
   let nom = "texte collé";
+  // Fichier Word et ses images collées (question 84, choix a).
+  let docx: Buffer | null = null;
+  let collees: ImageCollee[] = [];
   const fichier = formData.get("fichier") as File | null;
   if (fichier && fichier.size > 0) {
     if (fichier.size > 8 * 1024 * 1024) return { ...base, erreur: "Fichier trop lourd (8 Mo au plus)." };
@@ -431,7 +460,8 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
     nom = fichier.name;
     if (/\.docx$/i.test(fichier.name)) {
       try {
-        texte = texteDocx(octets);
+        ({ texte, images: collees } = lireDocx(octets));
+        docx = octets;
       } catch (e) {
         return { ...base, erreur: e instanceof Error ? e.message : "Fichier .docx illisible." };
       }
@@ -460,6 +490,21 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
   }
 
   const r = analyserTexte(texte, { formatDefaut });
+  // Images collées dans le Word (question 84, choix a) : seules celles
+  // qu'une question garde sont enregistrées, une fois chacune.
+  if (docx && collees.length > 0) {
+    const gardees = new Set(r.questions.flatMap((q) => (q.imageNom ? [cleFichier(q.imageNom)] : [])));
+    const parChemin = new Map<string, string | null>();
+    for (const c of collees) {
+      if (!gardees.has(cleFichier(c.nom))) continue;
+      let id = parChemin.get(c.chemin);
+      if (id === undefined) {
+        id = await enregistrerImageCollee(docx, c, avertissements);
+        parChemin.set(c.chemin, id);
+      }
+      if (id) images.push({ nom: c.nom, id });
+    }
+  }
   const questions = apparierImages(await rattacherModules(r.questions, moduleId), images);
   // « Description de l'image » : elle remplace le nom du fichier, posé par
   // défaut à l'enregistrement. Appliquée ici, sur les images que cette
@@ -479,6 +524,23 @@ export async function actionAnalyserImport(prec: EtatImport, formData: FormData)
   };
 }
 
+/**
+ * Image ajoutée ou changée dans l'aperçu d'un dépôt (question 84, choix a).
+ * L'appareil l'a préparée (réduite à 2 000 px, sans métadonnées) ; elle est
+ * enregistrée ici, avec la description lue au dépôt. Une image que l'ajout
+ * à la banque ne retient pas reste orpheline, et part au nettoyage après
+ * sept jours, comme celles d'un dépôt abandonné.
+ */
+export async function actionImageApercu(formData: FormData): Promise<{ id: string } | { erreur: string }> {
+  await sessionRequise("tuteur");
+  const f = formData.get("image");
+  if (!(f instanceof File) || f.size === 0) return { erreur: "Aucune image choisie." };
+  if (f.size > IMAGE_MAX_OCTETS) return { erreur: "Image de plus de 2 Mo que ce navigateur n'a pas pu réduire : réduisez-la, puis choisissez-la de nouveau." };
+  const alt = chaine(formData, "alt", 300) || f.name.replace(/\.[a-z0-9]+$/i, "");
+  const im = await enregistrerImage(Buffer.from(await f.arrayBuffer()), alt);
+  return im ? { id: im.id } : { erreur: "Image refusée : ni PNG ni JPEG lisible." };
+}
+
 export async function actionConfirmerImport(prec: EtatImport, formData: FormData): Promise<EtatImport> {
   const s = await sessionRequise("tuteur");
   const nom = chaine(formData, "nom", 200) || "dépôt";
@@ -492,7 +554,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
   // Module et format de chaque question : ceux de l'aperçu, où ils se changent
   // (questions 57 et 58, choix a). Rien n'entre en base sans module ; le
   // format ne passe que de QCM à QIM ou l'inverse.
-  const retenues: { q: QuestionImporteeAvecImage; moduleId: string; format: TypeQuestion }[] = [];
+  const retenues: { q: QuestionImporteeAvecImage; moduleId: string; format: TypeQuestion; imageId: string | null }[] = [];
   let sansModule = 0;
   questions.forEach((q, i) => {
     if (formData.get(`exclure-${i}`) === "on") return;
@@ -503,7 +565,12 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     }
     const demande = chaine(formData, `format-${i}`, 3);
     const format = (q.format === "QCM" || q.format === "QIM") && (demande === "QCM" || demande === "QIM") ? demande : q.format;
-    retenues.push({ q, moduleId, format });
+    // Image : celle de l'aperçu, où elle s'ajoute, se change ou se retire
+    // (question 84, choix a). Sans ce champ (schéma), celle de l'analyse.
+    const champImage = formData.get(`image-${i}`);
+    const imageId =
+      typeof champImage === "string" ? (/^[A-Za-z0-9_-]{1,40}$/.test(champImage) ? champImage : null) : (q.imageId ?? null);
+    retenues.push({ q, moduleId, format, imageId });
   });
   if (sansModule > 0) {
     return {
@@ -516,12 +583,15 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
   for (const id of modules) {
     if (!(await moduleExiste(id))) return { ...prec, erreur: `Module inconnu : ${id}.` };
   }
+  for (const id of new Set(retenues.flatMap((r) => (r.imageId ? [r.imageId] : [])))) {
+    if (!(await imageExiste(id))) return { ...prec, erreur: "Une image de l'aperçu n'existe plus : choisissez-la de nouveau, ou relancez l'analyse." };
+  }
 
   const depotId = await enregistrerDepotQuestions(
     { nom, moduleId: modules.length === 1 ? modules[0] : null, nb: retenues.length, nbAVerifier: retenues.length },
     s,
   );
-  const lot: QuestionAEnregistrer[] = retenues.map(({ q, moduleId, format }) => ({
+  const lot: QuestionAEnregistrer[] = retenues.map(({ q, moduleId, format, imageId }) => ({
     moduleId,
     situationId: null,
     format,
@@ -529,7 +599,7 @@ export async function actionConfirmerImport(prec: EtatImport, formData: FormData
     options: q.format === "SCH" ? [] : q.options.map((o) => ({ id: o.id, texte: o.texte.slice(0, 500), vrai: o.vrai })),
     legendes: q.format === "SCH" ? q.legendes : [],
     modeReponse: "ecrire",
-    imageId: q.imageId ?? null,
+    imageId,
     justification: q.justification.slice(0, 3000),
     eliminatoire: q.eliminatoire,
     reservee: q.reservee,

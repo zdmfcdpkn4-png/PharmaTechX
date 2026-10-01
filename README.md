@@ -426,7 +426,7 @@ les mêmes écrans.
 ## 10. Tests
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
-d'import (texte, JSON et sauts de ligne d'un .docx), décision (bande de garde, non concluant,
+d'import (texte, JSON, sauts de ligne et images collées d'un .docx), décision (bande de garde, non concluant,
 exclusions, arbitrage, bande de garde réglable), barème réglable
 (normalisation, QIM et schéma paramétrés, libellés), état d'une évaluation
 en cours (contrôle de forme), identifiants d'agents,
@@ -441,7 +441,8 @@ serveur construit lancé sur une base vide avec `CONSERVATION_RAPPORTS=pseudonym
 et `MISE_EN_SERVICE` posée :
 page de santé (base jointe en IPv4), introduction animée (jouée à l'ouverture, un clic montre le bouton qui la passe, pas rejouée, absente en mouvement réduit), absence de porte d'amorçage publique, entrée de l'administrateur initial, codes,
 filière et niveau déposés au référentiel avec leur badge, arborescence de la banque, dépôt de la signature, création d'un identifiant d'agent,
-création et import de dix questions avec image, éditeur de schéma, évaluation
+création et import de dix questions avec image, images collées d'un fichier Word
+et image ajoutée ou retirée dans l'aperçu du dépôt, éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
 d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas
 tuteur et pharmacien avec signature incrustée sans nom saisi, rapport A4

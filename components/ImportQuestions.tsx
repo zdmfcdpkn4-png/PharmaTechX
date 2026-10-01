@@ -7,9 +7,16 @@ import type { ModuleChoix } from "./EditeurQuestion";
 import { LIBELLES_NIVEAU_QUESTION, type LibellesNiveaux } from "@/content/niveaux-questions";
 import { bilanPreparation } from "@/content/preparation-image";
 import { alertesFormat, indiceFormat } from "@/lib/import-format";
-import { preparerChamp } from "./preparerImage";
+import { preparerChamp, preparerImage } from "./preparerImage";
 
 type ActionImport = (prec: EtatImport, fd: FormData) => Promise<EtatImport>;
+/** Enregistre une image choisie dans l'aperçu (question 84, choix a). */
+type ActionImage = (fd: FormData) => Promise<{ id: string } | { erreur: string }>;
+
+/** Avertissement d'analyse qu'une image ajoutée dans l'aperçu rend caduc. */
+function imageManquante(a: string): boolean {
+  return /^(?:Image « .+ » non déposée|Ligne « Image : » sans nom|Description d'image sans ligne)/.test(a);
+}
 
 /** Libellé d'un module dans une liste, comme dans le reste de la banque. */
 function libelleModule(m: ModuleChoix): string {
@@ -58,12 +65,14 @@ export function ImportQuestions({
   moduleInitial,
   analyser,
   confirmer,
+  televerserImage,
   libellesNiveaux = LIBELLES_NIVEAU_QUESTION,
 }: {
   modules: ModuleChoix[];
   moduleInitial?: string;
   analyser: ActionImport;
   confirmer: ActionImport;
+  televerserImage: ActionImage;
   /** Noms des niveaux de question en vigueur (question 81), pour l'aperçu. */
   libellesNiveaux?: LibellesNiveaux;
 }) {
@@ -119,6 +128,7 @@ export function ImportQuestions({
         erreur={confirmation.erreur}
         confirmer={actionConfirme}
         enConfirmation={enConfirmation}
+        televerserImage={televerserImage}
         libellesNiveaux={libellesNiveaux}
       />
     );
@@ -206,6 +216,11 @@ export function ImportQuestions({
  * réinitialise un formulaire à action après chaque envoi, et un refus du
  * serveur aurait remis les listes de l'écran à « à choisir » quand l'état
  * garde les choix faits.
+ *
+ * L'image d'une question, hors schéma, s'y ajoute, s'y change ou s'y retire
+ * avant l'ajout à la banque (question 84, choix a) : préparée sur
+ * l'appareil, envoyée aussitôt, elle part avec le formulaire (`image-i`).
+ * L'image d'un schéma porte ses légendes : elle se change dans l'éditeur.
  */
 function ApercuImport({
   analyse,
@@ -213,6 +228,7 @@ function ApercuImport({
   erreur,
   confirmer,
   enConfirmation,
+  televerserImage,
   libellesNiveaux,
 }: {
   analyse: EtatImport;
@@ -220,12 +236,16 @@ function ApercuImport({
   erreur?: string;
   confirmer: (fd: FormData) => void;
   enConfirmation: boolean;
+  televerserImage: ActionImage;
   libellesNiveaux: LibellesNiveaux;
 }) {
   const questions = analyse.questions;
   const [choix, setChoix] = useState<string[]>(() => questions.map((q) => q.moduleId ?? ""));
   const [formats, setFormats] = useState<string[]>(() => questions.map((q) => q.format));
   const [exclues, setExclues] = useState<boolean[]>(() => questions.map(() => false));
+  const [images, setImages] = useState<(string | null)[]>(() => questions.map((q) => q.imageId ?? null));
+  const [etatsImage, setEtatsImage] = useState<string[]>(() => questions.map(() => ""));
+  const [envois, setEnvois] = useState(0);
   const [pourTous, setPourTous] = useState("");
   const options = useMemo(
     () =>
@@ -246,7 +266,38 @@ function ApercuImport({
   const changer = <T,>(set: Dispatch<SetStateAction<T[]>>, i: number, v: T) =>
     set((prec) => prec.map((x, k) => (k === i ? v : x)));
 
-  const alertes = questions.map((q, i) => [...q.avertissements, ...alertesFormat({ ...q, format: formats[i] })]);
+  const poserImage = (i: number, id: string | null) => changer<string | null>(setImages, i, id);
+  const direImage = (i: number, texte: string) => changer<string>(setEtatsImage, i, texte);
+
+  const choisirImage = async (i: number, input: HTMLInputElement) => {
+    const f = input.files?.[0];
+    input.value = "";
+    if (!f) return;
+    setEnvois((n) => n + 1);
+    direImage(i, "Préparation et envoi de l'image…");
+    try {
+      const prete = await preparerImage(f);
+      const fd = new FormData();
+      fd.append("image", prete.fichier);
+      fd.append("alt", questions[i].imageAlt ?? "");
+      const r = await televerserImage(fd);
+      if ("id" in r) {
+        poserImage(i, r.id);
+        direImage(i, prete.reencodee ? `Image ajoutée : ${bilanPreparation([prete])}.` : "Image ajoutée.");
+      } else {
+        direImage(i, r.erreur);
+      }
+    } catch {
+      direImage(i, "Envoi de l'image impossible : réessayez.");
+    } finally {
+      setEnvois((n) => n - 1);
+    }
+  };
+
+  const alertes = questions.map((q, i) => [
+    ...q.avertissements.filter((a) => !(images[i] && imageManquante(a))),
+    ...alertesFormat({ ...q, format: formats[i] }),
+  ]);
   const nbAvert = alertes.filter((a) => a.length > 0).length;
   const retenues = questions.map((_, i) => i).filter((i) => !exclues[i]);
   const sansModule = retenues.filter((i) => !choix[i]).length;
@@ -330,11 +381,15 @@ function ApercuImport({
                 {!choix[i] && <span className="etiquette etiquette--attention">Module à choisir</span>}
                 {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
                 {!q.corrigeDetecte && <span className="etiquette etiquette--attention">Sans corrigé</span>}
-                {(q.format === "SCH" || q.imageNom) && (
+                {q.format === "SCH" ? (
                   <span className={`etiquette ${q.imageId ? "etiquette--neutre" : "etiquette--attention"}`}>
                     {q.imageId ? "Image appariée" : "Image à choisir"}
                   </span>
-                )}
+                ) : images[i] ? (
+                  <span className="etiquette etiquette--neutre">{images[i] === q.imageId ? "Image appariée" : "Image ajoutée"}</span>
+                ) : q.imageNom || q.imageAlt || q.imageAnnoncee ? (
+                  <span className="etiquette etiquette--attention">Image à ajouter</span>
+                ) : null}
               </div>
               <div className="rangee apercu-rattachement">
                 <label className="champ">
@@ -369,6 +424,42 @@ function ApercuImport({
                 {qcmOuQim && ` · ${formats[i] === q.format ? origineDuFormat(q) : "format changé dans l'aperçu"}`}
               </p>
               <p className="question-enonce" style={{ fontSize: "1rem" }}>{q.enonce}</p>
+              {q.format !== "SCH" && (
+                <div className="apercu-image">
+                  {images[i] && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={`/api/images/${images[i]}`} alt={q.imageAlt ?? ""} className="apercu-vignette" />
+                  )}
+                  <div className="actions">
+                    <label className="bouton bouton--compact bouton--secondaire">
+                      {images[i] ? "Changer l'image" : "Ajouter une image"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg"
+                        className="visually-hidden"
+                        aria-label={`${images[i] ? "Changer" : "Ajouter"} l'image de la question ${i + 1}`}
+                        onChange={(e) => void choisirImage(i, e.currentTarget)}
+                      />
+                    </label>
+                    {images[i] && (
+                      <button
+                        type="button"
+                        className="bouton bouton--compact bouton--discret"
+                        onClick={() => {
+                          poserImage(i, null);
+                          direImage(i, "Image retirée.");
+                        }}
+                      >
+                        Retirer l&apos;image
+                      </button>
+                    )}
+                  </div>
+                  <p className="legende apercu-etat-image" role="status" aria-live="polite">
+                    {etatsImage[i]}
+                  </p>
+                  <input type="hidden" name={`image-${i}`} value={images[i] ?? ""} />
+                </div>
+              )}
               {q.imageAlt && (
                 <p className="legende">Description de l&apos;image : {q.imageAlt}</p>
               )}
@@ -416,8 +507,8 @@ function ApercuImport({
         })}
       </ol>
       <div className="actions">
-        <button type="submit" className="bouton" disabled={enConfirmation || sansModule > 0 || retenues.length === 0}>
-          {enConfirmation ? "Ajout…" : "Ajouter à la banque, à vérifier"}
+        <button type="submit" className="bouton" disabled={enConfirmation || envois > 0 || sansModule > 0 || retenues.length === 0}>
+          {enConfirmation ? "Ajout…" : envois > 0 ? "Envoi d'image…" : "Ajouter à la banque, à vérifier"}
         </button>
         <Link href="/admin/questions/import" className="bouton bouton--secondaire">
           Recommencer

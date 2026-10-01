@@ -2,9 +2,10 @@ import { inflateRawSync } from "node:zlib";
 
 /**
  * Lecture native d'un .docx côté serveur — reprise du Lecteur QIM · QCM :
- * archive zip → `word/document.xml` → un paragraphe Word par ligne. Aucune
- * dépendance : le répertoire central du zip est lu à la main, l'entrée est
- * décompressée par `node:zlib`.
+ * archive zip → `word/document.xml` → un paragraphe Word par ligne, et les
+ * images collées dans le document (question 84). Aucune dépendance : le
+ * répertoire central du zip est lu à la main, l'entrée est décompressée par
+ * `node:zlib`.
  */
 
 interface Entree {
@@ -41,16 +42,20 @@ function lireCentral(b: Buffer): Entree[] {
   return out;
 }
 
-/** Extrait un fichier de l'archive (par défaut `word/document.xml`). */
-export function lireEntree(b: Buffer, nom = "word/document.xml"): string {
+/** Octets d'un fichier de l'archive : une image de `word/media`, par exemple. */
+export function lireOctets(b: Buffer, nom: string): Buffer {
   const e = lireCentral(b).find((x) => x.nom === nom);
   if (!e) throw new Error(`Fichier ${nom} absent de l'archive`);
   const lNom = b.readUInt16LE(e.offsetLocal + 26);
   const lExtra = b.readUInt16LE(e.offsetLocal + 28);
   const debut = e.offsetLocal + 30 + lNom + lExtra;
   const brut = b.subarray(debut, debut + e.tailleCompressee);
-  const donnees = e.methode === 0 ? brut : inflateRawSync(brut);
-  return donnees.toString("utf8");
+  return e.methode === 0 ? brut : inflateRawSync(brut);
+}
+
+/** Extrait un fichier texte de l'archive (par défaut `word/document.xml`). */
+export function lireEntree(b: Buffer, nom = "word/document.xml"): string {
+  return lireOctets(b, nom).toString("utf8");
 }
 
 const ENTITES: Record<string, string> = {
@@ -90,7 +95,61 @@ export function xmlEnTexte(xml: string): string {
     .join("\n");
 }
 
-/** Texte d'un .docx, prêt pour l'analyseur de questions. */
-export function texteDocx(octets: Buffer): string {
-  return xmlEnTexte(lireEntree(octets));
+/**
+ * Relations d'images du document (`word/_rels/document.xml.rels`) :
+ * identifiant (`rId8`) → fichier de l'archive (`word/media/image4.png`). Une
+ * image liée hors du document (`TargetMode="External"`) n'y figure pas.
+ */
+export function relationsImages(xml: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const [r] of xml.matchAll(/<Relationship\b[^>]*>/g)) {
+    if (!/\bType="[^"]*\/image"/.test(r) || /\bTargetMode="External"/.test(r)) continue;
+    const id = /\bId="([^"]+)"/.exec(r)?.[1];
+    const cible = /\bTarget="([^"]+)"/.exec(r)?.[1];
+    if (id && cible) out.set(id, cible.startsWith("/") ? cible.slice(1) : `word/${cible.replace(/^\.\//, "")}`);
+  }
+  return out;
+}
+
+/** Image collée dans le document Word (question 84, choix a). */
+export interface ImageCollee {
+  /** Nom donné dans le texte, dans l'ordre du document : `image-collee-1.png`, `image-collee-2.jpeg`… */
+  nom: string;
+  /** Fichier de l'archive. Une même image collée deux fois garde le même. */
+  chemin: string;
+}
+
+/**
+ * Texte d'un .docx, prêt pour l'analyseur de questions, et ses images
+ * collées (question 84, choix a, 01/10/2026). Chaque image devient, à sa
+ * place, une ligne « Image : image-collee-N.png » : l'analyseur la rattache
+ * à la question en cours, comme une ligne écrite à la main, et le dépôt
+ * enregistre le fichier qu'elle nomme.
+ *
+ * Word double souvent une image d'une version de repli (`mc:Fallback`),
+ * pour les lecteurs anciens : elle n'est pas comptée. Un dessin sans image
+ * (forme, graphique, zone de texte) ne donne aucune ligne.
+ */
+export function lireDocx(octets: Buffer): { texte: string; images: ImageCollee[] } {
+  const xml = lireEntree(octets);
+  let relations = new Map<string, string>();
+  try {
+    relations = relationsImages(lireEntree(octets, "word/_rels/document.xml.rels"));
+  } catch {
+    // Sans fichier de relations, aucune image ne se retrouve : le texte seul est lu.
+  }
+  const images: ImageCollee[] = [];
+  const ligne = (id: string | undefined): string => {
+    const chemin = id ? relations.get(id) : undefined;
+    if (!chemin) return "";
+    const extension = (/\.[a-z0-9]+$/i.exec(chemin)?.[0] ?? "").toLowerCase();
+    const nom = `image-collee-${images.length + 1}${extension}`;
+    images.push({ nom, chemin });
+    return `<w:t>\nImage : ${nom}\n</w:t>`;
+  };
+  const marque = xml
+    .replace(/<mc:Fallback\b[\s\S]*?<\/mc:Fallback>/g, "")
+    .replace(/<w:drawing\b[\s\S]*?<\/w:drawing>/g, (d) => ligne(/\br:embed="([^"]+)"/.exec(d)?.[1]))
+    .replace(/<w:pict\b[\s\S]*?<\/w:pict>/g, (d) => ligne(/<v:imagedata\b[^>]*\br:id="([^"]+)"/.exec(d)?.[1]));
+  return { texte: xmlEnTexte(marque), images };
 }

@@ -3,7 +3,7 @@ import { ImportQuestions } from "@/components/ImportQuestions";
 import { PromptDepot } from "@/components/PromptDepot";
 import { PromptGeneration } from "@/components/PromptGeneration";
 import { EXEMPLE_DEPOT } from "@/content/prompt-depot";
-import { actionAnalyserImport, actionConfirmerImport } from "../actions";
+import { actionAnalyserImport, actionConfirmerImport, actionImageApercu } from "../actions";
 import { choixModules, listeModulesPourPrompt } from "../commun";
 import { lireNomsNiveaux } from "@/lib/niveaux-questions-db";
 import { libellesDe } from "@/content/niveaux-questions";
@@ -45,7 +45,10 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
             JSON exporté de ce site ou une banque au schéma 3.0 du Lecteur QIM · QCM sont aussi lus.
             Une question de n&apos;importe quel format peut porter une{" "}
             <strong>illustration</strong> : la ligne « Image : nom-du-fichier.png » l&apos;attache
-            au fichier déposé du même nom, ci-dessous.
+            au fichier déposé du même nom, ci-dessous. Dans un fichier Word, une image collée sous
+            sa question lui revient d&apos;office. Une question ne porte qu&apos;une image : la
+            première ; les suivantes sont signalées. Hors schéma, l&apos;image s&apos;ajoute, se
+            change ou se retire aussi dans l&apos;aperçu, avant l&apos;ajout à la banque.
           </p>
         </div>
       </details>
@@ -56,6 +59,7 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
         moduleInitial={p.module}
         analyser={actionAnalyserImport}
         confirmer={actionConfirmerImport}
+        televerserImage={actionImageApercu}
         libellesNiveaux={libellesDe(noms)}
       />
     </>

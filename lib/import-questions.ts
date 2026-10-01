@@ -25,7 +25,11 @@ import { indiceFormat, type FormatChoix } from "@/lib/import-format";
  *   Image : sas-habillage.jpg
  *   Description de l'image : Sas d'habillage vu depuis l'entrée.
  *
- * Le fichier est déposé avec le texte et apparié par son nom.
+ * Le fichier est déposé avec le texte et apparié par son nom. Dans un .docx,
+ * une image collée devient sa propre ligne « Image : image-collee-N.png »
+ * (`lib/docx.ts`, question 84, choix a). Une question ne porte qu'une image :
+ * la première vaut, les suivantes sont signalées ; « Image : » seule annonce
+ * une image à ajouter dans l'aperçu.
  *
  * Le mot-clé QCM ou QIM fixe le format ; sans lui, un intertitre « QCM » ou
  * « QIM » seul sur sa ligne vaut pour les questions qui suivent ; sans
@@ -100,6 +104,8 @@ export interface QuestionImportee {
   imageNom?: string;
   /** « Description de l'image : … » — lue à la place de l'image (texte alternatif). */
   imageAlt?: string;
+  /** Ligne « Image : » sans nom de fichier : l'image est à ajouter dans l'aperçu. */
+  imageAnnoncee?: boolean;
   /** Schéma : numéro lu dans « SCHÉMA n. », pour apparier une image par rang. */
   numeroSchema?: number;
   justification: string;
@@ -168,6 +174,12 @@ const RE_ELIM = /^[EÉé]liminatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?
 const RE_RESERVEE = /^R[ée]serv[ée]e?(?:\s+[àa]\s+l['’][ée]valuation)?\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_OBLIGATOIRE = /^Obligatoire\s*[:–—-]?\s*(oui|non|vrai|faux|yes|no)?\s*$/i;
 const RE_IMAGE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*(\S+)\s*$/i;
+/**
+ * « Image : » sans nom de fichier (01/10/2026) : l'image est annoncée, collée
+ * à la suite dans le Word, ou à ajouter dans l'aperçu. La ligne se collait à
+ * l'énoncé.
+ */
+const RE_IMAGE_ANNONCEE = /^(?:Image|Fichier|Figure)\s*[:–—-]\s*$/i;
 /**
  * « Description de l'image : … » (23/09/2026) : ce que montre l'image, lu à la
  * place de l'image par un lecteur d'écran. Le libellé entier est exigé : un
@@ -279,6 +291,10 @@ interface Brouillon {
   leurres: string[];
   imageNom?: string;
   imageAlt?: string;
+  /** « Image : » lue sans nom de fichier. */
+  imageAnnoncee: boolean;
+  /** Images nommées après la première : une question n'en porte qu'une (question 84). */
+  imagesEcartees: string[];
   justification: string[];
   /** Extrait du document qui tranche chaque proposition, par lettre. */
   extraits: { lettre: string; texte: string }[];
@@ -320,6 +336,8 @@ function nouveau(
     legendes: [],
     items: [],
     leurres: [],
+    imageAnnoncee: false,
+    imagesEcartees: [],
     justification: [],
     extraits: [],
     extraitsQuestion: [],
@@ -337,6 +355,26 @@ function nouveau(
 /** Début de l'énoncé, pour nommer une question dans un avertissement. */
 function apercu(b: Brouillon): string {
   return b.enonce.join(" ").slice(0, 60) || "sans énoncé";
+}
+
+/**
+ * Ligne « Image : nom », ou « Image : » seule ; `true` si la ligne en était
+ * une. La première image nommée vaut ; une autre est écartée et signalée
+ * (question 84, choix a) : jusqu'au 01/10/2026, la dernière remplaçait les
+ * précédentes sans le dire.
+ */
+function lireLigneImage(b: Brouillon, ligne: string): boolean {
+  const m = RE_IMAGE.exec(ligne);
+  if (m) {
+    if (!b.imageNom) b.imageNom = m[1];
+    else if (m[1].toLowerCase() !== b.imageNom.toLowerCase()) b.imagesEcartees.push(m[1]);
+    return true;
+  }
+  if (RE_IMAGE_ANNONCEE.test(ligne)) {
+    b.imageAnnoncee = true;
+    return true;
+  }
+  return false;
 }
 
 /** « Extrait : « … » » : lu pour tout format ; `true` si la ligne en était un. */
@@ -387,9 +425,18 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
   const avertissements: string[] = [];
   const enonce = b.enonce.join(" ").replace(/\s+/g, " ").trim();
   // Un schéma trouve son image au rang même sans ligne « Image » ; une autre
-  // question, jamais : sa description resterait sans objet.
+  // question, jamais : elle s'ajoute dans l'aperçu (question 84), et y reçoit
+  // la description lue ici.
   if (b.imageAlt && !b.imageNom && b.genre !== "schema") {
-    avertissements.push("Description d'image sans ligne « Image : » : ignorée, l'image se choisit dans l'éditeur.");
+    avertissements.push("Description d'image sans ligne « Image : » : ajoutez l'image dans l'aperçu, elle recevra cette description.");
+  } else if (b.imageAnnoncee && !b.imageNom && b.genre !== "schema") {
+    avertissements.push("Ligne « Image : » sans nom de fichier : ajoutez l'image dans l'aperçu.");
+  }
+  if (b.imagesEcartees.length > 0) {
+    const noms = b.imagesEcartees.map((n) => `« ${n} »`).join(", ");
+    avertissements.push(
+      `Une question ne porte qu'une image : « ${b.imageNom} » est gardée, ${noms} ${b.imagesEcartees.length > 1 ? "écartées" : "écartée"}. Pour les montrer ensemble, assemblez-les en une seule image avant le dépôt.`,
+    );
   }
 
   if (b.genre === "sequence") {
@@ -402,6 +449,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       legendes: [],
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
+      imageAnnoncee: b.imageAnnoncee,
       justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
@@ -438,6 +486,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       legendes: [],
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
+      imageAnnoncee: b.imageAnnoncee,
       justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
       reservee: b.reservee,
@@ -471,6 +520,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
       legendes,
       imageNom: b.imageNom,
       imageAlt: b.imageAlt,
+      imageAnnoncee: b.imageAnnoncee,
       numeroSchema: b.numero,
       justification: justificationAssemblee(b),
       eliminatoire: b.eliminatoire,
@@ -529,6 +579,7 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
     legendes: [],
     imageNom: b.imageNom,
     imageAlt: b.imageAlt,
+    imageAnnoncee: b.imageAnnoncee,
     numeroSchema: b.numero,
     justification: justificationAssemblee(b),
     eliminatoire: b.eliminatoire,
@@ -666,9 +717,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       }
       // Illustration d'une séquence ou d'un texte à trous (23/09/2026) : les
       // deux formats, venus après le 19/09, ne lisaient pas la ligne « Image ».
-      const imSeq = RE_IMAGE.exec(ligne);
-      if (imSeq) {
-        courant.imageNom = imSeq[1];
+      if (lireLigneImage(courant, ligne)) {
         courant.dernier = "rien";
         continue;
       }
@@ -737,11 +786,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         courant.dernier = "rien";
         continue;
       }
-      const im = RE_IMAGE.exec(ligne);
-      if (im) {
-        courant.imageNom = im[1];
-        continue;
-      }
+      if (lireLigneImage(courant, ligne)) continue;
       const diSch = RE_DESCRIPTION_IMAGE.exec(ligne);
       if (diSch) {
         courant.imageAlt = diSch[1].trim();
@@ -822,10 +867,8 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       courant.dernier = "prop";
       continue;
     }
-    const img = RE_IMAGE.exec(ligne);
-    if (img) {
-      // Illustration d'un QCM ou d'une QIM : même ligne que pour un schéma.
-      courant.imageNom = img[1];
+    // Illustration d'un QCM ou d'une QIM : même ligne que pour un schéma.
+    if (lireLigneImage(courant, ligne)) {
       courant.dernier = "rien";
       continue;
     }

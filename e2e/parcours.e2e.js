@@ -62,6 +62,64 @@ function pngDeTest() {
   return fichier;
 }
 const PNG = pngDeTest();
+
+/** Archive zip sans compression : de quoi fabriquer un .docx d'essai. */
+function zipStocke(entrees) {
+  const crc = (b) => { let c = ~0; for (const o of b) { c ^= o; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); } return (~c) >>> 0; };
+  const locaux = [];
+  const central = [];
+  let decalage = 0;
+  for (const { nom, contenu } of entrees) {
+    const n = Buffer.from(nom);
+    const d = Buffer.isBuffer(contenu) ? contenu : Buffer.from(contenu);
+    const c = crc(d);
+    const l = Buffer.alloc(30);
+    l.writeUInt32LE(0x04034b50, 0); l.writeUInt16LE(20, 4); l.writeUInt32LE(c, 14); l.writeUInt32LE(d.length, 18); l.writeUInt32LE(d.length, 22); l.writeUInt16LE(n.length, 26);
+    const h = Buffer.alloc(46);
+    h.writeUInt32LE(0x02014b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(20, 6); h.writeUInt32LE(c, 16); h.writeUInt32LE(d.length, 20); h.writeUInt32LE(d.length, 24); h.writeUInt16LE(n.length, 28); h.writeUInt32LE(decalage, 42);
+    locaux.push(l, n, d);
+    central.push(h, n);
+    decalage += 30 + n.length + d.length;
+  }
+  const taille = central.reduce((s, b) => s + b.length, 0);
+  const fin = Buffer.alloc(22);
+  fin.writeUInt32LE(0x06054b50, 0); fin.writeUInt16LE(entrees.length, 8); fin.writeUInt16LE(entrees.length, 10); fin.writeUInt32LE(taille, 12); fin.writeUInt32LE(decalage, 16);
+  return Buffer.concat([...locaux, ...central, fin]);
+}
+
+/**
+ * Banque Word d'essai, images collées (question 84, choix a) : une question
+ * à une image et sa description, une à deux images, une à « Image : » seule.
+ */
+function docxIllustre() {
+  const p = (...runs) => `<w:p>${runs.join("")}</w:p>`;
+  const t = (x) => `<w:r><w:t xml:space="preserve">${x}</w:t></w:r>`;
+  const dessin = (rId) => `<w:r><w:drawing><wp:inline><a:graphic><a:graphicData><pic:pic><pic:blipFill><a:blip r:embed="${rId}"/></pic:blipFill></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  const document =
+    "<w:document><w:body>" +
+    p(t("Module : B3-10")) +
+    p(t("QCM 1. Photographie collée : lesquelles sont vraies ? (plusieurs réponses possibles)")) +
+    p(dessin("rId1"), t("Description de l'image : Photographie d'essai, une seule.")) +
+    p(t("A. Un")) + p(t("B. Deux")) + p(t("Réponses : A B")) +
+    p(t("QCM 2. Deux images collées : laquelle est juste ?")) +
+    p(t("Image : "), dessin("rId1"), dessin("rId2")) +
+    p(t("A. Trois")) + p(t("B. Quatre")) + p(t("Réponses : A")) +
+    p(t("QCM 3. Image annoncée, non collée : laquelle est juste ?")) +
+    p(t("Image :")) +
+    p(t("A. Cinq")) + p(t("B. Six")) + p(t("Réponses : B")) +
+    "</w:body></w:document>";
+  const type = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
+  const relations =
+    `<Relationships><Relationship Id="rId1" Type="${type}" Target="media/image1.png"/>` +
+    `<Relationship Id="rId2" Type="${type}" Target="media/image2.png"/></Relationships>`;
+  const png = fs.readFileSync(PNG);
+  return zipStocke([
+    { nom: "word/document.xml", contenu: document },
+    { nom: "word/_rels/document.xml.rels", contenu: relations },
+    { nom: "word/media/image1.png", contenu: png },
+    { nom: "word/media/image2.png", contenu: png },
+  ]);
+}
 const etapes = [];
 const ok = (m) => { etapes.push("✔ " + m); console.log("✔", m); };
 
@@ -701,6 +759,49 @@ Justification : cf. procédure interne.`,
   assert.match(await questionApercu(0).locator(".apercu-origine").innerText(), /ligne « Module : Module 1 — Sécurité incendie »/);
   assert.match(await questionApercu(1).innerText(), /Quatre/, "la question sans numéro garde ses propositions");
   ok("banque d'un classeur : en-tête « Module 1 : titre » résolu, « QCM . » sans numéro lu comme une question");
+
+  // 4c ter. illustrations dès le dépôt (question 84, choix a) : les images
+  //         collées dans un .docx arrivent sur leur question, la seconde
+  //         image d'une question est signalée ; dans l'aperçu, une image
+  //         s'ajoute à la question qui n'en a pas, une autre se retire.
+  await page.goto(BASE + "/admin/questions/import");
+  await page.setInputFiles("input[name=fichier]", {
+    name: "banque-illustree.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: docxIllustre(),
+  });
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 3 questions')");
+  for (const i of [0, 1]) {
+    assert.equal(await questionApercu(i).locator(".etiquette:text-is('Image appariée')").count(), 1, `image collée appariée (question ${i + 1})`);
+    assert.equal(await questionApercu(i).locator("img.apercu-vignette").count(), 1, `vignette montrée (question ${i + 1})`);
+  }
+  assert.match(await questionApercu(0).innerText(), /Description de l'image : Photographie d'essai, une seule\./);
+  assert.match(await questionApercu(1).locator(".apercu-alertes").innerText(), /« image-collee-2\.png » est gardée, « image-collee-3\.png » écartée/);
+  assert.equal(await questionApercu(2).locator(".etiquette:text-is('Image à ajouter')").count(), 1);
+  assert.match(await questionApercu(2).locator(".apercu-alertes").innerText(), /Ligne « Image : » sans nom de fichier/);
+  assert.doesNotMatch(await questionApercu(2).locator(".question-enonce").innerText(), /Image :\s*$/, "« Image : » seule ne se colle pas à l'énoncé");
+  // Ajouter une image à la question 3, retirer celle de la question 1.
+  await questionApercu(2).locator("input[type=file]").setInputFiles(PNG);
+  await questionApercu(2).locator(".apercu-etat-image:has-text('Image ajoutée')").waitFor();
+  assert.equal(await questionApercu(2).locator(".etiquette:text-is('Image ajoutée')").count(), 1);
+  assert.equal(await questionApercu(2).locator("img.apercu-vignette").count(), 1);
+  assert.equal(await questionApercu(2).locator(".apercu-alertes").count(), 0, "l'avertissement d'image manquante tombe");
+  await questionApercu(0).getByRole("button", { name: "Retirer l'image" }).click();
+  assert.equal(await questionApercu(0).locator("img.apercu-vignette").count(), 0);
+  assert.equal(await questionApercu(0).locator(".etiquette:text-is('Image à ajouter')").count(), 1);
+  await page.click("button:has-text('Ajouter à la banque')");
+  await page.waitForSelector("text=3 questions ajoutées");
+  const illustrationDe = async (debut) => {
+    await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b3-10&statut=a_verifier");
+    await page.locator(".question-ligne", { hasText: debut }).locator("a:has-text('Modifier')").click();
+    await page.waitForSelector("textarea[name=enonce]");
+    return page.locator("img.apercu-illustration").count();
+  };
+  assert.equal(await illustrationDe("Photographie collée"), 0, "image retirée dans l'aperçu : la question n'en a pas");
+  assert.equal(await illustrationDe("Deux images collées"), 1, "image collée gardée");
+  assert.equal(await illustrationDe("Image annoncée, non collée"), 1, "image ajoutée dans l'aperçu");
+  ok("illustrations dès le dépôt : images du Word sur leur question, seconde image signalée, image ajoutée et retirée dans l'aperçu");
 
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {

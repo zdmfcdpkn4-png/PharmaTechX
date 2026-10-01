@@ -5459,6 +5459,74 @@ et moyens de protection », les cinq en-têtes trouvent leur module.
   Sécurité incendie », suivi sans ligne vide, mène les deux questions au
   critère B1-05, et « QCM . » garde ses propositions. Rien n'entre en base.
 
+## Illustrations dès le dépôt : les images du fichier Word (01/10/2026, question 84, choix a)
+
+**Demande.** « Permettre l'ajout d'illustration d'image dès le dépôt ». Une
+image n'arrivait avec un dépôt que jointe à part et nommée par une ligne
+« Image : » ; celles collées dans un fichier Word étaient ignorées. Réponse
+« À » : choix a.
+
+**Fait.**
+- `lib/docx.ts`, `lireDocx` : chaque image collée devient, à sa place, une
+  ligne « Image : image-collee-N.png », et l'analyseur la rattache à la
+  question en cours.
+  - La version de repli que Word joint pour les lecteurs anciens
+    (`mc:Fallback`) n'est pas comptée.
+  - Un dessin sans image (forme, graphique) ne donne rien.
+  - Les relations sont lues dans `word/_rels/document.xml.rels` ; une image
+    liée hors du document est écartée.
+- Dépôt (`actionAnalyserImport`) :
+  - seules les images qu'une question garde sont enregistrées, et une seule
+    fois chacune, même collées deux fois ;
+  - une image de plus de 2 Mo, ou ni PNG ni JPEG, est refusée et signalée.
+    Elle s'ajoute alors dans l'aperçu : le serveur ne réduit rien.
+- Analyseur : une question ne porte qu'une image. La première vaut, les
+  suivantes sont signalées (« … est gardée, … écartée ») ; jusque-là, la
+  dernière remplaçait les précédentes sans le dire. « Image : » seule ne se
+  colle plus à l'énoncé ; sans image à la suite, elle est signalée.
+- Aperçu, hors schéma :
+  - chaque question montre sa vignette, et « Ajouter une image »,
+    « Changer l'image », « Retirer l'image » ;
+  - l'image choisie est préparée sur l'appareil (2 000 px, 2 Mo, sans
+    métadonnées), puis enregistrée aussitôt (`actionImageApercu`) avec la
+    description lue au dépôt ;
+  - l'avertissement d'image manquante tombe dès qu'une image est ajoutée ;
+  - l'ajout à la banque attend la fin des envois, retient l'image de
+    l'aperçu (`image-i`) et refuse une image qui n'existe plus.
+- Aide « Format attendu » du dépôt.
+
+**La banque du pool, relue.** Ses 9 images collées sont lues. Les 6
+questions illustrées reçoivent leur photographie et sa description, 805 ko
+au plus. Sont signalés : les 3 tableaux des plages, seconds sur leur
+question, et « figure-p15-1.png », nommée sans être jointe.
+
+**Limites.**
+- Une image collée avant l'en-tête de sa question revient à la précédente,
+  comme une ligne « Image : » écrite à cet endroit.
+- L'image d'un schéma ne se change pas dans l'aperçu : ses légendes sont
+  placées sur elle. Elle se change dans l'éditeur.
+- Une image enregistrée puis écartée (retirée, changée, dépôt abandonné)
+  reste orpheline, et part au nettoyage après sept jours.
+- Les images du Word ne sont pas réduites ; PNG et JPEG seulement, comme
+  avant.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 412 tests, dont 5 nouveaux :
+  - les relations d'images, sans liens externes ni graphiques ;
+  - les images collées, leur ligne à sa place, la version de repli écartée ;
+  - l'analyseur sur ces images : la première de chaque question, les autres
+    signalées ;
+  - « Image : » seule, qui ne se colle pas à l'énoncé ;
+  - deux images nommées : la première vaut, et le même nom en capitales
+    n'est pas une seconde image.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 103 étapes, sans erreur de page ni
+  erreur serveur ; en console, les trois lignes attendues (deux refus 403 et
+  le refus d'encadrement). L'étape ajoutée (4c ter) dépose un .docx fabriqué
+  par le test : deux questions reçoivent leur image collée et la seconde image est
+  signalée ; une image s'ajoute à la troisième dans l'aperçu, celle de la
+  première s'y retire ; la banque garde ces choix.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

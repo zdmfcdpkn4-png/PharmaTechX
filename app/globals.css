@@ -2097,6 +2097,21 @@ fieldset.groupe { margin: 0.75rem 0; padding: 0.875rem 1rem; border: 1px solid v
 .apercu-rattachement .champ { margin: 0; }
 .apercu-rattachement .champ--format { flex: 0 0 7.5rem; }
 .apercu-origine { margin: 0.25rem 0 0.5rem; }
+/* Image d'une question dans l'aperçu d'un dépôt (question 84, choix a). */
+.apercu-image { display: grid; gap: 0.375rem; justify-items: start; margin: 0.25rem 0 0.5rem; }
+.apercu-image .actions { margin: 0; }
+.apercu-image label:has(input:focus-visible) { outline: 3px solid var(--marque-anneau); outline-offset: 2px; }
+.apercu-vignette {
+  display: block;
+  max-width: min(100%, 16rem);
+  max-height: 12rem;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--rayon-sm);
+  border: 1px solid var(--bord);
+  background: #ffffff;
+}
+.apercu-etat-image:empty { display: none; }
 .apercu-pour-tous { align-items: end; margin-bottom: 0.75rem; }
 .apercu-pour-tous .champ { margin: 0; }
 .apercu-pour-tous .actions { margin-top: 0; }

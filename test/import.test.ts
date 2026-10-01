@@ -419,6 +419,26 @@ test("question avalée : sixième proposition et seconde ligne « Réponses » s
   assert.ok(r.avertissements.some((a) => /« Première \? » : seconde ligne « Réponses »/.test(a)));
 });
 
+test("« Image : » sans nom de fichier : rien n'est collé à l'énoncé, l'image s'ajoute dans l'aperçu", () => {
+  const r = analyserTexte("QCM 1. Sur cette photographie, laquelle ?\nImage :\nA. x\nB. y\nRéponses : A", { formatDefaut: "QCM" });
+  const q = r.questions[0];
+  assert.equal(q.enonce, "Sur cette photographie, laquelle ?");
+  assert.equal(q.imageNom, undefined);
+  assert.equal(q.imageAnnoncee, true, "l'aperçu affiche « Image à ajouter »");
+  assert.deepEqual(q.avertissements, ["Ligne « Image : » sans nom de fichier : ajoutez l'image dans l'aperçu."]);
+});
+
+test("deux images nommées : la première vaut, la seconde est signalée (elle remplaçait la première)", () => {
+  const r = analyserTexte(
+    "SÉQUENCE 1. Remettez dans l'ordre.\nImage : tenue.jpg\nImage : TENUE.JPG\nImage : sas.png\n1. un\n2. deux",
+    { formatDefaut: "QCM" },
+  );
+  const q = r.questions[0];
+  assert.equal(q.imageNom, "tenue.jpg");
+  assert.equal(q.avertissements.length, 1, "le même nom, en capitales, n'est pas une seconde image");
+  assert.match(q.avertissements[0], /« tenue\.jpg » est gardée, « sas\.png » écartée/);
+});
+
 test("justification lettre par lettre sous cinq propositions : gardée, sans avertissement", () => {
   const r = analyserTexte(
     "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nD. d\nE. e\nRéponses : A C\nJustification :\nA. Vrai, d'après la procédure.\nB. Faux : c'est l'inverse.",
