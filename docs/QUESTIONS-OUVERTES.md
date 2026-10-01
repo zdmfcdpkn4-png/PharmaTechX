@@ -377,6 +377,76 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+89. **Reclasser plusieurs questions d'un coup : que devient une question
+    validée** — posée le 01/10/2026, sur « Faire en sorte dans la gestion des
+    questions de pouvoir sélectionner plusieurs questions de la banque pour
+    les reclasser simultanément et pour pouvoir les sélectionner pour
+    plusieurs module. Améliore le système de filtre et le menu […] », avec
+    un prompt de refonte de tableau de bord, à « proposer avant d'agir ».
+
+    Proposé le même jour ; rien n'est modifié avant accord.
+    - **Lot 1, actions en lot.** Une case par question, dans l'arborescence
+      et dans la liste, et une par module. « Tout sélectionner » ne prend que
+      ce que montrent les filtres. Une barre d'actions :
+      - classer dans un module (le module d'origine) ;
+      - poser aussi dans plusieurs modules, ou retirer d'un module ;
+      - changer le niveau ;
+      - changer le statut, la règle des quatre yeux jouant question par
+        question.
+
+      L'effet est chiffré avant d'appliquer, et chaque question garde sa
+      ligne au journal. La suppression en lot, réservée à l'administration,
+      est proposée à part : elle servirait la question 88 a.
+    - **Lot 2, filtres et menu.**
+      - Recherche dans l'énoncé, les propositions, la justification et
+        l'identifiant.
+      - Trois filtres visibles, les autres repliés ; deux filtres nouveaux,
+        par dépôt et par signalement ; les filtres actifs en puces ; un tri.
+      - Présentation resserrée, et couverture de la vue Liste repliée.
+      - « À vérifier » et « Signalées » au menu.
+    - **Lot 3, au choix, point par point.**
+      - Pages d'erreur à la charte.
+      - La même barre de filtres sur Pilotage et Statistiques.
+      - En-têtes plus courts sur téléphone.
+      - Un filtre pour le journal.
+      - Un repli opaque quand le système demande moins de transparence.
+      - Une remise en ordre des jetons du CSS.
+    - **Écarté du prompt**, le verre dépoli clair aux couleurs de la charte
+      restant tel quel : le fond sombre bleu nuit et violet, Tailwind, une
+      bibliothèque de graphiques, la translation au survol, les squelettes de
+      chargement et les données inventées.
+
+    Constaté dans le code : toute modification d'une question, rattachements
+    et niveau compris, la remet « à vérifier » et fait de celui qui
+    enregistre son auteur courant (questions 12 et 74). Une action en lot
+    suit cette règle, ou en change. Relevé en passant, à corriger avec le
+    lot 1 :
+    - « Retirer l'illustration » ne retire rien d'une question existante ;
+    - « Nouvelle question » annonce un statut « validée » que le serveur
+      refuse depuis la question 12.
+
+    Trois lectures :
+    - **a (recommandé)** : la règle ne change pas. Reclassée, la question
+      repart « à vérifier ». « Valider » en lot la revalide d'un geste :
+      par un autre code, ou par l'administration, tracé « validée par son
+      auteur ». Contre :
+      - deux temps à chaque reclassement ;
+      - les questions reclassées sortent des tirages jusqu'à leur
+        revalidation ;
+      - un tuteur ne revalide pas ce qu'il a reclassé.
+    - **b** : le reclassement garde le statut, puisque le contenu (énoncé,
+      propositions, corrigé, justification) ne change pas. Chaque changement
+      est tracé au journal, avant et après. Contre : cela déroge à la
+      question 74, et une question validée pour un module peut être posée à
+      d'autres agents, ailleurs, sans second regard.
+    - **c** : le niveau et « aussi posée dans » gardent le statut ; changer
+      le module d'origine remet la question « à vérifier ». Contre : deux
+      règles à retenir, et ajouter un module expose quand même la question à
+      d'autres agents sans second regard.
+
+    Sauf réserve de votre part, une réponse vaut accord pour les lots 1 et
+    2. Le lot 3 attend un choix point par point.
+
 88. **Banque du pool déjà en ligne : la redéposer, ou la corriger sur
     place** — posée le 01/10/2026, sur « Peux-tu vérifier que toutes les
     questions du niveau N2R ont bien chaque justification rattachée aux
