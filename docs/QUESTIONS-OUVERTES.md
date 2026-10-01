@@ -377,6 +377,31 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+87. **Schémas du rattachement des questions : dans le site, ou seulement sur
+    la page à part** — posée le 01/10/2026, sur « Je ne vois pas non plus
+    apparaître les logigrammes sur Rattachement des questions : peux-tu le
+    rendre plus accessible ? ». Sur iPhone, les deux schémas de la page
+    « Rattachement des questions » étaient coupés à droite : dessinés pour un
+    écran large, ils défilaient de côté dans leur cadre. Fait le jour même :
+    ils se redessinent en colonne sous 720 px de large, la page est
+    republiée au même lien (version 3), et ses constats suivent les
+    questions 85 et 86. Cette page reste hors du site, sur claude.ai, privée.
+
+    Trois lectures :
+    - **a (recommandé)** : les deux schémas entrent aussi dans le site, sur une
+      page « Rattachement des questions » du menu Squelette, à côté de
+      « Rattachement des modules ». Un lien y mène depuis le dépôt des
+      questions et depuis la banque. Même dessin, en colonne sur téléphone.
+      Contre : un écran de plus à tenir à jour quand le modèle change ; les
+      schémas sont fixes, ils ne lisent pas la base.
+    - **b** : la page à part suffit, et le site n'y renvoie pas. Contre : elle
+      est sur claude.ai, privée : un tuteur ne l'ouvre pas sans partage, et il
+      faut garder le lien.
+    - **c** : comme a, et le schéma se remplit des réglages réels d'un profil
+      choisi (filière et niveau) : ses modules, avec leurs questions validées
+      et à vérifier. Contre : beaucoup plus de travail ; la page d'une filière
+      en donne déjà une partie (programme par niveau cible).
+
 86. **Module déposé sans niveau coché : proposé à tous les niveaux, ou à
     aucun** — posée le 01/10/2026, relevée en préparant les modules 1 à 9 du
     pool de manipulation (`DECISIONS.md`, « Relevé au passage, non traité »).
