@@ -524,7 +524,11 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("select[name=niveauQuestion]").inputValue(), "", "aucun niveau deviné");
   await page.selectOption("select[name=niveauQuestion]", "intermediaire");
   await page.click("button:has-text('Créer la question')");
-  await page.waitForURL(/admin\/questions\?vue=liste&module=comportement-zac&ok=creee/);
+  // Sans adresse de retour, l'arborescence réduite au module (vue par défaut, 01/10/2026) ; la liste se demande.
+  await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
+  assert.equal(await page.locator("nav.bascule-vue a[aria-current=true]").innerText(), "Arborescence", "après création, l'arborescence");
+  await page.locator("details.arbo-question", { hasText: "Question de test créée dans le formulaire" }).first().waitFor();
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
   await page.waitForSelector("text=Question de test créée dans le formulaire");
   const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
   assert.equal(await ligneCreee.locator(".etiquette", { hasText: /^Intermédiaire$/i }).count(), 1, "niveau affiché dans la banque");
@@ -574,7 +578,8 @@ Justification : cf. procédure interne.`,
   await page.fill("textarea[name=references]", "ANSM — BPP 2023 — 21/07/2023 — https://ansm.sante.fr/x");
   await page.check("input[name=reservee]");
   await page.click("button:has-text('Créer la question')");
-  await page.waitForURL(/admin\/questions\?vue=liste&module=comportement-zac&ok=creee/);
+  await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
   await page.locator(".question-ligne", { hasText: ENONCE_RESERVEE }).locator(".etiquette:has-text('Réservée')").waitFor();
   ok("question réservée à l'évaluation créée, étiquetée dans la banque");
 
@@ -597,7 +602,13 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("text=Image appariée").count(), 1);
   await page.click("button:has-text('Ajouter à la banque')");
   await page.waitForSelector("text=10 questions ajoutées");
-  ok("import : 10 questions reconnues, image appariée, ajoutées à vérifier");
+  // « Vérifier ces questions » (01/10/2026) : l'arborescence, réduite au module et aux questions à vérifier.
+  assert.equal(
+    await page.locator("a.bouton:has-text('Vérifier ces questions')").getAttribute("href"),
+    "/admin/questions?module=critere-b1-02&statut=a_verifier",
+    "après un dépôt, l'arborescence",
+  );
+  ok("import : 10 questions reconnues, image appariée, ajoutées à vérifier ; « Vérifier ces questions » ouvre l'arborescence");
 
   // 4b. prompt de génération (22/09/2026) : deux variantes copiables, et leur
   //     format passe par l'analyse réelle du dépôt — aperçu seul, rien n'est
@@ -3693,6 +3704,26 @@ Justification : cf. procédure interne.`,
   const bascule = page.locator("nav.bascule-vue");
   assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arborescence est la vue par défaut");
   assert.match(await bascule.locator("a:has-text('Liste')").getAttribute("href"), /vue=liste/, "la liste se demande");
+  // Entrées de validation (01/10/2026) : elles ouvrent aussi l'arborescence, filtre gardé,
+  // branches ouvertes jusqu'aux modules, questions repliées.
+  await page.goto(BASE + "/admin");
+  await page.locator("a.tuile", { hasText: "questions à vérifier" }).click();
+  await page.waitForURL(/\/admin\/questions\?statut=a_verifier$/);
+  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "la tuile « à vérifier » ouvre l'arborescence");
+  assert.equal(await page.locator("form.filtres select[name=statut]").inputValue(), "a_verifier", "filtre « à vérifier » gardé");
+  assert.ok((await page.locator("details.arbo-question").count()) >= 1, "les questions à vérifier sont dans l'arbre");
+  assert.equal(await page.locator("details.arbo-module:not([open])").count(), 0, "sous le filtre, ouverte jusqu'aux modules");
+  assert.equal(await page.locator("details.arbo-question[open]").count(), 0, "questions repliées");
+  await page.keyboard.press("Control+k");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(
+    await page.locator('a.ar-item:has(.ar-libelle:text-is("Questions et fiches à vérifier"))').getAttribute("href"),
+    "/admin/questions?statut=a_verifier",
+    "l'accès rapide ouvre l'arborescence",
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  await page.goto(BASE + "/admin/questions");
   await page.waitForSelector("section.arborescence");
   assert.equal(await page.locator("section.arbre").count(), 0, "la couverture laisse place à l'arborescence");
   assert.ok((await page.locator("details.arbo-filiere").count()) >= 2, "tronc commun et filières");
@@ -3826,6 +3857,7 @@ Justification : cf. procédure interne.`,
   await page.check("input[name=profilFilieres][value=chimiotherapie]");
   await page.click("button:has-text('Créer la question')");
   await page.waitForURL(/ok=creee/);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
   const ligne74 = page.locator(".question-ligne", { hasText: ENONCE_74 });
   await ligne74.locator(".etiquette:text-is('Posée dans 3 modules')").waitFor();
   await ligne74.locator(".etiquette:text-is('Profils limités')").waitFor();
@@ -4870,6 +4902,11 @@ Source : Procédure statistiques — section 5`;
   // Le tutorat lit les statistiques et consigne une action ; il n'en supprime pas.
   await rebrancher(codeTuteur);
   await page.goto(BASE + "/admin/statistiques/" + idStat);
+  assert.equal(
+    await page.locator("a:has-text('Ses questions dans la banque')").getAttribute("href"),
+    `/admin/questions?module=${encodeURIComponent(idStat)}`,
+    "les questions du module, en arborescence",
+  );
   await page.fill("#actions input[name=description]", "Section 2 relue avec l'équipe");
   await page.click("#actions button:has-text('Consigner')");
   await page.waitForURL(/ok=action/);

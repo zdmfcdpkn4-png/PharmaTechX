@@ -223,7 +223,9 @@ Deux présentations de la même banque (23/09/2026, question 64, choix b) :
 la **Liste**, précédée de la couverture (filière, niveau, module, avec les
 comptes) ; l'**Arborescence**, par défaut et repliée depuis le 24/09/2026,
 qui prolonge cette couverture jusqu'aux questions, en `<details>`
-repliables au clavier et sans script. Un module rattaché à deux niveaux y
+repliables au clavier et sans script. Depuis le 01/10/2026, toutes les
+entrées l'ouvrent, validation comprise ; la liste ne s'ouvre que par la
+bascule. Un module rattaché à deux niveaux y
 figure sous chacun et le dit ; les filtres valent pour les deux vues ;
 après un geste (valider, retirer, modifier, supprimer), l'arborescence
 rouvre la branche où il a été fait et y ramène.

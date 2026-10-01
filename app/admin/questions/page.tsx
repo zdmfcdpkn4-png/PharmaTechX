@@ -89,8 +89,9 @@ export default async function Questions({
   }>;
 }) {
   const p = await searchParams;
-  // Vue « Arborescence » (question 64, choix b), par défaut depuis le 24/09/2026 ;
-  // la liste se demande (`vue=liste`) : les entrées de validation l'ouvrent.
+  // Vue « Arborescence » (question 64, choix b), par défaut depuis le 24/09/2026, et
+  // depuis le 01/10/2026 pour toutes les entrées, validation comprise : la liste ne
+  // s'ouvre que par la bascule (`vue=liste`), puis se garde après chaque geste.
   const vueArbre = p.vue !== "liste";
   const session = (await getSession())!;
   const modules = await getTousModulesAvecDeposes();

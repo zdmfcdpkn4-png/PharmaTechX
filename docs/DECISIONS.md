@@ -5766,6 +5766,60 @@ question se reporte à la main dans `app/admin/rattachement-questions/page.tsx`.
   - à l'étape 13, le tutorat a la page dans son menu et l'ouvre, sans lien
     vers Rattachement des modules.
 
+## Banque de questions : l'arborescence aussi depuis les entrées de validation (01/10/2026, demande directe)
+
+**Demande.** Capture de la banque sur iPhone, en vue Liste : « Par défaut voir
+l'arborescence dans la banque de question car liste trop longue dans le
+déroulé. » L'arborescence est la vue par défaut depuis le 24/09/2026 (section
+« Banque de questions : arborescence repliée par défaut »), et le site en
+ligne porte cette règle : la capture montre le lien « Rattachement des
+questions », ajouté ce jour. Mais toute adresse qui demandait la liste
+(`vue=liste`) l'ouvrait encore : trois entrées faites pour valider, gardées
+alors sur la liste, et trois retours.
+
+**Fait.** Ouvrent désormais l'arborescence, filtres gardés :
+- la tuile « questions à vérifier » de la page Accès, et « Questions et
+  fiches à vérifier » dans l'accès rapide ;
+- « Vérifier ces questions », et les liens par module, après un dépôt ;
+- « Ses questions dans la banque », sur l'analyse d'un module (Statistiques) ;
+- le retour sans adresse après une création (« Écrire une question » du menu,
+  Mises en situation) ou une suppression : l'arborescence réduite au module.
+
+Sous le filtre « à vérifier », l'arbre ne garde que les branches qui ont des
+questions à vérifier, ouvertes jusqu'aux modules ; chaque question reste
+repliée.
+
+**Inchangé.** La liste s'ouvre par la bascule « Liste » et s'y garde : un
+geste fait dans la liste y ramène, comme les liens de la couverture affichée
+au-dessus d'elle.
+
+**Contrepartie.** Valider depuis l'arborescence demande de déplier chaque
+question, d'un toucher. C'est ce que la liste évitait, et la raison pour
+laquelle ces entrées l'ouvraient. Après « Valider », sous le filtre « à
+vérifier », la question sort de l'arbre ; la page ne revient pas en haut.
+Mesuré à 390 px de large :
+- la page reste au même endroit, ce qui suivait la question remontant à sa
+  place ;
+- si c'était la dernière question de son module, la branche disparaît aussi,
+  et la page remonte de 754 px.
+
+**Limite, non traitée.** Sur téléphone (390 px), la présentation, la bascule
+et les huit filtres empilés occupent 1 667 px avant l'arbre, soit deux écrans.
+La demande ne portait que sur la vue.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 428 tests ; aucun nouveau, seuls des liens changent.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 107 étapes, sans erreur de page
+  ni erreur serveur. Contrôles ajoutés dans des étapes existantes :
+  - 3 et 14a quater : une création sans adresse de retour mène à
+    l'arborescence réduite au module ;
+  - 4 : « Vérifier ces questions » mène à l'arborescence ;
+  - 14a ter : la tuile « à vérifier » ouvre l'arborescence, filtre gardé,
+    branches ouvertes jusqu'aux modules, questions repliées ; l'accès rapide
+    pointe sur la même adresse ;
+  - 14d sexies : « Ses questions dans la banque » mène à l'arborescence.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

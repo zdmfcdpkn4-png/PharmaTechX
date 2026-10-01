@@ -248,10 +248,9 @@ export async function actionEnregistrerQuestion(
     revalidatePath(`/module/${m}`);
   }
   // Venu de l'arborescence (question 64) ou de la liste : retour d'où l'on est parti. Sans adresse
-  // de retour, la liste du module, où la question se lit sans rien déplier (arborescence par défaut
-  // depuis le 24/09/2026).
+  // de retour, l'arborescence réduite au module (vue par défaut, 01/10/2026).
   const ok = id ? "modifiee" : "creee";
-  redirect(retourBanque(formData.get("retour"), { ok }) ?? `/admin/questions?vue=liste&module=${encodeURIComponent(moduleId)}&ok=${ok}`);
+  redirect(retourBanque(formData.get("retour"), { ok }) ?? `/admin/questions?module=${encodeURIComponent(moduleId)}&ok=${ok}`);
 }
 
 export async function actionChangerStatutQuestion(formData: FormData) {
@@ -288,8 +287,9 @@ export async function actionSupprimerQuestion(formData: FormData) {
     for (const m of modulesDeLaQuestion(q)) revalidatePath(`/module/${m}`);
   }
   revalidatePath("/admin/questions");
-  // Depuis l'arborescence, retour au module de la question supprimée ; sans adresse, la liste du module.
-  redirect(retourBanque(formData.get("retour")) ?? (q ? `/admin/questions?vue=liste&module=${encodeURIComponent(q.module_id)}` : "/admin/questions"));
+  // Depuis l'arborescence, retour au module de la question supprimée ; sans adresse, l'arborescence
+  // réduite au module (vue par défaut, 01/10/2026).
+  redirect(retourBanque(formData.get("retour")) ?? (q ? `/admin/questions?module=${encodeURIComponent(q.module_id)}` : "/admin/questions"));
 }
 
 export async function actionEnregistrerSituation(formData: FormData) {

@@ -91,7 +91,7 @@ export default async function Admin({
       )}
 
       <div className="tuiles">
-        <Link href="/admin/questions?vue=liste&statut=a_verifier" className="tuile tuile--lien">
+        <Link href="/admin/questions?statut=a_verifier" className="tuile tuile--lien">
           <span className="valeur">{aVerifier}</span>
           <span className="libelle">questions à vérifier</span>
         </Link>

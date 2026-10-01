@@ -128,7 +128,7 @@ export default async function FicheStatistique({
               {" · "}
             </>
           )}
-          <Link href={`/admin/questions?vue=liste&module=${encodeURIComponent(id)}`}>Ses questions dans la banque</Link>
+          <Link href={`/admin/questions?module=${encodeURIComponent(id)}`}>Ses questions dans la banque</Link>
           {mod?.origine === "base" && (
             <>
               {" · "}
