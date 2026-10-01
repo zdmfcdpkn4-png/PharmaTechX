@@ -377,6 +377,61 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+88. **Banque du pool déjà en ligne : la redéposer, ou la corriger sur
+    place** — posée le 01/10/2026, sur « Peux-tu vérifier que toutes les
+    questions du niveau N2R ont bien chaque justification rattachée aux
+    propositions de la question ? […] Est-ce que les illustrations des KIMO
+    ont été réintégrées ? ». Constaté le même jour, en lecture seule, dans la
+    base en ligne :
+    - 37 questions N2R, dans les modules 1 à 4 du pool, toutes « à vérifier ».
+      Elles ont été déposées en une fois, le 01/10 à 18:49, par la version
+      du site d'alors.
+    - Aucune ne porte de justification sous ses propositions, ni d'image. La
+      question 85 laisse son texte unique à une question déjà déposée, et la
+      question 84 n'agit qu'au dépôt.
+    - Comparées au Word relu par le dépôt actuel :
+      - 34 sont identiques (corrigé et niveau) ;
+      - 3 sont fausses : la QIM sur l'attribution des rôles aux postes de PPH
+        est sans corrigé, et deux QCM KIMO du module 4 portent le corrigé et
+        le niveau d'une autre question ;
+      - 16 sont absentes : les 13 du module 6, qui n'existe pas en ligne, et
+        3 QCM KIMO du module 4, avalées par la question précédente.
+    - D'ici là, aucune n'est tirée, faute d'être validée. Les trois fausses
+      ne doivent pas être validées.
+
+    Un nouveau dépôt du Word ne trouverait pas les modules : « Module 1 : … »
+    ne répond qu'à un titre qui commence par « Module 1 », et les modules en
+    ligne s'appellent « Pool de manipulation - (Module 1) ».
+
+    Trois lectures :
+    - **a (recommandé)** : redéposer le Word, et effacer les 37. Trois
+      préalables :
+      - le site est redéployé ;
+      - le module 6 est créé (filière du pool, N2R) ;
+      - le dépôt apprend à relier « Module 1 : … » au seul module dont le
+        titre contient « Module 1 ».
+
+      Les 37 s'effacent depuis la banque, une à une. Elles peuvent aussi
+      s'effacer d'un coup dans la base, sur « fais-le dans la base ». Résultat :
+      53 questions, la justification sous chaque proposition, 6 illustrations,
+      et les corrigés et niveaux du Word. Contre : 37 questions effacées puis
+      recréées, sous de nouveaux identifiants (rien ne les cite aujourd'hui).
+      Les 3 tableaux des plages restent hors du site, une question ne portant
+      qu'une image.
+    - **b** : corriger sur place, question par question :
+      - « Répartir » sur chacune des 37 ;
+      - les trois corrigés repris à la main ;
+      - les images des deux questions KIMO présentes, ajoutées à la main ;
+      - les 16 manquantes déposées à part, depuis un extrait du Word : elles
+        arrivent avec leur image.
+
+      Contre : une quarantaine de gestes. Les deux questions qui en ont avalé
+      d'autres gardent leurs lignes dans leur texte, à nettoyer à la main.
+    - **c** : je corrige directement dans la base, par un script, en gardant
+      les 37 identifiants, et j'ajoute les 16 manquantes. Contre : une
+      écriture directe en production, hors de l'aperçu du dépôt, que vous
+      n'auriez pas relu ; exige « fais-le dans la base ».
+
 87. **Schémas du rattachement des questions : dans le site, ou seulement sur
     la page à part** — posée le 01/10/2026, sur « Je ne vois pas non plus
     apparaître les logigrammes sur Rattachement des questions : peux-tu le
