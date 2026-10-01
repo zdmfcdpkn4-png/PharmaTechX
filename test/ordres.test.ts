@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   appliquerOrdre,
+  auNiveau,
   chronologie,
   cleProfil,
   deplacer,
@@ -22,6 +23,15 @@ test("modules d'un profil : socle puis filière, au niveau cible, sans doublon, 
   assert.deepEqual(modulesDuProfil(socle, filiere, "N1a").map((x) => x.id), ["s1", "f1", "f2"]);
   assert.deepEqual(modulesDuProfil(socle, filiere, "N2").map((x) => x.id), ["s1", "s2", "f2"]);
   assert.deepEqual(modulesDuProfil(socle, filiere, "N3"), [], "niveau sans module : profil vide, pas deviné");
+});
+
+test("module sans niveau coché : proposé à tous les niveaux, comme le formulaire l'annonce (question 86, choix a)", () => {
+  const socle = [m("s1", ["N1a"]), m("tous", [])];
+  const filiere = [m("f1", ["N2"]), m("tous-f", [])];
+  assert.deepEqual(modulesDuProfil(socle, filiere, "N1a").map((x) => x.id), ["s1", "tous", "tous-f"]);
+  assert.deepEqual(modulesDuProfil(socle, filiere, "N3").map((x) => x.id), ["tous", "tous-f"], "même à un niveau que nul autre module ne porte");
+  assert.equal(auNiveau(m("x", []), "N2"), true);
+  assert.equal(auNiveau(m("x", ["N1a"]), "N2"), false);
 });
 
 test("ordre appliqué : les modules nommés dans l'ordre enregistré, les nouveaux à la suite, les sortis ignorés", () => {

@@ -1408,6 +1408,30 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 0, "absent au niveau N1b");
   ok("module déposé : brouillon invisible, publié au programme Chimiothérapie · N1c");
 
+  // 12b bis. module déposé sans niveau coché (question 86, choix a) : proposé à tous les niveaux de
+  //          sa filière, comme son formulaire l'annonce ; supprimé aussitôt, la suite garde ses comptes.
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module tous niveaux test");
+  await page.fill("input[name=objectif]", "Objectif du module sans niveau coché.");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idTousNiveaux = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+  await page.goto(BASE + "/");
+  await page.selectOption("label:has-text('Filière') select", "chimiotherapie");
+  for (const niveau of ["N1b", "N1c"]) {
+    await page.selectOption("label:has-text('Niveau visé') select", niveau);
+    await deplierTousLesGroupes();
+    await page.waitForSelector("h3:has-text('Module tous niveaux test')");
+  }
+  assert.equal(await page.locator("h3:has-text('Module déposé test')").count(), 1, "le module coché N1c reste à son niveau");
+  await page.goto(BASE + "/admin/modules/" + idTousNiveaux);
+  await page.click("button:has-text('Supprimer')");
+  await page.waitForURL(/\/admin\/modules\?ok=supprime/);
+  ok("module déposé sans niveau coché : proposé aux niveaux N1b et N1c de sa filière (question 86)");
+
   // 12c. questions déposées dans le module déposé, présentation et seuil propre
   const TEXTE_DEPOT = `QCM 1. Question déposée une (une seule réponse)
 A. Bonne (V)

@@ -5614,6 +5614,47 @@ compris, y compris l'extrait qui contient lui-même un « ; ».
   sous chaque proposition à la correction ; une question au texte unique s'y
   répartit dans l'éditeur, et la répartition est enregistrée.
 
+## Module déposé sans niveau coché : proposé à tous les niveaux (01/10/2026, question 86, choix a)
+
+**Demande.** Relevé en préparant les modules 1 à 9 du pool de manipulation :
+le formulaire d'un module dit « aucun coché : tous niveaux », la liste et la
+page du module disent « tous niveaux », et le tirage comme la banque le
+lisent ainsi. Le programme d'un agent, filtré par son niveau, l'écartait
+pourtant : un tel module n'était proposé à aucun agent qui a un niveau.
+Réponse « À » : choix a.
+
+**Fait.**
+- `content/ordres.ts`, `auNiveau` : un module sans niveau coché est proposé
+  à tous les niveaux. Le programme s'en sert partout où il filtre par
+  niveau :
+  - l'accueil et « Reprendre » (`app/page.tsx`) ;
+  - le tableau de bord (`components/TableauDeBord.tsx`) ;
+  - les modules d'un profil, donc l'ordonnancement (`modulesDuProfil`) ;
+  - le programme d'une filière par niveau cible (`programmeParNiveau`).
+- Page d'une filière : un tel module se lit « tous niveaux » ; il n'y est
+  plus signalé « à aucun des niveaux de la filière ».
+- Inchangé : décocher depuis la page d'une filière le dernier niveau d'un
+  module reste refusé : un module déposé passerait à tous les niveaux sans
+  qu'on l'ait voulu, un module du code retrouverait ceux de sa fiche. Un
+  module déposé passe à tous les niveaux depuis son propre formulaire.
+
+**À regarder avant la mise en ligne.** Un module déjà déposé sans niveau
+entre au programme des agents de tous les niveaux de ses filières. La liste
+des modules (`/admin/modules`) les montre : « tous niveaux » sous leur titre.
+Rien n'est récrit en base.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 425 tests, dont un nouveau (un module sans
+  niveau dans le profil de chaque niveau, même d'un niveau qu'aucun autre
+  module ne porte) ; celui du programme d'une filière le compte désormais à
+  chaque niveau cible.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 105 étapes, sans erreur de page
+  ni erreur serveur ; en console, les trois lignes attendues. L'étape
+  ajoutée (12b bis) publie un module sans niveau dans la filière
+  Chimiothérapie, le trouve à l'accueil aux niveaux N1b et N1c — le module
+  coché N1c restant à son niveau —, puis le supprime.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

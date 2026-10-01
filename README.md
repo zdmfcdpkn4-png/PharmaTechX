@@ -235,7 +235,8 @@ titre, objectif, présentation courte, rattachement facultatif à un critère de
 la fiche, **profils** (filières, niveaux, parcours) et seuil propre ; ses
 questions se déposent depuis la banque, ses documents depuis Documents.
 Cycle brouillon (visible des tuteurs et administrateurs) → publié (au
-programme des profils choisis) → retiré. Publication, retrait, retour en
+programme des profils choisis ; sans niveau coché, à tous les niveaux de ses
+filières — question 86) → retiré. Publication, retrait, retour en
 brouillon et modification d'un module publié : administration seulement
 (question 12) ; suppression réservée à l'administrateur, refusée tant que
 des questions ou des documents s'y rattachent.
@@ -453,7 +454,8 @@ tuteur et pharmacien avec signature incrustée sans nom saisi, rapport A4
 pseudonyme puis avec le nom porté à l'édition, paquet d'archivage, registre et
 répertoire CSV sans nom, journal sans nom, purge, clôture de l'identifiant,
 dépôt de document, module déposé (brouillon invisible, publié au programme
-d'une filière et d'un niveau, questions importées, seuil propre), barème
+d'une filière et d'un niveau, sans niveau coché proposé à tous les niveaux,
+questions importées, seuil propre), barème
 réglé puis rétabli, document général par profil, fin de test (document de
 synthèse, question ratée rejouée, module suivant), progression rattachée
 (code personnel, évaluation conservée et relue, évaluation interrompue

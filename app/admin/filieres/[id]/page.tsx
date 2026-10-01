@@ -82,12 +82,15 @@ function LigneProgramme({
   const autres = filieresDePoste(m.postes).filter((f) => f !== filiere).map((f) => libelles.get(f) ?? f);
   const niveauxIci = niveaux.filter((n) => m.niveaux.includes(n));
   const autresNiveaux = m.niveaux.map(String).filter((n) => !niveaux.includes(n));
-  const sansNiveau = dans && niveaux.length > 0 && niveauxIci.length === 0;
+  // Sans niveau coché, le module est proposé à tous les niveaux (question 86, choix a) : rien à signaler.
+  const tousNiveaux = m.niveaux.length === 0;
+  const sansNiveau = dans && niveaux.length > 0 && niveauxIci.length === 0 && !tousNiveaux;
   const statut = m.origine === "base" && m.statut ? `module déposé · ${STATUTS_MODULE[m.statut].toLowerCase()}` : "";
   const infos = [
     statut,
     autres.length > 0 ? `aussi : ${autres.join(", ")}` : "",
     autresNiveaux.length > 0 ? `autres niveaux : ${autresNiveaux.join(", ")}` : "",
+    tousNiveaux ? "aucun niveau coché : tous niveaux" : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -130,7 +133,9 @@ function LigneProgramme({
             ))}
           </span>
         ) : (
-          <span className="legende">{niveauxIci.length > 0 ? niveauxIci.join(", ") : "aucun niveau de la filière"}</span>
+          <span className="legende">
+            {niveauxIci.length > 0 ? niveauxIci.join(", ") : tousNiveaux ? "tous niveaux" : "aucun niveau de la filière"}
+          </span>
         ))}
       {(infos || seule || sansNiveau) && (
         <span className="ligne-programme-infos legende">

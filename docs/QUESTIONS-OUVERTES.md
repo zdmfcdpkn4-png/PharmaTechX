@@ -403,6 +403,13 @@ telle. Ordre : ce qui change le déploiement en premier.
       alignent. Contre : « aucun coché » ne sert plus à rien, et des
       questions tirées aujourd'hui ne le seraient plus.
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : sans
+    niveau coché, un module est proposé à tous les niveaux de ses filières —
+    accueil, tableau de bord, ordre du parcours, programme d'une filière —,
+    comme au tirage et en banque. La page d'une filière le lit « tous
+    niveaux ». Les modules déjà déposés sans niveau sont à regarder dans la
+    liste des modules avant la mise en ligne. Détail dans `DECISIONS.md`.
+
 85. **Justification d'une question déposée : un seul texte, ou une par
     proposition comme chez Flore** — posée le 01/10/2026, sur « sur les 40
     questions déposées en cours de vérification, y a-t-il bien un

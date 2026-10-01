@@ -11,7 +11,7 @@ import { IDENTIFIANT_ESSAI, LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 import { actionEmettreRapport } from "@/app/actions-rapports";
 import { libelleNature } from "@/content/types";
 import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
-import { chronologie, cleProfil, ordreApplicable, requeteProfil } from "@/content/ordres";
+import { auNiveau, chronologie, cleProfil, ordreApplicable, requeteProfil } from "@/content/ordres";
 import type { TypeParcours } from "@/content/types";
 import { BarreBadges } from "./BarreBadges";
 import { Badge } from "./Badge";
@@ -425,8 +425,9 @@ export function TableauDeBord({
       </button>
     ) : null;
 
+  // Un module sans niveau coché est proposé à tous les niveaux (question 86, choix a).
   const parNiveau = (liste: ModuleResume[]) =>
-    niveauCode ? liste.filter((m) => m.niveaux.includes(niveauCode)) : liste;
+    niveauCode ? liste.filter((m) => auNiveau(m, niveauCode)) : liste;
 
   const socle = parNiveau(troncCommun);
   const modulesPoste = parNiveau(posteId ? (parPoste[posteId] ?? []) : []);

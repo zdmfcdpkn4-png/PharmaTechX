@@ -23,6 +23,16 @@ export function cleProfil(filiere: string, niveau: string): string {
 }
 
 /**
+ * Le module est-il proposé à ce niveau cible ? Un module sans niveau coché
+ * l'est à tous, comme son formulaire l'annonce (« aucun coché : tous
+ * niveaux ») et comme le tirage et la banque le lisaient déjà (question 86,
+ * choix a, 01/10/2026). Jusque-là, le programme l'écartait de tout niveau.
+ */
+export function auNiveau(m: { niveaux: readonly string[] }, niveau: string): boolean {
+  return m.niveaux.length === 0 || m.niveaux.includes(niveau);
+}
+
+/**
  * Modules d'un profil : socle puis filière, au niveau cible, sans doublon,
  * dans l'ordre reçu — l'ordre général du parcours, puis celui de la fiche.
  */
@@ -34,7 +44,7 @@ export function modulesDuProfil<T extends { id: string; niveaux: readonly string
   const vus = new Set<string>();
   const retenus: T[] = [];
   for (const m of [...socle, ...filiere]) {
-    if (!m.niveaux.includes(niveau) || vus.has(m.id)) continue;
+    if (!auNiveau(m, niveau) || vus.has(m.id)) continue;
     vus.add(m.id);
     retenus.push(m);
   }

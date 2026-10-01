@@ -1,4 +1,5 @@
 import type { ReglageModule } from "./reglages";
+import { auNiveau } from "./ordres";
 
 /**
  * Programme d'une filière, lu et réglé depuis sa page (question 80, choix a,
@@ -16,8 +17,8 @@ import type { ReglageModule } from "./reglages";
  * - un module du **tronc commun** ne se coche pas ici : l'y rattacher le
  *   retirerait de toutes les autres filières ;
  * - un module garde **au moins un niveau** : sans niveau, un module du code
- *   retrouverait ceux de la fiche, et un module déposé ne serait proposé à
- *   aucun niveau cible.
+ *   retrouverait ceux de la fiche, et un module déposé passerait à tous les
+ *   niveaux (question 86, choix a).
  *
  * Module pur : testable sans base.
  */
@@ -221,7 +222,7 @@ export function programmeParNiveau(
 ): ProgrammeAuNiveau[] {
   return niveauxDeLaFiliere.map((niveau) => ({
     niveau,
-    filiere: dans.filter((m) => m.niveaux.includes(niveau)).length,
-    troncCommun: troncCommun.filter((m) => m.niveaux.includes(niveau)).length,
+    filiere: dans.filter((m) => auNiveau(m, niveau)).length,
+    troncCommun: troncCommun.filter((m) => auNiveau(m, niveau)).length,
   }));
 }

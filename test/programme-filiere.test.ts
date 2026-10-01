@@ -171,4 +171,10 @@ test("programme par niveau cible : filière et tronc commun, comme un profil le 
     { niveau: "N1c", filiere: 1, troncCommun: 0 },
     { niveau: "N2", filiere: 2, troncCommun: 1 },
   ]);
+  // Question 86 (choix a) : un module sans niveau coché compte à chaque niveau cible.
+  const tous = programmeParNiveau([chimio("a"), chimio("e", [])], [{ ...socle("f"), niveaux: [] }], NIVEAUX_CHIMIO);
+  assert.deepEqual(tous, [
+    { niveau: "N1c", filiere: 2, troncCommun: 1 },
+    { niveau: "N2", filiere: 2, troncCommun: 1 },
+  ]);
 });

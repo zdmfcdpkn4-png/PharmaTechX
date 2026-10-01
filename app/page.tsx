@@ -16,7 +16,7 @@ import type { Module, TypeParcours } from "@/content/types";
 import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
 import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
-import { chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
+import { auNiveau as proposeAuNiveau, chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
 import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
@@ -155,8 +155,9 @@ export default async function Accueil({
   // celui qui s'affiche à l'arrivée — le programme à la carte, ou le socle et
   // la filière du code de poste, au niveau du code — dans l'ordre de la fiche,
   // ou dans celui du profil s'il en a un (question 55).
+  // Un module sans niveau coché est proposé à tous les niveaux (question 86, choix a).
   const auNiveau = (liste: ModuleResume[]) =>
-    niveauInitial ? liste.filter((m) => m.niveaux.includes(niveauInitial)) : liste;
+    niveauInitial ? liste.filter((m) => proposeAuNiveau(m, niveauInitial)) : liste;
   const etape = (m: ModuleResume): EtapeReprise => ({
     id: m.id,
     titre: m.titre,
