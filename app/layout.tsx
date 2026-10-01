@@ -221,7 +221,8 @@ export default async function RootLayout({
           },
           // Squelette de la formation (question 81, choix a, 26/09/2026) : tout ce
           // qui compose la formation, en un sous-menu. Droits inchangés : le
-          // tutorat garde l'ordre et les programmes, et lit les filières.
+          // tutorat garde l'ordre et les programmes, et lit les filières et,
+          // depuis la question 87, le rattachement des questions.
           {
             titre: "Squelette",
             picto: "squelette",
@@ -235,6 +236,8 @@ export default async function RootLayout({
                     { href: "/admin/rattachement", libelle: "Rattachement des modules" },
                   ]
                 : []),
+              // Schémas du rattachement des questions (question 87, choix a) : tutorat et administration.
+              { href: "/admin/rattachement-questions", libelle: "Rattachement des questions" },
               { href: "/admin/ordonnancement", libelle: "Ordre" },
               { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],

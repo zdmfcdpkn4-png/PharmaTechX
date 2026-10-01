@@ -5695,6 +5695,77 @@ rend le corrigé A D E de cette question.
   extrait, sans case cochée : la proposition A est cochée d'après lui, et le
   reste à la réouverture.
 
+## Rattachement des questions : les deux schémas dans le site (01/10/2026, question 87, choix a)
+
+**Demande.** « Je ne vois pas non plus apparaître les logigrammes sur
+Rattachement des questions : peux-tu le rendre plus accessible ? » Les deux
+schémas n'existaient que sur une page à part, privée, hébergée hors du site.
+Sur iPhone, ils étaient en plus coupés à droite ; c'est corrigé le jour même
+dans cette page (version 3). Réponse « À » : choix a.
+
+**Fait.**
+- `/admin/rattachement-questions`, au sous-menu Squelette, juste après
+  « Rattachement des modules ». La page montre deux schémas :
+  - « Qui voit quelle question » ;
+  - « Une question qui recoupe un critère : trois rangements ».
+- Accès : tutorat et administration, qui déposent tous deux des questions.
+  Pour le tutorat, les écrans réservés à l'administration (Rattachement des
+  modules, Niveaux des questions) sont nommés sans lien.
+- Le dépôt (`/admin/questions/import`) et la banque (`/admin/questions`) y
+  mènent, par un lien dans leur présentation.
+- Chaque schéma est dessiné deux fois : en largeur, et en colonne. Le choix
+  dépend de la largeur de son cadre, pas de celle de l'écran (requête de
+  conteneur, `.logigramme` dans `app/globals.css`) :
+  - à partir de 920 px de cadre, le dessin large, dont les plus petits
+    libellés restent alors à 10,5 px au moins à l'écran ;
+  - en dessous, la colonne : volet ouvert, tablette, téléphone.
+- Couleurs du site ; le lien qui décide (module coché pour des filières et
+  des niveaux) est en bleu.
+- Les nombres et les codes tirés de la fiche suivent le code
+  (`content/habilitation.ts`) : filières, blocs, critères (53, de B1-01 à
+  B7-01), niveaux N1a à N3, et le libellé de B1-01.
+
+**Écarts avec la page à part, voulus.**
+- La question portait sur les schémas. La page n'a donc ni le tableau « Où se
+  règle chaque lien », ni le pas à pas du pool, ni la correspondance entre le
+  classeur et la fiche, ni la lecture de la banque. En tête, une phrase de
+  liens mène aux écrans de réglage. La page à part garde le reste.
+- Le second schéma décrit trois rangements possibles ; il ne présente plus un
+  choix à faire. L'exemple du module 3 du classeur du pool reste.
+
+**Corrigé au passage, ici et sur la page à part (version 5).**
+- L'en-tête disait « Une question ne se coche jamais pour un niveau » :
+  inexact, une question peut porter des étiquettes de profil. Il dit
+  désormais que c'est le module qui ouvre un niveau, et que ces étiquettes ne
+  font que réserver la question, dans son module, à certaines filières ou
+  certains niveaux (`content/tirage.ts`, `admiseAuProfil`). Il nomme aussi le
+  tronc commun, qu'il omettait.
+- Les règles « sans filière : tronc commun » et « sans niveau : tous niveaux »
+  sont précisées « module déposé ». Un module du code sans case cochée garde
+  les filières et les niveaux de sa fiche (`content/reglages.ts`,
+  `listeConnue`).
+
+**Limite.** Les schémas sont fixes : ils décrivent le fonctionnement du site,
+pas les réglages en base. Un changement de ce qui décide qu'un agent voit une
+question se reporte à la main dans `app/admin/rattachement-questions/page.tsx`.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 428 tests ; aucun nouveau, la page ne calcule rien.
+- `npm run build`.
+- Mesures de 320 à 1 440 px de large :
+  - aucun débord de la page ;
+  - aucun texte hors de sa boîte, hors du dessin, ni chevauché ;
+  - dessin large à 1 280 et 1 440 px, en colonne en dessous ;
+  - en colonne, les plus petits libellés font 10,7 px à 390 px de large,
+    et 8,6 px à 320 px.
+- Parcours de bout en bout, deux passes de 107 étapes, sans erreur de page
+  ni erreur serveur ; en console, les trois lignes attendues. Deux étapes
+  ajoutées :
+  - 12g bis : du dépôt à la page, lien du menu, deux schémas ; en largeur à
+    1 280 px, en colonne à 390 px, sans débord ; lien depuis la banque ;
+  - à l'étape 13, le tutorat a la page dans son menu et l'ouvre, sans lien
+    vers Rattachement des modules.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

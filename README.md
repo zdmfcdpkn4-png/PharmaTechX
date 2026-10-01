@@ -252,8 +252,9 @@ dernière filière, et le tronc commun s'y lit sans s'y régler.
 
 **Squelette de la formation** (26/09/2026, question 81, choix a) : un
 sous-menu de l'Administration rassemble ce qui compose la formation, une page
-par élément. Droits inchangés : le tutorat lit les filières et garde l'ordre
-et les programmes ; le reste est réservé à l'administration.
+par élément. Droits inchangés : le tutorat lit les filières et le rattachement
+des questions, et garde l'ordre et les programmes ; le reste est réservé à
+l'administration.
 - `/admin/filieres` et `/admin/niveaux` : l'ancien Référentiel, scindé ; une
   filière se modifie sur sa carte ou sur sa page. `/admin/referentiel` renvoie
   aux filières.
@@ -270,6 +271,9 @@ et les programmes ; le reste est réservé à l'administration.
   rangé.
 - `/admin/rattachement` : le réglage des modules du code, venu de l'écran
   Modules, et les deux parcours en lecture.
+- `/admin/rattachement-questions` (question 87, choix a) : deux schémas
+  fixes, qui voit quelle question et où ranger une question qui recoupe un
+  critère ; liée depuis le dépôt et la banque, ouverte au tutorat.
 - `/admin/ordonnancement` et `/admin/programmes` : l'ordre et les programmes
   à la carte, inchangés.
 
@@ -402,6 +406,7 @@ les mêmes écrans.
 | Niveaux des questions (noms, phrases, copie scellée) | `content/niveaux-questions.ts` ; réglage `/admin/niveaux-questions`, lecture `lib/niveaux-questions-db.ts` |
 | Blocs de compétence déposés | `content/blocs.ts` (fusion), `content/blocs-db.ts`, `app/admin/blocs` |
 | Réglage des modules du code (seuil, filières, niveaux, parcours) | `app/admin/rattachement` ; action `app/admin/modules/actions.ts` |
+| Schémas du rattachement des questions | `app/admin/rattachement-questions` ; styles `.logigramme` dans `app/globals.css` |
 | Banque déposée (requêtes) | `content/banque-db.ts` |
 | Modules déposés | `content/modules-db.ts`, `app/admin/modules` ; fusion `content/store.ts` |
 | Page d'une filière (programme, ce qui la cite) | `app/admin/filieres` ; règles `content/programme-filiere.ts` ; formulaires communs aux Filières et aux Niveaux `app/admin/referentiel/formulaires.tsx` |

@@ -2467,6 +2467,39 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .tranche--sous-seuil { fill: var(--echec); opacity: 0.55; }
 .seuil { stroke: var(--alerte); stroke-width: 2; stroke-dasharray: 4 3; }
 
+/* ── Rattachement des questions (question 87, choix a) ──────────────────────
+   Deux schémas fixes, chacun dessiné deux fois : en largeur, et en colonne
+   quand son cadre fait moins de 920 px, où les plus petits libellés du dessin
+   large passeraient sous 10,5 px. La requête porte sur le cadre, pas sur
+   l'écran : volet ouvert ou tablette en portrait, le dessin large ne se
+   coupe plus à droite. Sans requête de conteneur, le dessin large reste, et
+   défile dans son cadre. */
+.logigramme { margin: 0; display: grid; gap: 0.5rem; container-type: inline-size; }
+.logigramme-cadre {
+  overflow-x: auto; background: var(--surface);
+  border: 1px solid var(--bord); border-radius: var(--rayon-sm);
+}
+.logigramme svg { display: block; width: 100%; height: auto; }
+.logigramme .lg-large { min-width: 920px; }
+.logigramme .lg-etroit { display: none; max-width: 440px; margin: 0 auto; }
+@container (max-width: 919px) {
+  .logigramme .lg-large { display: none; }
+  .logigramme .lg-etroit { display: block; }
+}
+.logigramme figcaption { max-width: var(--largeur-texte); }
+.lg-boite { fill: var(--surface); stroke: var(--bord-fort); stroke-width: 1.2; }
+.lg-boite-cle { fill: var(--marque-clair); stroke: var(--marque); stroke-width: 1.4; }
+.lg-titre { font-size: 14px; font-weight: 600; fill: var(--texte); }
+.lg-sous { font-size: 12px; fill: var(--texte-doux); }
+.lg-col { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; fill: var(--texte-doux); }
+.lg-fleche { stroke: var(--trait-faible); stroke-width: 1.4; fill: none; }
+.lg-pointille { stroke-dasharray: 5 4; }
+.lg-etiq { font-size: 12px; fill: var(--texte-doux); }
+.lg-cle { stroke: var(--marque); stroke-width: 2.2; fill: none; }
+.lg-etiq-cle { font-size: 12.5px; font-weight: 600; fill: var(--marque); }
+.lg-pointe { fill: var(--trait-faible); }
+.lg-pointe-cle { fill: var(--marque); }
+
 .liste-criteres > li, .liste-questions-dures > li {
   border: 1px solid var(--bord); border-radius: var(--rayon-sm);
   padding: 0.625rem 0.75rem; background: var(--surface);

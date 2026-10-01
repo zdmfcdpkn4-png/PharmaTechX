@@ -24,7 +24,8 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
           Collez un texte ou déposez un fichier (.txt, .md, .docx, .json). L&apos;analyse ne devine
           aucun verdict : ils viennent du corrigé écrit dans le texte. Le module et le format
           qu&apos;elle retient ou propose se vérifient dans l&apos;aperçu : chaque question y est
-          montrée avant d&apos;être ajoutée, au statut « à vérifier ».
+          montrée avant d&apos;être ajoutée, au statut « à vérifier ». Où va chaque question, et qui
+          la voit : <Link href="/admin/rattachement-questions">Rattachement des questions</Link>.
         </p>
       </section>
       <details className="bloc" style={{ marginBottom: "1rem" }}>

@@ -1699,6 +1699,45 @@ Justification : justification deux.`;
   assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "fiche rétablie");
   ok("réglage d'un module du code : parcours restreint au maintien, écart signalé, puis fiche rétablie");
 
+  // 12g bis. rattachement des questions (question 87, choix a) : les deux schémas dans le site,
+  // au menu Squelette, et depuis le dépôt et la banque ; dessin large sur poste, en colonne sur
+  // téléphone, sans débord.
+  await page.goto(BASE + "/admin/questions/import");
+  await page.click(".panneau-titre a[href='/admin/rattachement-questions']");
+  await page.waitForURL(/\/admin\/rattachement-questions$/);
+  await page.waitForSelector("h1:has-text('Rattachement des questions')");
+  assert.equal(await page.locator("figure.logigramme").count(), 2, "Rattachement des questions : deux schémas");
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
+    1,
+    "lien « Rattachement des questions » du menu Squelette",
+  );
+  const variantesSchemas = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("figure.logigramme")].map((f) =>
+        [...f.querySelectorAll("svg")]
+          .filter((s) => getComputedStyle(s).display !== "none")
+          .map((s) => s.getAttribute("class"))
+          .join(","),
+      ),
+    );
+  assert.deepEqual(await variantesSchemas(), ["lg-large", "lg-large"], "poste : les deux schémas dessinés en largeur");
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.deepEqual(await variantesSchemas(), ["lg-etroit", "lg-etroit"], "téléphone : les deux schémas en colonne");
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    0,
+    "Rattachement des questions sans défilement horizontal à 390 px",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(BASE + "/admin/questions");
+  assert.equal(
+    await page.locator(".panneau-titre a[href='/admin/rattachement-questions']").count(),
+    1,
+    "la banque mène au rattachement des questions",
+  );
+  ok("rattachement des questions (question 87, choix a) : page du menu Squelette, ouverte depuis le dépôt et la banque ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord");
+
   // 12h. volet de navigation (question 37, choix c) : barre latérale sur poste,
   // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
   // modules repliés
@@ -3396,6 +3435,23 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/admin/journal");
   await page.waitForURL(/\/admin$/);
   ok("connexion tuteur : administration accessible, journal réservé");
+  // Rattachement des questions (question 87, choix a) : ouvert au tutorat, qui dépose aussi ;
+  // Rattachement des modules lui reste réservé, et la page le nomme sans lien.
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
+    1,
+    "tutorat : lien « Rattachement des questions » du menu Squelette",
+  );
+  assert.equal(
+    await page.locator("#volet-principal a[href='/admin/rattachement']").count(),
+    0,
+    "tutorat : « Rattachement des modules » reste réservé à l'administration",
+  );
+  await page.goto(BASE + "/admin/rattachement-questions");
+  await page.waitForSelector("h1:has-text('Rattachement des questions')");
+  assert.equal(await page.locator(".panneau-titre a[href='/admin/rattachement']").count(), 0, "tutorat : écran réservé sans lien");
+  await page.locator(".panneau-titre", { hasText: "Rattachement des modules (administration)" }).waitFor();
+  ok("tutorat : Rattachement des questions ouvert depuis le menu ; les écrans réservés y sont nommés sans lien");
 
   // 14. mode entraînement (sans enregistrement)
   await page.goto(BASE + "/module/comportement-zac/evaluation");

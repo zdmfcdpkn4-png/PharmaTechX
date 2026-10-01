@@ -402,6 +402,16 @@ telle. Ordre : ce qui change le déploiement en premier.
       et à vérifier. Contre : beaucoup plus de travail ; la page d'une filière
       en donne déjà une partie (programme par niveau cible).
 
+    Tranchée le même jour (choix a, réponse « À ») et mise en œuvre : page
+    « Rattachement des questions » du sous-menu Squelette
+    (`/admin/rattachement-questions`), ouverte au tutorat et à
+    l'administration, et liée depuis le dépôt et la banque. Elle porte les
+    deux schémas, dessinés en colonne quand leur cadre fait moins de 920 px.
+    Corrigé au passage, ici et sur la page à part : l'en-tête dit que c'est le
+    module qui ouvre un niveau, les étiquettes de profil d'une question ne
+    faisant que la restreindre ; les règles « sans filière » et « sans
+    niveau » sont précisées « module déposé ». Détail dans `DECISIONS.md`.
+
 86. **Module déposé sans niveau coché : proposé à tous les niveaux, ou à
     aucun** — posée le 01/10/2026, relevée en préparant les modules 1 à 9 du
     pool de manipulation (`DECISIONS.md`, « Relevé au passage, non traité »).
