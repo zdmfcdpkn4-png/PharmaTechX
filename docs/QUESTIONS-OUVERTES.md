@@ -377,6 +377,32 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+86. **Module déposé sans niveau coché : proposé à tous les niveaux, ou à
+    aucun** — posée le 01/10/2026, relevée en préparant les modules 1 à 9 du
+    pool de manipulation (`DECISIONS.md`, « Relevé au passage, non traité »).
+    Le formulaire d'un module dit « aucun coché : tous niveaux » ; la liste
+    des modules et la page du module disent « tous niveaux » ; le tirage et la
+    banque le lisent ainsi. Le programme d'un agent, filtré par son niveau,
+    l'écarte pourtant : accueil (`app/page.tsx`), tableau de bord
+    (`components/TableauDeBord.tsx`), ordre du parcours (`content/ordres.ts`).
+    Un tel module n'est proposé à aucun agent qui a un niveau.
+
+    Trois lectures :
+    - **a (recommandé)** : le programme suit le formulaire. Sans niveau coché,
+      le module est proposé à tous les niveaux de ses filières, comme au
+      tirage et en banque. Contre : un module déjà déposé sans niveau entre,
+      dès la mise en ligne, au programme des agents de tous les niveaux de
+      ses filières. La liste des modules les montre (« tous niveaux ») : à
+      regarder avant de déployer.
+    - **b** : un module porte au moins un niveau. Le formulaire refuse
+      l'enregistrement sans niveau, et la liste signale ceux qui n'en ont
+      pas. Contre : un module pour tous les niveaux se coche niveau par
+      niveau, et un niveau créé plus tard ne s'y ajoute pas.
+    - **c** : le programme ne change pas. Les écrans disent « aucun niveau :
+      proposé à aucun agent qui a un niveau », et le tirage et la banque s'y
+      alignent. Contre : « aucun coché » ne sert plus à rien, et des
+      questions tirées aujourd'hui ne le seraient plus.
+
 85. **Justification d'une question déposée : un seul texte, ou une par
     proposition comme chez Flore** — posée le 01/10/2026, sur « sur les 40
     questions déposées en cours de vérification, y a-t-il bien un
