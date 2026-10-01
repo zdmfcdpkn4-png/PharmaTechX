@@ -5,6 +5,7 @@ import {
   justificationsParOption,
   lirePieges,
   repartirJustification,
+  separerCorrigeColle,
 } from "../content/justifications";
 import { sanitizeQuestion, type Question } from "../content/types";
 
@@ -104,4 +105,22 @@ test("la justification des propositions ne part pas au navigateur avant la répo
   const pub = sanitizeQuestion(q);
   assert.equal("justificationsOptions" in pub, false);
   assert.equal(JSON.stringify(pub).includes("secret"), false);
+});
+
+test("corrigé collé au bout d'un extrait : séparé, lettres lues ; rien sans guillemet fermant", () => {
+  assert.deepEqual(separerCorrigeColle("« projets de fond » Réponses : A D E"), { texte: "« projets de fond »", lettres: ["A", "D", "E"] });
+  assert.deepEqual(separerCorrigeColle("« x » Réponse : B, C et E."), { texte: "« x »", lettres: ["B", "C", "E"] });
+  assert.deepEqual(separerCorrigeColle("« x » Réponses : aucune"), { texte: "« x »", lettres: [] });
+  assert.equal(separerCorrigeColle("« x »"), null);
+  assert.equal(separerCorrigeColle("les réponses : A et B sont fausses"), null, "phrase de l'extrait, pas un corrigé collé");
+});
+
+test("répartir : le corrigé collé au dernier extrait en sort, et revient à part", () => {
+  const r = repartirJustification("A : « a » ; B : « b » Réponses : A. Pièges : B inversion.", ["A", "B"]);
+  assert.deepEqual(r, {
+    question: "",
+    propositions: { A: "Extrait : « a »", B: "Extrait : « b »\nPiège : inversion." },
+    corrige: ["A"],
+  });
+  assert.equal(repartirJustification("A : « a » ; B : « b ».", ["A", "B"])?.corrige, undefined, "pas de corrigé : rien de plus");
 });

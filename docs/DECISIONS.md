@@ -5655,6 +5655,46 @@ Rien n'est récrit en base.
   Chimiothérapie, le trouve à l'accueil aux niveaux N1b et N1c — le module
   coché N1c restant à son niveau —, puis le supprime.
 
+## Corrigé collé au bout d'un extrait : lu au dépôt, repris par « Répartir » (01/10/2026)
+
+**Constat.** Capture du pharmacien responsable, sur le site en ligne : la QIM 1
+du module 1 du pool a ses cinq propositions à « faux », et « Réponses : A D E »
+se lit dans sa justification. Dans le Word, la ligne « Réponses » est collée
+au paragraphe de l'extrait E : le dépôt l'avait laissée dans l'extrait, et la
+question passait sans corrigé. Relevé dès l'analyse de la banque, signalé
+mais pas traité jusqu'ici. La même capture montre l'ancienne justification
+d'un seul tenant : cette question a été déposée avant la question 85, et
+garde son texte unique tant qu'on ne l'a pas réparti.
+
+**Fait.**
+- `content/justifications.ts`, `separerCorrigeColle` : « … » Réponses : A D E
+  » au bout d'une ligne d'extrait est un corrigé collé ; il exige le
+  guillemet fermant de l'extrait, une phrase de l'extrait qui parlerait de
+  réponses reste du texte.
+- Dépôt : ce corrigé s'applique à la question, l'extrait n'en garde rien, même
+  coupé sur deux lignes, et l'aperçu le signale (« Corrigé lu au bout d'une
+  ligne d'extrait… : vérifier »).
+- « Répartir sous les propositions » : le corrigé sort de l'extrait et, si
+  aucune case n'est cochée, coche les propositions qu'il nomme ; sinon il est
+  seulement signalé, pour comparaison. Le message le dit dans les deux cas ;
+  rien n'est enregistré sans « Enregistrer ».
+
+**Sur la banque du pool.** Les 53 questions ont désormais leur corrigé ; la QIM
+1 du module 1 reçoit A, D et E vraies. La répartition du texte qu'écrivait
+l'ancien dépôt redonne toujours exactement le nouveau dépôt, 53 sur 53, et
+rend le corrigé A D E de cette question.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 428 tests, dont 3 nouveaux (corrigé collé séparé, et
+  rien sans guillemet fermant ; répartition qui le rend à part ; dépôt qui
+  l'applique et le signale, extrait prolongé compris).
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 105 étapes, sans erreur de page
+  ni erreur serveur ; en console, les trois lignes attendues. L'étape
+  4c quater répartit désormais un texte dont le corrigé est collé au dernier
+  extrait, sans case cochée : la proposition A est cochée d'après lui, et le
+  reste à la réouverture.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

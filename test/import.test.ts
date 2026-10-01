@@ -549,3 +549,18 @@ test("sous « Justification : », « E. coli … » ou « D-dimères … » rest
   assert.deepEqual(trois.questions[0].options.map((o) => o.texte), ["a", "b", "c"], "ni D ni E ajoutées");
   assert.equal(trois.questions[0].justification, "E. coli est un indicateur fécal.");
 });
+
+test("corrigé collé au bout d'un extrait (« … » Réponses : A D E) : lu, signalé, retiré de l'extrait", () => {
+  const r = analyserTexte(
+    "QIM 1. Rôles.\nA. a\nExtrait A : « a »\nB. b\nExtrait B : « b »\nC. c\nExtrait C : « c, sur deux\nlignes » Réponses : A C\nPièges : B inversion",
+    { formatDefaut: "QIM" },
+  );
+  const q = r.questions[0];
+  assert.deepEqual(q.options.map((o) => o.vrai), [true, false, true], "le corrigé s'applique");
+  assert.equal(q.corrigeDetecte, true);
+  assert.equal(q.options[2].justification, "Extrait : « c, sur deux lignes »", "l'extrait ne garde pas le corrigé, même prolongé");
+  assert.deepEqual(q.avertissements, [
+    "Corrigé lu au bout d'une ligne d'extrait (« Réponses : A C ») : vérifier qu'il est bien celui de la question.",
+  ]);
+  assert.deepEqual(r.avertissements, []);
+});

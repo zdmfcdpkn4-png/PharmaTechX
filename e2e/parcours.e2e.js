@@ -867,10 +867,17 @@ Justification : cf. procédure interne.`,
   const champsRep = page.locator(".proposition--editeur input[type=text]");
   await champsRep.nth(0).fill("Un");
   await champsRep.nth(1).fill("Deux");
-  await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
-  await page.fill("textarea[name=justification]", "Selon la procédure. A : « un ; et la suite » ; B : « deux ». Pièges : B inversion.");
+  // Rien de coché : le corrigé, collé au bout du dernier extrait comme dans la banque du pool, est repris.
+  await page.fill(
+    "textarea[name=justification]",
+    "Selon la procédure. A : « un ; et la suite » ; B : « deux » Réponses : A. Pièges : B inversion.",
+  );
   await page.click("button:has-text('Répartir sous les propositions')");
-  await page.waitForSelector("text=Réparti sous 2 propositions : relisez-les, puis enregistrez.");
+  await page.waitForSelector(
+    "text=Réparti sous 2 propositions ; « Réponses : A » retrouvé dans le texte, cases cochées en conséquence : relisez, puis enregistrez.",
+  );
+  assert.equal(await page.locator(".proposition--editeur input[type=checkbox]").nth(0).isChecked(), true, "A cochée d'après le corrigé");
+  assert.equal(await page.locator(".proposition--editeur input[type=checkbox]").nth(1).isChecked(), false);
   assert.equal(await page.inputValue("textarea[name=justification]"), "Selon la procédure.");
   assert.equal(await page.locator(".champ--justif-proposition textarea").nth(0).inputValue(), "Extrait : « un ; et la suite »");
   assert.equal(await page.locator(".champ--justif-proposition textarea").nth(1).inputValue(), "Extrait : « deux »\nPiège : inversion.");
@@ -881,6 +888,7 @@ Justification : cf. procédure interne.`,
   await page.locator(".question-ligne", { hasText: "Texte unique à répartir" }).locator("a:has-text('Modifier')").click();
   await page.waitForSelector("textarea[name=enonce]");
   assert.equal(await page.locator(".champ--justif-proposition textarea").nth(1).inputValue(), "Extrait : « deux »\nPiège : inversion.", "enregistrée");
+  assert.equal(await page.locator(".proposition--editeur input[type=checkbox]").nth(0).isChecked(), true, "corrigé enregistré");
   ok("justification par proposition : extrait et piège sous leur proposition au dépôt, en banque et à la correction, gardés au serveur avant la réponse ; texte unique réparti dans l'éditeur");
 
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */

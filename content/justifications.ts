@@ -26,6 +26,19 @@ export const JUSTIFICATION_PROPOSITION_MAX = 1000;
 
 const LETTRES = "ABCDE";
 
+/**
+ * « … » Réponses : A D E » : le corrigé collé au bout d'une ligne d'extrait,
+ * quand le copier-coller a fondu deux paragraphes du Word en un (banque du
+ * pool, QIM 1 du module 1, 01/10/2026). Il restait dans l'extrait, et la
+ * question passait sans corrigé, toutes ses propositions à Faux. `null` :
+ * pas de corrigé collé ; `[]` : « Réponses : aucune ».
+ */
+export function separerCorrigeColle(texte: string): { texte: string; lettres: string[] } | null {
+  const m = /^(.*[»"”])\s*R[ée]ponses?\s*[:–—-]\s*(aucune?|[A-E](?:\s*(?:[,;]|et)?\s*[A-E])*)\s*\.?\s*$/i.exec(texte.trim());
+  if (!m) return null;
+  return { texte: m[1].trim(), lettres: /^aucune?$/i.test(m[2]) ? [] : [...new Set(m[2].toUpperCase().match(/[A-E]/g) ?? [])] };
+}
+
 /** Justification d'une proposition : une ligne par élément, dans cet ordre. */
 export function composerJustification(e: { justification?: string; extrait?: string; piege?: string }): string {
   const lignes: string[] = [];
@@ -80,7 +93,7 @@ export function lirePieges(texte: string, lettres: readonly string[]): { parLett
 export function repartirJustification(
   texte: string,
   lettres: readonly string[],
-): { question: string; propositions: Record<string, string> } | null {
+): { question: string; propositions: Record<string, string>; corrige?: string[] } | null {
   const connues = lettres.map((l) => l.toUpperCase()).filter((l) => LETTRES.includes(l));
   if (connues.length === 0) return null;
   let corps = texte.trim();
@@ -95,6 +108,7 @@ export function repartirJustification(
 
   // Les extraits « A : … ; B : … » : le dernier bloc du texte restant.
   const extraits = new Map<string, string>();
+  let corrige: string[] | undefined;
   const morceaux = corps.split(/ ; (?=[A-E] : )/);
   const debuts = [...morceaux[0].matchAll(morceaux.length > 1 ? /(?:^|\s)([A-E]) : /g : /(?:^|[.!?»]\s+)([A-E]) : /g)];
   const premier = debuts.at(-1);
@@ -106,7 +120,15 @@ export function repartirJustification(
     if (ordonnes) {
       const dernier = segments[segments.length - 1];
       dernier.texte = dernier.texte.replace(/\.$/, "").trim();
-      for (const s of segments) if (s.texte) extraits.set(s.lettre, s.texte);
+      for (const s of segments) {
+        // Un corrigé collé au bout d'un extrait en sort (`separerCorrigeColle`).
+        const colle = separerCorrigeColle(s.texte);
+        if (colle) {
+          s.texte = colle.texte;
+          corrige = colle.lettres;
+        }
+        if (s.texte) extraits.set(s.lettre, s.texte);
+      }
       corps = morceaux[0].slice(0, debut).trim();
     }
   }
@@ -118,7 +140,7 @@ export function repartirJustification(
     if (j) propositions[l] = j;
   }
   const question = [corps, pieges.reste.length > 0 ? `Pièges : ${pieges.reste.join(", ")}.` : ""].filter(Boolean).join(" ");
-  return { question, propositions };
+  return { question, propositions, ...(corrige ? { corrige } : {}) };
 }
 
 /**

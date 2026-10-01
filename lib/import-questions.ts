@@ -2,7 +2,7 @@ import { poser, type Legende } from "@/content/schema";
 import { lireNiveauQuestion, trousDuTexte } from "@/content/types";
 import type { NiveauQuestion, Reference, TypeQuestion } from "@/content/types";
 import { indiceFormat, type FormatChoix } from "@/lib/import-format";
-import { JUSTIFICATION_PROPOSITION_MAX, composerJustification, lirePieges } from "@/content/justifications";
+import { JUSTIFICATION_PROPOSITION_MAX, composerJustification, lirePieges, separerCorrigeColle } from "@/content/justifications";
 
 /**
  * Import de questions depuis un texte — reprise, adaptée, de l'extraction
@@ -319,6 +319,8 @@ interface Brouillon {
   reservee: boolean;
   obligatoire: boolean;
   corrige: boolean;
+  /** Corrigé lu au bout d'une ligne d'extrait (« … » Réponses : A D E »), tel qu'écrit. */
+  corrigeColle?: string;
   /** « extrait » et « extrait-lettre » : une ligne sans libellé prolonge l'extrait coupé en deux ; « justif-lettre », la justification de la dernière lettre. */
   dernier: "enonce" | "prop" | "justif" | "justif-lettre" | "legende" | "item" | "extrait" | "extrait-lettre" | "rien";
 }
@@ -394,9 +396,23 @@ function lireLigneImage(b: Brouillon, ligne: string): boolean {
 function lireExtraitQuestion(b: Brouillon, ligne: string): boolean {
   const m = RE_EXTRAIT_QUESTION.exec(ligne);
   if (!m) return false;
-  b.extraitsQuestion.push(m[1].trim());
   b.dernier = "extrait";
+  b.extraitsQuestion.push(detacherCorrige(b, m[1].trim()));
   return true;
+}
+
+/**
+ * Texte d'un extrait, sans le corrigé collé à son bout (« … » Réponses :
+ * A D E », `separerCorrigeColle`) : celui-ci s'applique à la question, et
+ * l'aperçu le signale. L'extrait est alors clos (`dernier` à « rien »).
+ */
+function detacherCorrige(b: Brouillon, texte: string): string {
+  const colle = b.genre === "question" ? separerCorrigeColle(texte) : null;
+  if (!colle) return texte;
+  appliquerCorrige(b, colle.lettres.length > 0 ? colle.lettres.join(" ") : "aucune");
+  b.corrigeColle = colle.lettres.length > 0 ? colle.lettres.join(" ") : "aucune";
+  b.dernier = "rien";
+  return colle.texte;
 }
 
 /**
@@ -405,9 +421,11 @@ function lireExtraitQuestion(b: Brouillon, ligne: string): boolean {
  */
 function prolongerExtrait(b: Brouillon, ligne: string): void {
   if (b.dernier === "extrait" && b.extraitsQuestion.length) {
-    b.extraitsQuestion[b.extraitsQuestion.length - 1] += ` ${ligne}`;
+    const k = b.extraitsQuestion.length - 1;
+    b.extraitsQuestion[k] = detacherCorrige(b, `${b.extraitsQuestion[k]} ${ligne}`);
   } else if (b.dernier === "extrait-lettre" && b.extraits.length) {
-    b.extraits[b.extraits.length - 1].texte += ` ${ligne}`;
+    const x = b.extraits[b.extraits.length - 1];
+    x.texte = detacherCorrige(b, `${x.texte} ${ligne}`);
   }
 }
 
@@ -600,6 +618,11 @@ function finaliser(b: Brouillon, defaut: OptionsImport["formatDefaut"]): Questio
         : [defaut, "defaut"];
   const manquants = b.props.filter((p) => p.v === null).length;
   const corrige = manquants === 0;
+  if (b.corrigeColle) {
+    avertissements.push(
+      `Corrigé lu au bout d'une ligne d'extrait (« Réponses : ${b.corrigeColle} ») : vérifier qu'il est bien celui de la question.`,
+    );
+  }
   if (!corrige) {
     avertissements.push(
       manquants === b.props.length
@@ -878,8 +901,8 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
 
     const ex = RE_EXTRAIT.exec(ligne);
     if (ex) {
-      courant.extraits.push({ lettre: ex[1].toUpperCase(), texte: ex[2].trim() });
       courant.dernier = "extrait-lettre";
+      courant.extraits.push({ lettre: ex[1].toUpperCase(), texte: detacherCorrige(courant, ex[2].trim()) });
       continue;
     }
     if (lireExtraitQuestion(courant, ligne)) continue;

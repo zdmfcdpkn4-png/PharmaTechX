@@ -188,10 +188,26 @@ export function EditeurQuestion({
       setEtatRepartition("Rien à répartir : le texte ne porte ni extrait « A : … » ni piège par lettre. Écrivez la justification de chaque proposition ci-dessus.");
       return;
     }
-    setOptions((prec) => prec.map((o) => ({ ...o, justification: r.propositions[o.id.toUpperCase()] ?? o.justification })));
+    // Un corrigé collé au bout d'un extrait (« … » Réponses : A D E ») : la
+    // question a été déposée sans corrigé, toutes ses propositions à Faux. Il
+    // est repris s'il n'y a encore rien de coché, sinon seulement signalé.
+    const corrige = r.corrige;
+    const aCocher = corrige !== undefined && options.every((o) => !o.vrai);
+    setOptions((prec) =>
+      prec.map((o) => ({
+        ...o,
+        justification: r.propositions[o.id.toUpperCase()] ?? o.justification,
+        ...(aCocher ? { vrai: corrige.includes(o.id.toUpperCase()) } : {}),
+      })),
+    );
     setJustification(r.question);
     const n = Object.keys(r.propositions).length;
-    setEtatRepartition(`Réparti sous ${n} proposition${n > 1 ? "s" : ""} : relisez-les, puis enregistrez.`);
+    const lu = corrige === undefined ? "" : `« Réponses : ${corrige.length > 0 ? corrige.join(" ") : "aucune"} » retrouvé dans le texte`;
+    setEtatRepartition(
+      `Réparti sous ${n} proposition${n > 1 ? "s" : ""}${
+        lu ? (aCocher ? ` ; ${lu}, cases cochées en conséquence` : ` ; ${lu} : comparez-le aux cases cochées`) : ""
+      } : relisez, puis enregistrez.`,
+    );
   };
 
   // Séquence à ordonner : la liste est l'ordre juste ; l'apprenant la reçoit
