@@ -366,6 +366,68 @@ test("« Module : » écrit dans une question, sans ligne vide, vaut aussi pour 
   assert.equal(r.questions[0].justification, "", "la ligne ne se colle à rien");
 });
 
+test("« Module 1 : Titre », l'en-tête numéroté d'un classeur, vaut ligne de module", () => {
+  const r = analyserTexte(
+    [
+      "Module 1 : Présentation de l'unité et organisation",
+      // Sans ligne vide avant l'en-tête suivant, comme dans la banque fournie
+      // le 01/10/2026 : la question reste au module 1.
+      "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. x\nB. y\nRéponses : A B\nModule 5 : isolateurs",
+      // Un module sans question, aussitôt suivi du suivant : c'est le dernier qui vaut.
+      "Module n° 6 — circuit de la préparation",
+      "QIM 1. Vraies ou fausses ?\nA. x\nB. y\nRéponses : A",
+      "Module : B1-05",
+      "QCM 2. Laquelle ?\nA. x\nB. y\nRéponses : B",
+    ].join("\n\n"),
+    { formatDefaut: "QCM" },
+  );
+  assert.deepEqual(r.questions.map((q) => q.moduleLigne), [
+    "Module 1 — Présentation de l'unité et organisation",
+    "Module 6 — circuit de la préparation",
+    "B1-05",
+  ]);
+  assert.deepEqual(r.avertissements, []);
+});
+
+test("« QCM . » sans numéro ouvre une question, sans toucher au corrigé de la précédente", () => {
+  // Sans ligne vide entre les deux, comme dans une banque fournie le 01/10/2026.
+  const r = analyserTexte(
+    [
+      "QCM 1. Première ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nD. d\nE. e\nRéponses : A D\nNiveau : initial",
+      "QCM . Deuxième ? (plusieurs réponses possibles)\nA. f\nB. g\nC. h\nD. i\nE. j\nRéponses : B C D E\nNiveau : avancé",
+      "QIM : Concernant la troisième, indiquez si les propositions suivantes sont vraies ou fausses.\nA. k\nB. l\nRéponses : aucune",
+    ].join("\n"),
+    { formatDefaut: "QCM" },
+  );
+  assert.deepEqual(r.questions.map((q) => q.options.filter((o) => o.vrai).map((o) => o.id).join("")), ["ad", "bcde", ""]);
+  assert.deepEqual(r.questions.map((q) => q.niveauQuestion), ["initial", "avance", null]);
+  assert.deepEqual(r.questions.map((q) => [q.format, q.origineFormat]), [["QCM", "mot-cle"], ["QCM", "mot-cle"], ["QIM", "mot-cle"]]);
+  assert.equal(r.questions[1].options[0].texte, "f");
+  assert.deepEqual(r.avertissements, []);
+});
+
+test("question avalée : sixième proposition et seconde ligne « Réponses » signalées, rien n'est collé", () => {
+  const r = analyserTexte(
+    "QCM 1. Première ?\nA. a\nB. b\nC. c\nD. d\nE. e\nExtrait E : « e »\nRéponses : A\nEn-tête non reconnu\nA. f\nB. g\nRéponses : B",
+    { formatDefaut: "QCM" },
+  );
+  assert.equal(r.questions.length, 1);
+  const q = r.questions[0];
+  assert.deepEqual(q.options.map((o) => o.texte), ["a", "b", "c", "d", "e"], "aucune ligne collée à une proposition");
+  assert.doesNotMatch(q.justification, /\b[fg]\b/, "ni à l'extrait");
+  assert.equal(r.avertissements.filter((a) => /au-delà de E, ignorée/.test(a)).length, 2);
+  assert.ok(r.avertissements.some((a) => /« Première \? » : seconde ligne « Réponses »/.test(a)));
+});
+
+test("justification lettre par lettre sous cinq propositions : gardée, sans avertissement", () => {
+  const r = analyserTexte(
+    "QCM 1. Lesquelles ? (plusieurs réponses possibles)\nA. a\nB. b\nC. c\nD. d\nE. e\nRéponses : A C\nJustification :\nA. Vrai, d'après la procédure.\nB. Faux : c'est l'inverse.",
+    { formatDefaut: "QCM" },
+  );
+  assert.match(r.questions[0].justification, /A\. Vrai, d'après la procédure\. B\. Faux : c'est l'inverse\./);
+  assert.deepEqual(r.avertissements, []);
+});
+
 test("corrigé lu dans les (V) / (F) : signalé comme tel, pour le QCM à rebours", () => {
   const r = analyserTexte("QCM 1. Lesquelles ?\nA. x (V)\nB. y (F)\n\nQCM 2. Lesquelles ?\nA. x (V)\nB. y (F)\nRéponses : B", {
     formatDefaut: "QCM",

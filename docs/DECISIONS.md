@@ -5360,6 +5360,105 @@ des identifiants (choix c), qui multipliait les copies.
 - Compilation et parcours de bout en bout non relancés : le site ne change
   pas.
 
+## Dépôt d'une banque Word : sauts de ligne, « QCM . » et en-têtes « Module 1 : » (01/10/2026, demande directe)
+
+**Demande.** Intégrer au parcours du préparateur du pool de manipulation,
+niveau N2R, une banque de QCM et de QIM fournie en .docx, rangée selon les
+modules 1 à 9 du classeur de formation théorique du pool : « trouver des
+solutions pour intégrer ces questions ».
+
+**Constaté** en passant le fichier dans l'analyseur du site, sans rien écrire
+en base. Le fichier compte 53 questions : 31 QCM et 22 QIM, réparties dans
+les modules 1, 2, 3, 4 et 6 du classeur.
+- 37 seulement étaient lues.
+- Les 13 questions du module 6 étaient ignorées. Chacune tient dans un seul
+  paragraphe Word, ses lignes séparées par des sauts de ligne (Maj + Entrée).
+  `lib/docx.ts` lisait ces sauts comme des espaces : la question devenait une
+  seule ligne, sans proposition. L'aperçu le disait (« Bloc … ignoré : moins
+  de deux propositions »), sans dire pourquoi.
+- Quatre QCM écrits « QCM . », sans numéro, n'étaient pas reconnus. Leurs
+  lignes entraient dans la question précédente :
+  - leurs propositions étaient perdues, leurs extraits collés à la
+    justification ;
+  - le corrigé, le niveau et la description d'image de la précédente étaient
+    **remplacés par les leurs, sans aucun avertissement**.
+
+  Deux questions en sortaient avec le corrigé et le niveau d'une autre.
+- Les en-têtes « Module 1 : Présentation de l'unité et organisation » étaient
+  ignorés sans avertissement, l'analyseur n'attendant que « Module : … ».
+  Toutes les questions allaient au module du formulaire, ou à la proposition
+  d'après les mots.
+
+**Fait.**
+- `lib/docx.ts` : un saut de ligne dans un paragraphe (`<w:br/>`, `<w:cr/>`)
+  commence une ligne.
+- `lib/import-questions.ts` :
+  - « QCM . Énoncé » ou « QIM : Énoncé », le mot-clé sans numéro, ouvre une
+    question ;
+  - « Module 1 : Titre » est une ligne de module (« n° », tiret ou point
+    admis), relue « Module 1 — Titre ». Elle vaut pour les questions qui
+    suivent, jamais pour celle qui la précède. Dans le fichier, l'en-tête du
+    module 2 suit la dernière question du module 1 sans ligne vide : la règle
+    des lignes « Module : » écrites dans une question l'y aurait fait passer ;
+  - une sixième proposition, ou une seconde ligne « Réponses » dans une même
+    question, est signalée : c'est la trace d'un en-tête manqué. La sixième
+    n'est plus collée à la proposition ou à l'extrait précédents. La seconde
+    ligne « Réponses » remplace encore la première, mais plus en silence.
+- `lib/import-module.ts` : le début d'un titre se compare en mots entiers.
+  « Module 1 — … » ne désigne pas un titre « Module 10 — … ».
+- Aide « Format attendu » du dépôt : numéro facultatif, en-tête numéroté.
+
+**Le même fichier, relu après correction** : 53 questions, cinq en-têtes de
+module lus, les corrigés et les niveaux attendus. Restent, et l'aperçu les
+signale :
+- une QIM du module 1 sans corrigé : sa ligne « Réponses » est collée à la fin
+  de l'extrait E, dans le même paragraphe ;
+- six questions illustrées, dont les images sont collées dans le fichier
+  Word : le site ne les lit pas (question 84).
+
+Simulé contre neuf modules déposés, sans la base : avec les titres du
+classeur, l'en-tête du module 2 reste à choisir (« moyen » dans la banque,
+« moyens » dans le classeur). Avec des titres « Module 2 — Risque cytotoxique
+et moyens de protection », les cinq en-têtes trouvent leur module.
+
+**Limites.**
+- Une ligne qui commence par « a) » après la cinquième proposition est
+  ignorée et signalée ; elle était collée à la cinquième. Sous une ligne
+  « Justification : », une telle ligne reste dans la justification, comme
+  avant : c'est une justification écrite lettre par lettre.
+- Un verdict « (V) » rejeté seul à la ligne par un saut de ligne n'est plus lu
+  sur sa proposition : elle reste sans verdict, et l'aperçu le signale. Un
+  corrigé en ligne « Réponses : » n'est pas concerné.
+- Seuls QCM et QIM ouvrent une question sans numéro : « Question . » reste du
+  texte.
+
+**Relevé au passage, non traité.**
+- Un module déposé sans niveau coché : son formulaire annonce « tous
+  niveaux », et le tirage comme la banque le lisent ainsi. Le programme d'un
+  agent, filtré par son niveau, l'écarte pourtant (`components/TableauDeBord.tsx`,
+  `app/page.tsx`, `content/ordres.ts`). Le corriger changerait le programme
+  des agents si de tels modules existent déjà en base : à trancher, pas
+  corrigé en passant. D'ici là, cocher le niveau.
+- La justification d'une question déposée est un seul texte, affiché sous la
+  correction : extraits A à E, puis pièges. Chez Flore, chaque proposition
+  porte la sienne, avec l'extrait de son document. Question à poser après
+  la 84.
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 407 tests, dont 6 nouveaux :
+  - un saut de ligne d'un .docx ;
+  - l'en-tête numéroté ;
+  - « QCM . » sans toucher à la question précédente ;
+  - une question avalée, signalée ;
+  - une justification lettre par lettre sous cinq propositions, gardée ;
+  - l'en-tête numéroté résolu, « Module 1 » distinct de « Module 10 ».
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 102 étapes, sans erreur de page ni
+  erreur serveur ; en console, les trois lignes attendues (deux refus 403 et
+  le refus d'encadrement). L'étape ajoutée (4c bis) : un en-tête « Module 1 :
+  Sécurité incendie », suivi sans ligne vide, mène les deux questions au
+  critère B1-05, et « QCM . » garde ses propositions. Rien n'entre en base.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

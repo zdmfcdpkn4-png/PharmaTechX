@@ -61,7 +61,8 @@ export type Resolution = { id: string; raison?: undefined } | { id: null; raison
  * entière puis sur chacune de ses parties (« B1-05 — Sécurité incendie ») :
  * l'identifiant, qui décide seul ; puis le code du critère (« critère B1-05 »
  * compris) et le titre exact ; puis le début du titre s'il ne désigne qu'un
- * module.
+ * module. Ce début se compte en mots entiers depuis le 01/10/2026 : l'en-tête
+ * « Module 1 — … » ne désigne pas un titre « Module 10 — … ».
  */
 export function resoudreLigneModule(valeur: string, modules: ModuleRepere[]): Resolution {
   const brut = valeur
@@ -80,7 +81,7 @@ export function resoudreLigneModule(valeur: string, modules: ModuleRepere[]): Re
     for (const m of modules) {
       const titre = cle(m.titre);
       if ((m.critere && cle(m.critere) === kCritere) || titre === k) exacts.add(m.id);
-      else if (k.length >= 8 && titre.startsWith(k)) debuts.add(m.id);
+      else if (k.length >= 8 && titre.startsWith(`${k} `)) debuts.add(m.id);
     }
   }
   const trouves = exacts.size > 0 ? exacts : debuts;

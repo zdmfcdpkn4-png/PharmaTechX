@@ -68,7 +68,12 @@ function deXml(s: string): string {
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
 }
 
-/** document.xml → texte, un paragraphe Word par ligne. */
+/**
+ * document.xml → texte, un paragraphe Word par ligne. Un saut de ligne dans
+ * le paragraphe (Maj + Entrée, `<w:br/>`) commence aussi une ligne : lu comme
+ * une espace jusqu'au 01/10/2026, il soudait une question entière — énoncé,
+ * propositions, corrigé — en une ligne, que l'analyseur ignorait.
+ */
 export function xmlEnTexte(xml: string): string {
   const paras = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) ?? [];
   return paras
@@ -76,7 +81,7 @@ export function xmlEnTexte(xml: string): string {
       const morceaux =
         p
           .replace(/<w:tab\b[^>]*\/>/g, "<w:t>\t</w:t>")
-          .replace(/<w:br\b[^>]*\/>/g, "<w:t> </w:t>")
+          .replace(/<w:(?:br|cr)\b[^>]*\/>/g, "<w:t>\n</w:t>")
           .match(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g) ?? [];
       return deXml(
         morceaux.map((m) => m.replace(/^<w:t(?:\s[^>]*)?>/, "").replace(/<\/w:t>$/, "")).join(""),

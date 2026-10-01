@@ -40,8 +40,15 @@ import { indiceFormat, type FormatChoix } from "@/lib/import-format";
  * Une ligne « Module : B1-05 » (code du critère, identifiant ou titre du
  * module) vaut pour les questions qui suivent, jusqu'à la suivante ; écrite
  * dans une question, sans ligne vide avant elle, elle vaut aussi pour cette
- * question (question 57, choix a). L'analyseur ne fait que la lire : le
- * module est résolu, ou proposé, par `lib/import-module.ts`.
+ * question (question 57, choix a). L'en-tête numéroté d'un classeur,
+ * « Module 1 : Présentation de l'unité », en est une aussi (01/10/2026).
+ * L'analyseur ne fait que la lire : le module est résolu, ou proposé, par
+ * `lib/import-module.ts`.
+ *
+ * « QCM . Énoncé », le mot-clé sans numéro, ouvre une question comme
+ * « QCM 3. » (01/10/2026). Une sixième proposition, ou une seconde ligne
+ * « Réponses », est signalée : c'est la trace d'un en-tête manqué, la
+ * question suivante entrée dans celle-ci.
  *
  * Schéma à compléter :
  *
@@ -191,8 +198,19 @@ const RE_DIFFICULTE = /^(?:Niveau|Difficult[ée])\s*[:–—-]\s*(initial|base|i
 const RE_ELEMENT = /^(\d{1,2})\s*[.):–—-]\s*(.+)$/;
 const RE_LEGENDE = /^(\d{1,2})\s*[.):–—-]\s*(.+?)\s*(?:\(\s*([\d\s.,;]+)\)\s*)?$/;
 const RE_LETTRES = /\b[A-Ea-e]\b/g;
-/** « Module : B1-05 » (question 57, choix a). */
-const RE_MODULE = /^Modules?\s*[:–—-]\s*(.+)$/i;
+/**
+ * « Module : B1-05 » (question 57, choix a). L'en-tête numéroté d'un
+ * classeur, « Module 1 : Présentation de l'unité », vaut aussi ligne de
+ * module depuis le 01/10/2026 : il était ignoré sans avertissement, et ses
+ * questions passaient au module du formulaire.
+ */
+const RE_MODULE = /^Modules?\s*(?:n\s*[°º]\s*)?(?:(\d{1,2})\s*[.):–—-]|[:–—-])\s*(.+)$/i;
+/**
+ * « QCM . Énoncé » : le mot-clé sans numéro (01/10/2026). L'en-tête n'était
+ * pas reconnu : la question s'ajoutait à la précédente, dont le corrigé était
+ * remplacé par le sien, sans avertissement.
+ */
+const RE_QUESTION_SANS_NUMERO = /^(QCM|QIM)\s*[.):–—-]\s*(.+)$/i;
 /**
  * Intertitre « QCM » ou « QIM », seul sur sa ligne, numéroté ou non
  * (question 58, choix a) : il fixe le format des questions qui suivent sans
@@ -314,6 +332,11 @@ function nouveau(
     corrige: false,
     dernier: "enonce",
   };
+}
+
+/** Début de l'énoncé, pour nommer une question dans un avertissement. */
+function apercu(b: Brouillon): string {
+  return b.enonce.join(" ").slice(0, 60) || "sans énoncé";
 }
 
 /** « Extrait : « … » » : lu pour tout format ; `true` si la ligne en était un. */
@@ -549,7 +572,7 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     if (!courant) return;
     const q = finaliser(courant, options.formatDefaut);
     if (q) questions.push(q);
-    else avertissements.push(`Bloc « ${courant.enonce.join(" ").slice(0, 60) || "sans énoncé"} » ignoré : moins de deux propositions.`);
+    else avertissements.push(`Bloc « ${apercu(courant)} » ignoré : moins de deux propositions.`);
     courant = null;
   };
 
@@ -577,10 +600,14 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     }
     const mod = RE_MODULE.exec(ligne);
     if (mod) {
-      moduleLigne = mod[1].trim();
+      // « Module 1 : Titre » se relit « Module 1 — Titre » : le titre seul, ou
+      // le début « Module 1 » d'un titre numéroté, désigne le module.
+      moduleLigne = mod[1] ? `Module ${Number(mod[1])} — ${mod[2].trim()}` : mod[2].trim();
       // Écrite dans une question, sans ligne vide avant elle, la ligne est de
       // cette question — comme « Niveau » ou « Source » — et des suivantes.
-      if (courant && !detachee) courant.moduleLigne = moduleLigne;
+      // Pas l'en-tête numéroté : il ouvre une partie, et suit souvent la
+      // dernière question de la précédente sans ligne vide.
+      if (courant && !detachee && !mod[1]) courant.moduleLigne = moduleLigne;
       if (courant) courant.dernier = "rien";
       continue;
     }
@@ -619,6 +646,13 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
         formatIntertitre,
         moduleLigne,
       });
+      continue;
+    }
+    const qs = RE_QUESTION_SANS_NUMERO.exec(ligne);
+    if (qs) {
+      clore();
+      const motCle = qs[1].toUpperCase() as FormatChoix;
+      courant = nouveau("question", motCle, undefined, qs[2].trim(), { formatMotCle: motCle, formatIntertitre, moduleLigne });
       continue;
     }
     if (!courant) continue;
@@ -759,6 +793,18 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
       continue;
     }
     const p = RE_PROP.exec(ligne);
+    // Une sixième proposition trahit le plus souvent un en-tête manqué : la
+    // question suivante entrait dans celle-ci, ses lignes collées à la
+    // dernière proposition ou au dernier extrait (01/10/2026). Sous une ligne
+    // « Justification : », une ligne « A. … » est une justification lettre
+    // par lettre : elle y reste, comme avant.
+    if (p && courant.props.length >= 5 && courant.dernier !== "justif") {
+      avertissements.push(
+        `Question « ${apercu(courant)} » : proposition « ${p[1].toUpperCase()} » au-delà de E, ignorée — l'en-tête d'une question manque-t-il ?`,
+      );
+      courant.dernier = "rien";
+      continue;
+    }
     if (p && courant.props.length < 5) {
       const lettre = p[1].toUpperCase();
       let t = p[2].trim();
@@ -791,6 +837,11 @@ export function analyserTexte(texte: string, options: OptionsImport): ResultatIm
     }
     const c = RE_CORRIGE.exec(ligne);
     if (c) {
+      if (courant.corrige) {
+        avertissements.push(
+          `Question « ${apercu(courant)} » : seconde ligne « Réponses », qui remplace la première — l'en-tête d'une question manque-t-il ?`,
+        );
+      }
       appliquerCorrige(courant, c[1]);
       courant.dernier = "rien";
       continue;

@@ -35,8 +35,10 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
             Le mot-clé QCM ou QIM fixe le format ; sans lui, un intertitre « QCM » ou « QIM » seul
             sur sa ligne vaut pour les questions qui suivent ; sans intertitre, la consigne de
             l&apos;énoncé (« indiquez si … vraies ou fausses », « lesquelles… ? ») ; sinon, le format par
-            défaut. Une ligne « Module : B1-05 » — code du critère, identifiant ou titre du module —
-            vaut pour les questions qui suivent : un dépôt peut servir plusieurs modules. Un
+            défaut ; le numéro est facultatif (« QCM . Énoncé »). Une ligne « Module : B1-05 » —
+            code du critère, identifiant ou titre du module —, ou l&apos;en-tête numéroté d&apos;un
+            classeur, « Module 1 : Titre », vaut pour les questions qui suivent : un dépôt peut
+            servir plusieurs modules. Un
             corrigé se lit dans « (V) / (F) » en fin de proposition ou dans « Réponses : A C ».
             Pour un schéma, les quatre nombres sont le rectangle du mot d&apos;origine (x, y,
             largeur, hauteur en % de l&apos;image) ; deux nombres posent un repère sans cache. Un

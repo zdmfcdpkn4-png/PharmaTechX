@@ -426,7 +426,7 @@ les mêmes écrans.
 ## 10. Tests
 
 `npm test` — barème des trois formats, comparaison des légendes, analyseur
-d'import (texte et JSON), décision (bande de garde, non concluant,
+d'import (texte, JSON et sauts de ligne d'un .docx), décision (bande de garde, non concluant,
 exclusions, arbitrage, bande de garde réglable), barème réglable
 (normalisation, QIM et schéma paramétrés, libellés), état d'une évaluation
 en cours (contrôle de forme), identifiants d'agents,

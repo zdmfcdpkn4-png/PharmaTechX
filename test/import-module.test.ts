@@ -41,6 +41,21 @@ test("ligne « Module : » : inconnue ou ambiguë, la question reste à choisir"
   assert.equal(contradictoire.id, null, "le code et le titre désignent deux modules");
 });
 
+test("en-tête numéroté « Module 1 — Titre » : le titre seul, ou « Module 1 » en tête d'un titre numéroté", () => {
+  const classeur: ModuleRepere[] = [
+    { id: "mod-m1", titre: "Présentation de l'unité et organisation", critere: "" },
+    { id: "mod-m2", titre: "Module 2 — Risque cytotoxique et moyens de protection", critere: "" },
+    { id: "mod-m10", titre: "Module 10 — Doses standards", critere: "" },
+  ];
+  assert.deepEqual(resoudreLigneModule("Module 1 — Présentation de l’unité et organisation", classeur), { id: "mod-m1" }, "titre exact");
+  assert.deepEqual(
+    resoudreLigneModule("Module 2 — Risque cytotoxique et moyen de protection", classeur),
+    { id: "mod-m2" },
+    "« Module 2 » en tête du titre, malgré un mot qui diffère",
+  );
+  assert.equal(resoudreLigneModule("Module 1 — Organisation", classeur).id, null, "« Module 1 » ne désigne pas « Module 10 »");
+});
+
 test("nom court : le code du critère s'il est seul à le porter, sinon l'identifiant", () => {
   const noms = reperesModules(MODULES);
   assert.equal(noms.get("critere-b1-05"), "B1-05");

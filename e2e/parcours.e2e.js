@@ -676,6 +676,32 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator(".question-ligne:has-text('incendie')").count(), 1);
   ok("dépôt mêlé : module proposé avec ses mots, ligne Module lue ou inconnue, intertitre, corrigé à l'envers signalé puis corrigé, rien sans module, trois modules servis");
 
+  // 4c bis. banque d'un classeur (01/10/2026) : en-tête numéroté « Module 1 :
+  //         titre », suivi sans ligne vide ; « QCM . » sans numéro, qui
+  //         s'ajoutait à la question précédente. Analysé seulement : rien
+  //         n'entre en base.
+  await page.goto(BASE + "/admin/questions/import");
+  await page.fill(
+    "textarea[name=texte]",
+    [
+      "Module 1 : Sécurité incendie",
+      "QCM 1. Lesquelles sont vraies ? (plusieurs réponses possibles)",
+      "A. Un",
+      "B. Deux",
+      "Réponses : A B",
+      "QCM . Laquelle est juste ?",
+      "A. Trois",
+      "B. Quatre",
+      "Réponses : B",
+    ].join("\n"),
+  );
+  await page.click("button:has-text('Analyser')");
+  await page.waitForSelector("h2:has-text('Aperçu — 2 questions')");
+  for (const i of [0, 1]) assert.equal(await page.inputValue(`select[name=module-${i}]`), "critere-b1-05", "en-tête numéroté résolu par le titre");
+  assert.match(await questionApercu(0).locator(".apercu-origine").innerText(), /ligne « Module : Module 1 — Sécurité incendie »/);
+  assert.match(await questionApercu(1).innerText(), /Quatre/, "la question sans numéro garde ses propositions");
+  ok("banque d'un classeur : en-tête « Module 1 : titre » résolu, « QCM . » sans numéro lu comme une question");
+
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {
     await page.goto(BASE + "/");
