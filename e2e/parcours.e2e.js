@@ -1735,6 +1735,11 @@ Justification : justification deux.`;
   assert.deepEqual(await variantesSchemas(), ["lg-large", "lg-large"], "poste : les deux schémas dessinés en largeur");
   await page.setViewportSize({ width: 390, height: 844 });
   assert.deepEqual(await variantesSchemas(), ["lg-etroit", "lg-etroit"], "téléphone : les deux schémas en colonne");
+  // 01/10/2026 : en colonne aussi, le premier schéma montre tous les éléments du dessin large.
+  const titresSchema = (classe) => page.locator(`#qui-voit svg.${classe} .lg-titre`).allTextContents();
+  const titresEtroit = await titresSchema("lg-etroit");
+  assert.equal(titresEtroit.length, 10, "téléphone : dix éléments, du métier à la question");
+  assert.deepEqual([...titresEtroit].sort(), (await titresSchema("lg-large")).sort(), "téléphone : les mêmes éléments que le dessin large");
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
     0,
@@ -1747,7 +1752,12 @@ Justification : justification deux.`;
     1,
     "la banque mène au rattachement des questions",
   );
-  ok("rattachement des questions (question 87, choix a) : page du menu Squelette, ouverte depuis le dépôt et la banque ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord");
+  assert.equal(
+    await page.locator("section.arborescence a[href='/admin/rattachement-questions#qui-voit']").count(),
+    1,
+    "l'explication de l'arborescence renvoie au schéma complet",
+  );
+  ok("rattachement des questions (question 87, choix a) : page du menu Squelette, ouverte depuis le dépôt et la banque ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord, le premier avec ses dix éléments ; l'arborescence de la banque y renvoie");
 
   // 12h. volet de navigation (question 37, choix c) : barre latérale sur poste,
   // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
@@ -4966,6 +4976,10 @@ Source : Procédure statistiques — section 5`;
       page.click("button:has-text('Entrer')"),
     ]);
     await page.waitForLoadState("networkidle");
+    // L'envoi suivant attend la fin de celui-ci : tant que le bouton est occupé, la page se
+    // redessine encore et peut vider le code déjà tapé ; le champ requis vide n'envoie alors
+    // rien (3 rejeux sur 85 le 01/10/2026, aucun sur 150 avec cette attente).
+    await page.locator("button:has-text('Entrer'):not([aria-busy])").waitFor();
   };
   for (let i = 0; i < 5; i++) {
     await soumettreCode("AAAAA-AAAAA");

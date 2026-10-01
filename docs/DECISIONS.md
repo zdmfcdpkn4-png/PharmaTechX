@@ -5820,6 +5820,69 @@ La demande ne portait que sur la vue.
     pointe sur la même adresse ;
   - 14d sexies : « Ses questions dans la banque » mène à l'arborescence.
 
+## Schéma « Qui voit quelle question » complet sur téléphone (01/10/2026, demande directe)
+
+**Demande.** Capture du schéma dessiné en largeur : « L'explication de
+l'arborescence sur le site n'est pas aussi complète que celle que tu avais
+faite dans le rattachement du module, avec un diagramme complet du
+rattachement de tous les éléments de construction du site : filière,
+module, niveau, bloc, critère, question… »
+
+**Constat.** Le dessin large porte dix éléments. Sous 920 px de cadre
+(téléphone, tablette en portrait, volet ouvert), le site passait à une
+version en colonne réduite à cinq cases : code d'accès, programme, module,
+questions, évaluation. Il n'y avait ni métier, ni filière, ni niveau, ni
+bloc, ni critère. La page à part ne passe en colonne que sous 720 px
+d'écran : un téléphone en paysage y voit encore le dessin complet, mais pas
+dans le site.
+
+**Fait.**
+- La version en colonne montre les dix éléments, en trois bandes :
+  - profil de l'agent : métier, filière, niveau, code d'accès ;
+  - ce que l'agent reçoit : programme, évaluation ;
+  - contenu de formation : bloc, critère, module, question.
+- Les liens portent les mêmes mots que dans le dessin large.
+- Le lien qui décide (module coché pour des filières et des niveaux) monte
+  en couleur le long du bord droit, jusqu'à la filière et au niveau. Un
+  trait gris mène le module au programme, « si publié et coché ».
+- Les règles du module déposé sans filière ou sans niveau sont écrites
+  dans la case du module.
+- Dans la banque, l'explication de l'arborescence renvoie au schéma :
+  « Ce qui relie métier, filière, niveau, bloc, critère, module et
+  question : le schéma complet. »
+- La page à part reçoit la même version en colonne (version 6), avec ses
+  propres libellés.
+
+**Écart voulu.** Deux flèches du dessin large ne sont pas reprises en
+colonne, faute de place : « si validée » (de la question à l'évaluation) et
+« plafond de son niveau » (du code à l'évaluation). La case de l'évaluation
+les dit : « questions validées, sous le plafond ».
+
+**Vérifié le 01/10/2026.**
+- `npm run verifier` : 428 tests ; aucun nouveau, la page ne calcule rien.
+- `npm run build`.
+- Mesures de 320 à 1 440 px de large :
+  - aucun débord ;
+  - aucun texte hors de sa case, hors du dessin, ni chevauché ;
+  - plus petit libellé : 10,7 px à 390 px et 8,6 px à 320 px, comme
+    l'ancienne version en colonne.
+- Parcours de bout en bout, deux passes de 107 étapes, sans erreur de page
+  ni erreur serveur. L'étape 12g bis vérifie désormais :
+  - les dix éléments de la version en colonne, mêmes titres que le dessin
+    large ;
+  - le renvoi depuis l'arborescence de la banque.
+
+**Corrigé au passage : l'étape du limiteur de connexion.** Une première
+passe a échoué à la dernière étape (cinq codes faux d'affilée) : un envoi
+n'a reçu aucune réponse. La cause était dans le parcours, pas dans le site.
+- L'étape attendait une alerte déjà à l'écran depuis l'envoi précédent.
+- Elle tapait donc le code suivant pendant que la page se redessinait
+  encore. Ce redessin vidait le champ, et le champ requis vide n'envoyait
+  rien.
+- Rejouée seule : 3 échecs sur 85, chaque fois avec le champ vidé.
+- Correction : chaque envoi attend que le bouton « Entrer » ne soit plus
+  occupé. Rejouée seule : aucun échec sur 150.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

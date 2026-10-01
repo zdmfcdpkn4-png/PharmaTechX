@@ -187,51 +187,78 @@ function SchemaQuiVoit() {
         </svg>
         <svg
           className="lg-etroit"
-          viewBox="0 0 360 592"
+          viewBox="0 0 360 1072"
           role="img"
-          aria-label="De haut en bas : le code d'accès de l'agent porte une filière et un de ses niveaux, et ouvre son programme. Le programme reçoit le tronc commun et les modules publiés cochés pour cette filière et ce niveau : c'est le seul lien entre l'agent et le contenu. Le module contient ses questions, et celles qui y sont aussi posées. L'évaluation d'un module tire des questions validées sous le plafond du niveau de l'agent."
+          aria-label="De haut en bas. Profil de l'agent : le métier range les filières, une filière porte des niveaux, le code d'accès choisit une filière et un de ses niveaux. Ce que l'agent reçoit : le code ouvre son programme ; l'évaluation d'un module, un module à la fois, tire des questions validées sous le plafond de son niveau. Contenu de formation : le bloc contient les critères, chaque critère est couvert par un module, chaque question appartient à un module ou y est aussi posée. Le seul lien entre le contenu et le profil : le module est coché pour des filières et des niveaux ; publié et coché, il entre au programme."
         >
           <Pointes prefixe="rq1e" />
 
-          <text x="16" y="18" className="lg-col">{"PROFIL DE L'AGENT"}</text>
-          <rect x="16" y="28" width="328" height="62" rx="8" className="lg-boite" />
-          <text x="32" y="54" className="lg-titre">{"Code d'accès de l'agent"}</text>
-          <text x="32" y="74" className="lg-sous">une filière et un de ses niveaux</text>
+          {/* Profil */}
+          <text x="12" y="16" className="lg-col">{"PROFIL DE L'AGENT"}</text>
+          <rect x="12" y="26" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="51" className="lg-titre">Métier</text>
+          <text x="26" y="71" className="lg-sous">préparateur, pharmacien, aide…</text>
+          <line x1="44" y1="86" x2="44" y2="124" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="110" className="lg-etiq">range</text>
+          <rect x="12" y="128" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="153" className="lg-titre">Filière (profil de poste)</text>
+          <text x="26" y="173" className="lg-sous">{`${filieres.length} de la fiche, puis ajoutées`}</text>
+          <line x1="44" y1="188" x2="44" y2="226" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="212" className="lg-etiq">porte</text>
+          <rect x="12" y="230" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="255" className="lg-titre">Niveau</text>
+          <text x="26" y="275" className="lg-sous">{`${premierNiveau} … ${dernierNiveau}, puis ajoutés`}</text>
+          <line x1="44" y1="290" x2="44" y2="328" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="314" className="lg-etiq">choisi au code</text>
+          <rect x="12" y="332" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="357" className="lg-titre">{"Code d'accès de l'agent"}</text>
+          <text x="26" y="377" className="lg-sous">une filière et un de ses niveaux</text>
 
-          <line x1="180" y1="90" x2="180" y2="128" className="lg-fleche" markerEnd={pe} />
-          <text x="192" y="114" className="lg-etiq">ouvre</text>
+          {/* Ce que l'agent reçoit */}
+          <line x1="44" y1="392" x2="44" y2="446" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="413" className="lg-etiq">ouvre</text>
+          <text x="60" y="438" className="lg-col">{"CE QUE L'AGENT REÇOIT"}</text>
+          <rect x="12" y="450" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="475" className="lg-titre">{"Programme de l'agent"}</text>
+          <text x="26" y="495" className="lg-sous">tronc commun et modules cochés</text>
+          <line x1="44" y1="510" x2="44" y2="548" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="534" className="lg-etiq">un module à la fois</text>
+          <rect x="12" y="552" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="577" className="lg-titre">{"Évaluation d'un module"}</text>
+          <text x="26" y="597" className="lg-sous">questions validées, sous le plafond</text>
 
-          <text x="16" y="146" className="lg-col">{"CE QUE L'AGENT REÇOIT"}</text>
-          <rect x="16" y="154" width="328" height="78" rx="8" className="lg-boite" />
-          <text x="32" y="180" className="lg-titre">{"Programme de l'agent"}</text>
-          <text x="32" y="200" className="lg-sous">tronc commun et modules publiés,</text>
-          <text x="32" y="218" className="lg-sous">cochés pour sa filière et son niveau</text>
+          {/* Contenu */}
+          <text x="12" y="648" className="lg-col">CONTENU DE FORMATION</text>
+          <rect x="12" y="658" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="683" className="lg-titre">Bloc</text>
+          <text x="26" y="703" className="lg-sous">{`1 à ${blocsCompetence.length} de la fiche, puis ajoutés`}</text>
+          <line x1="44" y1="718" x2="44" y2="756" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="742" className="lg-etiq">contient</text>
+          <rect x="12" y="760" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="785" className="lg-titre">Critère de la fiche</text>
+          <text x="26" y="805" className="lg-sous">{`${criteres.length}, de ${premierCritere} à ${dernierCritere}, figés`}</text>
+          <line x1="44" y1="820" x2="44" y2="858" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="844" className="lg-etiq">couvert par</text>
+          <rect x="12" y="862" width="292" height="96" rx="8" className="lg-boite-cle" />
+          <text x="26" y="887" className="lg-titre">Module</text>
+          <text x="26" y="907" className="lg-sous">du code (un par critère) ou déposé</text>
+          <text x="26" y="928" className="lg-etiq">déposé sans filière : tronc commun</text>
+          <text x="26" y="945" className="lg-etiq">déposé sans niveau : tous niveaux</text>
+          <line x1="44" y1="1000" x2="44" y2="962" className="lg-fleche" markerEnd={pe} />
+          <text x="54" y="976" className="lg-etiq">appartient à,</text>
+          <text x="54" y="991" className="lg-etiq">et « aussi posée dans »</text>
+          <rect x="12" y="1000" width="292" height="60" rx="8" className="lg-boite" />
+          <text x="26" y="1025" className="lg-titre">Question</text>
+          <text x="26" y="1045" className="lg-sous">un des trois niveaux des questions</text>
 
-          <line x1="180" y1="300" x2="180" y2="236" className="lg-cle" markerEnd={pce} />
-          <text x="192" y="262" className="lg-etiq-cle">coché pour des filières</text>
-          <text x="192" y="279" className="lg-etiq-cle">et pour des niveaux</text>
-
-          <text x="16" y="296" className="lg-col">CONTENU</text>
-          <rect x="16" y="304" width="328" height="78" rx="8" className="lg-boite-cle" />
-          <text x="32" y="330" className="lg-titre">Module</text>
-          <text x="32" y="350" className="lg-sous">du code (un par critère) ou déposé ;</text>
-          <text x="32" y="368" className="lg-sous">rangé dans un bloc, lié ou non à un critère</text>
-
-          <line x1="180" y1="382" x2="180" y2="420" className="lg-fleche" markerEnd={pe} />
-          <text x="192" y="398" className="lg-etiq">contient ses questions,</text>
-          <text x="192" y="413" className="lg-etiq">+ « aussi posée dans »</text>
-
-          <rect x="16" y="424" width="328" height="62" rx="8" className="lg-boite" />
-          <text x="32" y="450" className="lg-titre">Questions</text>
-          <text x="32" y="470" className="lg-sous">un des trois niveaux des questions</text>
-
-          <line x1="180" y1="486" x2="180" y2="524" className="lg-fleche" markerEnd={pe} />
-          <text x="192" y="503" className="lg-etiq">validées seulement,</text>
-          <text x="192" y="518" className="lg-etiq">sous le plafond du niveau</text>
-
-          <rect x="16" y="528" width="328" height="58" rx="8" className="lg-boite" />
-          <text x="32" y="553" className="lg-titre">{"Évaluation d'un module"}</text>
-          <text x="32" y="573" className="lg-sous">un module à la fois</text>
+          {/* Publié et coché, le module entre au programme. */}
+          <path d="M304 880 H322 V496 H308" className="lg-fleche" markerEnd={pe} />
+          <text x="316" y="534" textAnchor="end" className="lg-etiq">si publié et coché</text>
+          {/* Le seul lien entre le contenu et le profil */}
+          <path d="M304 900 H340 V142 H308" className="lg-cle" markerEnd={pce} />
+          <path d="M340 244 H308" className="lg-cle" markerEnd={pce} />
+          <text x="334" y="120" textAnchor="end" className="lg-etiq-cle">coché pour des filières</text>
+          <text x="334" y="222" textAnchor="end" className="lg-etiq-cle">et pour des niveaux</text>
         </svg>
       </div>
       <figcaption className="legende">

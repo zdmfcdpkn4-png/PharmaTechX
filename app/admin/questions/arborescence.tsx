@@ -247,7 +247,8 @@ export function ArborescenceBanque({
       <p className="legende">
         Filière, puis niveau, puis module, puis question. Un module rattaché à deux niveaux figure sous chacun, avec ses
         questions ; une question posée dans plusieurs modules figure sous chacun d&apos;eux. Les modules sans question
-        apparaissent en grisé.
+        apparaissent en grisé. Ce qui relie métier, filière, niveau, bloc, critère, module et question :{" "}
+        <Link href="/admin/rattachement-questions#qui-voit">le schéma complet</Link>.
       </p>
       <p className="arbo-plis">
         <Link href={lienPlis("tout")}>Tout déplier</Link>
