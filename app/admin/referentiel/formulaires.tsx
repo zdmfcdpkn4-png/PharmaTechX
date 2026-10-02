@@ -25,6 +25,11 @@ function ChampRetour({ retour }: { retour?: Retour }) {
   return retour && retour !== "referentiel" ? <input type="hidden" name="retour" value={retour} /> : null;
 }
 
+/** Adresse de la liste filtrée d'où part le formulaire : l'action y revient (question 92, choix a). */
+function ChampListe({ liste }: { liste?: string }) {
+  return liste ? <input type="hidden" name="liste" value={liste} /> : null;
+}
+
 /**
  * Ce que fait chaque champ d'une filière (demande du 24/09/2026). Aucun écran
  * ne lit les blocs : le dire évite de croire qu'ils composent le programme,
@@ -64,6 +69,7 @@ export function FormulaireFiliere({
   fiche,
   plageBlocs,
   retour,
+  liste,
 }: {
   filiere: Pick<Filiere, "id" | "libelle" | "description" | "blocs" | "badge" | "metier">;
   rang: number;
@@ -71,12 +77,14 @@ export function FormulaireFiliere({
   fiche: boolean;
   plageBlocs: string;
   retour?: Retour;
+  liste?: string;
 }) {
   const f = filiere;
   return (
     <form action={actionEnregistrerFiliere} className="carte">
       <input type="hidden" name="id" value={f.id} />
       <ChampRetour retour={retour} />
+      <ChampListe liste={liste} />
       <div className="rangee">
         <label className="champ">
           <span>Libellé</span>
@@ -120,11 +128,12 @@ export function FormulaireFiliere({
 }
 
 /** « Supprimer le dépôt » : une filière de la fiche reprend son libellé d'origine, une filière ajoutée disparaît. */
-export function SupprimerDepotFiliere({ id, retour }: { id: string; retour?: Retour }) {
+export function SupprimerDepotFiliere({ id, retour, liste }: { id: string; retour?: Retour; liste?: string }) {
   return (
     <form action={actionSupprimerFiliere}>
       <input type="hidden" name="id" value={id} />
       <ChampRetour retour={retour} />
+      <ChampListe liste={liste} />
       <button type="submit" className="bouton bouton--compact bouton--discret">
         Supprimer le dépôt
       </button>

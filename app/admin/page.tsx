@@ -8,6 +8,7 @@ import { MENTION_DEGRADE } from "@/content/programmes";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { ETATS_CODE, ROLES_CODE, SANS_PROGRAMME, codeRetenu, lireFiltreCodes } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,8 @@ export default async function Admin({
     programmes: programmes.map((x) => x.id),
   });
   const retenus = acces.filter((a) => codeRetenu(a, filtre));
+  // Une action sur un code revient à cette liste, filtre compris (question 92, choix a).
+  const liste = adresseDuFiltre("/admin", filtre);
 
   return (
     <>
@@ -246,6 +249,7 @@ export default async function Admin({
                     <form action={actionBasculerCode} className="suppression-corps">
                       <input type="hidden" name="id" value={a.id} />
                       <input type="hidden" name="actif" value="false" />
+                      <input type="hidden" name="liste" value={liste} />
                       <label className="champ">
                         <span>Révoquer le code de votre session : retapez-le pour confirmer</span>
                         <input
@@ -271,6 +275,7 @@ export default async function Admin({
                   <form action={actionBasculerCode}>
                     <input type="hidden" name="id" value={a.id} />
                     <input type="hidden" name="actif" value={a.actif ? "false" : "true"} />
+                    <input type="hidden" name="liste" value={liste} />
                     <button type="submit" className="bouton bouton--compact bouton--secondaire">
                       {a.actif ? "Révoquer" : "Réactiver"}
                     </button>
@@ -283,6 +288,7 @@ export default async function Admin({
                     </summary>
                     <form action={actionReinitialiserCode} className="suppression-corps">
                       <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="liste" value={liste} />
                       <label className="champ">
                         <span>
                           Code perdu ou corrompu : nouveau code pour « {a.libelle} ». Entrez votre code
@@ -316,6 +322,7 @@ export default async function Admin({
                     </summary>
                     <form action={actionSupprimerCode} className="suppression-corps">
                       <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="liste" value={liste} />
                       {a.id === session.acces ? (
                         <p style={{ margin: 0 }}>
                           C&apos;est le code de votre session : il ne se supprime pas. Vous vous

@@ -6853,6 +6853,106 @@ le code, une donnée renseignée peut changer de place : à vérifier dans
   encadrés de la page RGPD (7) et de la page du module ZAC (5) sont des
   liens vers leur champ.
 
+## Garder le filtre après une action (02/10/2026, question 92, choix a)
+
+**Question.** Sur les listes filtrées (question 91, lot 3), une action faite
+sous un filtre ramenait à la liste entière. Choix a : ces actions reviennent
+à la liste filtrée, comme la banque ; une création ramène à la liste
+entière, où paraît ce qu'on vient de créer.
+
+**Fait.**
+- Chaque liste écrit son adresse filtrée dans les formulaires de ses lignes
+  (champ `liste`, `adresseDuFiltre`). L'action y revient, son message
+  ajouté aux filtres (`retourListe`, `content/filtres.ts`).
+- L'adresse reçue n'est suivie que si c'est celle de la liste, au chemin
+  près. Sinon, retour à la liste entière : une autre page, une autre origine
+  ou une adresse de plus de 1 200 caractères n'y mènent jamais.
+- Les refus (confirmation fausse, champ manquant, élément inconnu)
+  reviennent aussi à la liste filtrée, avec leur message.
+
+| Écran | Actions qui gardent le filtre |
+|---|---|
+| Codes d'accès | Réinitialiser, Supprimer ; les refus de Révoquer |
+| Signalements | Clore — traité, Rejeter |
+| Personnel | Clore, Rouvrir, Réinitialiser (code personnel) |
+| Rattachement des modules | Régler, Rétablir la fiche |
+| Filières | Enregistrer (Modifier), Supprimer le dépôt |
+| Niveaux | Enregistrer (Modifier), Supprimer le dépôt |
+| Mises en situation | Enregistrer (Modifier), Supprimer |
+| Modules | Publier, Repasser en brouillon, Retirer, Supprimer |
+
+Mises en situation : une modification fixait jusqu'ici le module de la
+situation en filtre et perdait la recherche. Elle revient désormais à la
+liste telle qu'elle était.
+
+**Deux écarts avec la question posée.**
+- Révoquer et Réactiver gardaient déjà le filtre : sans redirection, la
+  page se recharge sur place (constaté sur le serveur de test avant
+  correction). Seuls leurs refus le perdaient. Ils restent sur place.
+- Modules manquait à l'inventaire de la question : Publier, Repasser en
+  brouillon, Retirer et Supprimer perdaient aussi le filtre. Traité de
+  même, au titre du choix a.
+
+**Inchangé.**
+- Les créations. Un code d'accès, un identifiant d'agent ou un niveau
+  ajouté ramène à la liste entière. Une filière ajoutée s'ouvre sur sa
+  page. Une mise en situation créée ramène à la liste de son module, où
+  elle paraît.
+- Depuis la page d'une filière ou d'un module, on revient à cette page.
+- La banque et Documents, qui revenaient déjà à leur vue.
+- La purge des rapports : geste de page, qui ne lit pas le filtre.
+
+**Vérifié le 02/10/2026.**
+- Avant correction, sur le serveur de test : Révoquer puis Réactiver sous
+  `?q=…&profil=poste` gardaient l'adresse filtrée.
+- `npm run verifier` : 474 tests, dont un nouveau (`test/filtres.test.ts`) :
+  l'adresse écrite par la liste, le retour avec son message, et chaque
+  adresse étrangère ramenée à la liste entière (autre page, chemin voisin,
+  autre origine, adresse trop longue, champ absent).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 117 étapes, sans erreur de page
+  ni erreur serveur. L'étape nouvelle fait, sous un filtre, au moins une
+  action sur chacun des huit écrans et vérifie l'adresse de retour ; la
+  création d'un code ramène à la liste entière ; chaque geste est défait.
+
+## Les logos ramènent à l'accueil (02/10/2026, demande directe)
+
+**Demande.** « La possibilité de retour à l'accueil par clic sur les logos
+en haut de page. »
+
+**Fait.**
+- À gauche, les logos Hôpitaux de Vendée et Pharmacotechnie forment un lien
+  vers l'accueil du profil (`/accueil`), comme le titre du site.
+- Sur téléphone, le titre quitte l'en-tête (section « Audit d'affichage :
+  PC, iPad, iPhone ») : ce lien y devient le seul retour à l'accueil de
+  l'en-tête.
+  C'est donc un vrai lien, atteint au clavier, nommé par les deux logos
+  puis « accueil », mot réservé aux lecteurs d'écran.
+- À droite, le monogramme P, décoratif, ramène aussi à l'accueil, au clic
+  seulement. Il est hors de la tabulation et tu aux lecteurs d'écran : le
+  premier logo et le titre y mènent déjà. Il n'est affiché qu'au-dessus de
+  62 rem.
+- Les logos ne changent ni de taille ni de couleur (« jamais recolorés ni
+  déformés ») ; au survol, le pointeur signale le lien.
+
+**Coût.** Sur poste et tablette, un arrêt de tabulation de plus en tête de
+page : les logos, puis le titre. Sans ce lien, le téléphone n'avait aucun
+retour à l'accueil dans l'en-tête.
+
+**Reste ouvert.** La barre de recherche demandée avec les logos : question
+93.
+
+**Vérifié le 02/10/2026.**
+- Parcours de bout en bout, même chaîne :
+  - depuis Personnel, le lien nommé « Hôpitaux de Vendée … — accueil »
+    mène à l'accueil ;
+  - depuis Signalements, le monogramme aussi ; il est hors tabulation et
+    tu au lecteur d'écran ;
+  - à 390 px, titre masqué, les logos ramènent à l'accueil, sans débord.
+- Mesure, sous le code d'administration d'essai : l'en-tête tient sur une
+  ligne, 77 px de haut sur poste (comme au 19/09/2026) et 61 px sur
+  téléphone.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

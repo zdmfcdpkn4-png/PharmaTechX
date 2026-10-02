@@ -8,6 +8,7 @@ import { listeBlocs } from "@/content/blocs-db";
 import { getReferentiel } from "@/content/referentiel-db";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { STATUTS_FILTRE_MODULE, lireFiltreModules, moduleDeposeRetenu } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 import { FormulaireModule } from "./formulaire";
 import { actionEnregistrerModule, actionStatutModule, actionSupprimerModule } from "./actions";
 
@@ -61,6 +62,8 @@ export default async function Modules({
       filtre,
     );
   });
+  // Publier, retirer, supprimer depuis la liste y reviennent, filtre compris (question 92, choix a).
+  const liste = adresseDuFiltre("/admin/modules", filtre);
 
   return (
     <>
@@ -180,6 +183,7 @@ export default async function Modules({
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="publie" />
+                  <input type="hidden" name="liste" value={liste} />
                   <button type="submit" className="bouton bouton--compact">Publier</button>
                 </form>
               )}
@@ -187,6 +191,7 @@ export default async function Modules({
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="brouillon" />
+                  <input type="hidden" name="liste" value={liste} />
                   <button type="submit" className="bouton bouton--compact bouton--secondaire">Repasser en brouillon</button>
                 </form>
               )}
@@ -194,6 +199,7 @@ export default async function Modules({
                 <form action={actionStatutModule}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="statut" value="retire" />
+                  <input type="hidden" name="liste" value={liste} />
                   <button type="submit" className="bouton bouton--compact bouton--secondaire">Retirer</button>
                 </form>
               )}
@@ -203,6 +209,7 @@ export default async function Modules({
               {session.role === "admin" && (
                 <form action={actionSupprimerModule}>
                   <input type="hidden" name="id" value={m.id} />
+                  <input type="hidden" name="liste" value={liste} />
                   <button type="submit" className="bouton bouton--compact bouton--discret">Supprimer</button>
                 </form>
               )}

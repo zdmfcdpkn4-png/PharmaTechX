@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  adresseDuFiltre,
   adresseFiltree,
   compteRetenu,
   correspond,
@@ -12,6 +13,7 @@ import {
   parametresActifs,
   periode,
   pucesFiltres,
+  retourListe,
   type ChampFiltre,
 } from "../content/filtres";
 import {
@@ -222,4 +224,22 @@ test("filières, niveaux : métier et recherche ; Repères : code ou mot, bloc, 
   assert.ok(!critereProgrammeRetenu({ ...c, obligatoire: false }, g));
   assert.ok(critereProgrammeRetenu(c, lireFiltreProgrammeComplet({ q: "b5-09" }, [5])), "le code se cherche");
   assert.equal(lireFiltreProgrammeComplet({ obligatoires: "oui" }, [5]).obligatoires, "");
+});
+
+test("retour d'une action : la liste filtrée qu'a portée le formulaire, la sienne seulement ; sinon la liste entière", () => {
+  // La page écrit son filtre lu ; les valeurs vides ne s'écrivent pas.
+  const liste = adresseDuFiltre("/admin/signalements", lireFiltreSignalements({ etat: "ouvert", motif: "", module: "m1" }, ["m1"]));
+  assert.equal(liste, "/admin/signalements?etat=ouvert&module=m1");
+  assert.equal(adresseDuFiltre("/admin/niveaux", lireFiltreReferentiel({}, ["preparateur"])), "/admin/niveaux");
+  assert.equal(adresseDuFiltre("/admin/personnel", lireFiltrePersonnel({ agent: "ag 1" }, [])), "/admin/personnel?agent=ag+1");
+  // L'action y revient, son message ajouté ; il remplace un message de même nom.
+  assert.equal(retourListe(liste, "/admin/signalements"), liste);
+  assert.equal(retourListe("/admin?q=poste&ok=ancien", "/admin", { ok: "code-supprime" }), "/admin?q=poste&ok=code-supprime");
+  assert.equal(retourListe("/admin/filieres?metier=ide#fin", "/admin/filieres", { ok: "filiere" }), "/admin/filieres?metier=ide&ok=filiere#fin");
+  // Une autre adresse, même voisine, ramène à la liste entière : jamais ailleurs.
+  for (const autre of ["/admin/questions?q=x", "/admin/", "/administration", "//exemple.fr/admin", "https://exemple.fr/admin", "/admin/../admin", "x".repeat(1300)]) {
+    assert.equal(retourListe(autre, "/admin", { ok: "1" }), "/admin?ok=1", autre.slice(0, 40));
+  }
+  assert.equal(retourListe(null, "/admin/rattachement", { ok: "seuil" }), "/admin/rattachement?ok=seuil", "champ absent : une création");
+  assert.equal(retourListe(["/admin?q=x"], "/admin"), "/admin", "une valeur qui n'est pas un texte");
 });

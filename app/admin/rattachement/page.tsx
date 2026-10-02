@@ -12,6 +12,7 @@ import { actionReglerSeuil } from "../modules/actions";
 import { listeBlocs } from "@/content/blocs-db";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { lireFiltreRattachement, moduleRegleRetenu } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,8 @@ export default async function Rattachement({
     niveaux: niveaux.map((n) => String(n.code)),
   });
   const filtreActif = Boolean(filtre.q || filtre.bloc || filtre.filiere || filtre.niveau);
+  // Régler ou rétablir revient à cette liste, filtre compris (question 92, choix a).
+  const liste = adresseDuFiltre("/admin/rattachement", filtre);
   const retenus = modulesCode.filter((m) => {
     const regle = reglages[m.id];
     return moduleRegleRetenu(
@@ -162,6 +165,7 @@ export default async function Rattachement({
                     </span>
                   </span>
                   <input type="hidden" name="moduleId" value={m.id} />
+                  <input type="hidden" name="liste" value={liste} />
                   <input
                     type="number"
                     name="seuil"

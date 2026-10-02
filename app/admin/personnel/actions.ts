@@ -6,6 +6,7 @@ import { sessionRequise } from "@/lib/auth";
 import { basculerAgent, creerAgent, lireAgent } from "@/lib/agents";
 import { journaliser } from "@/lib/journal";
 import { purgerProgression, reinitialiserCodePersonnel } from "@/lib/progression";
+import { retourListe } from "@/content/filtres";
 
 /**
  * Identifiants d'agents (décision du 18/09/2026, question 6, choix a) :
@@ -20,16 +21,18 @@ export async function actionCreerAgent() {
   redirect(`/admin/personnel?ok=cree&identifiant=${encodeURIComponent(a.identifiant)}`);
 }
 
+/** Clore, rouvrir : retour au répertoire tel qu'il était filtré (question 92, choix a). */
 export async function actionBasculerAgent(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = Number(formData.get("id"));
   const actif = String(formData.get("actif") ?? "") === "1";
-  if (!Number.isInteger(id) || id < 1) redirect("/admin/personnel");
+  const liste = formData.get("liste");
+  if (!Number.isInteger(id) || id < 1) redirect(retourListe(liste, "/admin/personnel"));
   const identifiant = await basculerAgent(id, actif);
-  if (!identifiant) redirect("/admin/personnel");
+  if (!identifiant) redirect(retourListe(liste, "/admin/personnel"));
   await journaliser(s, actif ? "agent:reouverture" : "agent:cloture", `agent:${identifiant}`);
   revalidatePath("/admin/personnel");
-  redirect(`/admin/personnel?ok=${actif ? "rouvert" : "clos"}&identifiant=${encodeURIComponent(identifiant)}`);
+  redirect(retourListe(liste, "/admin/personnel", { ok: actif ? "rouvert" : "clos", identifiant }));
 }
 
 /** Code personnel oublié : l'agent en choisit un nouveau à son prochain rattachement. */
@@ -37,11 +40,11 @@ export async function actionReinitialiserCode(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const id = Number(formData.get("id"));
   const agent = Number.isInteger(id) && id > 0 ? await lireAgent(id) : null;
-  if (!agent) redirect("/admin/personnel");
+  if (!agent) redirect(retourListe(formData.get("liste"), "/admin/personnel"));
   await reinitialiserCodePersonnel(agent.id);
   await journaliser(s, "progression:code-reinitialise", `agent:${agent.identifiant}`);
   revalidatePath("/admin/personnel");
-  redirect(`/admin/personnel?ok=code&identifiant=${encodeURIComponent(agent.identifiant)}`);
+  redirect(retourListe(formData.get("liste"), "/admin/personnel", { ok: "code", identifiant: agent.identifiant }));
 }
 
 /** Purge de la progression d'un agent (administration) : traces, session en cours et ordre propre des modules (question 56) ; les rapports émis restent. */

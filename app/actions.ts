@@ -32,6 +32,7 @@ import { lireIdProgramme } from "@/content/programmes";
 import { lireProgramme } from "@/content/programmes-db";
 import { filtrerProfils } from "@/content/modules-db";
 import { estNatureDocument } from "@/content/types";
+import { retourListe } from "@/content/filtres";
 import {
   TAILLE_MAX_FICHIER,
   deposerFichier,
@@ -136,13 +137,13 @@ export async function actionBasculerCode(formData: FormData) {
   const cible = await lireRoleAcces(id);
   if (!cible || !peutGererRole(s.role, cible)) {
     await journaliser(s, "bascule-code-refusee", `acces:${id}`, { motif: "role-interdit" });
-    redirect("/admin?erreur=role-interdit-bascule");
+    redirect(retourListe(formData.get("liste"), "/admin", { erreur: "role-interdit-bascule" }));
   }
   if (!actif && s.acces && id === s.acces) {
     const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
     if (confirmation !== "ok") {
       await journaliser(s, "revocation-code-refusee", `acces:${id}`, { motif: confirmation });
-      redirect(`/admin?erreur=confirmation-${confirmation}`);
+      redirect(retourListe(formData.get("liste"), "/admin", { erreur: `confirmation-${confirmation}` }));
     }
   }
   await basculerAcces(id, actif);
@@ -175,17 +176,17 @@ export async function actionSupprimerCode(formData: FormData) {
   const id = Number(formData.get("id"));
   if (s.acces && id === s.acces) {
     await journaliser(s, "suppression-code-refusee", `acces:${id}`, { motif: "propre-code" });
-    redirect("/admin?erreur=suppression-propre-code");
+    redirect(retourListe(formData.get("liste"), "/admin", { erreur: "suppression-propre-code" }));
   }
   const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
   if (confirmation !== "ok") {
     await journaliser(s, "suppression-code-refusee", `acces:${id}`, { motif: confirmation });
-    redirect(`/admin?erreur=confirmation-${confirmation}`);
+    redirect(retourListe(formData.get("liste"), "/admin", { erreur: `confirmation-${confirmation}` }));
   }
   await supprimerAcces(id);
   await journaliser(s, "suppression-code", `acces:${id}`);
   revalidatePath("/admin");
-  redirect("/admin?ok=code-supprime");
+  redirect(retourListe(formData.get("liste"), "/admin", { ok: "code-supprime" }));
 }
 
 /**
@@ -205,22 +206,23 @@ export async function actionSupprimerCode(formData: FormData) {
 export async function actionReinitialiserCode(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = Number(formData.get("id"));
-  if (!Number.isInteger(id) || id < 1 || !(await lireRoleAcces(id))) redirect("/admin");
+  const liste = formData.get("liste");
+  if (!Number.isInteger(id) || id < 1 || !(await lireRoleAcces(id))) redirect(retourListe(liste, "/admin"));
   if (s.acces && id === s.acces) {
     await journaliser(s, "reinitialisation-code-refusee", `acces:${id}`, { motif: "propre-code" });
-    redirect("/admin?erreur=reinitialisation-propre-code");
+    redirect(retourListe(liste, "/admin", { erreur: "reinitialisation-propre-code" }));
   }
   const confirmation = await confirmerCodeDeSession(s, String(formData.get("confirmation") ?? ""));
   if (confirmation !== "ok") {
     await journaliser(s, "reinitialisation-code-refusee", `acces:${id}`, { motif: confirmation });
-    redirect(`/admin?erreur=confirmation-${confirmation}`);
+    redirect(retourListe(liste, "/admin", { erreur: `confirmation-${confirmation}` }));
   }
   const code = genererCode();
   const cible = await reinitialiserAcces(id, hacherCode(code));
-  if (!cible) redirect("/admin");
+  if (!cible) redirect(retourListe(liste, "/admin"));
   await journaliser(s, "reinitialisation-code", `acces:${id}`, { role: cible.role, libelle: cible.libelle });
   revalidatePath("/admin");
-  redirect(`/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(cible.libelle)}&reinitialise=1`);
+  redirect(retourListe(liste, "/admin", { nouveau: code, libelle: cible.libelle, reinitialise: "1" }));
 }
 
 export async function actionDeposer(formData: FormData) {

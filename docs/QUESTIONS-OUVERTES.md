@@ -377,6 +377,39 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+93. **Barre de recherche rapide en haut : que cherche-t-elle ?** — posée
+    le 02/10/2026, sur « Ajoute une barre de recherche rapide en haut et la
+    possibilité de retour à l'accueil par clic sur les logos en haut de
+    page ». Les logos sont faits ; la recherche attend cette réponse.
+
+    Aujourd'hui, « Rechercher un écran… » est dans l'Accès rapide (bouton
+    Menu, ⌘K ou « / ») : elle trouve les écrans du menu, « À faire » et
+    « Reprendre », aucun contenu. Chaque liste a sa propre recherche
+    (question 91, lot 3).
+
+    Place libre dans l'en-tête, mesurée le 02/10/2026 sous le code
+    d'administration d'essai : 324 px à 1 280 px de large, 68 px à 1 024,
+    44 px à 768, 12 px à 390, aucune à 320. Dans les trois cas : un champ
+    sur poste ; sur tablette, une loupe qui l'ouvre ; sur téléphone, rien
+    sans retirer un élément de l'en-tête, la recherche y reste celle du
+    bouton Menu.
+    - **a (recommandé)** : écrans et contenus. Chaque profil n'y trouve
+      que ce que ses pages lui montrent déjà : les modules (titre, code du
+      critère) pour tous ; pour le tutorat et l'administration, aussi les
+      questions (énoncé), les documents, les agents (AG-…), les rapports
+      (numéro) et les codes d'accès (libellé). Résultats groupés par
+      nature, chacun menant à sa page. Contre : le plus long à faire ; la
+      recherche, côté serveur, doit revérifier le profil source par
+      source, sans quoi elle montrerait à un poste ce que ses pages lui
+      cachent.
+    - **b** : écrans seulement. La recherche de l'Accès rapide mise en
+      vue : taper dans l'en-tête ouvre le panneau déjà filtré. Contre :
+      aucun contenu trouvé ; une question, un agent ou un rapport se
+      cherchent toujours dans leur liste.
+    - **c** : écrans et modules, les mêmes pour tous. Contre : questions,
+      agents, rapports et documents restent à chercher dans leur liste,
+      alors que le tutorat et l'administration en ont le plus besoin.
+
 92. **Garder le filtre après une action** — posée le 02/10/2026, à la fin
     du lot 3 de la question 91. Sur sept écrans, une action faite sous un
     filtre ramène à la liste entière, filtre perdu : Codes d'accès
@@ -393,6 +426,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **b** : seulement Rattachement, Filières et Niveaux, où l'on règle
       ligne après ligne. Contre : deux comportements selon l'écran.
     - **c** : rien. Contre : il faut refiltrer après chaque action.
+
+    Tranchée le 02/10/2026 (choix a, réponse « à », valant « a »). Les
+    actions de ces écrans reviennent à la liste filtrée, refus compris ;
+    les créations, à la liste entière. Deux écarts avec l'énoncé :
+    Révoquer et Réactiver gardaient déjà le filtre (seuls leurs refus le
+    perdaient), et Modules, omis de l'inventaire, le perdait aussi
+    (Publier, Repasser en brouillon, Retirer, Supprimer) : traité de même.
+    Détail dans `DECISIONS.md`.
 
 91. **Accueil après connexion : quelle forme** — posée le 02/10/2026, sur
     « Il manque une page d'accueil qui s'affiche après la connexion qui

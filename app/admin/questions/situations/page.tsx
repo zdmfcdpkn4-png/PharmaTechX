@@ -7,6 +7,7 @@ import { LienModule } from "@/components/LienModule";
 import { actionEnregistrerSituation, actionSupprimerSituation } from "../actions";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { lireFiltreSituations, situationRetenue } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ export default async function Situations({
     .sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
   const filtre = lireFiltreSituations(p, modulesCites.map((m) => m.id));
   const situations = toutes.filter((s) => situationRetenue(s, filtre));
+  // Modifier ou supprimer revient à cette liste, filtre compris (question 92, choix a).
+  const liste = adresseDuFiltre("/admin/questions/situations", filtre);
 
   return (
     <>
@@ -112,6 +115,7 @@ export default async function Situations({
                 <form action={actionEnregistrerSituation}>
                   <input type="hidden" name="id" value={s.id} />
                   <input type="hidden" name="moduleId" value={s.module_id} />
+                  <input type="hidden" name="liste" value={liste} />
                   <label className="champ">
                     <span>Titre</span>
                     <input type="text" name="titre" maxLength={200} defaultValue={s.titre} required />
@@ -131,6 +135,7 @@ export default async function Situations({
                   <form action={actionSupprimerSituation} style={{ marginTop: ".5rem" }}>
                     <input type="hidden" name="id" value={s.id} />
                     <input type="hidden" name="moduleId" value={s.module_id} />
+                    <input type="hidden" name="liste" value={liste} />
                     <button type="submit" className="bouton bouton--compact bouton--discret">
                       Supprimer (les questions restent, détachées)
                     </button>

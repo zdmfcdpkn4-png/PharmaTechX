@@ -354,7 +354,10 @@ export default async function RootLayout({
             >
               <BoutonMenu pastille={fileNonVide(itemsFile)} />
 
-              <div className="logos">
+              {/* Les logos ramènent à l'accueil (02/10/2026, demande directe), comme le titre. Sur
+                  téléphone, le titre quitte l'en-tête : ce lien y reste le seul retour à l'accueil,
+                  d'où un vrai lien, au clavier, nommé par les deux logos puis sa destination. */}
+              <Link href="/accueil" className="logos">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/hdv.png"
@@ -372,7 +375,8 @@ export default async function RootLayout({
                   width={192}
                   height={192}
                 />
-              </div>
+                <span className="lecture-seule"> — accueil</span>
+              </Link>
 
               <div className="bandeau">
                 <Link href="/accueil" className="bandeau-titre">
@@ -387,8 +391,10 @@ export default async function RootLayout({
                   mandala et le logo HdV tiennent la gauche, le monogramme P
                   ferme le bandeau à droite. `alt` vide — le premier logo porte
                   déjà le nom de l'unité, le répéter ferait entendre deux fois
-                  la même chose à un lecteur d'écran. */}
-              <div className="logo-fin">
+                  la même chose à un lecteur d'écran. Il ramène aussi à
+                  l'accueil, au clic seulement : hors tabulation et tu au
+                  lecteur d'écran, le premier logo et le titre y menant déjà. */}
+              <Link href="/accueil" className="logo-fin" tabIndex={-1} aria-hidden="true">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/pharmaco-p.png"
@@ -397,7 +403,7 @@ export default async function RootLayout({
                   width={192}
                   height={192}
                 />
-              </div>
+              </Link>
 
               <div className="entete-actions">
                 <ModeZone />

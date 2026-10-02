@@ -7,6 +7,7 @@ import { actionRejeterSignalement, actionTraiterSignalement } from "../questions
 import { moduleOuvrable, titreModule } from "../questions/commun";
 import { LienModule } from "@/components/LienModule";
 import { BarreFiltres } from "@/components/BarreFiltres";
+import { adresseDuFiltre } from "@/content/filtres";
 import {
   ETATS_SIGNALEMENT,
   MOTIFS_FILTRE,
@@ -40,6 +41,8 @@ export default async function Signalements({
     .sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
   const filtre = lireFiltreSignalements(p, modulesCites.map((m) => m.id));
   const signalements = lus.filter((s) => signalementRetenu(s, filtre));
+  // Traiter ou rejeter revient à cette liste, filtre compris (question 92, choix a).
+  const liste = adresseDuFiltre("/admin/signalements", filtre);
   const duCode = new Map(
     signalements.map((s) => [s.id, s.enonce || !s.question_id ? null : enonceDuCode(s.module_id, s.question_id)]),
   );
@@ -120,6 +123,7 @@ export default async function Signalements({
             {s.statut === "ouvert" ? (
               <form action={actionTraiterSignalement}>
                 <input type="hidden" name="id" value={s.id} />
+                <input type="hidden" name="liste" value={liste} />
                 <label className="champ">
                   <span>Réponse (facultative, visible ici seulement)</span>
                   <input type="text" name="reponse" maxLength={1000} />

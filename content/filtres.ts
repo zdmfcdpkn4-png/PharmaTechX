@@ -93,6 +93,33 @@ export function adresseFiltree(adresse: string, params: readonly (readonly [stri
   return `${s ? `${adresse}?${s}` : adresse}${ancre ? `#${ancre}` : ""}`;
 }
 
+/**
+ * L'adresse d'une liste sous le filtre qu'elle a lu (`lireFiltre…` de `filtres-listes.ts`, dont chaque
+ * clé est un paramètre de l'adresse) ; les valeurs vides ne s'écrivent pas. Ses formulaires la portent
+ * (champ `liste`) : c'est là que revient l'action (question 92).
+ */
+export function adresseDuFiltre(adresse: string, filtre: object): string {
+  return adresseFiltree(
+    adresse,
+    Object.entries(filtre).filter((e): e is [string, string] => typeof e[1] === "string" && e[1] !== ""),
+  );
+}
+
+/**
+ * Où revient une action faite depuis une liste filtrée (02/10/2026, question 92, choix a) : l'adresse
+ * portée par le formulaire si c'est bien celle de cette liste — même chemin, à la lettre —, sinon la
+ * liste entière. Le message de l'action s'ajoute aux filtres et remplace un message de même nom.
+ */
+export function retourListe(brut: unknown, adresse: string, ajouts: Record<string, string> = {}): string {
+  const sienne =
+    typeof brut === "string" &&
+    brut.length <= 1200 &&
+    (brut === adresse || brut.startsWith(`${adresse}?`) || brut.startsWith(`${adresse}#`));
+  const url = new URL(sienne ? brut : adresse, "http://liste.invalid");
+  for (const [cle, valeur] of Object.entries(ajouts)) url.searchParams.set(cle, valeur);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 function jourFrancais(jour: string): string {
   const [a, m, j] = jour.split("-");
   return `${j}/${m}/${a}`;

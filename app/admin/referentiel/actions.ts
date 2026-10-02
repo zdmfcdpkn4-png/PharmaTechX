@@ -16,6 +16,7 @@ import {
   supprimerNiveauDepose,
 } from "@/content/referentiel-db";
 import { BADGES } from "@/components/Badge";
+import { retourListe } from "@/content/filtres";
 import {
   codeConnu,
   codePourMetier,
@@ -45,7 +46,9 @@ const entier = (f: FormData, cle: string) => {
  * Page où revenir (question 80, choix a) : la liste des filières, la page
  * d'une filière, ou la page de départ par défaut — liste des filières ou des
  * niveaux depuis que le Référentiel s'est scindé (question 81, choix a). Lue
- * dans une liste fermée, jamais recopiée telle quelle dans une adresse.
+ * dans une liste fermée, jamais recopiée telle quelle dans une adresse. Venu
+ * d'une liste filtrée, le formulaire porte aussi son adresse (`liste`) : on y
+ * revient, filtre compris (question 92, choix a), si c'est bien cette page.
  */
 function pageDeRetour(formData: FormData, filiere: string, parDefaut: string): string {
   const retour = String(formData.get("retour") ?? "");
@@ -59,10 +62,10 @@ export async function actionEnregistrerFiliere(formData: FormData) {
   const propose = texte(formData, "id", 40);
   const libelle = texte(formData, "libelle", 120);
   const retour = pageDeRetour(formData, normaliserIdentifiant(propose), "/admin/filieres");
-  if (!libelle) redirect(`${retour}?erreur=libelle`);
+  if (!libelle) redirect(retourListe(formData.get("liste"), retour, { erreur: "libelle" }));
   // Un identifiant vide se déduit du libellé ; il ne change plus ensuite.
   const id = normaliserIdentifiant(propose || libelle);
-  if (id.length < 2) redirect(`${retour}?erreur=identifiant`);
+  if (id.length < 2) redirect(retourListe(formData.get("liste"), retour, { erreur: "identifiant" }));
 
   const badge = texte(formData, "badge", 40);
   const blocs = String(formData.get("blocs") ?? "")
@@ -80,7 +83,7 @@ export async function actionEnregistrerFiliere(formData: FormData) {
   // le préfixe, et un niveau ne change pas de métier.
   const [metierAvant, niveauxDeposes] = await Promise.all([metierDeLaFiliere(id), listerNiveauxDeposes(true)]);
   if (metierId !== metierAvant && niveauxDeposes.some((n) => n.filiereId === id)) {
-    redirect(`${retour}?erreur=metier-filiere`);
+    redirect(retourListe(formData.get("liste"), retour, { erreur: "metier-filiere" }));
   }
 
   await enregistrerFiliere(
@@ -104,7 +107,7 @@ export async function actionEnregistrerFiliere(formData: FormData) {
   redirect(
     demande === "filieres" || demande === "filiere"
       ? `/admin/filieres/${encodeURIComponent(id)}?ok=filiere`
-      : "/admin/filieres?ok=filiere",
+      : retourListe(formData.get("liste"), "/admin/filieres", { ok: "filiere" }),
   );
 }
 
@@ -113,23 +116,24 @@ export async function actionEnregistrerNiveau(formData: FormData) {
   const filiereId = normaliserIdentifiant(texte(formData, "filiereId", 40));
   const retour = pageDeRetour(formData, filiereId, "/admin/niveaux");
   const saisi = normaliserCode(texte(formData, "code", 12));
-  if (saisi.length < 1) redirect(`${retour}?erreur=code`);
+  const vers = (ajouts: Record<string, string>) => retourListe(formData.get("liste"), retour, ajouts);
+  if (saisi.length < 1) redirect(vers({ erreur: "code" }));
   const libelle = texte(formData, "libelle", 120);
-  if (!libelle) redirect(`${retour}?erreur=libelle`);
-  if (!filiereId) redirect(`${retour}?erreur=filiere-manquante`);
+  if (!libelle) redirect(vers({ erreur: "libelle" }));
+  if (!filiereId) redirect(vers({ erreur: "filiere-manquante" }));
 
   // Le niveau prend le métier de sa filière, même désactivée, et le préfixe
   // de ce métier (question 46, choix a) ; puis la casse du code déjà connu.
   const [metierId, connus] = await Promise.all([metierDeLaFiliere(filiereId), identifiantsConnus()]);
   const prefixe = codePourMetier(saisi, metierId);
   if ("refus" in prefixe) {
-    redirect(`${retour}?erreur=${prefixe.refus === "vide" ? "code" : prefixe.refus}`);
+    redirect(vers({ erreur: prefixe.refus === "vide" ? "code" : prefixe.refus }));
   }
   const code = codeConnu(prefixe.code, connus.niveaux);
   // « Modifier » ne change pas un niveau de métier : ce serait un autre code,
   // donc un autre niveau, et l'ancien resterait tel quel.
   if (formData.get("existant") !== null && code.toUpperCase() !== saisi) {
-    redirect(`${retour}?erreur=metier-change`);
+    redirect(vers({ erreur: "metier-change" }));
   }
 
   const prerequis = formData
@@ -152,7 +156,7 @@ export async function actionEnregistrerNiveau(formData: FormData) {
   );
   await journaliser(s, "referentiel:niveau", code, { libelle, filiere: filiereId, metier: metierId });
   revalidatePath("/");
-  redirect(`${retour}?ok=niveau`);
+  redirect(vers({ ok: "niveau" }));
 }
 
 /**
@@ -172,7 +176,7 @@ export async function actionSupprimerFiliere(formData: FormData) {
   // d'origine ; une filière ajoutée n'a plus de page, retour à la liste.
   const depuisSaPage = formData.get("retour") === "filiere";
   const cible = depuisSaPage && deLaFiche ? pageDeRetour(formData, id, "/admin/filieres") : "/admin/filieres";
-  redirect(`${cible}?ok=filiere-supprimee`);
+  redirect(retourListe(formData.get("liste"), cible, { ok: "filiere-supprimee" }));
 }
 
 export async function actionSupprimerNiveau(formData: FormData) {
@@ -183,5 +187,5 @@ export async function actionSupprimerNiveau(formData: FormData) {
     deLaFiche: NIVEAUX_CODE.some((n) => n.code === code),
   });
   revalidatePath("/");
-  redirect("/admin/niveaux?ok=niveau-supprime");
+  redirect(retourListe(formData.get("liste"), "/admin/niveaux", { ok: "niveau-supprime" }));
 }

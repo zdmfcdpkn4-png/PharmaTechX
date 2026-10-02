@@ -4,6 +4,7 @@ import { getReferentiel, listerNiveauxDeposes, niveauxOrphelins, toutesLesFilier
 import { metiers, metierOuDefaut, niveaux as niveauxFiche } from "@/content/habilitation";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { entreeReferentielRetenue, lireFiltreReferentiel } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 import { rangEffectif, rappelRangsFiche } from "@/content/ordre-niveaux";
 import { actionEnregistrerNiveau, actionSupprimerNiveau } from "../referentiel/actions";
 import { FormulaireNouveauNiveau } from "../referentiel/formulaires";
@@ -54,6 +55,8 @@ export default async function Niveaux({
   // Filtres (question 91, choix a, lot 3) : métier et recherche (code, libellé, filière).
   const filtre = lireFiltreReferentiel(p, metiers.map((m) => m.id));
   const filtreActif = Boolean(filtre.q || filtre.metier);
+  // Modifier ou supprimer le dépôt revient à cette liste, filtre compris (question 92, choix a).
+  const adresseListe = adresseDuFiltre("/admin/niveaux", filtre);
   const niveauxRetenus = tousNiveaux.filter((n) =>
     entreeReferentielRetenue(
       { texte: `${n.code} ${n.libelle} ${libelleFiliere.get(n.filiere) ?? n.filiere}`, metier: metierOuDefaut(n.metier).id },
@@ -173,6 +176,7 @@ export default async function Niveaux({
                     <form action={actionEnregistrerNiveau} className="carte">
                       <input type="hidden" name="code" value={n.code} />
                       <input type="hidden" name="existant" value="1" />
+                      <input type="hidden" name="liste" value={adresseListe} />
                       <div className="rangee">
                         <label className="champ">
                           <span>Libellé</span>
@@ -231,6 +235,7 @@ export default async function Niveaux({
                     {d && (
                       <form action={actionSupprimerNiveau}>
                         <input type="hidden" name="code" value={n.code} />
+                        <input type="hidden" name="liste" value={adresseListe} />
                         <button type="submit" className="bouton bouton--compact bouton--discret">
                           Supprimer le dépôt
                         </button>

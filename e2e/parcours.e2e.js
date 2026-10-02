@@ -3861,8 +3861,22 @@ Justification : cf. procédure interne.`,
     "à côté du circuit",
   );
   assert.equal(await page.locator(".bandeau-titre").getAttribute("href"), "/accueil", "le bandeau ramène à l'accueil");
+  // Les logos aussi (02/10/2026, demande directe) : celui de gauche, un vrai lien nommé ; le monogramme de
+  // droite, au clic seulement, hors tabulation et tu au lecteur d'écran.
+  await page.goto(BASE + "/admin/personnel");
+  await page.getByRole("link", { name: /^Hôpitaux de Vendée\b.*Pharmacotechnie.*— accueil$/ }).click();
+  await page.waitForURL((u) => new URL(u).pathname === "/accueil");
+  assert.equal(await page.locator("a.logo-fin").getAttribute("tabindex"), "-1", "monogramme : hors tabulation");
+  assert.equal(await page.locator("a.logo-fin").getAttribute("aria-hidden"), "true", "monogramme : tu au lecteur d'écran");
+  await page.goto(BASE + "/admin/signalements");
+  await page.locator("a.logo-fin").click();
+  await page.waitForURL((u) => new URL(u).pathname === "/accueil");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(BASE + "/accueil");
+  // Sur téléphone, le titre quitte l'en-tête : les logos restent, et ramènent à l'accueil.
+  await page.goto(BASE + "/admin/personnel");
+  assert.ok(!(await page.locator(".bandeau-titre").isVisible()), "téléphone : le titre quitte l'en-tête");
+  await page.locator("a.logos").click();
+  await page.waitForURL((u) => new URL(u).pathname === "/accueil");
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
     0,
@@ -3870,7 +3884,7 @@ Justification : cf. procédure interne.`,
   );
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(BASE + "/accueil");
-  ok("accueil de l'administration : le circuit en six arrêts, mêmes comptes que « À faire », chaque ligne nommant ce que compte sa pastille, à côté du circuit, sans débord à 390 px");
+  ok("accueil de l'administration : le circuit en six arrêts, mêmes comptes que « À faire », chaque ligne nommant ce que compte sa pastille, à côté du circuit, sans débord à 390 px ; les logos y ramènent, sur poste comme sur téléphone");
   await page.locator(".circuit-arret", { hasText: "Vérifier" }).locator("a.circuit-lien").click();
   await page.waitForURL(/\/admin\/questions\?statut=a_verifier$/);
   assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arrêt « Vérifier » ouvre l'arborescence");
@@ -5744,6 +5758,102 @@ Source : Procédure statistiques — section 5`;
   await page.goto(BASE + "/admin/journal?action=" + encodeURIComponent("complement:efface"));
   await page.locator("td", { hasText: "procedure" }).first().waitFor();
   ok("à compléter : la procédure, une mention RGPD, une donnée locale du texte et un document à rattacher renseignés depuis le site, visibles au pied, sur la page RGPD et sur le module ; un rapport émis avant garde la sienne ; effacés, les encadrés reviennent ; administration seule, journalisé");
+
+  // 14d decies. Une action faite sous un filtre revient à la liste filtrée (question 92, choix a) ; une
+  //    création ramène à la liste entière. Toujours sous l'administration ; chaque geste est défait.
+  const revientFiltree = (chemin, attendus) =>
+    page.waitForURL((u) => {
+      const x = new URL(u);
+      return x.pathname === chemin && Object.entries(attendus).every(([k, v]) => x.searchParams.get(k) === v);
+    });
+  // Codes d'accès : la création ramène à la liste entière ; réinitialiser et supprimer gardent le filtre.
+  await page.goto(BASE + "/admin?q=" + encodeURIComponent("Retour Q92"));
+  const creationCode = page.locator("form", { has: page.locator("select[name=role]") }).first();
+  await creationCode.locator("select[name=role]").selectOption("poste");
+  await creationCode.locator("input[name=libelle]").fill("Retour Q92");
+  await creationCode.locator("button:has-text('Générer le code')").click();
+  await page.waitForURL(/nouveau=/);
+  assert.equal(new URL(page.url()).searchParams.get("q"), null, "codes : la création ramène à la liste entière");
+  await page.goto(BASE + "/admin?q=" + encodeURIComponent("Retour Q92") + "&profil=poste");
+  const carteCode = page.locator("li.carte", { hasText: "Retour Q92" });
+  await carteCode.locator("summary:has-text('Réinitialiser')").click();
+  await carteCode.locator("form:has(button:has-text('Réinitialiser le code')) input[name=confirmation]").fill(codeAdmin);
+  await carteCode.locator("button:has-text('Réinitialiser le code')").click();
+  await revientFiltree("/admin", { q: "Retour Q92", profil: "poste", reinitialise: "1" });
+  assert.match(new URL(page.url()).searchParams.get("nouveau") ?? "", /^[A-Z2-9]{5}-[A-Z2-9]{5}$/, "codes : le nouveau code s'affiche, filtre gardé");
+  await carteCode.locator("summary:has-text('Supprimer')").click();
+  await carteCode.locator("form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]").fill(codeAdmin);
+  await carteCode.locator("button:has-text('Supprimer définitivement')").click();
+  await revientFiltree("/admin", { q: "Retour Q92", profil: "poste", ok: "code-supprime", nouveau: null });
+  await page.locator("li.legende", { hasText: "Aucun code ne correspond à ces filtres." }).waitFor();
+  // Signalements : traiter sous « ouverts » et un module ; le signalement traité quitte la liste filtrée.
+  const signalementQ92 = await page.evaluate(async () => {
+    const r = await fetch("/api/signalement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: "zac-q1", moduleId: "comportement-zac", motif: "Ambigu", note: "Signalement retour Q92" }),
+    });
+    return r.status;
+  });
+  assert.equal(signalementQ92, 200, "signalement déposé");
+  await page.goto(BASE + "/admin/signalements?etat=ouvert&module=comportement-zac");
+  await page.locator("li.carte", { hasText: "Signalement retour Q92" }).locator("button:has-text('Clore — traité')").click();
+  await revientFiltree("/admin/signalements", { etat: "ouvert", module: "comportement-zac" });
+  await page.locator("li.carte", { hasText: "Signalement retour Q92" }).waitFor({ state: "detached" });
+  // Personnel : rouvrir puis clore AG-001 sous un verdict ; le message nomme l'agent.
+  await page.goto(BASE + "/admin/personnel?verdict=acquis");
+  const ligneAgent = () => page.locator("table.tableau").first().locator("tr", { hasText: "AG-001" });
+  await ligneAgent().locator("button:has-text('Rouvrir')").click();
+  await revientFiltree("/admin/personnel", { verdict: "acquis", ok: "rouvert", identifiant: "AG-001" });
+  await ligneAgent().locator("button:has-text('Clore')").click();
+  await revientFiltree("/admin/personnel", { verdict: "acquis", ok: "clos", identifiant: "AG-001" });
+  await page.waitForSelector("text=Identifiant AG-001 clos");
+  // Rattachement des modules : régler puis rétablir la fiche sous une recherche ; la liste reste ouverte.
+  await page.goto(BASE + "/admin/rattachement?q=habillage");
+  const premiereLigne = page.locator("details.bloc[open] form.ligne-critere").first();
+  const codeCritere = (await premiereLigne.locator(".code").innerText()).trim();
+  await premiereLigne.locator("button:has-text('Régler')").click();
+  await revientFiltree("/admin/rattachement", { q: "habillage", ok: "seuil" });
+  const ligneReglee = page.locator("details.bloc[open] form.ligne-critere", { has: page.locator(`.code:text-is('${codeCritere}')`) });
+  await ligneReglee.locator("button:has-text('Rétablir la fiche')").click();
+  // L'adresse porte déjà « ok=seuil » : c'est le bouton disparu qui dit la fiche rétablie (comme à l'étape 12g).
+  await ligneReglee.locator("button:has-text('Rétablir la fiche')").waitFor({ state: "detached" });
+  assert.equal(new URL(page.url()).searchParams.get("q"), "habillage", "rattachement : fiche rétablie, filtre gardé");
+  // Filières et Niveaux : enregistrer puis supprimer le dépôt sous une recherche.
+  await page.goto(BASE + "/admin/filieres?q=chimio");
+  const carteFiliere = page.locator("ul.liste-nue > li.carte", { hasText: "Parcours Chimiothérapie" });
+  await carteFiliere.locator("summary:has-text('Modifier')").click();
+  await carteFiliere.locator("button:has-text('Enregistrer')").click();
+  await revientFiltree("/admin/filieres", { q: "chimio", ok: "filiere" });
+  await carteFiliere.locator("summary:has-text('Modifier')").click();
+  await carteFiliere.locator("button:has-text('Supprimer le dépôt')").click();
+  await revientFiltree("/admin/filieres", { q: "chimio", ok: "filiere-supprimee" });
+  await page.goto(BASE + "/admin/niveaux?q=N1a");
+  const carteNiveauQ92 = page.locator("ul.liste-nue > li.carte", { has: page.locator(".etiquette:text-is('N1a')") });
+  await carteNiveauQ92.locator("summary:has-text('Modifier')").click();
+  await carteNiveauQ92.locator("button:has-text('Enregistrer')").click();
+  await revientFiltree("/admin/niveaux", { q: "N1a", ok: "niveau" });
+  await carteNiveauQ92.locator("summary:has-text('Modifier')").click();
+  await carteNiveauQ92.locator("button:has-text('Supprimer le dépôt')").click();
+  await revientFiltree("/admin/niveaux", { q: "N1a", ok: "niveau-supprime" });
+  // Mises en situation : la recherche reste, aucun module n'est ajouté au filtre.
+  await page.goto(BASE + "/admin/questions/situations?q=" + encodeURIComponent("filtre sas"));
+  const carteSituation = page.locator("ul.liste-nue > li.carte", { hasText: "Situation filtre sas" });
+  await carteSituation.locator("summary:has-text('Modifier')").click();
+  await carteSituation.locator("button:has-text('Enregistrer')").click();
+  await revientFiltree("/admin/questions/situations", { q: "filtre sas", ok: "1", module: null });
+  await carteSituation.locator("summary:has-text('Modifier')").click();
+  await carteSituation.locator("button:has-text('Supprimer')").click();
+  await revientFiltree("/admin/questions/situations", { q: "filtre sas", ok: null, module: null });
+  await page.locator("li.legende", { hasText: "Aucune situation ne correspond à ces filtres." }).waitFor();
+  // Modules : repasser en brouillon puis publier sous une recherche.
+  await page.goto(BASE + "/admin/modules?q=" + encodeURIComponent("statistiques test"));
+  const carteModule = page.locator("li.carte", { hasText: "Module statistiques test" });
+  await carteModule.locator("button:has-text('Repasser en brouillon')").click();
+  await revientFiltree("/admin/modules", { q: "statistiques test", ok: "brouillon" });
+  await carteModule.locator("button:has-text('Publier')").click();
+  await revientFiltree("/admin/modules", { q: "statistiques test", ok: "publie" });
+  ok("après une action sous un filtre, retour à la liste filtrée : codes d'accès, signalements, personnel, rattachement, filières, niveaux, mises en situation, modules ; une création ramène à la liste entière (question 92)");
 
   // Quitter depuis une page sans ancre, comme `rebrancher` : l'adresse « #actions »
   // fait défiler la page après son rendu, en douceur, et ce défilement pouvait

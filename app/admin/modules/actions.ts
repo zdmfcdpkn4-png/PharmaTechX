@@ -11,6 +11,7 @@ import { NOMS_ILLUSTRATION, NOMS_PICTOGRAMME, SANS_BADGE } from "@/content/badge
 import { identifiantsConnus } from "@/content/referentiel-db";
 import { listeBlocs } from "@/content/blocs-db";
 import { listeConnue, niveauxConnus, parcoursConnus } from "@/content/reglages";
+import { retourListe } from "@/content/filtres";
 import {
   changerStatutModule,
   enregistrerModuleDepose,
@@ -111,27 +112,32 @@ const ACTIONS_STATUT: Record<StatutModule, string> = {
   retire: "module:retrait",
 };
 
-/** Publier, retirer, repasser en brouillon : administration seulement (question 12, choix c). */
+/**
+ * Publier, retirer, repasser en brouillon : administration seulement (question 12, choix c). Depuis la
+ * page du module (`retour`), on y revient ; depuis la liste, à la liste filtrée (question 92, choix a).
+ */
 export async function actionStatutModule(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = chaine(formData, "id", 40);
   const statut = chaine(formData, "statut", 20) as StatutModule;
-  const retour = chaine(formData, "retour", 200) || "/admin/modules";
-  if (!(statut in ACTIONS_STATUT) || !(await lireModuleDepose(id))) redirect("/admin/modules?erreur=inconnu");
+  const retour = chaine(formData, "retour", 200);
+  const liste = formData.get("liste");
+  if (!(statut in ACTIONS_STATUT) || !(await lireModuleDepose(id))) redirect(retourListe(liste, "/admin/modules", { erreur: "inconnu" }));
   await changerStatutModule(id, statut);
   await journaliser(s, ACTIONS_STATUT[statut], id);
   rafraichir();
-  redirect(`${retour}${retour.includes("?") ? "&" : "?"}ok=${statut}`);
+  redirect(retour ? `${retour}${retour.includes("?") ? "&" : "?"}ok=${statut}` : retourListe(liste, "/admin/modules", { ok: statut }));
 }
 
 export async function actionSupprimerModule(formData: FormData) {
   const s = await sessionRequise("admin");
   const id = chaine(formData, "id", 40);
+  const liste = formData.get("liste");
   const r = await supprimerModuleDepose(id);
-  if (!r.ok) redirect(`/admin/modules?erreur=suppression&message=${encodeURIComponent(r.raison)}`);
+  if (!r.ok) redirect(retourListe(liste, "/admin/modules", { erreur: "suppression", message: r.raison }));
   await journaliser(s, "module:suppression", id);
   rafraichir();
-  redirect("/admin/modules?ok=supprime");
+  redirect(retourListe(liste, "/admin/modules", { ok: "supprime" }));
 }
 
 /** Seuil de réussite d'un module du code : réglé, ou remis au seuil par défaut du barème. */
@@ -142,12 +148,14 @@ export async function actionSupprimerModule(formData: FormData) {
 export async function actionReglerSeuil(formData: FormData) {
   const s = await sessionRequise("admin");
   const moduleId = chaine(formData, "moduleId", 80);
-  if (!getModule(moduleId)) redirect("/admin/rattachement?erreur=inconnu");
+  // Retour à la liste telle qu'elle était filtrée (question 92, choix a).
+  const adresseListe = formData.get("liste");
+  if (!getModule(moduleId)) redirect(retourListe(adresseListe, "/admin/rattachement", { erreur: "inconnu" }));
   if (String(formData.get("mode") ?? "") === "defaut") {
     await enregistrerReglageModule(moduleId, {}, s);
     await journaliser(s, "module:reglage", moduleId, { reglage: "fiche" });
     rafraichir();
-    redirect("/admin/rattachement?ok=seuil");
+    redirect(retourListe(adresseListe, "/admin/rattachement", { ok: "seuil" }));
   }
   const liste = (cle: string) => formData.getAll(cle).map((v) => String(v));
   // Le référentiel servi, dépôts compris : c'est lui que le formulaire propose.
@@ -166,5 +174,5 @@ export async function actionReglerSeuil(formData: FormData) {
     parcours: reglage.parcours ?? "fiche",
   });
   rafraichir();
-  redirect("/admin/rattachement?ok=seuil");
+  redirect(retourListe(adresseListe, "/admin/rattachement", { ok: "seuil" }));
 }

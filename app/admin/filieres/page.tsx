@@ -11,6 +11,7 @@ import { FormulaireFiliere, FormulaireNouvelleFiliere, SupprimerDepotFiliere } f
 import { ERREURS, MESSAGES } from "../referentiel/messages";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { entreeReferentielRetenue, lireFiltreReferentiel } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,8 @@ export default async function Filieres({
       filtre,
     );
   const retenues = liste.filter(retenue);
+  // Modifier ou supprimer le dépôt revient à cette liste, filtre compris (question 92, choix a).
+  const adresseListe = adresseDuFiltre("/admin/filieres", filtre);
 
   return (
     <>
@@ -121,8 +124,8 @@ export default async function Filieres({
                     {estAdmin && (
                       <details>
                         <summary className="legende">Modifier</summary>
-                        <FormulaireFiliere filiere={f} rang={depot?.rang ?? 0} actif={active} fiche={fiche} plageBlocs={plageBlocs} />
-                        {depot && <SupprimerDepotFiliere id={f.id} />}
+                        <FormulaireFiliere filiere={f} rang={depot?.rang ?? 0} actif={active} fiche={fiche} plageBlocs={plageBlocs} liste={adresseListe} />
+                        {depot && <SupprimerDepotFiliere id={f.id} liste={adresseListe} />}
                       </details>
                     )}
                   </li>

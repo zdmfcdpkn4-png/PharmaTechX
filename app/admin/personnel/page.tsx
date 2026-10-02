@@ -12,6 +12,7 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { moduleOuvrable } from "../questions/commun";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { VERDICTS_RAPPORT, ligneRepertoireRetenue, lireFiltrePersonnel } from "@/content/filtres-listes";
+import { adresseDuFiltre } from "@/content/filtres";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,8 @@ export default async function Personnel({
     .map((l) => ({ l, ...decisionEnregistree(l) }))
     .filter((x) => ligneRepertoireRetenue({ agent_identifiant: x.l.agent_identifiant, critere: x.l.critere, verdict: x.verdictFinal }, filtrePersonnel, filtre));
   const avecRapports = new Set(toutes.map((l) => l.agent_identifiant)).size;
+  // Clore, rouvrir, réinitialiser un code reviennent au répertoire tel qu'il est filtré (question 92, choix a).
+  const liste = adresseDuFiltre("/admin/personnel", filtrePersonnel);
   const message = p.ok && MESSAGES[p.ok] ? MESSAGES[p.ok](p.identifiant ?? "") : null;
 
   return (
@@ -121,6 +124,7 @@ export default async function Personnel({
                     {a.code_defini && (
                       <form action={actionReinitialiserCode} style={{ display: "inline" }}>
                         <input type="hidden" name="id" value={a.id} />
+                        <input type="hidden" name="liste" value={liste} />
                         <button type="submit" className="bouton bouton--compact bouton--discret">Réinitialiser</button>
                       </form>
                     )}
@@ -128,6 +132,7 @@ export default async function Personnel({
                   <td>
                     <form action={actionBasculerAgent}>
                       <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="liste" value={liste} />
                       <input type="hidden" name="actif" value={a.actif ? "0" : "1"} />
                       <button type="submit" className="bouton bouton--compact bouton--secondaire">{a.actif ? "Clore" : "Rouvrir"}</button>
                     </form>

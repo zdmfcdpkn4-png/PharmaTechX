@@ -16,6 +16,7 @@ import { identifiantsConnus } from "@/content/referentiel-db";
 import { lireBlocs, lireIdentifiants, modulesDeLaQuestion } from "@/content/rattachement-question";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { retourBanque } from "@/content/arbre-banque";
+import { retourListe } from "@/content/filtres";
 import { lireIdentifiantsQuestions } from "@/content/reclassement";
 import { AUSSI_MAX, lireGeste, lireStatutLot } from "@/content/lot-questions";
 import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
@@ -431,14 +432,20 @@ export async function actionEnregistrerSituation(formData: FormData) {
   const moduleId = chaine(formData, "moduleId", 80);
   const titre = chaine(formData, "titre", 200);
   const contexte = chaine(formData, "contexte", 4000);
+  // Modifiée depuis la liste, elle y revient, filtre compris (question 92, choix a) ; créée, la liste
+  // de son module, où elle paraît.
+  const retour = (ajouts: Record<string, string>) =>
+    id
+      ? retourListe(formData.get("liste"), "/admin/questions/situations", ajouts)
+      : `/admin/questions/situations?${new URLSearchParams({ module: moduleId, ...ajouts })}`;
   if (!(await moduleExiste(moduleId)) || !titre || !contexte) {
-    redirect(`/admin/questions/situations?module=${encodeURIComponent(moduleId)}&erreur=incomplet`);
+    redirect(retour({ erreur: "incomplet" }));
   }
   const ident = await enregistrerSituation({ moduleId, titre, contexte }, id);
   await journaliser(s, id ? "modification-situation" : "creation-situation", ident, { moduleId });
   revalidatePath("/admin/questions/situations");
   revalidatePath(`/module/${moduleId}`);
-  redirect(`/admin/questions/situations?module=${encodeURIComponent(moduleId)}&ok=1`);
+  redirect(retour({ ok: "1" }));
 }
 
 export async function actionSupprimerSituation(formData: FormData) {
@@ -448,7 +455,7 @@ export async function actionSupprimerSituation(formData: FormData) {
   await supprimerSituation(id);
   await journaliser(s, "suppression-situation", id, { moduleId });
   revalidatePath("/admin/questions/situations");
-  redirect(`/admin/questions/situations?module=${encodeURIComponent(moduleId)}`);
+  redirect(retourListe(formData.get("liste"), "/admin/questions/situations"));
 }
 
 // ─────────────────────────────────────────────────────────── import en deux temps
@@ -792,7 +799,7 @@ export async function actionTraiterSignalement(formData: FormData) {
     await journaliser(s, `signalement:${statut}`, `signalement:${id}`);
   }
   revalidatePath("/admin/signalements");
-  redirect("/admin/signalements");
+  redirect(retourListe(formData.get("liste"), "/admin/signalements"));
 }
 
 /**
