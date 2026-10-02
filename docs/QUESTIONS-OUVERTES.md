@@ -377,6 +377,88 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+91. **Accueil après connexion : quelle forme** — posée le 02/10/2026, sur
+    « Il manque une page d'accueil qui s'affiche après la connexion qui
+    pourrait être centrale en une organisation schématique et ludique du
+    site utilisant des images sans trop de texte pour appeler les grandes
+    fonctionnalités du site ? Fais-moi des propositions (ne remplace pas le
+    bandeau menu et l'accès rapide) », avec quatre autres demandes : les
+    arborescences toujours repliées, des introductions d'une ou deux
+    phrases, les fonctions stratégiques reclassées dans les menus, des
+    filtres et des listes déroulantes sur toutes les listes.
+
+    Constat, sur la base de test locale, à 390 et 1 280 px :
+    - l'administration et le tutorat arrivent sur « Accès » (tuiles, mode
+      test, codes), soit 4,2 écrans de haut sur téléphone ;
+    - l'agent arrive sur le programme, 9,2 écrans ;
+    - aucun écran ne montre d'un coup d'œil les grandes fonctions.
+
+    Proposition publiée sur claude.ai, privée : maquettes, menus avant et
+    après, introductions réécrites. Dans les trois formes :
+    - une page nouvelle après la connexion, pour tous les profils, chacun
+      la sienne ;
+    - bandeau, menu et accès rapide inchangés ; le programme garde son
+      adresse ;
+    - les chiffres sont ceux de « À faire » ;
+    - les images sont les médaillons du site, légendées ;
+    - « valider un module ne vaut pas habilitation » reste dit.
+
+    Les trois formes :
+    - **a (recommandé)** : le chemin. L'agent suit ses six étapes
+      d'habilitation, les étapes 3 à 6 grisées. Le tutorat et
+      l'administration suivent le circuit d'une question et d'un rapport
+      (déposer, vérifier, publier, former, viser, suivre), avec ce qui
+      attend à chaque arrêt. Contre : plus haut qu'une grille ; codes
+      d'accès, Squelette, Réglages et Repères, qui ne sont pas des étapes,
+      vont dans une rangée à part.
+    - **b** : les tuiles. Une grille d'images légendées, une par grande
+      fonction, et en tête ce qui attend. Contre : ni l'ordre des étapes ni
+      le « 2 sur 6 » ne s'y voient ; elle redit en partie l'accès rapide.
+    - **c** : la carte. Les grandes parties du menu en étoile autour d'un
+      centre. Contre : la plus gourmande en place ; sur téléphone, elle
+      redevient une grille sans ses traits.
+
+    Dans les trois cas, les quatre autres points suivent la proposition,
+    sauf avis contraire, en trois lots : arborescences et introductions,
+    puis accueil et menus, puis filtres.
+    - **Menus.**
+      - « Accueil » en tête.
+      - « Accès » devient « Codes d'accès » et rejoint un sous-menu
+        « Équipe », avec « Personnel ».
+      - « Journal » passe à Suivi.
+      - « Tester en apprenant » passe à Modules, sur sa propre page.
+      - « Dépôt documents » devient « Documents ».
+      - Réglages garde Barème et Signature ; vide pour le tutorat, il
+        quitte son menu.
+
+      Ne changent pas : l'ordre des sous-menus, Squelette (question 81) et
+      « Signalées » (question 89).
+    - **Introductions.**
+      - Une ou deux phrases en tête de 24 écrans, de 1 440 à 639 mots
+        comptés sur le texte affiché.
+      - Une règle utile au moment d'agir passe sous son bouton.
+      - « Valider un module à l'écran ne vaut pas habilitation » reste sur
+        le programme, l'évaluation et les Repères.
+      - Le texte de formation des modules n'est pas touché.
+    - **Arborescences.**
+      - Repliées à l'arrivée, filtre actif compris : banque, couverture,
+        Mes modules, programme d'une filière, programme à la carte,
+        « aussi posée dans ».
+      - Une branche ouverte le reste pendant la session.
+      - Au retour d'un geste, la branche où l'on travaillait se rouvre.
+      - Le menu n'est pas touché.
+    - **Filtres.** La barre de la banque (recherche, listes déroulantes,
+      « Plus de filtres », nombre retenu, « Tout effacer », filtres gardés
+      dans l'adresse) sur ces écrans :
+      - Codes d'accès, Rapports, Signalements, Modules, Documents ;
+      - Personnel, Programmes à la carte, Mises en situation ;
+      - Rattachement des modules, Filières et Niveaux ;
+      - le programme complet des Repères ;
+      - Pilotage et Statistiques.
+
+    Pour écarter ou changer un point (une entrée de menu, une phrase),
+    dites lequel.
+
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un
     choix point par point. Six points, aucun commencé :
