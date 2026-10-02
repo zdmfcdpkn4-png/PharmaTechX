@@ -1067,6 +1067,93 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
 }
 .rail-bouton:hover { background: var(--marque-clair); }
 
+/* Interrupteur de la vue apprenant (02/10/2026, question 94, choix a) : en haut
+   du volet sur poste ; sous 62 rem, dans la ligne du titre de l'accès rapide.
+   Allumé, il prend la couleur du bandeau « Mode test ». La piste éteinte reste
+   lisible sur le blanc (3,7:1, WCAG 1.4.11). */
+.interrupteur-vue { margin: 0; }
+.interrupteur-vue-bouton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--texte);
+  text-align: left;
+  cursor: pointer;
+}
+.interrupteur-vue-bouton[aria-disabled="true"] { cursor: progress; }
+.interrupteur-vue-piste {
+  position: relative;
+  flex: none;
+  width: 2.125rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--trait-faible);
+  transition: background-color 0.18s ease;
+}
+.interrupteur-vue-curseur {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(16, 24, 32, 0.3);
+  transition: transform 0.18s ease;
+}
+.interrupteur-vue-bouton[aria-checked="true"] .interrupteur-vue-piste { background: var(--alerte); }
+.interrupteur-vue-bouton[aria-checked="true"] .interrupteur-vue-curseur { transform: translateX(0.875rem); }
+@media (prefers-reduced-motion: reduce) {
+  .interrupteur-vue-piste,
+  .interrupteur-vue-curseur { transition: none; }
+}
+/* Dans le volet : une ligne de la largeur du volet, tenue comme « Revoir la présentation ». */
+.interrupteur-vue--volet { margin-bottom: 0.25rem; }
+.interrupteur-vue--volet .interrupteur-vue-bouton {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--bord);
+  border-radius: 9px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.interrupteur-vue--volet .interrupteur-vue-bouton:hover { background: var(--marque-clair); }
+.interrupteur-vue--volet .interrupteur-vue-bouton[aria-checked="true"] {
+  border-color: rgba(138, 90, 0, 0.3);
+  background: var(--alerte-fond);
+  color: var(--alerte);
+}
+/* Dans l'accès rapide : entre le titre et la croix, cible pleine au doigt. Ses
+   marges négatives la logent dans le blanc de la ligne, qui garde sa hauteur :
+   chaque pixel compte au-dessus de « Aller à » sur téléphone (question 75).
+   Le titre reste sur une ligne ; faute de place (panneau de 274 px à 320 px de
+   large), c'est le libellé qui passe sur deux. */
+.ar-entete:has(.ar-interrupteur) { gap: 0.375rem; }
+.ar-entete:has(.ar-interrupteur) h2 { flex: none; white-space: nowrap; }
+.ar-interrupteur { margin-left: auto; min-width: 0; }
+.ar-interrupteur .interrupteur-vue-bouton {
+  gap: 0.375rem;
+  min-height: var(--cible);
+  margin-block: calc((2rem - var(--cible)) / 2);
+  padding: 0 0.25rem;
+  border-radius: 8px;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: right;
+}
+.ar-interrupteur .interrupteur-vue-bouton:hover { background: var(--surface-douce); }
+/* Sur poste, le volet le porte, et le tiroir se pose sur le volet. */
+@media (min-width: 62rem) {
+  .ar-interrupteur { display: none; }
+}
+
 /* =============================================================================
  * Visite guidée du premier passage (19/09/2026)
  * ========================================================================== */

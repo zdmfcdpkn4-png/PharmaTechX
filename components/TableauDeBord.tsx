@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSessionFormation, type ResultatSession } from "./SessionFormation";
 import { LienModule } from "./LienModule";
+import { useProfilAffiche } from "./InterrupteurVue";
 import { telechargerRapport, type EnTeteRapport } from "@/lib/rapport";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import { normaliserIdentifiant } from "@/lib/identifiant";
@@ -348,6 +349,8 @@ export function TableauDeBord({
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
+  // En mode test, l'interrupteur de la vue apprenant garde le profil choisi ici (question 94).
+  useProfilAffiche(essai, posteId, niveauCode);
   const { resultats, emissions, marquerEmis, cleEmission, dernierPourModule } = useSessionFormation();
   const pseudonyme = conservation === "pseudonyme";
   // Mode « aucune » : nom et qualité restent sur le poste, pour l'en-tête du

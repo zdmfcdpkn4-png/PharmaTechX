@@ -57,6 +57,10 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * Barre de recherche de l'en-tête (question 93, choix b, 02/10/2026) : elle
  * ouvre ce panneau, curseur dans sa recherche, même sur écran tactile ; une
  * lettre tapée sur elle l'ouvre déjà filtré. Échap lui rend le focus.
+ *
+ * Interrupteur de la vue apprenant (question 94, choix a, 02/10/2026) : pour
+ * l'administration, en tête du panneau sous 62 rem, où le volet qui le porte
+ * sur poste n'existe pas. Un clic ferme le panneau : on vient voir l'autre vue.
  */
 
 /** Repli de « À faire », mémorisé sur le poste seulement. */
@@ -139,6 +143,7 @@ export function AccesRapide({
   items,
   reprises,
   avant,
+  interrupteur,
 }: {
   groupes: GroupeRail[];
   administration: GroupeRail | null;
@@ -150,6 +155,8 @@ export function AccesRapide({
    * ce qu'il faut savoir avant d'entrer disparaîtrait du téléphone.
    */
   avant?: React.ReactNode;
+  /** Interrupteur de la vue apprenant (question 94), dans la ligne du titre ; administration seulement. */
+  interrupteur?: React.ReactNode;
 }) {
   const menu = useContext(ContexteMenu);
   // Référence stable (useRef du fournisseur) : lue à l'ouverture, elle ne relance pas l'effet.
@@ -315,10 +322,12 @@ export function AccesRapide({
       }
       if (e.key === "Tab" && panneau.current) {
         // WCAG 2.1.2 : la tabulation ne sort pas du panneau, et Échap sort
-        // toujours — ce n'est donc pas un piège au clavier.
-        const focusables = panneau.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
-        );
+        // toujours — ce n'est donc pas un piège au clavier. Seuls comptent les
+        // éléments affichés : masqué sur poste, l'interrupteur de la vue
+        // apprenant (question 94) serait un premier arrêt que le focus saute.
+        const focusables = Array.from(
+          panneau.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'),
+        ).filter((el) => el.getClientRects().length > 0);
         if (focusables.length === 0) return;
         const premier = focusables[0];
         const dernier = focusables[focusables.length - 1];
@@ -424,6 +433,11 @@ export function AccesRapide({
       >
         <div className="ar-entete">
           <h2 id={titreId} className="sur-titre">Accès rapide</h2>
+          {interrupteur ? (
+            <div className="ar-interrupteur" onClick={suivre}>
+              {interrupteur}
+            </div>
+          ) : null}
           <button type="button" className="ar-fermer" onClick={menu.fermer} aria-label="Fermer l'accès rapide">
             ×
           </button>

@@ -5011,6 +5011,95 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/admin\/essai$/);
   await page.waitForSelector("text=Administrateur initial");
   assert.equal(await page.locator(".bandeau-essai").count(), 0, "bandeau retiré à la fin du test");
+
+  // Interrupteur de la vue apprenant (02/10/2026, question 94, choix a) : en haut du volet sur poste, en
+  // tête de l'Accès rapide sous 62 rem ; chaque vue reprend sa page, le profil choisi une fois. Sous
+  // l'empreinte de la base, comme le test : la bascule n'écrit rien, journal compris.
+  const interrupteur = page.locator("#volet-principal").getByRole("switch", { name: "Vue apprenant" });
+  const vueApprenantActive = () => page.locator(".bandeau-essai:has-text('Mode test')").count();
+  const profilAffiche = async () => [await page.locator("#composer select").nth(0).inputValue(), await page.locator("#composer select").nth(1).inputValue()];
+  assert.equal(await interrupteur.getAttribute("aria-checked"), "false", "interrupteur éteint dans la vue d'administration");
+  await page.goto(BASE + "/admin/questions?q=habillage");
+  await fermerVisite();
+  // Défilement sans animation : une animation encore en cours se poursuit dans Chromium après la remise
+  // en haut de la vue d'arrivée (constaté le 02/10/2026) ; ce n'est pas ce que l'étape éprouve.
+  await page.evaluate(() => window.scrollTo({ top: 400, behavior: "instant" }));
+  assert.ok((await page.evaluate(() => window.scrollY)) > 0, "page d'administration défilée avant la bascule");
+  await interrupteur.click();
+  await page.waitForURL((u) => u.pathname === "/" && u.search === "");
+  await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
+  await fermerVisite();
+  assert.equal(await interrupteur.getAttribute("aria-checked"), "true", "interrupteur allumé dans la vue apprenant");
+  assert.equal(await page.evaluate(() => window.scrollY), 0, "la vue d'arrivée s'affiche depuis le haut");
+  assert.equal(await page.locator("#volet-principal summary:has-text('Administration')").count(), 0, "volet de l'apprenant");
+  assert.equal(await page.locator("button[aria-label='Utilisateur test — quitter']").count(), 1, "vue apprenant sous « Utilisateur test »");
+  await capture("15b-interrupteur-vue-apprenant", page.locator("#volet-principal"));
+  // Premier passage : rien de gardé, le profil se choisit à l'écran ; il est gardé au retour.
+  assert.deepEqual(await profilAffiche(), ["", ""], "premier passage : profil à choisir à l'écran");
+  await page.locator("#composer select").nth(0).selectOption("chimiotherapie");
+  await page.locator("#composer select").nth(1).selectOption("N1b");
+  await interrupteur.focus();
+  await page.keyboard.press("Space");
+  await page.waitForURL((u) => u.pathname === "/admin/questions" && u.searchParams.get("q") === "habillage");
+  await page.waitForSelector(".bandeau-essai", { state: "detached" });
+  assert.equal(await interrupteur.getAttribute("aria-checked"), "false", "retour à l'administration, à la page quittée");
+  assert.ok(await interrupteur.evaluate((b) => b === document.activeElement), "le focus reste sur l'interrupteur");
+  await interrupteur.click();
+  await page.waitForURL((u) => u.pathname === "/");
+  await page.waitForSelector(".bandeau-essai");
+  await fermerVisite();
+  assert.deepEqual(await profilAffiche(), ["chimiotherapie", "N1b"], "la vue apprenant reprend son profil, choisi une fois");
+  // Une page sans profil dans l'adresse : reprise telle quelle.
+  await page.goto(BASE + "/reperes#niveaux");
+  await fermerVisite();
+  await interrupteur.click();
+  await page.waitForURL((u) => u.pathname === "/admin/questions");
+  await interrupteur.click();
+  await page.waitForURL((u) => u.pathname === "/reperes");
+  await page.waitForSelector(".bandeau-essai");
+  // Double clic : une seule bascule, le second clic part de la même vue et n'est pas envoyé.
+  await interrupteur.dblclick();
+  await page.waitForURL((u) => u.pathname === "/admin/questions");
+  await page.waitForTimeout(1500);
+  assert.ok(new URL(page.url()).pathname === "/admin/questions" && (await vueApprenantActive()) === 0, "double clic : une seule bascule");
+  // Téléphone : le volet n'existe pas, l'interrupteur est en tête de l'Accès rapide, sans hausser sa ligne.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  assert.equal(await interrupteur.isVisible(), false, "téléphone : volet masqué");
+  await page.click("button.bouton-menu");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  const interrupteurPanneau = page.locator("#acces-rapide").getByRole("switch", { name: "Vue apprenant" });
+  assert.equal(await interrupteurPanneau.getAttribute("aria-checked"), "false");
+  const lignePanneau = await page.evaluate(() => {
+    const e = document.querySelector(".ar-entete");
+    const b = document.querySelector(".ar-interrupteur button").getBoundingClientRect();
+    return { hauteur: Math.round(e.getBoundingClientRect().height), cible: Math.round(b.height), deborde: e.scrollWidth > e.clientWidth };
+  });
+  assert.deepEqual(lignePanneau, { hauteur: 54, cible: 44, deborde: false }, "ligne du titre : même hauteur, cible de 44 px, rien ne déborde");
+  await capture("15c-interrupteur-vue-telephone", page.locator("#acces-rapide .ar-entete"));
+  await interrupteurPanneau.click();
+  await page.waitForURL((u) => u.pathname === "/reperes");
+  await page.waitForSelector(".bandeau-essai");
+  assert.equal(await page.locator(".acces-rapide--ouvert").count(), 0, "un clic ferme le panneau");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button.bouton-menu");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(await interrupteurPanneau.getAttribute("aria-checked"), "true");
+  await interrupteurPanneau.click();
+  await page.waitForURL((u) => u.pathname === "/admin/questions");
+  await page.waitForSelector(".bandeau-essai", { state: "detached" });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  // Poste : le panneau ne le porte pas, et la tabulation y reste enfermée sans lui.
+  await page.keyboard.press("Control+k");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(await interrupteurPanneau.isVisible(), false, "poste : pas d'interrupteur dans le panneau");
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Shift+Tab");
+  assert.ok(await page.evaluate(() => document.getElementById("acces-rapide").contains(document.activeElement)), "tabulation enfermée dans le panneau");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
   if (baseAvant) {
     const baseApres = await empreinteBase();
     const ecarts = Object.keys({ ...baseAvant, ...baseApres }).filter((k) => baseAvant[k] !== baseApres[k]);
@@ -5028,11 +5117,13 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/admin/essai");
+  assert.equal(await page.getByRole("switch", { name: "Vue apprenant" }).count(), 0, "tutorat : pas d'interrupteur dans sa vue");
   await page.click("button:has-text('Démarrer un test')");
   await page.waitForURL((u) => u.pathname === "/");
   await fermerVisite();
   await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
   assert.equal(await page.locator("button[aria-label='Utilisateur test — quitter']").count(), 1, "tutorat : vue apprenant");
+  assert.equal(await page.getByRole("switch", { name: "Vue apprenant" }).count(), 0, "tutorat : pas d'interrupteur de la vue apprenant");
   // Le bandeau est dans l'en-tête, qui se masque au défilement descendant : on remonte d'abord,
   // comme pour l'administrateur plus haut (échec observé le 23/09/2026, bouton hors écran).
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -5047,6 +5138,8 @@ Justification : cf. procédure interne.`,
   ok(
     `utilisateur test : profil choisi au départ (programme et niveau cible), lien au menu ; parcours apprenant jusqu'au rapport ${numeroTest} (filigrane), signalement retenu, ` +
       "rattachement du poste ignoré, administration fermée pendant le test, tutorat compris ; " +
+      "interrupteur de la vue apprenant (volet sur poste, Accès rapide sur téléphone, sans hausser sa ligne) : chaque vue reprend sa page depuis le haut, " +
+      "le profil choisi une fois à l'écran, le focus reste, un double clic ne bascule qu'une fois, tutorat sans interrupteur ; " +
       (baseAvant ? "base identique avant et après, table par table et séquence par séquence" : "base NON comparée (DATABASE_URL absente)"),
   );
 

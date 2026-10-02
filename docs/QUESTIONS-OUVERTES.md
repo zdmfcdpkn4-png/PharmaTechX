@@ -409,6 +409,15 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : en tête de l'Accès rapide seulement, à toutes les tailles.
       Contre : deux gestes partout ; panneau fermé, rien ne le montre.
 
+    Tranchée le 02/10/2026 (choix a, réponse « À pour 94 », « À » valant
+    « a »). Sur poste, l'interrupteur « Vue apprenant » est en haut du
+    volet ; sous 62 rem, dans la ligne du titre de l'Accès rapide, sans la
+    hausser. Il entre dans le mode test et en sort. Chaque vue reprend sa
+    page, affichée depuis le haut : la page, pas l'endroit de la page.
+    L'apprenant test reprend son profil, choisi une fois. « Terminer le
+    test » ramène désormais là d'où le test est parti. Détail dans
+    `DECISIONS.md`.
+
 93. **Barre de recherche rapide en haut : que cherche-t-elle ?** — posée
     le 02/10/2026, sur « Ajoute une barre de recherche rapide en haut et la
     possibilité de retour à l'accueil par clic sur les logos en haut de

@@ -13,6 +13,7 @@ import { ModeZone } from "@/components/ModeZone";
 import { PageAnimee } from "@/components/PageAnimee";
 import { VoletConnexion } from "@/components/VoletConnexion";
 import { IndicateurNavigation } from "@/components/IndicateurNavigation";
+import { InterrupteurVue } from "@/components/InterrupteurVue";
 import { Introduction } from "@/components/Introduction";
 import { VeilleInactivite } from "@/components/VeilleInactivite";
 import { TutorielProvider } from "@/components/Tutoriel";
@@ -89,6 +90,11 @@ export default async function RootLayout({
   // `content/tutoriel.ts` cessent de recouvrir ceux de `lib/db.ts`.
   const profilVisite = session?.role ?? null;
   const etapesVisite = profilVisite ? etapesTutoriel(profilVisite, conservation) : [];
+
+  // Interrupteur de la vue apprenant (question 94, choix a), réservé à l'administration : éteint dans sa
+  // vue, allumé dans le test qu'il a ouvert. Le tutorat teste par la page « Tester en apprenant ».
+  const vueApprenant: boolean | null =
+    session?.essai?.role === "admin" ? true : session?.role === "admin" && !session.essai ? false : null;
 
   // Volet d'avant-connexion : le filtre d'entrée garde tout le site, donc
   // chaque raccourci ramènerait ici. Sans base, le site reste ouvert et les
@@ -443,6 +449,7 @@ export default async function RootLayout({
               items={itemsFile}
               reprises={reprises}
               avant={avantConnexion ? <VoletConnexion /> : undefined}
+              interrupteur={vueApprenant === null ? undefined : <InterrupteurVue apprenant={vueApprenant} lieu="acces-rapide" />}
             />
 
             <div className="cadre">
@@ -450,7 +457,10 @@ export default async function RootLayout({
                 {avantConnexion ? (
                   <VoletConnexion />
                 ) : (
-                  <Navigation groupes={groupes} administration={administration} />
+                  <>
+                    {vueApprenant === null ? null : <InterrupteurVue apprenant={vueApprenant} lieu="volet" />}
+                    <Navigation groupes={groupes} administration={administration} />
+                  </>
                 )}
               </VoletMenu>
 

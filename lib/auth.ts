@@ -17,7 +17,7 @@ import { inactif, type Activite } from "./inactivite";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 import { genererCode, hacherCode, normaliserCode, verifierCode } from "./codes";
-import type { IdentiteTesteur } from "./essai";
+import type { IdentiteTesteur, MemoireVues } from "./essai";
 
 /**
  * Contrôle d'accès par rôle.
@@ -69,6 +69,11 @@ export interface Session {
    * parcourt le site en apprenant, rétablie à la fin du test (`lib/essai.ts`).
    */
   essai?: IdentiteTesteur;
+  /**
+   * Interrupteur de la vue apprenant (02/10/2026, question 94) : page quittée
+   * de chaque côté et profil de l'apprenant test, repris d'un clic à l'autre.
+   */
+  vues?: MemoireVues;
 }
 
 const COOKIE = "fp_session";

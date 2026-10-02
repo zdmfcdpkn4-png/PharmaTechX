@@ -7041,6 +7041,113 @@ contenu et sa recherche.
 - Émulation tactile à 820 px : la loupe vise le champ du panneau, le
   hamburger le panneau, comme avant.
 
+## L'interrupteur de la vue apprenant (02/10/2026, question 94, choix a)
+
+**Question.** « Peux-tu créer pour les administrateurs la possibilité
+d'avoir une vue apprenant avec un accès rapide en haut à gauche pour
+basculer rapidement avec un interrupteur d'une vue à l'autre ? » Où placer
+l'interrupteur ? Choix a : en haut du volet de gauche sur poste ; sous
+62 rem, où le volet n'existe pas, en tête de l'Accès rapide.
+
+**Fait.**
+- Un interrupteur « Vue apprenant » (`role="switch"`,
+  `components/InterrupteurVue.tsx`), réservé à l'administration.
+  - Sur poste, en haut du volet, au-dessus de l'Accueil. Éteint dans la
+    vue d'administration ; allumé dans la vue apprenant, aux couleurs du
+    bandeau « Mode test ».
+  - Sous 62 rem, dans la ligne du titre de l'Accès rapide, entre le titre
+    et la croix. Un clic ferme le panneau : on vient voir l'autre vue.
+- Il entre dans le mode test existant et en sort : « Utilisateur test »,
+  bandeau en tête de page, rien d'enregistré (`actionBasculerVue`,
+  `app/actions-essai.ts` ; règle pure `basculerVue`, `lib/essai.ts`).
+- Chaque vue reprend sa page. La session garde la page quittée de chaque
+  côté (champ `vues`, `lib/auth.ts`).
+  - Premier passage : le programme (« / »), profil à choisir à l'écran.
+  - Le profil de l'apprenant (filière, niveau) est gardé au retour : celui
+    que montre « Composer le programme » s'il est à l'écran, sinon celui de
+    l'adresse (page d'un module), sinon celui du test. Il rouvre le test
+    suivant comme un profil choisi d'avance : choisi une fois.
+  - On reprend la page, pas l'endroit de la page : elle est gardée sans
+    son ancre, et la vue d'arrivée s'affiche depuis le haut.
+- Le tutorat n'a pas d'interrupteur. « Tester en apprenant » reste, pour
+  tous, la façon de lancer un test sur un profil précis.
+- « Terminer le test » ramène là d'où le test est parti : la page du test,
+  comme avant, ou la page d'administration quittée par l'interrupteur. Il
+  ne garde pas la page de l'apprenant : seul l'interrupteur la connaît.
+
+**Sûreté.**
+- Rien en base, journal compris, comme pour le test.
+- Les pages gardées sont des adresses du site seulement
+  (`adresseDuSite`) : ni `//hôte`, ni `/\hôte`, ni caractère hors de
+  l'ASCII imprimable. Au-delà de 600 caractères, seul le chemin est gardé :
+  la session est un cookie.
+- Un profil gardé que le référentiel ne connaît plus redevient « à choisir
+  à l'écran ».
+- Basculer ne prolonge pas la session : ouverture et échéance restent
+  celles de la connexion. Un code révoqué ferme la session dans l'une
+  comme dans l'autre vue.
+
+**Un comportement de Next contourné.** Next rend la redirection d'une
+action serveur au formulaire qui l'a envoyée, sous forme d'erreur. Si ce
+formulaire est encore affiché après la bascule, Next la rattrape à la
+racine et reconstruit toute la page : en-tête, volet, page, pied. Le focus
+est alors perdu, les menus se referment, et la mémoire de la session de
+formation (les évaluations faites dans la vue apprenant) revient à son
+état de départ. L'interrupteur est affiché dans les deux vues : c'était le
+cas, constaté le 02/10/2026.
+
+Le formulaire porte donc une clé par vue. Remplacé avec la vue, il ne
+reçoit plus rien, comme le formulaire de « Terminer le test », qui
+disparaît avec le bandeau. Par ce chemin, Next n'applique ni l'ancre ni le
+retour en haut de page. L'interrupteur remet la page en haut et, s'il
+avait le focus dans le volet, le reprend.
+
+**Coût.**
+- Sur poste, une ligne de 32 px en tête du volet, pour l'administration
+  seulement.
+- Sous 62 rem, deux gestes : Menu, puis l'interrupteur. Aucune hauteur
+  prise à « Aller à » : la ligne du titre garde ses 54 px, et la cible de
+  44 px (52 en mode zone) se loge dans son blanc. À 320 px de large, le
+  libellé passe sur deux lignes.
+- Un arrêt de tabulation de plus, dans le volet et dans le panneau.
+
+**Vérifié le 02/10/2026.**
+- Deux défauts trouvés et corrigés avant envoi : la page reconstruite à
+  chaque bascule (ci-dessus) ; la vue d'arrivée affichée au défilement de
+  la vue quittée, sans retour en haut.
+- `npm run verifier` : 479 tests, dont 4 nouveaux (`test/essai.test.ts`) :
+  - adresses refusées, ou réduites à leur chemin ;
+  - aller-retour : page gardée sans son ancre, profil choisi à l'écran
+    puis rouvert ;
+  - profil de l'adresse, sinon celui du test ;
+  - profil disparu du référentiel ; ni le tutorat ni un poste.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de
+  page ni erreur serveur. L'étape du mode test vérifie en plus :
+  - à 1 280 px, l'aller depuis une page d'administration défilée : le
+    programme affiché depuis le haut, le volet de l'apprenant, « Utilisateur
+    test » ;
+  - le retour à la page d'administration quittée, filtre compris, le focus
+    resté sur l'interrupteur ; puis le profil choisi à l'écran, retrouvé ;
+  - les Repères repris tels quels ; un double clic qui ne bascule qu'une
+    fois ;
+  - à 390 px, l'interrupteur dans la ligne du titre de l'Accès rapide :
+    ligne de 54 px, cible de 44 px, aucun débord ; un clic qui ferme le
+    panneau et bascule ;
+  - à 1 280 px, le panneau sans interrupteur, la tabulation enfermée ;
+  - le tutorat, sans interrupteur dans l'une ou l'autre de ses vues ;
+  - la base identique avant et après, table par table et séquence par
+    séquence, bascules comprises.
+- Mesures sur le serveur de test, ligne du titre de l'Accès rapide :
+  54 px avec ou sans l'interrupteur, à 320, 360, 390, 768 et 991 px, en
+  mode zone aussi. Libellé sur une ligne dès 360 px, sur deux à 320 px. La
+  cible répond sur toute sa hauteur ; en mode zone, ses 2 derniers pixels
+  cèdent au champ de recherche, qui la suit.
+- Limite constatée en test : un défilement animé encore en cours au
+  moment de la bascule (moins d'une demi-seconde) se poursuit dans Chromium
+  après la remise en haut. Le parcours défile donc sans animation avant de
+  basculer. Sans effet attendu à l'usage `[à vérifier sur iPad]`.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

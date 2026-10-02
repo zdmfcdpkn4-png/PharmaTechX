@@ -254,7 +254,7 @@ explicitement** pour que personne ne l'attende.
 | Frappe | filtre immédiat, **sans anti-rebond** — la liste est locale, il n'y a rien à attendre |
 | Flèches ↑ ↓ | déplacent la sélection ; rebouclent aux extrémités |
 | `Entrée` | ouvre l'item sélectionné ; à défaut de sélection, le premier résultat |
-| `Tab` | **enfermée** dans le panneau (WCAG 2.1.2, pas de piège au clavier : `Échap` sort toujours) |
+| `Tab` | **enfermée** dans le panneau (WCAG 2.1.2, pas de piège au clavier : `Échap` sort toujours) ; seuls les éléments affichés comptent — masqué sur poste, l'interrupteur de la vue apprenant n'est pas un arrêt (question 94) |
 | Survol | change la sélection, comme les flèches — un seul item sélectionné à la fois, jamais deux repères concurrents |
 | Compteurs | **ne s'animent pas, ne clignotent pas.** Un chiffre qui bouge attire l'œil vers ce qu'on n'a pas demandé |
 | Aucun résultat | « Aucun écran ne correspond à *xyz*. » et la zone « Aller à » reste entière, dépliée |
@@ -263,7 +263,7 @@ explicitement** pour que personne ne l'attende.
 
 `Échap`, clic sur la page hors du tiroir — il ferme, sans suivre le lien qui se
 trouvait sous le pointeur —, clic sur le `×`, suivi d'un lien, changement de
-route. **Dans tous les cas, le focus revient au déclencheur qui l'a ouvert** :
+route, clic sur l'interrupteur de la vue apprenant (question 94). **Dans tous les cas, le focus revient au déclencheur qui l'a ouvert** :
 le hamburger, ou la barre de recherche de l'en-tête (question 93) — sans quoi
 la tabulation repart du haut du document, et l'utilisateur au clavier est perdu
 (WCAG 2.4.3).
@@ -295,6 +295,7 @@ et « À faire » s'insérant au-dessus de « Aller à ».
 | Recherche | présente, mais **sans focus automatique** (§ 4.1) |
 | Clavier virtuel | le panneau défile ; la zone « À faire » reste au-dessus du pli |
 | « À faire » | repliable, total sur l'intitulé, état gardé sur le poste (question 75) : « Aller à » passe de 155 à 395 px sur un iPhone 15 dans Safari, de 49 à 289 px sur un iPhone SE |
+| Interrupteur de la vue apprenant | administration seulement (question 94, choix a) : dans la ligne du titre, entre le titre et `×`. La ligne garde ses 54 px, la cible de 44 px (52 en mode zone) se loge dans son blanc ; à 320 px, le libellé passe sur deux lignes |
 
 ### 5.2 Au-dessus de 62 rem — poste de travail
 
@@ -315,6 +316,7 @@ point 3) ; la colonne de lecture reste découverte, ni assombrie ni floutée.
 | Position | à gauche, sur le volet ; son bord s'arrête 8 px avant la colonne de lecture |
 | Cible | 32 px par item, comme le volet sur poste |
 | Raccourci annoncé | `⌘K` en gris à droite du champ, une fois |
+| Interrupteur de la vue apprenant | en haut du volet, pas dans le tiroir (question 94, choix a) |
 
 ### 5.3 Impression
 

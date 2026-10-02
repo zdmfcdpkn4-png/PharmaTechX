@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getSession, remplacerSession, sessionRequise } from "@/lib/auth";
-import { sessionDEssai, sessionRetablie } from "@/lib/essai";
+import { adresseDuSite, basculerVue, sessionDEssai, sessionRetablie } from "@/lib/essai";
 import { getReferentiel } from "@/content/referentiel-db";
 
 /**
@@ -22,7 +22,8 @@ export async function actionDemarrerEssai(formData?: FormData) {
   const lu = (cle: string) => String(formData?.get(cle) ?? "").trim();
   const filiere = filieres.find((f) => f.id !== "socle" && f.id === lu("essaiFiliere"))?.id ?? null;
   const niveau = niveaux.find((n) => String(n.code) === lu("essaiNiveau")) ? lu("essaiNiveau") : null;
-  const essai = sessionDEssai(s, { filiere, niveau });
+  // L'interrupteur de la vue apprenant (question 94) ramènera là d'où le test est parti : cette page.
+  const essai = sessionDEssai({ ...s, vues: { ...s.vues, admin: "/admin/essai" } }, { filiere, niveau });
   if (essai) await remplacerSession(essai);
   redirect("/");
 }
@@ -32,6 +33,30 @@ export async function actionTerminerEssai() {
   const retablie = s ? sessionRetablie(s) : null;
   if (!retablie) redirect("/");
   await remplacerSession(retablie);
-  // Retour à la page du test (question 91), d'où il a été lancé.
-  redirect("/admin/essai");
+  // Retour là d'où le test est parti : la page du test (question 91), ou la page d'administration
+  // quittée par l'interrupteur de la vue apprenant (question 94).
+  redirect(adresseDuSite(retablie.vues?.admin) ?? "/admin/essai");
+}
+
+/**
+ * Interrupteur de la vue apprenant (02/10/2026, question 94, choix a) : réservé à
+ * l'administration, il entre dans le mode test et en sort, chaque vue reprenant là
+ * où on l'a quittée (`basculerVue`, `lib/essai.ts`). Pas plus de journal que pour le
+ * test lui-même.
+ */
+export async function actionBasculerVue(formData: FormData) {
+  const s = await getSession();
+  if (!s) redirect("/connexion");
+  const { filieres, niveaux } = await getReferentiel();
+  const r = basculerVue(
+    s,
+    {
+      ici: formData.get("ici"),
+      ecran: formData.get("ecran") === "1" ? { filiere: formData.get("filiere"), niveau: formData.get("niveau") } : null,
+    },
+    { filieres: filieres.filter((f) => f.id !== "socle").map((f) => f.id), niveaux: niveaux.map((n) => String(n.code)) },
+  );
+  if (!r) redirect("/");
+  await remplacerSession(r.session);
+  redirect(r.cible);
 }
