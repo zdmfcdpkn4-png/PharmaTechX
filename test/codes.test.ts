@@ -50,17 +50,17 @@ test("la saisie se normalise partout de la même façon : connexion et confirmat
   );
 });
 
-test("types de profil : liste fermée de la question 95, en capitales sans accent", () => {
+test("types de profil : liste fermée des questions 95 et 96, en capitales sans accent", () => {
   assert.deepEqual(
     TYPES_CODE.map((t) => t.id),
-    ["PHARMACIEN", "PREPARATEUR", "OPQ", "ASH"],
+    ["PHARMACIEN", "INTERNE", "PREPARATEUR", "OPQ", "ASH"],
   );
   for (const t of TYPES_CODE) assert.match(t.id, /^[A-Z]+$/, `${t.id} : rien que le motif ne puisse lire tel quel`);
 });
 
 test("le type envoyé n'est reçu que s'il est de la liste, casse comprise", () => {
   for (const t of TYPES_CODE) assert.equal(lireTypeCode(t.id), t.id);
-  for (const brut of ["", "pharmacien", " ASH", "ASH ", "INTERNE", "Tuteur chimio", "PHARMACIEN-0", null, undefined, 0, {}, ["ASH"]]) {
+  for (const brut of ["", "pharmacien", "interne", " ASH", "ASH ", "CADRE", "Tuteur chimio", "PHARMACIEN-0", null, undefined, 0, {}, ["ASH"]]) {
     assert.equal(lireTypeCode(brut), null, `refusé : ${JSON.stringify(brut)}`);
   }
 });

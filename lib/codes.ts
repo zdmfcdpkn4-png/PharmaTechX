@@ -52,11 +52,13 @@ export function genererCode(longueur = 10): string {
  * Types de profil d'un code d'accès (02/10/2026, question 95, choix a) : le libellé n'est plus
  * saisi. On choisit le type, et le site nomme le code TYPE-n, au premier numéro jamais donné pour
  * ce type, à partir de 0 — PHARMACIEN-0, PHARMACIEN-1, PREPARATEUR-0… Plus de champ libre où
- * glisser un nom. Liste fermée, celle de la demande ; ce que son « … » laissait ouvert est la
- * question 96.
+ * glisser un nom. Liste fermée : celle de la demande, et INTERNE, que son « … » laissait ouvert
+ * (question 96, choix a) ; les internes, qui changent chaque semestre, se retrouvent ainsi d'une
+ * recherche.
  */
 export const TYPES_CODE = [
   { id: "PHARMACIEN", libelle: "Pharmacien" },
+  { id: "INTERNE", libelle: "Interne" },
   { id: "PREPARATEUR", libelle: "Préparateur" },
   { id: "OPQ", libelle: "OPQ" },
   { id: "ASH", libelle: "ASH" },

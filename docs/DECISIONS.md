@@ -7222,6 +7222,36 @@ question 96 ; d'ici là, aucun autre type ne se crée.
   `span` à `small` après la chaîne. `verifier`, `build` et captures
   relancés ; le parcours ne l'a pas été pour ce seul changement de balise.
 
+## Le type INTERNE (02/10/2026, question 96, choix a)
+
+**Question.** La liste des types de la question 95 reprenait la demande,
+« pharmacien - préparateur - OPQ - ASH … », dont le « … » restait ouvert.
+Choix a : ajouter INTERNE.
+
+**Fait.** INTERNE (« Interne ») rejoint la liste, après Pharmacien :
+PHARMACIEN, INTERNE, PREPARATEUR, OPQ, ASH (`TYPES_CODE`, `lib/codes.ts`).
+Ses codes se nomment INTERNE-0, INTERNE-1…, numérotés comme les autres. Les
+internes changent chaque semestre : leurs codes se retrouvent d'une
+recherche « INTERNE » et se révoquent ensemble.
+
+**Écartés.**
+- Garder les quatre (b) : en fin de semestre, rien ne distinguait dans la
+  liste les codes d'internes.
+- Ajouter aussi CADRE et ETUDIANT (c) : un type qui ne compte qu'une ou
+  deux personnes désigne presque quelqu'un.
+
+**Inchangé.** Le type ne restreint ni le rôle, ni la filière, ni le niveau.
+Les niveaux d'un interne restent ceux de la fiche commune « Pharmacien /
+interne » (PH-). Le rôle est la question 97.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 483 tests ; ceux de `test/codes.test.ts` attendent
+  la liste à cinq types et reçoivent INTERNE.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de
+  page ni erreur serveur ; le formulaire propose les cinq types, dans cet
+  ordre.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

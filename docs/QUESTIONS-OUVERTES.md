@@ -377,6 +377,26 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+97. **Rôle et type : l'administration réservée au type PHARMACIEN ?** —
+    posée le 02/10/2026, conséquence des questions 95 et 96.
+
+    Tout code d'administration porte le visa « pharmacien responsable », la
+    signature, l'annulation et la purge (question 9). La question 9
+    laissait à la procédure interne le soin de réserver ces codes au
+    pharmacien responsable et à son suppléant : le site ne connaissait pas
+    la fonction. Le type la lui donne désormais, mais rien n'empêche encore
+    un code d'administration INTERNE, PREPARATEUR, OPQ ou ASH.
+    - **a (recommandé)** : réserver l'administration au type PHARMACIEN ;
+      tutorat et poste restent ouverts à tous les types. Le serveur refuse
+      le reste. Contre : un interne ou un préparateur ne reçoit plus de code
+      d'administration ; il passe par le tutorat, qui ne publie pas les
+      modules et ne signe pas en pharmacien.
+    - **b** : PHARMACIEN et INTERNE. Contre : un code d'administration
+      d'interne signerait les rapports clos comme pharmacien responsable.
+    - **c** : aucune restriction, comme aujourd'hui ; la procédure interne
+      seule en répond. Contre : un code d'administration ASH-0 signerait les
+      rapports comme pharmacien responsable, sans que rien ne l'arrête.
+
 96. **Types de profil des codes : faut-il compléter la liste ?** — posée
     le 02/10/2026, suite de la question 95 : le « … » de « pharmacien -
     préparateur - OPQ - ASH … ».
@@ -395,6 +415,10 @@ telle. Ordre : ce qui change le déploiement en premier.
       compte qu'une ou deux personnes, le cadre surtout, désigne presque
       quelqu'un ; les questions 6 et 29 ont tenu ce genre d'indice hors de
       la base.
+
+    Tranchée le 02/10/2026 (choix a, réponse « À », valant « a »). INTERNE
+    rejoint la liste, après Pharmacien : ses codes se nomment INTERNE-0,
+    INTERNE-1… Détail dans `DECISIONS.md`.
 
 95. **Code agent : quels codes reçoivent un format par profil ?** —
     posée le 02/10/2026, sur « Interdire la création d'un code agent déjà

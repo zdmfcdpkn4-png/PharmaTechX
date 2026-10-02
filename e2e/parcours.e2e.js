@@ -480,12 +480,12 @@ Justification : cf. procédure interne.`,
   // 2. codes tuteur et poste, sur la page des codes d'accès (Équipe, question 91)
   await page.goto(BASE + "/admin");
   await page.waitForSelector("h1:has-text(\"Codes d'accès\")");
-  // Question 95 (choix a) : plus de libellé saisi. Le type de profil, pris dans une liste fermée,
-  // nomme le code TYPE-n, au premier numéro jamais donné pour ce type.
+  // Question 95 (choix a) : plus de libellé saisi. Le type de profil, pris dans une liste fermée
+  // (INTERNE ajouté, question 96), nomme le code TYPE-n, au premier numéro jamais donné pour ce type.
   assert.equal(await page.locator("form:has(select[name=role]) input[name=libelle]").count(), 0, "aucun champ libre pour nommer un code");
   assert.deepEqual(
     await page.locator("select[name=type] option").evaluateAll((o) => o.map((x) => x.value)),
-    ["", "PHARMACIEN", "PREPARATEUR", "OPQ", "ASH"],
+    ["", "PHARMACIEN", "INTERNE", "PREPARATEUR", "OPQ", "ASH"],
   );
   assert.equal(await page.locator("select[name=type]").evaluate((x) => x.checkValidity()), false, "le type se choisit avant de générer");
   await page.selectOption("select[name=role]", "tuteur");
