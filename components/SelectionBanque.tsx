@@ -83,6 +83,7 @@ export function SelectionBanque({
   niveaux,
   role,
   retour,
+  affichees,
 }: {
   /** Tous les modules, retirés compris : un module retiré se quitte, il ne se rejoint pas. */
   modules: ModuleCible[];
@@ -92,9 +93,11 @@ export function SelectionBanque({
   /** Rôle de la session : l'administration valide aussi les siennes. */
   role: string;
   retour: string;
+  /** Questions affichées, comptées par le serveur : « Tout sélectionner » le dit dès le premier affichage. */
+  affichees: number;
 }) {
   const [choisies, setChoisies] = useState<QuestionLot[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(affichees);
   const [geste, setGeste] = useState<GesteLot | null>(null);
   // Fermée, la fenêtre ne garde que son formulaire : aucun de ses boutons ne traîne, caché, dans la page.
   const [ouverte, setOuverte] = useState(false);

@@ -630,6 +630,7 @@ export default async function Questions({
           niveaux={niveauxLot}
           role={session.role}
           retour={retourVue}
+          affichees={questions.length}
         />
       </div>
 

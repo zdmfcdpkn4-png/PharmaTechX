@@ -401,6 +401,14 @@ telle. Ordre : ce qui change le déploiement en premier.
 
     Pour un autre assortiment, donnez les numéros.
 
+    Tranchée le 02/10/2026 (choix a, réponse « À », valant « a ») et mise
+    en œuvre : le journal se filtre par action, par période en jours de
+    Paris et par cible, et se lit page après page, 300 lignes par page,
+    au-delà des 300 dernières. Une action ou une cible du tableau filtre
+    sur elle ; chaque question de la banque mène à ses lignes, pour
+    l'administration. Les points 1, 2, 3, 5 et 6 ne sont pas faits.
+    Détail dans `DECISIONS.md`.
+
 89. **Reclasser plusieurs questions d'un coup : que devient une question
     validée** — posée le 01/10/2026, sur « Faire en sorte dans la gestion des
     questions de pouvoir sélectionner plusieurs questions de la banque pour

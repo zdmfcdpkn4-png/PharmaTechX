@@ -3863,8 +3863,8 @@ Justification : cf. procédure interne.`,
   //              niveau, statut. Une validée modifiée repasse « à vérifier » et celui qui agit devient l'auteur
   //              courant ; valider en lot suit les quatre yeux question par question ; chaque question changée
   //              va au journal ; le tutorat agit aussi ; sur téléphone, « Actions… » ouvre la liste des gestes.
-  //              Lot 2 : recherche, puces, « Plus de filtres et tri », menu. Les trois questions sont supprimées
-  //              à la fin.
+  //              Lot 2 : recherche, puces, « Plus de filtres et tri », menu. Question 90 : journal filtré par
+  //              action, période et question, et lu page après page. Les trois questions sont supprimées à la fin.
   await rebrancher(codeAdmin);
   const JETON_LOT = `lot${Date.now()}`;
   const ENONCES_LOT = [1, 2, 3].map((i) => `Question à reclasser ${i} (${JETON_LOT}) ?`);
@@ -3896,7 +3896,8 @@ Justification : cf. procédure interne.`,
   const compteBarre = (n) => barre.locator(".barre-selection-compte", { hasText: new RegExp(`^${n} sélectionnées?$`) });
   assert.equal(await barre.isVisible(), false, "rien de sélectionné : pas de barre d'actions");
   const afficheesLot = await page.evaluate(() => new Set([...document.querySelectorAll("input.case-question")].map((c) => c.value)).size);
-  assert.match(await page.locator(".case-tout").innerText(), new RegExp(`Tout sélectionner \\(${afficheesLot} affichées?\\)`));
+  // Le compte est attendu, pas lu une fois : la page le corrige après son chargement (02/10/2026).
+  await page.locator(".case-tout", { hasText: new RegExp(`Tout sélectionner \\(${afficheesLot} affichées?\\)`) }).waitFor();
   await page.locator(".case-tout input").check();
   await compteBarre(afficheesLot).waitFor();
   await barre.locator("button:has-text('Désélectionner')").click();
@@ -3922,7 +3923,16 @@ Justification : cf. procédure interne.`,
     await barre.locator(".barre-selection-gestes button", { hasText: libelle }).click();
     await fenetreLot.waitFor();
   };
-  const effetLot = () => fenetreLot.locator(".fenetre-lot-effet").innerText();
+  /** L'effet annoncé, attendu jusqu'à ce qu'il soit celui-là : la fenêtre le recalcule à chaque choix. */
+  const effetLot = async (attendu) => {
+    const effet = fenetreLot.locator(".fenetre-lot-effet");
+    const correspond = (t) => (attendu instanceof RegExp ? attendu.test(t) : t === attendu);
+    for (let i = 0; i < 50 && !correspond((await effet.innerText()).trim()); i++) await page.waitForTimeout(100);
+    const texte = (await effet.innerText()).trim();
+    if (attendu instanceof RegExp) assert.match(texte, attendu, "effet annoncé");
+    else assert.equal(texte, attendu, "effet annoncé");
+    return texte;
+  };
   const boutonAppliquer = fenetreLot.locator("button:has-text('Appliquer')");
   /** Applique le geste ; la banque revient avec le bilan, la sélection vide. */
   const appliquerLot = async () => {
@@ -3934,11 +3944,11 @@ Justification : cf. procédure interne.`,
   // Classer.
   await ouvrirGeste("Classer dans un module");
   await fenetreLot.locator("select[name=module]").selectOption("critere-b1-02");
-  const annonce = await effetLot();
+  const annonce = await effetLot(/^Classer 3 questions dans « B1-02 — /);
   assert.match(annonce, /^Classer 3 questions dans « B1-02 — /, "nombre et module annoncés");
   assert.match(annonce, /1 validée repassera « à vérifier »/, "la validée est annoncée");
   assert.match(annonce, /Vous deviendrez l'auteur courant des questions déplacées\./);
-  assert.equal(await boutonAppliquer.innerText(), "Appliquer à 3 questions");
+  await fenetreLot.locator("button", { hasText: /^Appliquer à 3 questions$/ }).waitFor();
   assert.match(await appliquerLot(), /^3 questions classées dans « B1-02 — .+ »\. 1 validée repasse « à vérifier »\.$/);
   await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02");
   for (const enonce of ENONCES_LOT) {
@@ -3961,7 +3971,7 @@ Justification : cf. procédure interne.`,
   await compteBarre(2).waitFor();
   await ouvrirGeste("Classer dans un module");
   await fenetreLot.locator("select[name=module]").selectOption("critere-b1-02");
-  assert.match(await effetLot(), /^Rien à classer : les questions choisies sont déjà dans « B1-02 — /);
+  await effetLot(/^Rien à classer : les questions choisies sont déjà dans « B1-02 — /);
   assert.equal(await boutonAppliquer.isDisabled(), true, "rien à classer : rien à appliquer");
   await fenetreLot.locator("select[name=module]").selectOption("comportement-zac");
   assert.match(await appliquerLot(), /^2 questions classées dans « B1-01 — /);
@@ -3993,8 +4003,7 @@ Justification : cf. procédure interne.`,
   assert.equal(page.url(), avantEntree, "Entrée n'applique pas le geste");
   assert.equal(await fenetreLot.isVisible(), true, "la fenêtre reste ouverte");
   await fenetreLot.locator("input[type=search]").fill("");
-  assert.equal(
-    await effetLot(),
+  await effetLot(
     "Poser 3 questions aussi dans 2 modules : 6 rattachements nouveaux. Chacune reste dans son module d'origine. Vous deviendrez l'auteur courant des questions modifiées.",
   );
   assert.equal(await appliquerLot(), "3 questions posées aussi dans 2 modules (6 rattachements ajoutés).");
@@ -4010,8 +4019,7 @@ Justification : cf. procédure interne.`,
     "les modules où elles sont aussi posées",
   );
   await fenetreLot.locator("select[name=module]").selectOption("critere-b6-02");
-  assert.match(
-    await effetLot(),
+  await effetLot(
     /^Retirer « B6-02 — .+ » de 3 questions, qui y sont aussi posées\. Vous deviendrez l'auteur courant des questions modifiées\.$/,
   );
   assert.match(await appliquerLot(), /^« B6-02 — .+ » retiré de 3 questions\.$/);
@@ -4022,7 +4030,7 @@ Justification : cf. procédure interne.`,
   await cocherLot(idsLot);
   await ouvrirGeste("Niveau");
   await fenetreLot.locator("input[name=niveau][value=initial]").check();
-  assert.match(await effetLot(), /^Mettre 3 questions au niveau « .+ »\. Vous deviendrez l'auteur courant des questions modifiées\.$/);
+  await effetLot(/^Mettre 3 questions au niveau « .+ »\. Vous deviendrez l'auteur courant des questions modifiées\.$/);
   assert.match(await appliquerLot(), /^3 questions mises au niveau « .+ »\.$/);
   assert.equal(await page.locator(".question-ligne .etiquette:text-is('Niveau à préciser')").count(), 0, "le niveau est posé");
   // Le tutorat change le niveau de deux d'entre elles : il en devient l'auteur courant.
@@ -4036,8 +4044,7 @@ Justification : cf. procédure interne.`,
   await cocherLot(idsLot);
   await ouvrirGeste("Statut");
   await fenetreLot.locator("input[name=statut][value=valide]").check();
-  assert.equal(
-    await effetLot(),
+  await effetLot(
     "Valider 1 question : elle entrera dans les tirages. 2 refusées : vous en êtes l'auteur courant, un autre code doit les valider (règle des quatre yeux).",
   );
   assert.equal(await appliquerLot(), "1 question validée. 2 refusées : un autre code que leur auteur courant doit les valider.");
@@ -4047,21 +4054,19 @@ Justification : cf. procédure interne.`,
   await cocherLot(idsLot);
   await ouvrirGeste("Statut");
   await fenetreLot.locator("input[name=statut][value=valide]").check();
-  assert.equal(await effetLot(), "Valider 2 questions : elles entreront dans les tirages. 1 l'est déjà : inchangée.");
+  await effetLot("Valider 2 questions : elles entreront dans les tirages. 1 l'est déjà : inchangée.");
   assert.equal(await appliquerLot(), "2 questions validées.");
   await cocherLot([idsLot[2]]);
   await ouvrirGeste("Niveau");
   await fenetreLot.locator("input[name=niveau][value=avance]").check();
-  assert.match(
-    await effetLot(),
+  await effetLot(
     /^Mettre 1 question au niveau « .+ »\. 1 validée repassera « à vérifier »\. Vous deviendrez l'auteur courant de la question modifiée\.$/,
   );
   assert.match(await appliquerLot(), /^1 question mise au niveau « .+ »\. 1 validée repasse « à vérifier »\.$/);
   await cocherLot([idsLot[2]]);
   await ouvrirGeste("Statut");
   await fenetreLot.locator("input[name=statut][value=valide]").check();
-  assert.equal(
-    await effetLot(),
+  await effetLot(
     "Valider 1 question : elle entrera dans les tirages. Vous en êtes l'auteur courant : validation tracée « validée par son auteur ».",
   );
   assert.equal(await appliquerLot(), "1 question validée, dont 1 par son auteur.");
@@ -4073,7 +4078,7 @@ Justification : cf. procédure interne.`,
   await cocherLot(idsLot);
   await ouvrirGeste("Statut");
   await fenetreLot.locator("input[name=statut][value=a_verifier]").check();
-  assert.equal(await effetLot(), "Remettre 3 questions « à vérifier ». 3 validées sortent des tirages jusqu'à leur revalidation.");
+  await effetLot("Remettre 3 questions « à vérifier ». 3 validées sortent des tirages jusqu'à leur revalidation.");
   assert.equal(await appliquerLot(), "3 questions remises « à vérifier ». 3 validées sortent des tirages.");
   await cocherLot(idsLot);
   await ouvrirGeste("Statut");
@@ -4092,6 +4097,43 @@ Justification : cf. procédure interne.`,
     ["statut-question:retire", 3],
   ]) {
     assert.ok((await page.locator(`code:text-is('${action}')`).count()) >= minimum, `journal : ${action}`);
+  }
+  // Question 90 (choix a) : le journal se filtre — par action, par période à l'heure de Paris, par question depuis
+  // la banque — et se lit au-delà des 300 dernières lignes, page après page.
+  await page.selectOption("form.filtres-journal select[name=action]", "niveau-question");
+  await page.click("form.filtres-journal button:has-text('Filtrer')");
+  await page.waitForURL(/\/admin\/journal\?action=niveau-question/);
+  const actionsRetenues = await page.locator("table.tableau tbody code").allInnerTexts();
+  assert.ok(actionsRetenues.length >= 3 && actionsRetenues.every((a) => a === "niveau-question"), "filtre par action");
+  await page.locator(".filtres-journal .legende[role=status]", { hasText: /^\d+ lignes? retenues?/ }).waitFor();
+  const jourParis = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+  await page.goto(BASE + `/admin/journal?action=niveau-question&du=${jourParis}&au=${jourParis}`);
+  assert.ok((await page.locator("table.tableau tbody code").count()) >= 3, "filtre par jour, à l'heure de Paris");
+  await page.goto(BASE + "/admin/journal?du=2000-01-01&au=2000-12-31");
+  await page.locator("table.tableau td", { hasText: "Aucune ligne pour ces filtres." }).waitFor();
+  await page.click("form.filtres-journal a:has-text('Tout effacer')");
+  await page.waitForURL(/\/admin\/journal$/);
+  await page.goto(adresseJeton);
+  await page.locator(".question-ligne", { hasText: ENONCES_LOT[0] }).locator("a.lien-journal").click();
+  await page.waitForURL(new RegExp(`/admin/journal\\?cible=${idsLot[0]}$`));
+  const ciblesRetenues = (await page.locator("table.tableau tbody td:nth-child(4)").allInnerTexts()).map((c) => c.trim());
+  assert.ok(ciblesRetenues.length >= 6 && ciblesRetenues.every((c) => c === idsLot[0]), "par question : ses lignes, elles seules");
+  // Une action du tableau filtre sur elle, la question gardée.
+  await page.locator("table.tableau tbody a:has(code:text-is('niveau-question'))").first().click();
+  await page.waitForURL(/cible=.*action=|action=.*cible=/);
+  assert.ok((await page.locator("table.tableau tbody tr").count()) >= 1, "action et question ensemble");
+  await page.goto(BASE + "/admin/journal");
+  const totalJournal = Number(/^(\d+) lignes?/.exec((await page.locator(".filtres-journal .legende[role=status]").innerText()).trim())[1]);
+  if (totalJournal > 300) {
+    assert.equal(await page.locator("table.tableau tbody tr").count(), 300, "300 lignes par page");
+    await page.click(".pages-journal a:has-text('Lignes plus anciennes')");
+    await page.waitForURL(/\?avant=\d+$/);
+    const suivantes = await page.locator("table.tableau tbody tr").count();
+    assert.ok(suivantes >= 1 && suivantes <= 300, "la page suivante continue le journal");
+    await page.locator(".pages-journal a:has-text('Les plus récentes')").waitFor();
+    console.log(`journal : ${totalJournal} lignes, page suivante lue (${suivantes} lignes)`);
+  } else {
+    console.log(`journal : ${totalJournal} lignes, une seule page`);
   }
   // Téléphone : « Actions… » ouvre la liste des gestes ; la barre et la fenêtre tiennent dans l'écran.
   await page.setViewportSize({ width: 390, height: 844 });
@@ -4169,7 +4211,7 @@ Justification : cf. procédure interne.`,
       page.locator(".question-ligne", { hasText: enonce }).locator("form button:has-text('Supprimer')").click(),
     ]);
   }
-  ok("gestes en lot (questions 88 et 89, choix a) : cases dans l'arborescence et la liste, tout sélectionner, case de module, Maj + clic ; classer, poser aussi dans, retirer d'un module, niveau et statut annoncés avant d'appliquer, validée modifiée repassée à vérifier, quatre yeux question par question, validation par son auteur tracée, journalisés ; tutorat compris ; « Actions… » et fenêtre dans l'écran à 390 px ; recherche, puces, plus de filtres, tri, dépôt et menu (lot 2)");
+  ok("gestes en lot (questions 88 et 89, choix a) : cases dans l'arborescence et la liste, tout sélectionner, case de module, Maj + clic ; classer, poser aussi dans, retirer d'un module, niveau et statut annoncés avant d'appliquer, validée modifiée repassée à vérifier, quatre yeux question par question, validation par son auteur tracée, journalisés ; tutorat compris ; « Actions… » et fenêtre dans l'écran à 390 px ; recherche, puces, plus de filtres, tri, dépôt et menu (lot 2) ; journal filtré par action, jour, question, et page suivante (question 90)");
 
   // 14a quater. une question dans plusieurs blocs et plusieurs profils (question 74, choix c) : créée
   //             dans comportement-zac (bloc 1, tronc commun), aussi posée dans un module du bloc 4

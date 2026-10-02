@@ -359,6 +359,12 @@ export function ActionsQuestion({
           <button type="submit" className="bouton bouton--compact bouton--discret">Supprimer</button>
         </form>
       )}
+      {/* Ses lignes au journal (question 90, choix a), que l'administration seule consulte. */}
+      {session.role === "admin" && (
+        <Link href={`/admin/journal?cible=${encodeURIComponent(q.id)}`} className="legende lien-journal">
+          Journal
+        </Link>
+      )}
     </div>
   );
 }

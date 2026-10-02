@@ -6170,6 +6170,59 @@ barre, choisir le module, relire l'effet, « Appliquer à 9 questions » (puis
 - Mesures à 1 280 et 390 px : la barre tient sur une ligne ; la recherche
   et les listes ont le même bas ; ni la page ni la fenêtre ne débordent.
 
+## Journal : filtres et pages (02/10/2026, question 90, choix a)
+
+**Demande.** « À », valant « a » : du lot 3, le filtre du journal seul. Les
+gestes en lot écrivent une ligne par question, et l'écran n'en montrait
+que les 300 dernières.
+
+**Fait.**
+- Filtres, sur tout le journal :
+  - l'action, parmi celles qui y figurent, avec leur nombre ;
+  - la période, du … au …, en jours de Paris ; une période donnée à
+    l'envers est remise dans l'ordre ;
+  - la cible, une partie de l'identifiant (question, module, dépôt…),
+    sans casse.
+- Le nombre de lignes retenues ; « Tout effacer ».
+- 300 lignes par page, des plus récentes aux plus anciennes ; « Lignes
+  plus anciennes → » et « ← Les plus récentes ».
+- Dans le tableau, une action ou une cible filtre sur elle, les autres
+  filtres gardés.
+- Banque de questions : un lien « Journal » sous chaque question, pour
+  l'administration seule (l'écran lui est réservé), mène à ses lignes.
+- L'heure affichée est celle de Paris. Elle suivait le fuseau du serveur,
+  UTC chez l'hébergeur : une ligne de 00 h 30 se lisait la veille, et le
+  filtre par jour l'aurait contredite.
+- Rien n'est effacé ni modifié dans le journal ; l'écran lit seulement.
+
+**Non fait** : les points 1, 2, 3, 5 et 6 du lot 3 (pages d'erreur,
+filtres de Pilotage et Statistiques, en-têtes sur téléphone, repli opaque,
+jetons du CSS). Pas de filtre par profil, ni d'export du journal : non
+demandés.
+
+**Corrigé au passage (banque, question 89).** « Tout sélectionner » disait
+« 0 affichée » jusqu'à ce que le script de la page ait compté les cases :
+le serveur donne désormais le compte dès le premier affichage. Le parcours
+de bout en bout, qui l'avait lu trop tôt une fois sur sept passes, attend
+ce compte, et l'effet annoncé dans la fenêtre d'un geste, au lieu de les
+lire une seule fois.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 445 tests, dont 4 nouveaux (lecture des filtres et
+  des jours, motif de la cible, adresses des pages).
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 108 étapes, sans erreur de page
+  ni erreur serveur. À l'étape 14a ter bis, après les gestes en lot :
+  - filtre par action ; filtre par jour de Paris ; une période de 2000
+    vide ; « Tout effacer » ;
+  - lien « Journal » d'une question de la banque : au moins 6 lignes, toutes
+    sur elle ; action et cible ensemble.
+- Pages : la base du parcours n'en a qu'une (226 lignes). Mesurées sur la
+  base qu'il laisse, au-delà de 300 lignes : 300 puis 4 (et 300 puis 5),
+  soit le total annoncé, avec le retour aux plus récentes.
+- Mesures à 1 280 et 390 px : ni la page ni le tableau ne débordent ;
+  l'heure et l'action ne se coupent plus.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
