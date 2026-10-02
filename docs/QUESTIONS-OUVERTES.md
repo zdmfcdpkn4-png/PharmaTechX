@@ -377,6 +377,25 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+96. **Types de profil des codes : faut-il compléter la liste ?** — posée
+    le 02/10/2026, suite de la question 95 : le « … » de « pharmacien -
+    préparateur - OPQ - ASH … ».
+
+    Le site nomme désormais les codes d'accès d'après quatre types :
+    PHARMACIEN, PREPARATEUR, OPQ, ASH. Ajouter un type tient en une ligne
+    de code.
+    - **a (recommandé)** : ajouter INTERNE. Les internes changent chaque
+      semestre : leurs codes se retrouvent d'une recherche « INTERNE » et se
+      révoquent ensemble. Contre : un élève préparateur ou un externe n'a
+      toujours pas de type à lui.
+    - **b** : garder les quatre ; les internes prennent PHARMACIEN, comme
+      dans la fiche « Pharmacien / interne ». Contre : en fin de semestre,
+      rien ne distingue dans la liste les codes d'internes à révoquer.
+    - **c** : ajouter INTERNE, CADRE et ETUDIANT. Contre : un type qui ne
+      compte qu'une ou deux personnes, le cadre surtout, désigne presque
+      quelqu'un ; les questions 6 et 29 ont tenu ce genre d'indice hors de
+      la base.
+
 95. **Code agent : quels codes reçoivent un format par profil ?** —
     posée le 02/10/2026, sur « Interdire la création d'un code agent déjà
     donné et imposer un format suivant le type de profil pharmacien -
@@ -406,6 +425,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : les deux. Contre : celui de b.
 
     La liste fermée des types (le « … ») fera la question suivante.
+
+    Tranchée le 02/10/2026 (choix a, réponse « à », valant « a »). Le champ
+    libre disparaît : on choisit le type de profil — Pharmacien,
+    Préparateur, OPQ, ASH — et le site nomme le code TYPE-n, au premier
+    numéro jamais donné pour ce type, à partir de 0. Le numéro d'un code
+    supprimé n'est pas redonné ; un type hors de la liste est refusé par le
+    serveur. Les codes existants gardent leur libellé, sauf renommage dans
+    la base. Détail dans `DECISIONS.md`.
 
 94. **Vue apprenant de l'administration : où placer l'interrupteur ?** —
     posée le 02/10/2026, sur « Peux-tu créer pour les administrateurs la

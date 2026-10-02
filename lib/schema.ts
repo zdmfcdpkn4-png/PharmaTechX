@@ -51,6 +51,7 @@ export const TABLES = [
   "questions_modules",
   "actions_formation",
   "blocs_deposes",
+  "numeros_codes",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -511,6 +512,15 @@ export const SCHEMA: string[] = [
   // Procédure de référence scellée à l'émission (02/10/2026) : elle se renseigne depuis le site, et la
   // changer ne réécrit pas un rapport déjà émis. Vide : aucune n'était en vigueur ; NULL : rapport d'avant.
   `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS procedure_reference TEXT`,
+
+  // ── numéros des codes d'accès (question 95, choix a, 02/10/2026) ──────────
+  // Dernier numéro donné à chaque type de profil (PHARMACIEN-0, PHARMACIEN-1…).
+  // Il survit à la suppression du code : un numéro n'est jamais redonné, le
+  // journal désignant un code par son libellé.
+  `CREATE TABLE IF NOT EXISTS numeros_codes (
+     type    TEXT PRIMARY KEY,
+     dernier INTEGER NOT NULL CHECK (dernier >= 0)
+   )`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

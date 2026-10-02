@@ -7148,6 +7148,80 @@ avait le focus dans le volet, le reprend.
   après la remise en haut. Le parcours défile donc sans animation avant de
   basculer. Sans effet attendu à l'usage `[à vérifier sur iPad]`.
 
+## Les codes d'accès nommés par leur type de profil (02/10/2026, question 95, choix a)
+
+**Question.** « Interdire la création d'un code agent déjà donné et imposer
+un format suivant le type de profil pharmacien - préparateur - OPQ -
+ASH … ». « Code agent » désignait deux objets. Choix a : les codes d'accès.
+Les identifiants d'agents (AG-001…) étaient déjà uniques et jamais
+redonnés (question 6) ; ils ne changent pas.
+
+**Fait.**
+- Créer un code (Équipe › Codes d'accès) : le champ « Libellé du profil »
+  disparaît. On choisit le type de profil dans une liste fermée
+  (Pharmacien, Préparateur, OPQ, ASH, `TYPES_CODE`, `lib/codes.ts`), et le
+  site nomme le code TYPE-n : PHARMACIEN-0, PHARMACIEN-1, PREPARATEUR-0…
+  Le nom s'affiche avec le code, à la création. Rôle, filière, niveau et
+  programme à la carte se choisissent comme avant.
+- Le numéro est le premier jamais donné pour ce type, à partir de 0. La
+  table `numeros_codes` garde le dernier numéro donné : supprimer un code
+  ne libère pas le sien, le journal désignant un code par son libellé. Le
+  numéro passe aussi tout nom déjà au format du type dans `acces`, casse
+  ignorée : un code renommé dans la base n'est pas redoublé.
+- Deux créations simultanées ne reçoivent pas le même numéro : la ligne du
+  compteur reste verrouillée jusqu'à l'insertion du code (`creerAcces`,
+  une transaction).
+- Un type hors de la liste, même forgé dans la page, est refusé par le
+  serveur. Rien n'est créé ; message « Choisissez le type de profil dans
+  la liste ».
+- La liste des codes suit l'ordre des numéros : PHARMACIEN-2 avant
+  PHARMACIEN-10. L'ordre alphabétique d'avant plaçait 10 avant 2.
+
+**Écart assumé.** Le libellé d'un code dit désormais une fonction. La
+question 29 tenait la fonction hors de la table des agents. Le code reste
+un profil, pas une personne, et l'identifiant d'agent ne porte toujours
+aucune fonction. Un type qui ne compte qu'une ou deux personnes en désigne
+presque une : c'est le « Contre » de la question 96.
+
+**Inchangé.**
+- Les codes déjà créés gardent leur libellé. Seul un renommage dans la
+  base les met au format, et le compteur en tient compte.
+- Le code d'amorçage « Administrateur initial » (`ADMIN_INITIAL`), créé
+  par le site quand aucun administrateur actif n'existe. Il ne passe pas
+  par le formulaire et se révoque dès les premiers codes créés.
+- Réinitialiser un code garde son nom : même code, nouveau secret.
+- Le type ne restreint ni la filière ni le niveau proposés.
+
+**Limite.** La liste des types est celle de la demande. Son « … » est la
+question 96 ; d'ici là, aucun autre type ne se crée.
+
+**Vérifié le 02/10/2026.**
+- `creerAcces` sur une base PostgreSQL 16 neuve :
+  - les deux premiers codes d'un type reçoivent 0 puis 1 ;
+  - le 1 supprimé, le code suivant reçoit 2 ;
+  - un nom ASH-7 déjà en base fait donner ASH-8, et opq-4 fait donner OPQ-5 ;
+  - 25 créations simultanées reçoivent 0 à 24, sans doublon ni trou ;
+  - onze codes du même type sont listés dans l'ordre des numéros.
+- `npm run verifier` : 483 tests, dont 4 nouveaux (`test/codes.test.ts`) :
+  - la liste fermée ;
+  - le refus de tout type hors liste : casse, espaces, nom complet, valeur
+    non textuelle ;
+  - le nom TYPE-n ;
+  - le motif, qui relit les noms au format, et eux seuls.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de
+  page ni erreur serveur. Les cinq créations de code passent par le type,
+  et le parcours vérifie :
+  - aucun champ libre, les quatre types dans l'ordre, type exigé ;
+  - le premier code tuteur nommé PREPARATEUR-0, le suivant PREPARATEUR-1,
+    le premier OPQ OPQ-0 ;
+  - ASH-0 supprimé, le code ASH suivant nommé ASH-1 ;
+  - un type forgé refusé, sans code créé.
+- Captures du formulaire à 1 280 et 390 px, sans débordement horizontal.
+  La légende du type sortait en gras (`.champ > span`) : elle est passée de
+  `span` à `small` après la chaîne. `verifier`, `build` et captures
+  relancés ; le parcours ne l'a pas été pour ce seul changement de balise.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

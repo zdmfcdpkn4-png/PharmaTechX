@@ -9,12 +9,13 @@ import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { ETATS_CODE, ROLES_CODE, SANS_PROGRAMME, codeRetenu, lireFiltreCodes } from "@/content/filtres-listes";
 import { adresseDuFiltre } from "@/content/filtres";
+import { TYPES_CODE } from "@/lib/codes";
 
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, string> = {
   "role-interdit": "Votre rôle ne permet pas de créer ce type de code.",
-  "libelle-manquant": "Le libellé du profil est obligatoire.",
+  "type-inconnu": "Choisissez le type de profil dans la liste. Rien n\u2019a été créé.",
   "role-interdit-bascule": "Votre rôle ne permet pas d\u2019agir sur ce code.",
   "confirmation-code-invalide":
     "Code incorrect : rien n\u2019a été modifié. La tentative est au journal.",
@@ -120,14 +121,24 @@ export default async function Admin({
                 <span className="legende">Les codes d&apos;administration et de tutorat ne vous sont pas accessibles.</span>
               )}
             </label>
+            {/* Question 95 (choix a) : plus de libellé saisi, le site nomme le code d'après son type. */}
             <label className="champ">
-              <span>Libellé du profil</span>
-              <input
-                type="text"
-                name="libelle"
-                placeholder="Poste isolateur A, Préparatoire, Tuteur chimio…"
-                required
-              />
+              <span>Type de profil</span>
+              <select name="type" defaultValue="" required>
+                <option value="" disabled>
+                  Choisir le type
+                </option>
+                {TYPES_CODE.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.libelle}
+                  </option>
+                ))}
+              </select>
+              {/* Pas un `span` : `.champ > span` en ferait un intitulé, en gras. */}
+              <small className="legende" style={{ display: "block", marginTop: ".375rem" }}>
+                Le site nomme le code : PHARMACIEN-0, PHARMACIEN-1… Un numéro n&apos;est jamais redonné, même
+                après suppression du code.
+              </small>
             </label>
           </div>
           <div className="rangee">

@@ -41,7 +41,7 @@ export type { Role };
 
 export interface Session {
   role: Role;
-  /** Libellé du profil, p. ex. « Poste isolateur A ». Jamais un nom d'agent. */
+  /** Libellé du profil, p. ex. « PREPARATEUR-0 » : type et numéro (question 95). Jamais un nom d'agent. */
   libelle: string;
   filiere: string | null;
   niveau: string | null;

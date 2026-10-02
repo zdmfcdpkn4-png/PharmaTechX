@@ -24,6 +24,7 @@ import {
   peutGererRole,
   sessionRequise,
 } from "@/lib/auth";
+import { lireTypeCode } from "@/lib/codes";
 import { journaliser } from "@/lib/journal";
 import { detacher } from "@/lib/progression";
 import { moduleExiste, modulesDuParcours } from "@/content/store";
@@ -90,8 +91,10 @@ export async function actionCreerCode(formData: FormData) {
   const role = String(formData.get("role") ?? "poste") as Role;
   if (!peutGererRole(s.role, role)) redirect("/admin?erreur=role-interdit");
 
-  const libelle = String(formData.get("libelle") ?? "").trim().slice(0, 120);
-  if (!libelle) redirect("/admin?erreur=libelle-manquant");
+  // Le libellé n'est plus saisi (question 95, choix a) : le type de profil, pris dans une liste
+  // fermée, et le premier numéro jamais donné pour ce type le font (`creerAcces`).
+  const type = lireTypeCode(formData.get("type"));
+  if (!type) redirect("/admin?erreur=type-inconnu");
 
   const filiere = String(formData.get("filiere") ?? "") || null;
   const niveau = String(formData.get("niveau") ?? "") || null;
@@ -103,7 +106,7 @@ export async function actionCreerCode(formData: FormData) {
   if (idProgramme && programme?.statut !== "valide") redirect("/admin?erreur=programme-non-valide");
 
   const code = genererCode();
-  const id = await creerAcces(hacherCode(code), role, libelle, filiere, niveau, programme?.id ?? null);
+  const { id, libelle } = await creerAcces(hacherCode(code), role, type, filiere, niveau, programme?.id ?? null);
   await journaliser(s, "creation-code", `acces:${id}`, {
     role,
     libelle,

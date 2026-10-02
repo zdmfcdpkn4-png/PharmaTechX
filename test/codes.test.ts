@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genererCode, hacherCode, normaliserCode, verifierCode } from "../lib/codes";
+import {
+  TYPES_CODE,
+  genererCode,
+  hacherCode,
+  libelleDuCode,
+  lireTypeCode,
+  motifLibelle,
+  normaliserCode,
+  verifierCode,
+} from "../lib/codes";
 
 test("un code se vérifie contre son empreinte, et rien d'autre", () => {
   const code = genererCode();
@@ -38,5 +47,39 @@ test("la saisie se normalise partout de la même façon : connexion et confirmat
     verifierCode(normaliserCode(code.replace("-", "")), stocke),
     false,
     "le tiret fait partie du code, il n'est pas une décoration",
+  );
+});
+
+test("types de profil : liste fermée de la question 95, en capitales sans accent", () => {
+  assert.deepEqual(
+    TYPES_CODE.map((t) => t.id),
+    ["PHARMACIEN", "PREPARATEUR", "OPQ", "ASH"],
+  );
+  for (const t of TYPES_CODE) assert.match(t.id, /^[A-Z]+$/, `${t.id} : rien que le motif ne puisse lire tel quel`);
+});
+
+test("le type envoyé n'est reçu que s'il est de la liste, casse comprise", () => {
+  for (const t of TYPES_CODE) assert.equal(lireTypeCode(t.id), t.id);
+  for (const brut of ["", "pharmacien", " ASH", "ASH ", "INTERNE", "Tuteur chimio", "PHARMACIEN-0", null, undefined, 0, {}, ["ASH"]]) {
+    assert.equal(lireTypeCode(brut), null, `refusé : ${JSON.stringify(brut)}`);
+  }
+});
+
+test("le site nomme le code TYPE-n, à partir de 0", () => {
+  assert.equal(libelleDuCode("PHARMACIEN", 0), "PHARMACIEN-0");
+  assert.equal(libelleDuCode("PREPARATEUR", 12), "PREPARATEUR-12");
+});
+
+test("le motif reconnaît les noms au format du type, et eux seuls", () => {
+  const motif = new RegExp(motifLibelle("ASH"), "i"); // PostgreSQL le lit sans tenir compte de la casse (~*)
+  for (const nom of ["ASH-0", "ASH-12", "ash-7", "ASH-999999999"]) assert.match(nom, motif, nom);
+  for (const nom of ["ASH", "ASH-", "ASH-1a", "ASH-3 bis", "XASH-1", "ASH-1234567890", "OPQ-1"]) {
+    assert.doesNotMatch(nom, motif, nom);
+  }
+  assert.equal(motif.exec("ASH-42")?.[1], "42", "le numéro est capturé");
+  assert.equal(
+    new RegExp(motifLibelle("PHARMACIEN"), "i").exec(libelleDuCode("PHARMACIEN", 3))?.[1],
+    "3",
+    "un nom donné par le site se relit par son motif",
   );
 });

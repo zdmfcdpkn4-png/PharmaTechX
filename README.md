@@ -73,7 +73,9 @@ jamais seulement par l'affichage.
 
 ## 4. Ce qui est stocké, et ce qui ne l'est pas
 
-**Stocké** (configuration du site) : `acces` (codes hachés), `ordonnancement`
+**Stocké** (configuration du site) : `acces` (codes hachés, nommés par type de
+profil : PHARMACIEN-0…) et `numeros_codes` (dernier numéro donné par type,
+question 95), `ordonnancement`
 (ordre général) et `ordres_profil` (ordre d'un profil de poste à un niveau cible),
 `depots` (index des documents, avec leurs profils ; fichiers en Blob ou dans
 `fichiers`), `questions` / `questions_modules` / `situations` / `images` /

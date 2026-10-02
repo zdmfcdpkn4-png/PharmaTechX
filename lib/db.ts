@@ -4,7 +4,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { SCHEMA } from "./schema";
 import { fabriqueSocket, familleIp, protocoleTls } from "./reseau";
 import { conformiteInstance } from "./instance";
-import { hacherCode } from "./codes";
+import { hacherCode, libelleDuCode, motifLibelle, type TypeCode } from "./codes";
 
 /**
  * Accès à la base — PostgreSQL standard via `pg`.
@@ -388,26 +388,47 @@ export async function initSchema(): Promise<void> {
   await garantirSchema();
 }
 
+/** Par rôle, puis par nom ; à type égal, dans l'ordre des numéros : PHARMACIEN-2 avant PHARMACIEN-10. */
 export async function listerAcces(): Promise<LigneAcces[]> {
   const r = await sql<LigneAcces>`
     SELECT id, role, libelle, filiere, niveau, programme_id, actif,
            cree_le::text, dernier_usage::text
-    FROM acces ORDER BY role, libelle`;
+    FROM acces
+    ORDER BY role, regexp_replace(libelle, '-[0-9]{1,9}$', ''),
+             (substring(libelle from '-([0-9]{1,9})$'))::int NULLS FIRST, libelle`;
   return r.rows;
 }
 
+/**
+ * Création d'un code (question 95, choix a) : le site le nomme TYPE-n, au premier numéro jamais
+ * donné pour ce type. `numeros_codes` garde le dernier numéro donné, qu'une suppression ne rend
+ * pas ; le numéro passe aussi tout libellé déjà à ce format dans `acces`, venu d'ailleurs (un code
+ * renommé dans la base). La ligne du compteur reste verrouillée jusqu'à l'insertion du code : deux
+ * créations simultanées ne reçoivent pas le même numéro.
+ */
 export async function creerAcces(
   codeHash: string,
   role: Role,
-  libelle: string,
+  type: TypeCode,
   filiere: string | null,
   niveau: string | null,
   programmeId: number | null = null,
-): Promise<number> {
-  const r = await sql<{ id: number }>`
-    INSERT INTO acces (code_hash, role, libelle, filiere, niveau, programme_id)
-    VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}, ${programmeId}) RETURNING id`;
-  return r.rows[0].id;
+): Promise<{ id: number; libelle: string }> {
+  return transaction(async (c) => {
+    const q = sqlSur(c);
+    const motif = motifLibelle(type);
+    const n = await q<{ dernier: number }>`
+      INSERT INTO numeros_codes (type, dernier)
+      SELECT ${type}::text, COALESCE(MAX((regexp_match(libelle, ${motif}, 'i'))[1]::int) + 1, 0)
+      FROM acces WHERE libelle ~* ${motif}
+      ON CONFLICT (type) DO UPDATE SET dernier = GREATEST(numeros_codes.dernier + 1, EXCLUDED.dernier)
+      RETURNING dernier`;
+    const libelle = libelleDuCode(type, n.rows[0].dernier);
+    const r = await q<{ id: number }>`
+      INSERT INTO acces (code_hash, role, libelle, filiere, niveau, programme_id)
+      VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}, ${programmeId}) RETURNING id`;
+    return { id: r.rows[0].id, libelle };
+  });
 }
 
 /**

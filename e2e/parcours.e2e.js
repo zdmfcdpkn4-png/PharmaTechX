@@ -480,13 +480,36 @@ Justification : cf. procédure interne.`,
   // 2. codes tuteur et poste, sur la page des codes d'accès (Équipe, question 91)
   await page.goto(BASE + "/admin");
   await page.waitForSelector("h1:has-text(\"Codes d'accès\")");
+  // Question 95 (choix a) : plus de libellé saisi. Le type de profil, pris dans une liste fermée,
+  // nomme le code TYPE-n, au premier numéro jamais donné pour ce type.
+  assert.equal(await page.locator("form:has(select[name=role]) input[name=libelle]").count(), 0, "aucun champ libre pour nommer un code");
+  assert.deepEqual(
+    await page.locator("select[name=type] option").evaluateAll((o) => o.map((x) => x.value)),
+    ["", "PHARMACIEN", "PREPARATEUR", "OPQ", "ASH"],
+  );
+  assert.equal(await page.locator("select[name=type]").evaluate((x) => x.checkValidity()), false, "le type se choisit avant de générer");
   await page.selectOption("select[name=role]", "tuteur");
-  await page.fill("input[name=libelle]", "Tuteur test");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
   const codeTuteur = new URL(page.url()).searchParams.get("nouveau");
   assert.match(codeTuteur, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
-  ok("code tuteur créé : " + codeTuteur);
+  const libelleTuteur = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(libelleTuteur, "PREPARATEUR-0", "premier code de ce type : numéro 0");
+  await page.waitForSelector(`text=Code créé pour « ${libelleTuteur} »`);
+  // Un type hors de la liste, forgé dans la page, est refusé par le serveur : rien n'est créé.
+  const codesAvantForge = await page.locator("li.carte").count();
+  await page.locator("select[name=type]").evaluate((x) => {
+    const o = document.createElement("option");
+    o.value = "Tuteur chimio";
+    x.append(o);
+    x.value = o.value;
+  });
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/erreur=type-inconnu/);
+  await page.waitForSelector("[role=alert]:has-text('Choisissez le type de profil')");
+  assert.equal(await page.locator("li.carte").count(), codesAvantForge, "type forgé : aucun code créé");
+  ok("code tuteur créé : " + codeTuteur + ", nommé " + libelleTuteur + " par le site ; aucun champ libre, type forgé refusé");
 
   // 2b. signature du pharmacien déposée (image réduite dans le navigateur)
   await page.goto(BASE + "/admin/signature");
@@ -1643,7 +1666,7 @@ Justification : justification deux.`;
   const ficheTutorat = page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" });
   await ficheTutorat.locator(".etiquette:text-is('À vérifier')").waitFor();
   assert.equal(await ficheTutorat.locator("button:has-text('Valider la fiche')").count(), 0, "le tutorat ne valide pas sa propre fiche");
-  assert.match(await ficheTutorat.innerText(), /à valider par un autre code que tuteur · Tuteur test/);
+  assert.ok((await ficheTutorat.innerText()).includes(`à valider par un autre code que tuteur · ${libelleTuteur}`));
   await rebrancher(codeAdmin);
   await page.goto(BASE + "/admin/questions?vue=liste&statut=a_verifier");
   assert.equal(await page.locator("#fiches .fiche-ligne", { hasText: "Fiche du tutorat" }).count(), 1, "sous le filtre « à vérifier », la fiche attend avec les questions");
@@ -2656,7 +2679,7 @@ Justification : cf. procédure interne.`,
     "67 %",
     "deux caches jugés justes sur trois, le troisième non jugé",
   );
-  await page.waitForSelector("text=jugés par Tutorat · Tuteur test");
+  await page.waitForSelector(`text=jugés par Tutorat · ${libelleTuteur}`);
   assert.equal(await page.locator(".schema-legendes--revele li:has-text('jugé juste')").count(), 2);
   assert.equal(await page.locator(".schema-legendes--revele li:has-text('non jugé')").count(), 1);
   await capture("schema-decouvrir-correction");
@@ -2714,7 +2737,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/ok=modifie/);
   await page.click("button:has-text('Valider le programme')");
   await page.waitForURL(/ok=valide/);
-  await page.waitForSelector("text=validé par Tutorat · Tuteur test");
+  await page.waitForSelector(`text=validé par Tutorat · ${libelleTuteur}`);
   // l'accueil le propose, marqué dégradé ; ouvert, il montre ses modules dans son ordre
   await page.goto(BASE + "/");
   const lienProgramme = page.locator(".nav-sections a", { hasText: "Intérimaire test" });
@@ -2742,11 +2765,12 @@ Justification : cf. procédure interne.`,
   // profil dégradé : un code de poste s'ouvre d'office sur le programme
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
-  await page.fill("input[name=libelle]", "Intérimaire bloc");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
   await page.selectOption("select[name=programme]", { label: "Intérimaire test — parcours dégradé" });
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
   const codeInterimaire = new URL(page.url()).searchParams.get("nouveau");
+  assert.equal(new URL(page.url()).searchParams.get("libelle"), "PREPARATEUR-1", "second code du même type : numéro suivant");
   await page.waitForSelector("text=programme à la carte « Intérimaire test » — parcours dégradé");
   await page.goto(BASE + "/");
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -3226,10 +3250,12 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/ok=tirage/);
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
-  await page.fill("input[name=libelle]", "Poste témoin T9");
+  await page.selectOption("select[name=type]", "OPQ");
   await page.selectOption("select[name=niveau]", "T9");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
+  const libelleTemoin = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(libelleTemoin, "OPQ-0", "chaque type compte à partir de 0");
   await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("T9").locator("summary:has-text('Modifier')").click();
   await carteNiveau("T9").locator("button:has-text('Supprimer le dépôt')").click();
@@ -3238,7 +3264,7 @@ Justification : cf. procédure interne.`,
   await encartInconnu.waitFor();
   const lignesInconnues = await encartInconnu.locator("li").allInnerTexts();
   assert.ok(
-    lignesInconnues.some((t) => t.includes("Code d'accès") && t.includes("Poste témoin T9") && t.includes("T9")),
+    lignesInconnues.some((t) => t.includes("Code d'accès") && t.includes(libelleTemoin) && t.includes("T9")),
     "code d'accès du niveau supprimé signalé — " + lignesInconnues,
   );
   assert.ok(
@@ -3249,7 +3275,7 @@ Justification : cf. procédure interne.`,
   await page.click("button:has-text(\"Rétablir le tirage d'origine\")");
   await page.waitForURL(/ok=tirage-defaut/);
   await page.goto(BASE + "/admin");
-  const carteTemoin = page.locator("li.carte", { hasText: "Poste témoin T9" });
+  const carteTemoin = page.locator("li.carte", { hasText: libelleTemoin });
   await carteTemoin.locator("button:has-text('Révoquer')").click();
   await carteTemoin.locator("text=révoqué").waitFor();
   await page.goto(BASE + "/admin/niveaux");
@@ -4602,10 +4628,12 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
-  await page.fill("input[name=libelle]", "Poste jetable");
+  await page.selectOption("select[name=type]", "ASH");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
   let codeJetable = new URL(page.url()).searchParams.get("nouveau");
+  const libelleJetable = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(libelleJetable, "ASH-0");
   const ctx2 = await browser.newContext();
   await ctx2.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
   surveillerTiers(ctx2);
@@ -4657,7 +4685,7 @@ Justification : cf. procédure interne.`,
   await page2.waitForSelector("h1");
   assert.equal(await apiJetable(), 404, "API servie avec une session valide (identifiant inconnu)");
   await page.goto(BASE + "/admin");
-  const carteJetable = page.locator("li.carte", { hasText: "Poste jetable" });
+  const carteJetable = page.locator("li.carte", { hasText: libelleJetable });
   await carteJetable.locator("button:has-text('Révoquer')").click();
   await carteJetable.locator("text=révoqué").waitFor();
   assert.equal(await apiJetable(), 401, "API refusée dès la révocation du code");
@@ -4688,9 +4716,9 @@ Justification : cf. procédure interne.`,
   codeJetable = new URL(page.url()).searchParams.get("nouveau");
   assert.match(codeJetable, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
   assert.notEqual(codeJetable, ancienJetable);
-  await page.waitForSelector("text=Code réinitialisé pour « Poste jetable »");
+  await page.waitForSelector(`text=Code réinitialisé pour « ${libelleJetable} »`);
   assert.equal(
-    await page.locator("li.carte", { hasText: "Poste jetable" }).locator("input[name=id]").first().inputValue(),
+    await page.locator("li.carte", { hasText: libelleJetable }).locator("input[name=id]").first().inputValue(),
     idJetable,
     "même profil : l'identifiant du code ne change pas",
   );
@@ -4719,7 +4747,7 @@ Justification : cf. procédure interne.`,
     "le tutorat ne se voit proposer aucune action sur un code d'administration",
   );
   const formeJetableT = page.locator(
-    "li.carte:has-text('Poste jetable') form:has(button:has-text('Révoquer'))",
+    `li.carte:has-text('${libelleJetable}') form:has(button:has-text('Révoquer'))`,
   );
   await formeJetableT.locator("input[name=id]").evaluate((el, v) => {
     el.value = v;
@@ -4749,7 +4777,7 @@ Justification : cf. procédure interne.`,
     "code faux : le code de la session n'est pas révoqué",
   );
   assert.equal(
-    await page.locator("li.carte:has-text('Poste jetable') summary:has-text('Révoquer')").count(),
+    await page.locator(`li.carte:has-text('${libelleJetable}') summary:has-text('Révoquer')`).count(),
     0,
     "révoquer le code d'un autre reste d'un clic : c'est le geste d'urgence",
   );
@@ -4777,7 +4805,7 @@ Justification : cf. procédure interne.`,
     carteJetable.locator("button:has-text('Supprimer définitivement')").click(),
   ]);
   await page.waitForSelector("[role=alert]:has-text('Code incorrect')");
-  await page.locator("li.carte:has-text('Poste jetable')").waitFor();
+  await page.locator(`li.carte:has-text('${libelleJetable}')`).waitFor();
   assert.equal(await apiJetable(), 404, "code d'administration faux : rien n'est supprimé");
   await page.goto(BASE + "/admin/journal");
   await page.waitForSelector("code:has-text('suppression-code-refusee')");
@@ -4785,7 +4813,7 @@ Justification : cf. procédure interne.`,
   await ouvrirSuppression();
   await confirmationSuppression.fill(codeAdmin);
   await carteJetable.locator("button:has-text('Supprimer définitivement')").click();
-  await page.waitForSelector("li.carte:has-text('Poste jetable')", { state: "detached" });
+  await page.waitForSelector(`li.carte:has-text('${libelleJetable}')`, { state: "detached" });
   await page.waitForSelector("[role=status]:has-text('Code supprimé')");
   assert.equal(await apiJetable(), 401, "code supprimé : session fermée");
 
@@ -5917,24 +5945,27 @@ Source : Procédure statistiques — section 5`;
       return x.pathname === chemin && Object.entries(attendus).every(([k, v]) => x.searchParams.get(k) === v);
     });
   // Codes d'accès : la création ramène à la liste entière ; réinitialiser et supprimer gardent le filtre.
-  await page.goto(BASE + "/admin?q=" + encodeURIComponent("Retour Q92"));
+  await page.goto(BASE + "/admin?q=ASH");
   const creationCode = page.locator("form", { has: page.locator("select[name=role]") }).first();
   await creationCode.locator("select[name=role]").selectOption("poste");
-  await creationCode.locator("input[name=libelle]").fill("Retour Q92");
+  await creationCode.locator("select[name=type]").selectOption("ASH");
   await creationCode.locator("button:has-text('Générer le code')").click();
   await page.waitForURL(/nouveau=/);
   assert.equal(new URL(page.url()).searchParams.get("q"), null, "codes : la création ramène à la liste entière");
-  await page.goto(BASE + "/admin?q=" + encodeURIComponent("Retour Q92") + "&profil=poste");
-  const carteCode = page.locator("li.carte", { hasText: "Retour Q92" });
+  // ASH-0, le code jetable supprimé à l'étape 14c, garde son numéro (question 95, choix a).
+  const libelleQ92 = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(libelleQ92, "ASH-1", "le numéro d'un code supprimé n'est jamais redonné");
+  await page.goto(BASE + "/admin?q=" + encodeURIComponent(libelleQ92) + "&profil=poste");
+  const carteCode = page.locator("li.carte", { hasText: libelleQ92 });
   await carteCode.locator("summary:has-text('Réinitialiser')").click();
   await carteCode.locator("form:has(button:has-text('Réinitialiser le code')) input[name=confirmation]").fill(codeAdmin);
   await carteCode.locator("button:has-text('Réinitialiser le code')").click();
-  await revientFiltree("/admin", { q: "Retour Q92", profil: "poste", reinitialise: "1" });
+  await revientFiltree("/admin", { q: libelleQ92, profil: "poste", reinitialise: "1" });
   assert.match(new URL(page.url()).searchParams.get("nouveau") ?? "", /^[A-Z2-9]{5}-[A-Z2-9]{5}$/, "codes : le nouveau code s'affiche, filtre gardé");
   await carteCode.locator("summary:has-text('Supprimer')").click();
   await carteCode.locator("form:has(button:has-text('Supprimer définitivement')) input[name=confirmation]").fill(codeAdmin);
   await carteCode.locator("button:has-text('Supprimer définitivement')").click();
-  await revientFiltree("/admin", { q: "Retour Q92", profil: "poste", ok: "code-supprime", nouveau: null });
+  await revientFiltree("/admin", { q: libelleQ92, profil: "poste", ok: "code-supprime", nouveau: null });
   await page.locator("li.legende", { hasText: "Aucun code ne correspond à ces filtres." }).waitFor();
   // Signalements : traiter sous « ouverts » et un module ; le signalement traité quitte la liste filtrée.
   const signalementQ92 = await page.evaluate(async () => {
