@@ -1199,6 +1199,69 @@ details.rail-sous > .rail-sous-liens { display: flex; flex-direction: column; }
   background: var(--marque-accent);
 }
 
+/* Barre de recherche de l'en-tête (02/10/2026, question 93, choix b) : la
+   recherche de l'accès rapide, mise en vue. Elle ne prend que la place que
+   l'en-tête laisse libre — base nulle, et une marge négative qui annule
+   l'écart que son insertion ajoute : elle ne fait jamais passer l'en-tête sur
+   deux lignes, quel que soit le libellé du profil. Sa largeur décide de sa
+   forme (requêtes de conteneur, comme les logigrammes) : rien sous la cible,
+   une loupe, puis un champ dès 14 rem. Sur téléphone, rien : la recherche y
+   reste celle du bouton Menu. Mesures dans DECISIONS.md. */
+.recherche-entete {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 21rem;
+  margin-left: -1rem;
+  display: flex;
+  container-type: inline-size;
+}
+.recherche-entete-bouton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: var(--cible);
+  min-height: var(--cible);
+  margin-left: 1rem;
+  padding: 0;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-sm);
+  background: #ffffff;
+  color: var(--texte-doux);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.recherche-entete-bouton svg { width: 18px; height: 18px; flex: none; color: var(--marque); }
+.recherche-entete-bouton:hover { border-color: var(--marque); color: var(--texte); }
+.recherche-entete-texte { display: none; }
+/* Moins que l'écart et la cible (44 px, 52 en mode zone) : rien plutôt qu'une loupe rognée. */
+@container (width < 3.75rem) {
+  .recherche-entete-bouton { display: none; }
+}
+@container (width < 4.25rem) {
+  html[data-zone="1"] .recherche-entete-bouton { display: none; }
+}
+@container (width >= 14rem) {
+  .recherche-entete-bouton { flex: 1 1 auto; width: auto; justify-content: flex-start; padding: 0 0.875rem; }
+  .recherche-entete-texte { display: inline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+/* L'écart de l'en-tête passe à 0,75 rem sous 62 rem : la marge le suit. */
+@media (max-width: 61.9375rem) {
+  .recherche-entete { margin-left: -0.75rem; }
+  .recherche-entete-bouton { margin-left: 0.75rem; }
+}
+@media (max-width: 40rem) {
+  .recherche-entete { display: none; }
+}
+/* De 62 à 66 rem, le monogramme P, décoratif, cède sa place à la loupe : avec
+   lui, il manquait de 20 à 50 px à 992–1 044 px (mesuré). Avant la connexion,
+   sans barre, il reste. */
+@media (min-width: 62rem) and (max-width: 65.9375rem) {
+  .entete-interne:has(.recherche-entete) .logo-fin { display: none; }
+}
+
 /* =============================================================================
  * Accès rapide — tiroir à gauche à toutes les tailles (question 61, choix a)
  * ========================================================================== */
@@ -1647,6 +1710,7 @@ button.ar-groupe { cursor: pointer; }
   .ar-voile,
   .acces-rapide,
   .bouton-menu,
+  .recherche-entete,
   .bouton-zone,
   .fil-habilitation,
   .bouton { display: none !important; }

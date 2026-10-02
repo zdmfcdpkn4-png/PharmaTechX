@@ -123,3 +123,17 @@ export function totalEnAttente(items: ItemAttente[]): number {
 export function nomAccessible(item: { libelle: string; nombre: number }): string {
   return `${item.libelle}, ${item.nombre === 0 ? "aucun" : `${item.nombre} en attente`}`;
 }
+
+/**
+ * Le caractère qu'une touche ajoute à la recherche quand elle est frappée sur
+ * la barre de l'en-tête (02/10/2026, question 93, choix b) : une lettre, un
+ * chiffre, une ponctuation, majuscules comprises. `null` pour une touche de
+ * commande (« Tab », « Enter », « Dead »…), un raccourci (Ctrl, ⌘, Alt — donc
+ * aussi AltGr), l'espace, qui actionne le bouton, et « / », qui ouvre le
+ * panneau sans rien filtrer.
+ */
+export function caractereDeRecherche(t: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): string | null {
+  if (t.ctrlKey || t.metaKey || t.altKey) return null;
+  if ([...t.key].length !== 1 || t.key === " " || t.key === "/") return null;
+  return t.key;
+}

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   AUCUN_COMPTE,
   PLAFOND_A_FAIRE,
+  caractereDeRecherche,
   fileNonVide,
   itemsAFaire,
   nomAccessible,
@@ -88,4 +89,16 @@ test("chaque item porte un écran atteignable", () => {
     assert.match(i.href, /^\/admin\//, `href de ${i.cle}`);
     assert.ok(i.libelle.length > 0);
   }
+});
+
+test("barre de l'en-tête : une lettre tapée devient le début de la recherche, une touche de commande non (question 93)", () => {
+  const touche = (key: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) =>
+    caractereDeRecherche({ key, ctrlKey: false, metaKey: false, altKey: false, ...mods });
+  for (const k of ["j", "J", "é", "ç", "3", "-", "«"]) assert.equal(touche(k), k, k);
+  for (const k of ["Enter", "Tab", "Escape", "ArrowDown", "Backspace", "Dead", "Shift", " ", "/"]) {
+    assert.equal(touche(k), null, `« ${k} » n'entre pas dans la recherche`);
+  }
+  assert.equal(touche("k", { ctrlKey: true }), null, "Ctrl+K reste le raccourci");
+  assert.equal(touche("k", { metaKey: true }), null, "⌘K aussi");
+  assert.equal(touche("@", { ctrlKey: true, altKey: true }), null, "AltGr (Ctrl+Alt) : écarté");
 });

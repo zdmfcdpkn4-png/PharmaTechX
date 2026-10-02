@@ -14,14 +14,27 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
  * présente au-dessus de 62 rem et rien d'autre.
  *
  * Le déclencheur garde sa référence ici : à la fermeture, le focus lui revient
- * (WCAG 2.4.3), sans quoi la tabulation repart du haut du document.
+ * (WCAG 2.4.3), sans quoi la tabulation repart du haut du document. Ouvert
+ * depuis la barre de recherche de l'en-tête (question 93, choix b), c'est à
+ * elle qu'il revient.
  */
+export interface DemandeOuverture {
+  /** Ce qui est déjà tapé : le panneau s'ouvre filtré. */
+  filtre?: string;
+  /** Viser le champ de recherche, même sur écran tactile : on est venu chercher. */
+  recherche?: boolean;
+  /** Où rendre le focus à la fermeture ; à défaut, le hamburger. */
+  depuis?: HTMLElement | null;
+}
+
 export interface EtatMenu {
   ouvert: boolean;
-  ouvrir: () => void;
+  ouvrir: (demande?: DemandeOuverture) => void;
   basculer: () => void;
   fermer: () => void;
   declencheur: React.RefObject<HTMLButtonElement | null>;
+  /** La dernière demande d'ouverture, que le panneau lit en s'ouvrant. */
+  demande: React.RefObject<DemandeOuverture>;
 }
 
 export const ContexteMenu = createContext<EtatMenu | null>(null);
@@ -29,23 +42,34 @@ export const ContexteMenu = createContext<EtatMenu | null>(null);
 export function MenuProvider({ children }: { children: React.ReactNode }) {
   const [ouvert, setOuvert] = useState(false);
   const declencheur = useRef<HTMLButtonElement | null>(null);
+  const demande = useRef<DemandeOuverture>({});
 
+  // L'élément qui a ouvert le panneau, s'il est encore affiché ; sinon le hamburger.
+  const rendreFocus = useCallback(() => {
+    const depuis = demande.current.depuis;
+    const cible = depuis && depuis.isConnected && depuis.getClientRects().length > 0 ? depuis : declencheur.current;
+    cible?.focus({ preventScroll: true });
+  }, []);
   const fermer = useCallback(() => {
     setOuvert((v) => {
-      if (v) declencheur.current?.focus({ preventScroll: true });
+      if (v) rendreFocus();
       return false;
     });
+  }, [rendreFocus]);
+  const ouvrir = useCallback((d: DemandeOuverture = {}) => {
+    demande.current = d;
+    setOuvert(true);
   }, []);
-  const ouvrir = useCallback(() => setOuvert(true), []);
   const basculer = useCallback(() => {
     setOuvert((v) => {
-      if (v) declencheur.current?.focus({ preventScroll: true });
+      if (v) rendreFocus();
+      else demande.current = {};
       return !v;
     });
-  }, []);
+  }, [rendreFocus]);
 
   return (
-    <ContexteMenu.Provider value={{ ouvert, ouvrir, basculer, fermer, declencheur }}>
+    <ContexteMenu.Provider value={{ ouvert, ouvrir, basculer, fermer, declencheur, demande }}>
       {children}
     </ContexteMenu.Provider>
   );
@@ -80,6 +104,42 @@ export function BoutonMenu({ pastille = false }: { pastille?: boolean }) {
       {pastille ? <span className="bouton-menu-pastille" aria-hidden="true" /> : null}
       {pastille ? <span className="lecture-seule"> — des éléments attendent</span> : null}
     </button>
+  );
+}
+
+/**
+ * Barre de recherche de l'en-tête (02/10/2026, question 93, choix b) : la
+ * recherche de l'accès rapide, mise en vue. Un bouton qui en a l'allure, et
+ * non un second champ : le panneau, boîte de dialogue modale, prend le focus,
+ * et un champ hors de lui laisserait le curseur dehors. Un clic l'ouvre,
+ * curseur dans sa recherche ; une lettre tapée sur la barre l'ouvre déjà
+ * filtré — l'écouteur unique du panneau s'en charge (`AccesRapide.tsx`). La
+ * feuille de style lui donne la forme que permet la place laissée par
+ * l'en-tête : un champ, une loupe, ou rien.
+ */
+export function BarreRecherche() {
+  const menu = useContext(ContexteMenu);
+  if (!menu) return null;
+  return (
+    <div className="recherche-entete">
+      <button
+        type="button"
+        className="recherche-entete-bouton"
+        aria-label="Rechercher un écran"
+        aria-haspopup="dialog"
+        aria-controls="acces-rapide"
+        aria-expanded={menu.ouvert}
+        onClick={(e) => menu.ouvrir({ recherche: true, depuis: e.currentTarget })}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <span className="recherche-entete-texte" aria-hidden="true">
+          Rechercher un écran…
+        </span>
+      </button>
+    </div>
   );
 }
 

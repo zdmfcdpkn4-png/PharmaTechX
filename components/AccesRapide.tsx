@@ -6,7 +6,7 @@ import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ContexteMenu } from "./Menu";
 import type { GroupeRail } from "./Navigation";
 import { PictoMenu, type ThemeMenu } from "./PictoMenu";
-import { nomAccessible, totalEnAttente, type ItemAttente } from "@/content/acces-rapide";
+import { caractereDeRecherche, nomAccessible, totalEnAttente, type ItemAttente } from "@/content/acces-rapide";
 import { groupePorteLaPage, relevePage } from "@/lib/rail";
 import { DERNIER, type DernierModule } from "./LectureModule";
 import { BoutonRevoirTutoriel } from "./Tutoriel";
@@ -53,6 +53,10 @@ import { BoutonRevoirTutoriel } from "./Tutoriel";
  * porte celui de son thème (`components/PictoMenu.tsx`), le même que dans le
  * volet de poste ; l'entrée RGPD, le cadenas. L'écusson ne reste que sur le
  * groupe « Administration » du volet, seul endroit où ce groupe a un intitulé.
+ *
+ * Barre de recherche de l'en-tête (question 93, choix b, 02/10/2026) : elle
+ * ouvre ce panneau, curseur dans sa recherche, même sur écran tactile ; une
+ * lettre tapée sur elle l'ouvre déjà filtré. Échap lui rend le focus.
  */
 
 /** Repli de « À faire », mémorisé sur le poste seulement. */
@@ -148,6 +152,8 @@ export function AccesRapide({
   avant?: React.ReactNode;
 }) {
   const menu = useContext(ContexteMenu);
+  // Référence stable (useRef du fournisseur) : lue à l'ouverture, elle ne relance pas l'effet.
+  const demande = menu?.demande;
   const router = useRouter();
   const chemin = usePathname();
   const ouvert = menu?.ouvert ?? false;
@@ -205,10 +211,12 @@ export function AccesRapide({
     [visibles, recherche, replis, faireDeplie],
   );
 
-  // Le panneau s'ouvre : état remis à zéro, focus posé, défilement du corps figé.
+  // Le panneau s'ouvre : état remis à zéro — ou filtré par ce qu'on a tapé sur la barre de l'en-tête —,
+  // focus posé, défilement du corps figé.
   useEffect(() => {
     if (!ouvert) return;
-    setFiltre("");
+    const d = demande?.current ?? {};
+    setFiltre(d.filtre ?? "");
     setChoisi(0);
     try {
       const brut = localStorage.getItem(DERNIER);
@@ -233,13 +241,14 @@ export function AccesRapide({
     }
     // Sur tactile, donner le focus au champ ouvre le clavier virtuel, qui mange
     // la moitié de l'écran avant qu'on ait rien demandé : on vise le panneau.
+    // Sauf venu de la barre de recherche : là, on a demandé à chercher.
     const tactile = window.matchMedia("(pointer: coarse)").matches;
-    setPresel(!tactile);
-    const cible = tactile ? panneau.current : champ.current;
+    setPresel(!tactile || Boolean(d.filtre));
+    const cible = tactile && !d.recherche ? panneau.current : champ.current;
     cible?.focus({ preventScroll: true });
     document.body.classList.add("menu-ouvert");
     return () => document.body.classList.remove("menu-ouvert");
-  }, [ouvert]);
+  }, [ouvert, demande]);
 
   // Clavier : ouverture par ⌘K / Ctrl+K et par « / », fermeture par Échap,
   // tabulation enfermée, flèches et entrée. Un seul écouteur, sur le document.
@@ -255,6 +264,21 @@ export function AccesRapide({
         e.preventDefault();
         menu?.basculer();
         return;
+      }
+      // Barre de recherche de l'en-tête (question 93) : une lettre tapée dessus ouvre le panneau
+      // déjà filtré, « / » l'ouvre sans filtre ; le focus lui reviendra. Le filtre est posé ici, dans le
+      // même rendu que l'ouverture : posé après, par l'effet d'ouverture, la lettre suivante, tapée vite,
+      // le remplaçait (« journ » devenait « ourn », constaté le 02/10/2026).
+      const barre = ouvert ? null : (e.target as HTMLElement | null)?.closest?.<HTMLElement>(".recherche-entete-bouton");
+      if (barre) {
+        const debut = e.key === "/" ? "" : caractereDeRecherche(e);
+        if (debut !== null) {
+          e.preventDefault();
+          setFiltre(debut);
+          setChoisi(0);
+          menu?.ouvrir({ filtre: debut, recherche: true, depuis: barre });
+          return;
+        }
       }
       if (!ouvert && e.key === "/" && !dansUnChamp(e.target)) {
         e.preventDefault();

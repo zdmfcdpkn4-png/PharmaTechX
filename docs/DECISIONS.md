@@ -6939,8 +6939,8 @@ en haut de page. »
 page : les logos, puis le titre. Sans ce lien, le téléphone n'avait aucun
 retour à l'accueil dans l'en-tête.
 
-**Reste ouvert.** La barre de recherche demandée avec les logos : question
-93.
+**Suite.** La barre de recherche demandée avec les logos : question 93,
+tranchée le même jour (section suivante).
 
 **Vérifié le 02/10/2026.**
 - Parcours de bout en bout, même chaîne :
@@ -6952,6 +6952,94 @@ retour à l'accueil dans l'en-tête.
 - Mesure, sous le code d'administration d'essai : l'en-tête tient sur une
   ligne, 77 px de haut sur poste (comme au 19/09/2026) et 61 px sur
   téléphone.
+
+## La barre de recherche de l'en-tête (02/10/2026, question 93, choix b)
+
+**Question.** « Ajoute une barre de recherche rapide en haut » : que
+cherche-t-elle ? Choix b : les écrans seulement. C'est la recherche de
+l'Accès rapide, mise en vue dans l'en-tête.
+
+**Fait.**
+- Dans l'en-tête, après le titre, une barre « Rechercher un écran… »
+  (`BarreRecherche`, `components/Menu.tsx`), après la connexion seulement.
+  - Un clic ouvre l'Accès rapide, curseur dans sa recherche, même sur écran
+    tactile.
+  - Au clavier, une lettre tapée sur la barre ouvre le panneau déjà filtré,
+    et la frappe continue dans le panneau. « / », Entrée et Espace
+    l'ouvrent sans filtre. Ctrl, ⌘, Alt et AltGr n'entrent pas dans la
+    recherche (`caractereDeRecherche`, `content/acces-rapide.ts`).
+  - Échap rend le focus à la barre. Ouvert au hamburger, le panneau le
+    rend au hamburger, comme avant.
+- La barre trouve ce que trouve le panneau : les écrans du menu, « À
+  faire » et « Reprendre ». Aucun contenu (§ 3.4 de `ACCES-RAPIDE.md`).
+- C'est un bouton qui a l'allure d'un champ, pas un second champ. Le
+  panneau, boîte de dialogue modale, prend le focus : un champ hors de lui
+  laisserait le curseur dehors. Écart avec l'énoncé de l'option b
+  (« taper dans l'en-tête ») : à la souris, on tape dans le panneau, ouvert
+  au clic.
+
+**Sa forme suit la place.** La barre ne prend que l'espace que l'en-tête
+laisse libre, et jamais plus : elle ne le fait pas passer sur deux lignes,
+quel que soit le libellé du profil. Sous 44 px de place (52 en mode zone),
+rien ; puis une loupe ; un champ dès 14 rem (224 px), jusqu'à 20 rem. Sur
+téléphone (40 rem et moins), rien : la recherche y reste celle du bouton
+Menu.
+
+Mesuré sur le serveur de test, profils d'administration, de tutorat et de
+poste, avec et sans mode zone :
+
+| Largeur | Forme | Exemple |
+|---|---|---|
+| 390 px | rien | téléphone |
+| 641 et 700 px | loupe | en-tête déjà sur deux lignes avant la barre ; inchangé |
+| 744 et 768 px | rien | iPad mini en portrait |
+| 800 à 900 px | loupe | iPad en portrait (810, 820, 834 px) |
+| 950 et 991 px | champ | |
+| 992 à 1 180 px | loupe ; champ dès 1 180 px pour le tutorat et le poste | portable 1 024 px, iPad en paysage (1 080 px) |
+| 1 194 px et plus | champ, de 210 à 320 px | iPad Pro en paysage, portables 1 280 px et plus |
+
+- Le monogramme P, décoratif, cède sa place à la loupe de 992 à 1 055 px :
+  avec lui, il manquait de 20 à 50 px à 992–1 044 px. Avant la connexion,
+  sans barre, il reste.
+- En-tête inchangé partout : 77 px de haut (61 sur téléphone), aucun
+  débord.
+- Libellé de profil de 48 caractères : l'en-tête passait déjà sur deux
+  lignes de 992 à 1 100 px, avec ou sans la barre (mesuré). La barre y
+  prend la place libre de la première ligne.
+
+**Coût.** Un arrêt de tabulation de plus dans l'en-tête, entre le titre et
+« Mode zone ».
+
+**À vérifier sur un iPad.** Au toucher de la loupe, le clavier virtuel
+doit s'ouvrir. Vérifié en émulation tactile dans Chromium seulement, pas
+dans Safari iOS `[à vérifier]`.
+
+**Inchangé.** Le bouton Menu, `Ctrl+K` / `⌘K` et « / » ; le panneau, son
+contenu et sa recherche.
+
+**Vérifié le 02/10/2026.**
+- Un défaut trouvé et corrigé avant envoi : tapé vite sur la barre,
+  « journ » arrivait « ourn » dans le panneau. Le filtre initial, posé
+  après l'ouverture, était écrasé par la lettre suivante. Il est désormais
+  posé dans le même rendu que l'ouverture : trois essais sur trois intacts
+  à la vitesse de frappe maximale du robot de test.
+- `npm run verifier` : 475 tests, dont un nouveau
+  (`test/acces-rapide.test.ts`) : les touches qui entrent dans la
+  recherche, celles qui n'y entrent pas (commandes, raccourcis, AltGr,
+  espace, « / »).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de page
+  ni erreur serveur. L'étape nouvelle vérifie :
+  - à 1 280 px, le champ ; le clic qui place le curseur dans la recherche
+    du panneau ; Échap qui rend le focus à la barre ;
+  - « journ » tapé sur la barre, qui ne montre que « Journal », puis
+    Entrée qui y mène ;
+  - le hamburger, qui reprend son focus comme avant ;
+  - à 1 024 et 820 px, une loupe de 44 px, en-tête de 77 px, aucun débord,
+    monogramme masqué ;
+  - à 390 px, aucune barre, en-tête de 61 px.
+- Émulation tactile à 820 px : la loupe vise le champ du panneau, le
+  hamburger le panneau, comme avant.
 
 ## Non fait
 

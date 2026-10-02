@@ -410,6 +410,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       agents, rapports et documents restent à chercher dans leur liste,
       alors que le tutorat et l'administration en ont le plus besoin.
 
+    Tranchée le 02/10/2026 (choix b, réponse « B »). Dans l'en-tête, une
+    barre « Rechercher un écran… » ouvre l'Accès rapide, curseur dans sa
+    recherche ; une lettre tapée sur elle l'ouvre déjà filtré. Sa forme suit
+    la place : champ, loupe, ou rien ; elle ne fait jamais passer l'en-tête
+    sur deux lignes. Écart avec l'énoncé : c'est un bouton qui a l'allure
+    d'un champ, et à la souris on tape dans le panneau. Le monogramme P cède
+    sa place à la loupe de 992 à 1 055 px. Détail dans `DECISIONS.md`.
+
 92. **Garder le filtre après une action** — posée le 02/10/2026, à la fin
     du lot 3 de la question 91. Sur sept écrans, une action faite sous un
     filtre ramène à la liste entière, filtre perdu : Codes d'accès

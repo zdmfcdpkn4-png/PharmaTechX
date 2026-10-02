@@ -241,10 +241,10 @@ explicitement** pour que personne ne l'attende.
 
 | Aspect | Spécification |
 |---|---|
-| Déclencheurs | clic sur le hamburger ; `Ctrl+K` / `⌘K` ; `/` quand aucun champ n'a le focus |
+| Déclencheurs | clic sur le hamburger ; `Ctrl+K` / `⌘K` ; `/` quand aucun champ n'a le focus ; clic sur la barre de recherche de l'en-tête, ou une lettre tapée sur elle, qui ouvre le panneau déjà filtré (question 93, choix b, 02/10/2026) |
 | Animation | translation depuis la gauche + opacité 0 → 1, **260 ms**, à toutes les tailles (question 61, choix a ; sur poste, auparavant 8 px et 180 ms) |
 | Mouvement réduit | sous `prefers-reduced-motion: reduce`, opacité seule, **90 ms** |
-| Focus à l'ouverture | **poste** : le champ de recherche. **Tactile** : le panneau lui-même (`tabindex="-1"`) — donner le focus à un champ y déclenche le clavier virtuel, qui mange la moitié de l'écran avant qu'on ait rien demandé |
+| Focus à l'ouverture | **poste** : le champ de recherche. **Tactile** : le panneau lui-même (`tabindex="-1"`) — donner le focus à un champ y déclenche le clavier virtuel, qui mange la moitié de l'écran avant qu'on ait rien demandé. Ouvert depuis la barre de recherche de l'en-tête : le champ, même sur tactile — on est venu chercher |
 | Fond | **aucun voile visible** : la page n'est ni assombrie ni floutée (question 61, choix a ; auparavant `rgba(16,24,32,.38)`). Un calque transparent reçoit le clic qui ferme. Défilement du corps verrouillé sous 62 rem ; sur poste, la page défile sous le tiroir ouvert |
 
 ### 4.2 Pendant
@@ -263,8 +263,9 @@ explicitement** pour que personne ne l'attende.
 
 `Échap`, clic sur la page hors du tiroir — il ferme, sans suivre le lien qui se
 trouvait sous le pointeur —, clic sur le `×`, suivi d'un lien, changement de
-route. **Dans tous les cas, le focus revient au hamburger** — sans quoi la
-tabulation repart du haut du document, et l'utilisateur au clavier est perdu
+route. **Dans tous les cas, le focus revient au déclencheur qui l'a ouvert** :
+le hamburger, ou la barre de recherche de l'en-tête (question 93) — sans quoi
+la tabulation repart du haut du document, et l'utilisateur au clavier est perdu
 (WCAG 2.4.3).
 
 ### 4.4 Le déclencheur lui-même

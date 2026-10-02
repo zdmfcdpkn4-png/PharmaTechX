@@ -2258,6 +2258,63 @@ Justification : justification deux.`;
   );
   ok("tiroir sur poste (question 61, choix a) : à la place du volet, pleine hauteur, lecture découverte, ni assombrie ni floutée, fermé au clic sur la page sans suivre le lien");
 
+  // Barre de recherche de l'en-tête (02/10/2026, question 93, choix b) : la recherche de l'accès rapide,
+  // mise en vue. Un clic ouvre le panneau, curseur dans sa recherche ; une lettre tapée sur la barre l'ouvre
+  // déjà filtré ; Échap rend le focus à la barre. Champ sur poste, loupe sur tablette, rien sur téléphone,
+  // et l'en-tête ne change pas de hauteur.
+  const barreRecherche = page.locator("button.recherche-entete-bouton");
+  const focusSur = () => page.evaluate(() => document.activeElement?.className ?? "");
+  const hauteurEntete = () => page.evaluate(() => Math.round(document.querySelector(".entete").getBoundingClientRect().height));
+  await page.goto(BASE + "/admin/personnel");
+  assert.ok(await page.locator(".recherche-entete-texte", { hasText: "Rechercher un écran…" }).isVisible(), "poste : un champ « Rechercher un écran… »");
+  assert.equal(await barreRecherche.getAttribute("aria-haspopup"), "dialog", "la barre annonce la boîte de dialogue");
+  assert.equal(await hauteurEntete(), 77, "poste : l'en-tête garde sa hauteur");
+  await barreRecherche.click();
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest(".ar-recherche"))), true, "clic : curseur dans la recherche du panneau");
+  assert.equal(await page.inputValue(".ar-recherche input"), "");
+  assert.equal(await barreRecherche.getAttribute("aria-expanded"), "true");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  assert.equal(await focusSur(), "recherche-entete-bouton", "Échap rend le focus à la barre");
+  await page.keyboard.type("journ");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  assert.equal(await page.inputValue(".ar-recherche input"), "journ", "tapé sur la barre : le panneau s'ouvre filtré, sans perdre la première lettre");
+  assert.deepEqual(
+    (await page.locator(".acces-rapide a.ar-item:visible .ar-libelle").allInnerTexts()).map((t) => t.trim()),
+    ["Journal"],
+    "le panneau ne montre que l'écran cherché",
+  );
+  await page.keyboard.press("Enter");
+  await page.waitForURL((u) => new URL(u).pathname === "/admin/journal");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  // Le hamburger, lui, reprend le focus comme avant.
+  await page.click("button.bouton-menu");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  assert.equal(await focusSur(), "bouton-menu", "ouvert au hamburger, le focus revient au hamburger");
+  // Tablette : une loupe ; entre 992 et 1 055 px, le monogramme lui cède sa place. Téléphone : rien.
+  for (const [largeur, hauteur] of [[1024, 77], [820, 77]]) {
+    await page.setViewportSize({ width: largeur, height: 900 });
+    await page.goto(BASE + "/admin/personnel");
+    assert.ok(await barreRecherche.isVisible(), `${largeur} px : la loupe`);
+    assert.equal(await page.locator(".recherche-entete-texte").isVisible(), false, `${largeur} px : sans texte`);
+    assert.equal(Math.round((await barreRecherche.boundingBox()).width), 44, `${largeur} px : une cible de 44 px`);
+    assert.equal(await hauteurEntete(), hauteur, `${largeur} px : l'en-tête garde sa hauteur`);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 0, `${largeur} px : aucun débord`);
+  }
+  assert.equal(await page.locator(".logo-fin").isVisible(), false, "820 px : pas de monogramme, comme avant");
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto(BASE + "/admin/personnel");
+  assert.equal(await page.locator(".logo-fin").isVisible(), false, "1 024 px : le monogramme cède sa place à la loupe");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(BASE + "/admin/personnel");
+  assert.equal(await barreRecherche.isVisible(), false, "téléphone : pas de barre, la recherche reste celle du bouton Menu");
+  assert.equal(await hauteurEntete(), 61, "téléphone : l'en-tête garde sa hauteur");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  ok("barre de recherche de l'en-tête (question 93, choix b) : champ sur poste, loupe sur tablette, rien sur téléphone, en-tête inchangé ; un clic ouvre l'accès rapide, curseur dans sa recherche, une lettre tapée l'ouvre filtré, Échap rend le focus à la barre");
+
   // pastilles chiffrées du volet : présentes quand il y a quelque chose,
   // absentes à zéro — le volet est la carte, pas la file
   await page.goto(BASE + "/admin/questions?vue=liste");

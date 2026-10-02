@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SessionFormation } from "@/components/SessionFormation";
 import { Chrome } from "@/components/Chrome";
-import { MenuProvider, BoutonMenu, VoletMenu } from "@/components/Menu";
+import { MenuProvider, BoutonMenu, BarreRecherche, VoletMenu } from "@/components/Menu";
 import { Navigation, type GroupeRail } from "@/components/Navigation";
 import { AccesRapide, type ReprisePossible } from "@/components/AccesRapide";
 import { FilHabilitation } from "@/components/FilHabilitation";
@@ -386,6 +386,10 @@ export default async function RootLayout({
                   Unité de production — CHD Vendée
                 </div>
               </div>
+
+              {/* La recherche de l'accès rapide, mise en vue (question 93, choix b) : après la
+                  connexion seulement — avant, le panneau ne mène à aucun écran. */}
+              {avantConnexion ? null : <BarreRecherche />}
 
               {/* Second logo d'unité, à l'opposé du premier (19/09/2026) : le
                   mandala et le logo HdV tiennent la gauche, le monogramme P
