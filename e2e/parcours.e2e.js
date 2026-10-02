@@ -957,7 +957,10 @@ Justification : cf. procédure interne.`,
   assert.equal(new URL(page.url()).pathname, "/accueil", "le tutorat arrive sur l'accueil");
   assert.equal(await page.locator(".circuit-arret").count(), 6, "tutorat : six arrêts");
   assert.equal(await page.locator(".a-cote a[href='/admin/bareme']").count(), 0, "tutorat : pas de réglages à côté du circuit");
-  assert.match(await page.locator(".circuit-arret", { hasText: "Publier" }).innerText(), /Réservé à l'administration/);
+  assert.match(
+    await page.locator(".circuit-arret", { hasText: "Publier" }).locator(".circuit-detail").innerText(),
+    /^(Publication réservée à l'administration|\d+ modules? en brouillon · publication par l'administration)$/,
+  );
   assert.equal(await page.locator("#volet-principal .rail-sous-titre", { hasText: "Réglages" }).count(), 0, "Réglages quitte le menu du tutorat");
   ok("accueil du tutorat : le circuit, sans réglages ; publication réservée à l'administration");
   await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
@@ -3830,6 +3833,28 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector(".acces-rapide", { state: "hidden" });
   assert.equal(totalCircuit, totalAFaire, "le circuit compte ce que compte « À faire »");
   assert.ok(totalCircuit > 0, "des questions attendent leur vérification à cette étape");
+  // Sous chaque arrêt (02/10/2026) : la ligne nomme ce que compte la pastille, et en donne le même total.
+  const arretCircuit = (titre) => page.locator(".circuit-arret", { hasText: titre });
+  const ligneArret = async (titre) => (await arretCircuit(titre).locator(".circuit-detail").innerText()).trim();
+  const pastilleArret = async (titre) => {
+    const p = arretCircuit(titre).locator(".circuit-compte");
+    return (await p.count()) ? Number((await p.innerText()).trim()) : 0;
+  };
+  const sommeDevant = (texte, noms) =>
+    (texte.match(new RegExp(`\\d+(?= (?:${noms})\\b)`, "g")) ?? []).reduce((n, x) => n + Number(x), 0);
+  const ligneVerifier = await ligneArret("Vérifier");
+  assert.match(ligneVerifier, /^(\d+ questions?( et \d+ fiches?)?|\d+ fiches?|Rien) à vérifier · (\d+ (questions? )?validées?|aucune( question)? validée)$/);
+  assert.equal(sommeDevant(ligneVerifier.split(" · ")[0], "questions?|fiches?"), await pastilleArret("Vérifier"), "Vérifier : la ligne détaille sa pastille");
+  const ligneViser = await ligneArret("Viser");
+  assert.match(ligneViser, /^(Aucun rapport en attente|\d+ (rapports? à viser|verdicts? à arbitrer)( · \d+ verdicts? à arbitrer)?)$/);
+  assert.equal(sommeDevant(ligneViser, "rapports?|verdicts?"), await pastilleArret("Viser"), "Viser : la ligne détaille sa pastille");
+  const ligneSuivre = await ligneArret("Suivre");
+  assert.match(ligneSuivre, /^(Aucun signalement ouvert|\d+ (signalements? ouverts?|quiz de plus de \d+ mois)( · \d+ quiz de plus de \d+ mois)?)$/);
+  assert.equal(sommeDevant(ligneSuivre, "signalements?|quiz"), await pastilleArret("Suivre"), "Suivre : la ligne détaille sa pastille");
+  assert.match(await ligneArret("Déposer"), /^(\d+ modules? sans question|Chaque module a des questions)$/);
+  assert.match(await ligneArret("Publier"), /^(Aucun module en brouillon|\d+ modules? en brouillon)$/);
+  const [, evaluables, auProgramme] = (await ligneArret("Former")).match(/^(\d+) modules? évaluables? sur (\d+)$/) ?? [];
+  assert.ok(auProgramme && Number(evaluables) <= Number(auProgramme), "Former : modules évaluables sur modules au programme");
   assert.deepEqual(
     (await page.locator(".a-cote a").allInnerTexts()).map((t) => t.trim()),
     ["Codes d'accès", "Squelette", "Réglages", "Repères"],
@@ -3845,7 +3870,7 @@ Justification : cf. procédure interne.`,
   );
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(BASE + "/accueil");
-  ok("accueil de l'administration : le circuit en six arrêts, mêmes comptes que « À faire », à côté du circuit, sans débord à 390 px");
+  ok("accueil de l'administration : le circuit en six arrêts, mêmes comptes que « À faire », chaque ligne nommant ce que compte sa pastille, à côté du circuit, sans débord à 390 px");
   await page.locator(".circuit-arret", { hasText: "Vérifier" }).locator("a.circuit-lien").click();
   await page.waitForURL(/\/admin\/questions\?statut=a_verifier$/);
   assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arrêt « Vérifier » ouvre l'arborescence");

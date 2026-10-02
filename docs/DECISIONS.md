@@ -6661,6 +6661,99 @@ d'action dans la liste. Question 92.
     basse sur téléphone, le module et la période étant repliés.
   - Aucune page ne déborde à 390 px, « Plus de filtres » ouvert compris.
 
+## Le circuit : sous chaque arrêt, ce qui attend (02/10/2026, demande directe)
+
+**Demande.** « Revoir les sous-titres pour les rendre plus pertinents », sur
+une photo de l'accueil de l'administration, « Le circuit ». Lu comme les
+lignes sous les six arrêts.
+
+**Constat.** La page promet en tête « ce qui attend à chaque arrêt ». Les
+six lignes ne le disaient pas, et mêlaient trois registres :
+- des noms d'écrans déjà en liens sous l'arrêt : « Questions, modules,
+  documents », « Pilotage, signalements » ;
+- des verbes qui redisaient le titre : « Arbitrer, viser, clore » ;
+- un compte sans lien avec la pastille, sous une règle devenue inexacte :
+  « Quatre yeux · 4 validées » sous une pastille de 53. L'administration
+  valide ses propres questions depuis le 23/09/2026 (section « Validation
+  d'une question par son auteur administrateur »).
+
+« Le programme, vu par l'apprenant » décrivait un lien, pas l'arrêt. Les
+pastilles de Viser et de Suivre additionnaient deux choses sans dire
+lesquelles.
+
+**Fait.** Chaque ligne dit ce qui attend à l'arrêt, avec les mots de « À
+faire » : la pastille dit combien, la ligne dit quoi. Sinon, elle dit ce
+qui s'y trouve. Quand rien n'attend, elle le dit en toutes lettres.
+
+| Arrêt | Avant | Après (exemples) | Rien en attente |
+|---|---|---|---|
+| Déposer | Questions, modules, documents | 41 modules sans question | Chaque module a des questions |
+| Vérifier | Quatre yeux · 57 validées | 10 questions et 2 fiches à vérifier · 57 validées | Rien à vérifier · 57 questions validées |
+| Publier, administration | 2 modules en brouillon | 2 modules en brouillon | Aucun module en brouillon |
+| Publier, tutorat | Réservé à l'administration | 2 modules en brouillon · publication par l'administration | Publication réservée à l'administration |
+| Former | Le programme, vu par l'apprenant | 9 modules évaluables sur 55 | Aucun module au programme |
+| Viser | Arbitrer, viser, clore | 2 rapports à viser · 1 verdict à arbitrer | Aucun rapport en attente |
+| Suivre | Pilotage, signalements | 3 signalements ouverts · 4 quiz de plus de 24 mois | Aucun signalement ouvert |
+
+Une banque vide se lit « Aucune question en banque ». Sans conservation
+des rapports, Viser garde « Rapport téléchargé, signé sur papier », et
+Suivre ne compte que les signalements.
+
+Les lignes s'équilibrent sur leurs rangs (`text-wrap: balance`, comme les
+titres du site) : dans une colonne étroite, un « 57 » ne reste pas seul en
+fin de ligne.
+
+**Ce que comptent les deux lignes nouvelles** (`etatModules`,
+`content/accueil.ts`) :
+- Module sans question : un module ni retiré ni hors parcours qui n'a
+  aucune question. On compte les questions écrites dans le code et celles
+  de la banque, validées ou à vérifier, y compris une question posée dans
+  plusieurs modules (`comptesParModule`).
+- Module évaluable :
+  - il est au programme : module du code, ou module déposé publié ;
+  - il a une question au moins, écrite dans le code ou validée en banque ;
+  - c'est la règle du programme (`evaluable`, `app/page.tsx`).
+- Quiz de plus de 24 mois : la périodicité vient de la fiche (`maintien`),
+  comme au Pilotage.
+
+**Prudence.** Si une lecture de la base échoue, la ligne ne dit pas un
+compte faux :
+- état des modules illisible : Déposer et Former gardent leurs anciennes
+  lignes ;
+- banque illisible : Vérifier donne le compte de la pastille sans le
+  partager entre questions et fiches.
+
+**Inchangé.**
+- Les pastilles et leur somme, égale au total de « À faire ».
+- Les titres, liens, médaillons et « À côté du circuit ».
+- L'accueil de l'agent.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 468 tests. Quatre sont nouveaux pour l'accueil :
+  - les six lignes, au pluriel, au singulier et quand rien n'attend ;
+  - Vérifier, avec questions et fiches séparées ;
+  - sans conservation ni état des modules, aucun compte inventé ;
+  - l'état des modules : retirés, hors parcours, brouillons, mises en
+    situation.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 115 étapes, sans erreur de page
+  ni erreur serveur.
+  - Nouveau : sur l'accueil de l'administration, les lignes de Vérifier,
+    Viser et Suivre redonnent chacune le total de leur pastille. Déposer,
+    Publier et Former ont la forme attendue.
+  - Adapté : la ligne Publier du tutorat.
+- Mesures sur la base laissée par le parcours.
+  - Les six lignes : « 47 modules sans question », « 11 questions et
+    1 fiche à vérifier · 19 validées », « 1 module en brouillon »,
+    « 8 modules évaluables sur 57 », « 2 verdicts à arbitrer », « Aucun
+    signalement ouvert ».
+  - Poste (1 280 px) : deux lignes au plus par arrêt ; l'accueil fait
+    1,1 écran de haut, comme au lot 2.
+  - iPad (1 024 px, six colonnes étroites) : trois lignes au plus. Sans
+    l'équilibrage, « 57 » restait seul sur sa ligne.
+  - Téléphone (390 px) : une ou deux lignes ; 2,0 écrans de haut, comme
+    au lot 2. Aucun débord.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

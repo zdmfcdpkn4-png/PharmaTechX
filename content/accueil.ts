@@ -18,6 +18,7 @@
  */
 import type { ComptesAttente, ProfilAcces } from "./acces-rapide";
 import { etapes, maintien, type LieuEtape } from "./habilitation";
+import type { Module } from "./types";
 
 // ───────────────────────────────────────────────────────────── l'agent
 
@@ -73,7 +74,11 @@ export interface ArretCircuit {
   cle: "deposer" | "verifier" | "publier" | "former" | "viser" | "suivre";
   titre: string;
   medaillon: string;
-  /** Une ligne : ce qu'on y fait, ou ce qui s'y trouve. */
+  /**
+   * Une ligne : ce qui attend à cet arrêt, nommé avec les mots de « À faire » —
+   * la pastille dit combien, la ligne dit quoi —, ou ce qui s'y trouve. Jamais
+   * le titre ni les liens de l'arrêt redits.
+   */
   detail: string;
   /** Ce qui attend un acte, compté comme dans « À faire ». */
   enAttente: number;
@@ -84,10 +89,76 @@ export interface ArretCircuit {
 }
 
 export interface InfosCircuit {
-  /** Questions validées en base, chaque question une fois (`totauxQuestions`). */
-  validees: number;
+  /**
+   * La banque, chaque question une fois (`totauxQuestions`) : validées, et à
+   * vérifier — le reste du compte « à vérifier » sont des fiches de synthèse.
+   * `null` quand la base n'a pas pu la compter.
+   */
+  banque: { validees: number; aVerifier: number } | null;
   /** Modules déposés au statut brouillon. */
   brouillons: number;
+  /** État des modules (`etatModules`) ; `null` quand la base n'a pas pu le dire. */
+  modules: EtatModules | null;
+}
+
+export interface EtatModules {
+  /** Modules hors retirés sans aucune question, validée ou à vérifier : il reste à en déposer. */
+  sansQuestion: number;
+  /** Modules du programme qu'une évaluation peut tirer : une question validée au moins. */
+  evaluables: number;
+  /** Modules du programme : ceux du code et les déposés publiés, sur un parcours au moins. */
+  auProgramme: number;
+}
+
+/**
+ * Ce que les modules portent de questions, comptées comme le programme les
+ * compte (`resumer`, `app/page.tsx`) : celles du code, mises en situation
+ * comprises, et celles de la banque — un module y est « évaluable » dès une
+ * question validée. Un module du code n'a pas de statut : il est au
+ * programme ; un module déposé n'y entre que publié.
+ */
+export function etatModules(
+  modules: Pick<Module, "id" | "statut" | "parcours" | "questions" | "misesEnSituation">[],
+  comptes: Record<string, { valides: number; aVerifier: number }>,
+): EtatModules {
+  const etat: EtatModules = { sansQuestion: 0, evaluables: 0, auProgramme: 0 };
+  for (const m of modules) {
+    if (m.statut === "retire" || m.parcours.length === 0) continue;
+    const ecrites = m.questions.length + m.misesEnSituation.reduce((n, s) => n + s.questions.length, 0);
+    const banque = comptes[m.id] ?? { valides: 0, aVerifier: 0 };
+    if (ecrites + banque.valides + banque.aVerifier === 0) etat.sansQuestion++;
+    if (m.statut !== undefined && m.statut !== "publie") continue;
+    etat.auProgramme++;
+    if (ecrites + banque.valides > 0) etat.evaluables++;
+  }
+  return etat;
+}
+
+/** « 1 rapport à viser », « 3 rapports à viser » : zéro se dit autrement, par l'appelant. */
+function compte(n: number, singulier: string, pluriel: string): string {
+  return `${n} ${n > 1 ? pluriel : singulier}`;
+}
+
+/**
+ * Vérifier : la pastille compte questions et fiches ensemble (question 59), la
+ * ligne les sépare, puis dit combien de questions ont passé la vérification.
+ * « validées » se rapporte aux questions nommées juste avant ; sinon, il les
+ * nomme.
+ */
+function ligneVerifier(contenus: number, banque: InfosCircuit["banque"]): string {
+  if (banque === null) return contenus > 0 ? `${contenus} à vérifier` : "Rien à vérifier";
+  const fiches = Math.max(0, contenus - banque.aVerifier);
+  const aVerifier = [
+    banque.aVerifier > 0 && compte(banque.aVerifier, "question", "questions"),
+    fiches > 0 && compte(fiches, "fiche", "fiches"),
+  ].filter(Boolean);
+  if (aVerifier.length === 0 && banque.validees === 0) return "Aucune question en banque";
+  const nommees = banque.aVerifier > 0;
+  const validees =
+    banque.validees === 0
+      ? nommees ? "aucune validée" : "aucune question validée"
+      : nommees ? compte(banque.validees, "validée", "validées") : compte(banque.validees, "question validée", "questions validées");
+  return `${aVerifier.length > 0 ? `${aVerifier.join(" et ")} à vérifier` : "Rien à vérifier"} · ${validees}`;
 }
 
 /**
@@ -103,12 +174,28 @@ export function arretsCircuit(
   infos: InfosCircuit,
 ): ArretCircuit[] {
   const admin = profil === "admin";
+  const m = infos.modules;
+  const brouillons =
+    infos.brouillons === 0 ? "Aucun module en brouillon" : compte(infos.brouillons, "module en brouillon", "modules en brouillon");
+  const aViser = [
+    comptes.rapportsAViser > 0 && compte(comptes.rapportsAViser, "rapport à viser", "rapports à viser"),
+    comptes.verdictsAArbitrer > 0 && compte(comptes.verdictsAArbitrer, "verdict à arbitrer", "verdicts à arbitrer"),
+  ].filter(Boolean);
+  const aSuivre = [
+    comptes.signalements > 0 && compte(comptes.signalements, "signalement ouvert", "signalements ouverts"),
+    conservation && comptes.quizAnciens > 0 && `${comptes.quizAnciens} quiz de plus de ${maintien.periodiciteMois} mois`,
+  ].filter(Boolean);
   return [
     {
       cle: "deposer",
       titre: "Déposer",
       medaillon: "dossier-de-lot",
-      detail: "Questions, modules, documents",
+      detail:
+        m === null
+          ? "Questions, modules, documents"
+          : m.sansQuestion === 0
+            ? "Chaque module a des questions"
+            : compte(m.sansQuestion, "module sans question", "modules sans question"),
       enAttente: 0,
       lien: { href: "/admin/questions/import", libelle: "Déposer des questions" },
       autres: [
@@ -120,7 +207,7 @@ export function arretsCircuit(
       cle: "verifier",
       titre: "Vérifier",
       medaillon: "controle-qualite",
-      detail: `Quatre yeux · ${infos.validees} validée${infos.validees > 1 ? "s" : ""}`,
+      detail: ligneVerifier(comptes.contenusAVerifier, infos.banque),
       enAttente: comptes.contenusAVerifier,
       lien: { href: "/admin/questions?statut=a_verifier", libelle: "Questions et fiches à vérifier" },
       autres: [{ href: "/admin/questions", libelle: "Banque de questions" }],
@@ -129,9 +216,12 @@ export function arretsCircuit(
       cle: "publier",
       titre: "Publier",
       medaillon: "etiquetage",
+      // Le tutorat dépose des modules qu'il ne publie pas : la ligne le lui dit.
       detail: admin
-        ? `${infos.brouillons} module${infos.brouillons > 1 ? "s" : ""} en brouillon`
-        : "Réservé à l'administration",
+        ? brouillons
+        : infos.brouillons === 0
+          ? "Publication réservée à l'administration"
+          : `${brouillons} · publication par l'administration`,
       enAttente: 0,
       lien: { href: "/admin/modules", libelle: "Modules" },
       autres: [],
@@ -140,7 +230,12 @@ export function arretsCircuit(
       cle: "former",
       titre: "Former",
       medaillon: "formation-diplome",
-      detail: "Le programme, vu par l'apprenant",
+      detail:
+        m === null
+          ? "Le programme, vu par l'apprenant"
+          : m.auProgramme === 0
+            ? "Aucun module au programme"
+            : `${compte(m.evaluables, "module évaluable", "modules évaluables")} sur ${m.auProgramme}`,
       enAttente: 0,
       lien: { href: "/admin/essai", libelle: "Tester en apprenant" },
       autres: [
@@ -152,7 +247,11 @@ export function arretsCircuit(
       cle: "viser",
       titre: "Viser",
       medaillon: "attestation-habilitation",
-      detail: conservation ? "Arbitrer, viser, clore" : "Rapport téléchargé, signé sur papier",
+      detail: !conservation
+        ? "Rapport téléchargé, signé sur papier"
+        : aViser.length > 0
+          ? aViser.join(" · ")
+          : "Aucun rapport en attente",
       enAttente: conservation ? comptes.rapportsAViser + comptes.verdictsAArbitrer : 0,
       lien: conservation ? { href: "/admin/rapports", libelle: "Rapports" } : undefined,
       autres: [],
@@ -161,7 +260,7 @@ export function arretsCircuit(
       cle: "suivre",
       titre: "Suivre",
       medaillon: "resultats-conformes",
-      detail: "Pilotage, signalements",
+      detail: aSuivre.length > 0 ? aSuivre.join(" · ") : "Aucun signalement ouvert",
       enAttente: comptes.signalements + (conservation ? comptes.quizAnciens : 0),
       lien: { href: "/admin/pilotage", libelle: "Pilotage" },
       autres: [{ href: "/admin/signalements", libelle: "Signalements" }],

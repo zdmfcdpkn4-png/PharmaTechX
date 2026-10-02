@@ -5,10 +5,11 @@ import { conservationActive, modeConservation } from "@/lib/config";
 import { modeStockage } from "@/lib/stockage";
 import { comptesAttente } from "@/lib/attente";
 import { arriveeDuPoste } from "@/lib/arrivee";
-import { totauxQuestions } from "@/content/banque-db";
-import { listerModulesDeposes } from "@/content/modules-db";
+import { comptesParModule, totauxQuestions } from "@/content/banque-db";
+import { listerModulesDeposes, versModule } from "@/content/modules-db";
+import { modulesDuCodeRegles } from "@/content/store";
 import { AUCUN_COMPTE, itemsAFaire, totalEnAttente } from "@/content/acces-rapide";
-import { aCoteDuCircuit, arretsCircuit } from "@/content/accueil";
+import { aCoteDuCircuit, arretsCircuit, etatModules } from "@/content/accueil";
 import { getReferentiel } from "@/content/referentiel-db";
 import { Badge } from "@/components/Badge";
 import { CheminAgent } from "@/components/CheminAgent";
@@ -58,12 +59,21 @@ async function AccueilPoste({ session }: { session: Awaited<ReturnType<typeof ge
 async function AccueilGestion({ role }: { role: "tuteur" | "admin" }) {
   const conservation = conservationActive();
   const base = baseConfiguree();
-  const [comptes, totaux, brouillons] = await Promise.all([
+  const [comptes, totaux, deposes, code, banque] = await Promise.all([
     base ? comptesAttente(role, conservation).catch(() => AUCUN_COMPTE) : Promise.resolve(AUCUN_COMPTE),
-    base ? totauxQuestions().catch(() => ({ valides: 0, aVerifier: 0 })) : Promise.resolve({ valides: 0, aVerifier: 0 }),
-    base ? listerModulesDeposes("brouillon").then((l) => l.length).catch(() => 0) : Promise.resolve(0),
+    base ? totauxQuestions().catch(() => null) : Promise.resolve({ valides: 0, aVerifier: 0 }),
+    base ? listerModulesDeposes().catch(() => null) : Promise.resolve([]),
+    modulesDuCodeRegles().catch(() => null),
+    base ? comptesParModule().catch(() => null) : Promise.resolve<Record<string, { valides: number; aVerifier: number }>>({}),
   ]);
-  const arrets = arretsCircuit(role, comptes, conservation, { validees: totaux.valides, brouillons });
+  const brouillons = (deposes ?? []).filter((d) => d.statut === "brouillon").length;
+  // Sans l'une des trois lectures, l'état des modules ne se dit pas, plutôt que de se dire faux.
+  const modules = deposes && code && banque ? etatModules([...code, ...deposes.map(versModule)], banque) : null;
+  const arrets = arretsCircuit(role, comptes, conservation, {
+    banque: totaux && { validees: totaux.valides, aVerifier: totaux.aVerifier },
+    brouillons,
+    modules,
+  });
   // Le même total que « À faire », dans l'accès rapide : mêmes comptes, même somme.
   const total = totalEnAttente(itemsAFaire(role, comptes, conservation));
   const stockage = modeStockage();

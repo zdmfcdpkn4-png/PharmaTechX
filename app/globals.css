@@ -3895,7 +3895,8 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
 .circuit-lien::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: var(--rayon-sm); }
 .circuit-lien:focus-visible { outline: none; }
 .circuit-lien:focus-visible::after { outline: 3px solid var(--marque-anneau); outline-offset: 2px; }
-.circuit-detail { font-size: 0.8125rem; color: var(--texte-doux); }
+/* Lignes équilibrées, comme les titres : sur une colonne étroite, « sur 57 » ne reste pas seul. */
+.circuit-detail { font-size: 0.8125rem; color: var(--texte-doux); text-wrap: balance; }
 .circuit-autres { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.125rem 0.625rem; font-size: 0.8125rem; }
 .circuit-arret--hors .badge { filter: grayscale(1); opacity: 0.55; }
 .circuit-arret--hors .circuit-titre { color: var(--texte-doux); }
