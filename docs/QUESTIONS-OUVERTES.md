@@ -396,7 +396,9 @@ telle. Ordre : ce qui change le déploiement en premier.
 
       L'effet est chiffré avant d'appliquer, et chaque question garde sa
       ligne au journal. La suppression en lot, réservée à l'administration,
-      est proposée à part : elle servirait la question 88 a.
+      est proposée à part : elle servirait la question 88 a. (Note du
+      02/10/2026 : la question 88, reposée, ne demande plus d'effacer ; c'est
+      le reclassement en lot qui la servirait.)
     - **Lot 2, filtres et menu.**
       - Recherche dans l'énoncé, les propositions, la justification et
         l'identifiant.
@@ -447,12 +449,58 @@ telle. Ordre : ce qui change le déploiement en premier.
     Sauf réserve de votre part, une réponse vaut accord pour les lots 1 et
     2. Le lot 3 attend un choix point par point.
 
-88. **Banque du pool déjà en ligne : la redéposer, ou la corriger sur
-    place** — posée le 01/10/2026, sur « Peux-tu vérifier que toutes les
-    questions du niveau N2R ont bien chaque justification rattachée aux
-    propositions de la question ? […] Est-ce que les illustrations des KIMO
-    ont été réintégrées ? ». Constaté le même jour, en lecture seule, dans la
-    base en ligne :
+88. **Banque du pool en ligne : 22 questions dans le mauvais module** —
+    posée le 01/10/2026, reposée le 02/10/2026 sur « Repose les questions 88
+    et 89 une par une ».
+
+    **Reposée le 02/10/2026.** La première version, plus bas, est dépassée :
+    le 01/10 à 23 h 44, le Word a été redéposé et les 37 anciennes questions
+    effacées. Constaté le 02/10, en lecture seule, dans la base en ligne :
+    - Le contenu est juste :
+      - 53 questions, toutes « à vérifier », jamais modifiées ;
+      - corrigés, niveaux et formats identiques au Word ;
+      - une justification sous chacune des 265 propositions ;
+      - les 6 illustrations (5 KIMO et le Duoperf) ;
+      - aucune n'est aussi posée ailleurs, ni signalée.
+    - 22 questions sont dans le mauvais module :
+      - les 9 dernières du module 2 (questions 9 à 17 du Word, de « règles
+        d'hygiène et de tenue en ZAC » à la QIM « bris de flacon sous
+        isolateur ») sont dans le module 3 ;
+      - les 13 du module 6 (questions 41 à 53, circuit de la préparation)
+        sont dans le module 4, le module 6 n'existant pas en ligne.
+    - Cause : le dépôt ne reconnaît aucun en-tête « Module N — … » du Word,
+      aucun titre de module en ligne ne commençant ainsi (« Pool de
+      manipulation - (Module N) »). Les 53 questions arrivent « à choisir »,
+      et l'aperçu fait choisir le module de chacune. Les modules 2 et 3
+      parlent tous deux d'hygiène.
+    - Validées en l'état, les 22 seraient tirées dans l'évaluation du
+      mauvais module. Les 31 autres sont à leur place.
+
+    Préalable commun : créer le module 6 à l'écran (filière du pool, N2R).
+    - **a (recommandé)** : les reclasser en deux gestes avec la sélection
+      multiple (question 89, lot 1), une fois en ligne : les 9 vers le module
+      2, les 13 vers le module 6. Elles sont « à vérifier » : la règle que
+      tranche la question 89 ne change rien pour elles. Contre : attendre que
+      le lot 1 soit fait et redéployé.
+    - **b** : les déplacer maintenant, une à une, dans l'éditeur
+      (« Modifier », module, « Enregistrer »), 22 fois. Contre : 22 gestes,
+      avec le risque d'erreur qui a produit la situation actuelle.
+    - **c** : je les déplace dans la base par un script, d'après la
+      correspondance établie le 02/10 : le module seul, et une ligne au
+      journal pour chacune. Contre : écriture directe en production, hors de
+      l'écran ; exige « fais-le dans la base ».
+
+    Hors question, sauf avis contraire : le dépôt reliera « Module 2 — … » au
+    seul module dont le titre contient « Module 2 » ; si plusieurs modules
+    répondent, la question reste à choisir. Cela ne touche que les dépôts à
+    venir.
+
+    **Première version, du 01/10/2026, dépassée le soir même** (« Banque du
+    pool déjà en ligne : la redéposer, ou la corriger sur place »), posée sur
+    « Peux-tu vérifier que toutes les questions du niveau N2R ont bien chaque
+    justification rattachée aux propositions de la question ? […] Est-ce que
+    les illustrations des KIMO ont été réintégrées ? ». Constaté le même jour,
+    en lecture seule, dans la base en ligne :
     - 37 questions N2R, dans les modules 1 à 4 du pool, toutes « à vérifier ».
       Elles ont été déposées en une fois, le 01/10 à 18:49, par la version
       du site d'alors.
