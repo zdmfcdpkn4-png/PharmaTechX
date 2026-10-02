@@ -377,6 +377,36 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+95. **Code agent : quels codes reçoivent un format par profil ?** —
+    posée le 02/10/2026, sur « Interdire la création d'un code agent déjà
+    donné et imposer un format suivant le type de profil pharmacien -
+    préparateur - OPQ - ASH … ».
+
+    Deux sortes de codes sont remises aux agents :
+    - les codes d'accès (Équipe › Codes d'accès) : le libellé se saisit
+      librement, et rien n'empêche deux codes de porter le même ;
+    - les identifiants d'agents (Équipe › Personnel) : le site les génère
+      (AG-001, AG-002…), uniques, et ne les redonne jamais, même clos
+      (question 6). Un doublon y est déjà impossible.
+
+    - **a (recommandé)** : les codes d'accès. Le libellé n'est plus saisi :
+      on choisit le type (pharmacien, préparateur, OPQ, ASH…) et le site
+      nomme le code TYPE-n, au premier numéro jamais donné pour ce type, à
+      partir de 0 : PHARMACIEN-0, PHARMACIEN-1, PREPARATEUR-0… Un numéro
+      n'est jamais redonné, même après suppression du code, car le journal
+      désigne un code par son libellé. Plus de champ libre où glisser un
+      nom ; le rôle se choisit comme aujourd'hui. Contre : le libellé ne dit
+      plus le poste (« Isolateur A ») ; filière et niveau restent affichés
+      à côté.
+    - **b** : les identifiants d'agents. AG-001 devient, selon le profil,
+      par exemple PH-001, PPH-001, OPQ-001, ASH-001. Contre : l'identifiant
+      dit la fonction, que les questions 6 et 29 ont tenue hors de la
+      base ; dans une petite équipe, « ASH-001 » désigne presque une
+      personne.
+    - **c** : les deux. Contre : celui de b.
+
+    La liste fermée des types (le « … ») fera la question suivante.
+
 94. **Vue apprenant de l'administration : où placer l'interrupteur ?** —
     posée le 02/10/2026, sur « Peux-tu créer pour les administrateurs la
     possibilité d'avoir une vue apprenant avec un accès rapide en haut à
