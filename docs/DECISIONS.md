@@ -6615,9 +6615,14 @@ et Statistiques) est fait par ce volet.
 Pilotage et Statistiques, « Socle transversal » compris ; la fiche d'un
 module aux Statistiques, qui n'a qu'un champ, la période.
 
-**Limite.** Une action faite sous un filtre — régler un module, modifier
-une filière, révoquer un code — ramène à la liste entière, filtre perdu,
-sur les quatorze écrans des deux volets. Seule la banque revient à sa vue.
+**Limite.** Sur sept écrans des deux volets, une action faite sous un
+filtre ramène à la liste entière, filtre perdu : Codes d'accès (révoquer,
+réactiver, supprimer, réinitialiser), Signalements (traiter, rejeter),
+Personnel (clore, rouvrir, réinitialiser), Rattachement (régler, rétablir),
+Filières et Niveaux (modifier, supprimer), Mises en situation (modifier,
+supprimer : le module reste, la recherche non). La banque revient à sa vue,
+Documents aussi après une suppression ; les autres écrans n'ont pas
+d'action dans la liste. Question 92.
 
 **Vérifié le 02/10/2026.**
 - `npm run verifier` : 464 tests, dont quatre nouveaux pour les listes de

@@ -377,6 +377,23 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+92. **Garder le filtre après une action** — posée le 02/10/2026, à la fin
+    du lot 3 de la question 91. Sur sept écrans, une action faite sous un
+    filtre ramène à la liste entière, filtre perdu : Codes d'accès
+    (révoquer, réactiver, supprimer, réinitialiser), Signalements (traiter,
+    rejeter), Personnel (clore, rouvrir, réinitialiser), Rattachement
+    (régler, rétablir), Filières et Niveaux (modifier, supprimer), Mises en
+    situation (modifier, supprimer : le module reste, la recherche non). La
+    banque revient à sa vue, Documents aussi après une suppression.
+    - **a (recommandé)** : ces actions reviennent à la liste filtrée, comme
+      la banque ; une création ramène toujours à la liste entière, où
+      paraît ce qu'on vient de créer. Contre : une quinzaine d'actions à
+      reprendre, chacune vérifiant que l'adresse de retour reste celle de
+      sa liste.
+    - **b** : seulement Rattachement, Filières et Niveaux, où l'on règle
+      ligne après ligne. Contre : deux comportements selon l'écran.
+    - **c** : rien. Contre : il faut refiltrer après chaque action.
+
 91. **Accueil après connexion : quelle forme** — posée le 02/10/2026, sur
     « Il manque une page d'accueil qui s'affiche après la connexion qui
     pourrait être centrale en une organisation schématique et ludique du
@@ -474,9 +491,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     en deux volets : la barre de la banque sur Codes d'accès, Rapports,
     Signalements, Modules et Documents, puis sur Personnel, Programmes à la
     carte, Mises en situation, Rattachement des modules, Filières, Niveaux,
-    le programme complet des Repères, Pilotage et Statistiques. Une action
-    faite sous un filtre ramène encore à la liste entière, sauf dans la
-    banque. Détail dans `DECISIONS.md`.
+    le programme complet des Repères, Pilotage et Statistiques. Sur sept
+    écrans, une action faite sous un filtre ramène encore à la liste
+    entière : question 92. Détail dans `DECISIONS.md`.
 
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un
