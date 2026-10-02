@@ -21,11 +21,11 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
       <section className="panneau-titre">
         <h1>Déposer des questions</h1>
         <p>
-          Collez un texte ou déposez un fichier (.txt, .md, .docx, .json). L&apos;analyse ne devine
-          aucun verdict : ils viennent du corrigé écrit dans le texte. Le module et le format
-          qu&apos;elle retient ou propose se vérifient dans l&apos;aperçu : chaque question y est
-          montrée avant d&apos;être ajoutée, au statut « à vérifier ». Où va chaque question, et qui
-          la voit : <Link href="/admin/rattachement-questions">Comment sont rattachées les questions&nbsp;?</Link>
+          Collez un texte ou déposez un fichier (.txt, .md, .docx, .json) : chaque question passe par l&apos;aperçu, puis
+          entre « à vérifier ». Les bonnes réponses viennent du corrigé écrit dans le texte, jamais d&apos;une supposition.
+        </p>
+        <p className="legende" style={{ margin: 0 }}>
+          <Link href="/admin/rattachement-questions">Comment sont rattachées les questions&nbsp;?</Link>
         </p>
       </section>
       <details className="bloc" style={{ marginBottom: "1rem" }}>

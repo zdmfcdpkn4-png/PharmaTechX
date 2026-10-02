@@ -47,10 +47,8 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
       <section className="panneau-titre">
         <h1>Statistiques de réussite</h1>
         <p>
-          Les modules que les agents réussissent, ceux qui accrochent, et où précisément — pour ajuster la
-          formation, jamais pour juger quelqu&apos;un. Tous les essais conservés comptent, premiers essais
-          compris ; aucune donnée individuelle ; un taux n&apos;apparaît qu&apos;à partir de {SEUILS_STAT.effectif}{" "}
-          agents.
+          Les modules réussis, ceux qui accrochent, et où : pour ajuster la formation, jamais pour juger quelqu&apos;un.
+          Aucune donnée individuelle ; un taux n&apos;apparaît qu&apos;à partir de {SEUILS_STAT.effectif} agents.
         </p>
       </section>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
 import { Compte, cumuler, type Comptes, type Cumul } from "@/components/ArbreBanque";
+import { MemoirePlis } from "@/components/MemoirePlis";
 import { ancreDe, estOuvert, type BrancheFiliere, type BrancheModule, type EtatPlis } from "@/content/arbre-banque";
 import type { LigneQuestion } from "@/content/banque-db";
 import type { CodeActeur } from "@/content/quatre-yeux";
@@ -72,7 +73,12 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
   return (
     <li className="arbo-ligne">
       <CaseQuestion q={q} session={ctx.session} />
-      <details id={ancreDe(chemin)} className="arbo-noeud arbo-question" open={estOuvert(chemin, 4, ctx.etat)}>
+      <details
+        id={ancreDe(chemin)}
+        data-pli={`banque:${chemin}`}
+        className="arbo-noeud arbo-question"
+        open={estOuvert(chemin, 4, ctx.etat)}
+      >
         <summary>
           <EtiquettesQuestion
             q={q}
@@ -114,6 +120,7 @@ function ModuleArbre({ bm, profil, ctx }: { bm: BrancheModule; profil: ProfilTir
       <CaseModule branche={ancreDe(bm.chemin)} titre={m.titre} nombre={questions.length} />
       <details
         id={ancreDe(bm.chemin)}
+        data-pli={`banque:${bm.chemin}`}
         className={`arbo-noeud arbo-module${vide ? " arbo-module--vide" : ""}`}
         open={estOuvert(bm.chemin, 3, ctx.etat)}
       >
@@ -150,7 +157,12 @@ function ModuleArbre({ bm, profil, ctx }: { bm: BrancheModule; profil: ProfilTir
 function FiliereArbre({ f, ctx }: { f: BrancheFiliere; ctx: Contexte }) {
   return (
     <li>
-      <details id={ancreDe(f.chemin)} className="arbo-noeud arbo-filiere" open={estOuvert(f.chemin, 1, ctx.etat)}>
+      <details
+        id={ancreDe(f.chemin)}
+        data-pli={`banque:${f.chemin}`}
+        className="arbo-noeud arbo-filiere"
+        open={estOuvert(f.chemin, 1, ctx.etat)}
+      >
         <summary>
           <Badge nom={f.badge} />
           <span className="arbre-titre">{f.libelle}</span>
@@ -160,7 +172,12 @@ function FiliereArbre({ f, ctx }: { f: BrancheFiliere; ctx: Contexte }) {
         <ul className="liste-nue arbo-enfants">
           {f.niveaux.map((n) => (
             <li key={n.chemin}>
-              <details id={ancreDe(n.chemin)} className="arbo-noeud arbo-niveau" open={estOuvert(n.chemin, 2, ctx.etat)}>
+              <details
+                id={ancreDe(n.chemin)}
+                data-pli={`banque:${n.chemin}`}
+                className="arbo-noeud arbo-niveau"
+                open={estOuvert(n.chemin, 2, ctx.etat)}
+              >
                 <summary>
                   {n.code === null ? (
                     <span className="arbre-titre">Tous niveaux</span>
@@ -258,10 +275,14 @@ export function ArborescenceBanque({
         <span aria-hidden="true"> · </span>
         <Link href={lienPlis("aucun")}>Tout replier</Link>
       </p>
+      {/* Repliée à l'arrivée, filtre compris ; une branche ouverte le reste pendant la session (question 91). */}
+      <MemoirePlis arbre="banque" etat={etat.plis === "defaut" ? "garder" : etat.plis === "aucun" ? "oublier" : "suspendre"} />
       {arbre.length === 0 ? (
         <p className="encart">Aucune question en base pour ce filtre.</p>
       ) : (
-        <ul className="liste-nue arbo">
+        // La clé refait l'arbre quand on passe à « Tout déplier » ou « Tout replier » : une branche ouverte à la
+        // main ne survit pas au geste.
+        <ul key={etat.plis} className="liste-nue arbo">
           {arbre.map((f) => (
             <FiliereArbre key={f.chemin} f={f} ctx={ctx} />
           ))}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { actionsJournal, chercherJournal } from "@/lib/journal";
-import { PAGE_JOURNAL, adresseJournal, filtreActif, lireFiltreJournal } from "@/lib/journal-filtre";
+import { adresseJournal, filtreActif, lireFiltreJournal } from "@/lib/journal-filtre";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +34,8 @@ export default async function Journal({
       <section className="panneau-titre">
         <h1>Journal des actions</h1>
         <p>
-          Les actions d&apos;administration, des plus récentes aux plus anciennes, {PAGE_JOURNAL} par page : rôle et
-          libellé de profil, jamais une personne. Les visas y figurent avec le nom saisi par le signataire. Les filtres
-          parcourent tout le journal ; une action ou une cible du tableau filtre sur elle.
+          Les actions d&apos;administration, des plus récentes aux plus anciennes, sans nom de personne hors des visas. Une
+          action ou une cible du tableau filtre sur elle.
         </p>
       </section>
 

@@ -145,7 +145,7 @@ export function FormulaireNouvelleFiliere({ plageBlocs, retour }: { plageBlocs: 
         </label>
         <label className="champ">
           <span>Identifiant (facultatif)</span>
-          <input name="id" maxLength={40} placeholder="déduit du libellé" />
+          <input name="id" maxLength={40} placeholder="déduit du libellé" aria-describedby="aide-nouvelle-filiere-id" />
         </label>
         <label className="champ">
           <span>Blocs de compétence</span>
@@ -164,6 +164,11 @@ export function FormulaireNouvelleFiliere({ plageBlocs, retour }: { plageBlocs: 
           </select>
         </label>
       </div>
+      {/* Venu de l'introduction de Filières (question 91), sous le champ qu'il concerne. */}
+      <p id="aide-nouvelle-filiere-id" className="legende" style={{ margin: 0 }}>
+        Identifiant déjà dans la fiche d&apos;habilitation : la filière déposée la <strong>corrige</strong> ; sinon,
+        elle l&apos;<strong>étend</strong>.
+      </p>
       <AideFiliere id="aide-nouvelle-filiere" plageBlocs={plageBlocs} />
       <label className="champ">
         <span>Description</span>
@@ -235,7 +240,8 @@ export function FormulaireNouveauNiveau({
       </div>
       <p id="rappel-prefixes" className="legende" style={{ margin: 0 }}>
         Le code prend le préfixe du métier de la filière s&apos;il ne l&apos;a pas : {RAPPEL_PREFIXES}.
-        Le préparateur n&apos;en a pas.
+        Le préparateur n&apos;en a pas. Code déjà dans la fiche d&apos;habilitation : le niveau déposé la{" "}
+        <strong>corrige</strong> ; sinon, il l&apos;<strong>étend</strong>.
       </p>
       <label className="champ">
         <span>Condition d&apos;obtention</span>

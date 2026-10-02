@@ -124,15 +124,15 @@ export default async function Pilotage({
       <section className="panneau-titre">
         <h1>Pilotage des résultats</h1>
         <p>
-          Où en est l&apos;unité, ce qui attend une signature, et où les résultats accrochent. Aucun
-          nom : les rapports sont rattachés à un identifiant d&apos;agent.
+          Où en est l&apos;unité, ce qui attend une signature, où les résultats accrochent, sans aucun nom.
+          {conservation && (
+            <>
+              {" "}
+              La réussite au premier essai, question par question, est aux{" "}
+              <Link href="/admin/statistiques">Statistiques</Link>.
+            </>
+          )}
         </p>
-        {conservation && (
-          <p className="legende">
-            Ce tableau lit les rapports émis, d&apos;ordinaire l&apos;essai qui réussit. La réussite au premier essai,
-            question par question et réponse par réponse, est aux <Link href="/admin/statistiques">Statistiques</Link>.
-          </p>
-        )}
       </section>
 
       <form method="get" className="carte filtres-pilotage">
@@ -199,6 +199,8 @@ export default async function Pilotage({
             </Fragment>
           ))}
           {filtre.modules ? ` — ${filtre.modules.length} module${filtre.modules.length > 1 ? "s" : ""}` : ""}
+          {/* Venu de l'introduction (question 91) : ce que lit le tableau, sous le choix du périmètre. */}
+          {conservation && ". Lu sur les rapports émis, d'ordinaire l'essai qui réussit."}
         </p>
       </form>
 

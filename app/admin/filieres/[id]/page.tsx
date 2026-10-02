@@ -19,6 +19,7 @@ import {
 import { A_PRECISER, type Module } from "@/content/types";
 import { Badge } from "@/components/Badge";
 import { LienModule } from "@/components/LienModule";
+import { MemoirePlis } from "@/components/MemoirePlis";
 import { FormulaireFiliere, FormulaireNouveauNiveau, SupprimerDepotFiliere } from "../../referentiel/formulaires";
 import { ERREURS, MESSAGES } from "../../referentiel/messages";
 import { actionProgrammeFiliere } from "../actions";
@@ -55,6 +56,29 @@ function parBloc(modules: readonly Module[], blocs: readonly BlocServi[]): { cle
   const connus = new Set(blocs.map((b) => b.numero));
   const sansBloc = modules.filter((m) => typeof m.bloc !== "number" || !connus.has(m.bloc));
   return sansBloc.length > 0 ? [...groupes, { cle: "sans-bloc", titre: "Modules déposés sans bloc", modules: sansBloc }] : groupes;
+}
+
+/**
+ * Un bloc du programme, replié à l'arrivée avec son nombre de modules
+ * (question 91, choix a) ; ouvert, il le reste le temps de la session
+ * (`MemoirePlis`). La légende du groupe de cases reste pour les lecteurs
+ * d'écran : le résumé la dit déjà à l'œil.
+ */
+function GroupeProgramme({ pli, titre, nombre, children }: { pli: string; titre: string; nombre: number; children: React.ReactNode }) {
+  return (
+    <details className="programme-groupe" data-pli={`filiere:${pli}`}>
+      <summary>
+        {titre}
+        <span className="etiquette etiquette--neutre">
+          {nombre} module{nombre > 1 ? "s" : ""}
+        </span>
+      </summary>
+      <fieldset>
+        <legend className="lecture-seule">{titre}</legend>
+        {children}
+      </fieldset>
+    </details>
+  );
 }
 
 /** Code du critère, ou un tiret pour un module déposé sans critère. */
@@ -334,6 +358,7 @@ export default async function PageFiliere({
       </section>
 
       <section className="section" id="programme">
+        <MemoirePlis arbre="filiere" />
         <div className="section-titre">
           <h2 style={{ fontSize: "1.15rem" }}>Programme</h2>
           <span className="compte">
@@ -381,29 +406,27 @@ export default async function PageFiliere({
                   <p className="legende">Aucun module au programme pour l&apos;instant.</p>
                 ) : (
                   parBloc(dans, blocs).map((g) => (
-                    <fieldset key={g.cle} className="groupe">
-                      <legend className="champ-titre">{g.titre}</legend>
+                    <GroupeProgramme key={g.cle} pli={`${f.id}/${g.cle}`} titre={g.titre} nombre={g.modules.length}>
                       <ul className="liste-programme">
                         {g.modules.map((m) => (
                           <LigneProgramme key={m.id} m={m} filiere={f.id} niveaux={niveauxF} dans libelles={libelles} modifiable />
                         ))}
                       </ul>
-                    </fieldset>
+                    </GroupeProgramme>
                   ))
                 )}
                 {autres.length > 0 && (
-                  <details className="bloc">
+                  <details className="bloc" data-pli={`filiere:${f.id}/autres`}>
                     <summary>Ajouter des modules d&apos;autres filières ({autres.length})</summary>
                     <div className="contenu-bloc">
                       {parBloc(autres, blocs).map((g) => (
-                        <fieldset key={g.cle} className="groupe">
-                          <legend className="champ-titre">{g.titre}</legend>
+                        <GroupeProgramme key={g.cle} pli={`${f.id}/autres/${g.cle}`} titre={g.titre} nombre={g.modules.length}>
                           <ul className="liste-programme">
                             {g.modules.map((m) => (
                               <LigneProgramme key={m.id} m={m} filiere={f.id} niveaux={niveauxF} dans={false} libelles={libelles} modifiable />
                             ))}
                           </ul>
-                        </fieldset>
+                        </GroupeProgramme>
                       ))}
                     </div>
                   </details>
@@ -414,31 +437,30 @@ export default async function PageFiliere({
               </form>
             ) : (
               parBloc(dans, blocs).map((g) => (
-                <fieldset key={g.cle} className="groupe">
-                  <legend className="champ-titre">{g.titre}</legend>
+                <GroupeProgramme key={g.cle} pli={`${f.id}/${g.cle}`} titre={g.titre} nombre={g.modules.length}>
                   <ul className="liste-programme">
                     {g.modules.map((m) => (
                       <LigneProgramme key={m.id} m={m} filiere={f.id} niveaux={niveauxF} dans libelles={libelles} modifiable={false} />
                     ))}
                   </ul>
-                </fieldset>
+                </GroupeProgramme>
               ))
             )}
           </>
         )}
         {troncCommun.length > 0 && (
-          <details className="bloc" open={f.id === SOCLE}>
+          // Replié, socle compris (question 91 ; avant, ouvert sur la page du socle).
+          <details className="bloc" data-pli={`filiere:${f.id}/tronc`}>
             <summary>Tronc commun, proposé à toutes les filières ({troncCommun.length})</summary>
             <div className="contenu-bloc">
               {parBloc(troncCommun, blocs).map((g) => (
-                <fieldset key={g.cle} className="groupe">
-                  <legend className="champ-titre">{g.titre}</legend>
+                <GroupeProgramme key={g.cle} pli={`${f.id}/tronc/${g.cle}`} titre={g.titre} nombre={g.modules.length}>
                   <ul className="liste-programme">
                     {g.modules.map((m) => (
                       <LigneProgramme key={m.id} m={m} filiere={f.id} niveaux={niveauxF} dans={false} libelles={libelles} modifiable={false} />
                     ))}
                   </ul>
-                </fieldset>
+                </GroupeProgramme>
               ))}
             </div>
           </details>

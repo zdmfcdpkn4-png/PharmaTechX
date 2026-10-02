@@ -47,11 +47,8 @@ export default async function Filieres({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Filières</h1>
         <p>
-          Les profils de poste, rangés par métier. La fiche d&apos;habilitation livrée avec le site reste la
-          référence : une filière déposée la <strong>corrige</strong> quand son identifiant existe déjà, et
-          l&apos;<strong>étend</strong> sinon. Chaque filière a sa page — fiche, niveaux, programme de modules
-          et ce qui la cite. Les rapports déjà émis portent leur propre copie des libellés : les modifier ici
-          ne les réécrit pas.
+          Les profils de poste, rangés par métier ; chacun a sa page : fiche, niveaux, programme. Modifier un libellé ne
+          réécrit pas les rapports déjà émis.
         </p>
       </section>
 

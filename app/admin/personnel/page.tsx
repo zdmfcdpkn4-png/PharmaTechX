@@ -59,11 +59,8 @@ export default async function Personnel({
       <section className="panneau-titre">
         <h1>Personnel &amp; historique</h1>
         <p>
-          Répertoire de traçabilité construit depuis les rapports enregistrés : pour chaque agent et
-          chaque critère, le dernier rapport non annulé, son verdict et le nombre de rapports clos.
-          Les agents n&apos;apparaissent que par leur identifiant ; la correspondance avec les personnes
-          est tenue par le pharmacien responsable, hors du site. L&apos;habilitation elle-même se
-          prononce hors de l&apos;application, sur la fiche d&apos;habilitation.
+          Pour chaque agent, désigné par son seul identifiant, le dernier rapport de chaque critère et son verdict.
+          L&apos;habilitation se prononce hors du site, sur la fiche d&apos;habilitation.
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <a href="/admin/personnel/repertoire.csv" className="bouton bouton--secondaire">Exporter le répertoire (CSV)</a>
@@ -79,7 +76,8 @@ export default async function Personnel({
       </div>
       <section className="carte">
         <p className="legende">
-          Le site génère l&apos;identifiant (AG-001, AG-002…). Un identifiant se clôt au départ de
+          Le site génère l&apos;identifiant (AG-001, AG-002…) ; la correspondance avec les personnes est tenue par le
+          pharmacien responsable, hors du site. Un identifiant se clôt au départ de
           l&apos;agent ; il ne se supprime pas tant que des rapports s&apos;y rattachent. L&apos;agent
           rattache sa progression avec un code personnel qu&apos;il choisit (question 11) ; oublié,
           il se réinitialise ici.

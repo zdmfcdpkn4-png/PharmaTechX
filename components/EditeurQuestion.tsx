@@ -172,9 +172,6 @@ export function EditeurQuestion({
     const b = etiquettes.blocs.find((x) => x.numero === n);
     return b ? `Bloc ${n} — ${b.titre}` : `Bloc ${n}`;
   };
-  // Blocs ouverts au départ : ceux qui portent déjà un rattachement.
-  const blocsOuverts = new Set((initiale?.aussiDans ?? []).map((id) => modules.find((m) => m.id === id)?.bloc ?? null));
-
   const majOption = (i: number, patch: Partial<OptionForm>) =>
     setOptions((prec) => prec.map((o, k) => (k === i ? { ...o, ...patch } : o)));
 
@@ -680,7 +677,8 @@ export function EditeurQuestion({
       {/* Question 74 (choix c, 24/09/2026) : d'autres modules, des blocs et des profils. */}
       <fieldset className="groupe">
         <legend className="champ-titre">Autres modules, blocs et profils</legend>
-        <details open={aussiDans.length > 0}>
+        {/* Replié, avec le nombre de modules cochés ; ses blocs aussi (question 91). */}
+        <details>
           <summary>
             Aussi posée dans d&apos;autres modules{aussiDans.length > 0 ? ` (${aussiDans.length})` : ""}
           </summary>
@@ -692,7 +690,7 @@ export function EditeurQuestion({
           {modulesParBloc.map(([bloc, liste]) => {
             const cochees = liste.filter((m) => m.id !== moduleId && aussiDans.includes(m.id)).length;
             return (
-              <details key={bloc ?? "aucun"} className="aussi-bloc" open={blocsOuverts.has(bloc)}>
+              <details key={bloc ?? "aucun"} className="aussi-bloc">
                 <summary>
                   {titreBloc(bloc)}
                   <span className="legende">

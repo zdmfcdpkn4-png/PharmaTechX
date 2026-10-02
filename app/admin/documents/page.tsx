@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listerDepots } from "@/lib/db";
 import { LIBELLES_STATUT_FICHE } from "@/content/fiches";
-import { modeStockage, stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
+import { stockageConfigure, TAILLE_MAX_FICHIER } from "@/lib/stockage";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { getReferentiel } from "@/content/referentiel-db";
 import { NATURES_DOCUMENT, libelleNature } from "@/content/types";
@@ -29,7 +29,6 @@ export default async function Documents({
   const p = await searchParams;
   const { filieres, niveaux } = await getReferentiel();
   const [depots, modules] = await Promise.all([listerDepots(), getTousModulesAvecDeposes()]);
-  const mode = modeStockage();
   const moduleInitial = modules.some((m) => m.id === p.module) ? p.module : "";
 
   return (
@@ -37,12 +36,8 @@ export default async function Documents({
       <section className="panneau-titre">
         <h1>Documents rattachés</h1>
         <p>
-          Procédures internes, fiches réflexes, référentiels, vidéos et fiches de synthèse,
-          rattachés à un module (du code ou déposé) ou généraux. Une <strong>fiche de synthèse</strong>{" "}
-          rattachée à un module s&apos;affiche en fin de test, après la correction (PDF et images en
-          ligne), une fois validée depuis la banque du module (question 59). Un document général se propose à tous les profils, ou aux filières et niveaux
-          cochés : il apparaît alors sur le programme de ces profils. Stockage :{" "}
-          {mode === "blob" ? "Vercel Blob" : mode === "base" ? "base de données (portable, sans service supplémentaire)" : "aucun"}.
+          Les documents d&apos;un module, ou généraux, proposés aux profils cochés. Une <strong>fiche de synthèse</strong>{" "}
+          s&apos;affiche en fin de test, une fois validée dans la banque du module.
         </p>
       </section>
 
@@ -118,6 +113,10 @@ export default async function Documents({
                 </label>
               ))}
             </div>
+            {/* Venu de l'introduction (question 91), sous les cases qu'il concerne. */}
+            <p className="legende" style={{ margin: 0 }}>
+              Un document général apparaît sur le programme des profils cochés.
+            </p>
           </fieldset>
           <div className="actions">
             <button type="submit" className="bouton" disabled={!stockageConfigure()}>

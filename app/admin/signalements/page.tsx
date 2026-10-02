@@ -28,12 +28,7 @@ export default async function Signalements() {
     <>
       <section className="panneau-titre">
         <h1>Signalements</h1>
-        <p>
-          Remarques déposées par les apprenants depuis la correction — motif fermé, note libre —,
-          sur une question ou sur une fiche de synthèse. Le tutorat tranche : corriger, puis clore
-          le signalement. Une question de la banque versionnée avec le site se corrige dans le code ;
-          une fiche se corrige depuis la banque de son module, où elle repart « à vérifier ».
-        </p>
+        <p>Les remarques des apprenants sur une question ou une fiche de synthèse. Corrigez, puis closez le signalement.</p>
       </section>
       <ul className="liste-nue">
         {signalements.map((s) => (
@@ -69,6 +64,8 @@ export default async function Signalements() {
                 <Link href={`/admin/questions?module=${encodeURIComponent(s.module_id)}#fiches`}>
                   Corriger ou retirer la fiche dans la banque du module
                 </Link>
+                {/* Venu de l'introduction (question 91), sous le lien qui y mène. */}
+                {" "}: corrigée, elle repart « à vérifier ».
               </p>
             ) : s.enonce ? (
               <p className="legende">

@@ -2,6 +2,7 @@ import { listeBlocs } from "@/content/blocs-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { A_PRECISER, type Module } from "@/content/types";
 import { MAX_MODULES_PROGRAMME, MENTION_DEGRADE, type Programme } from "@/content/programmes";
+import { MemoirePlis } from "@/components/MemoirePlis";
 
 /**
  * Formulaire d'un programme à la carte (question 50), création et
@@ -80,10 +81,12 @@ export async function FormulaireProgramme({
           Au plus {MAX_MODULES_PROGRAMME} modules. Le programme sera marqué « {MENTION_DEGRADE} » partout où il
           paraît : il ne se confond ni avec l&apos;intégration ni avec le maintien de la fiche.
         </p>
+        <MemoirePlis arbre="programme" />
         {groupes.map((g) => {
           const coches = g.modules.filter((m) => rangDe.has(m.id)).length;
           return (
-            <details key={g.cle} className="programme-groupe" open={coches > 0 || !initiale}>
+            // Replié, avec le nombre de modules choisis (question 91) ; ouvert, il le reste pendant la session.
+            <details key={g.cle} className="programme-groupe" data-pli={`programme:${g.cle}`}>
               <summary>
                 {g.titre}
                 <span className="etiquette etiquette--neutre">

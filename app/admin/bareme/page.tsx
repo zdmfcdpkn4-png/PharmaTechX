@@ -118,12 +118,8 @@ export default async function Bareme({ searchParams }: { searchParams: Promise<{
       <section className="panneau-titre">
         <h1>Barème</h1>
         <p>
-          Règles de notation et de décision (décision du 18/09/2026, question 10). Elles sont
-          annoncées sur l&apos;accueil et sous chaque question, copiées dans chaque résultat scellé
-          et portées sur chaque rapport : une évaluation déjà passée garde le barème de son époque.
-          Le seuil d&apos;un module de la fiche se règle dans{" "}
-          <Link href="/admin/rattachement">Rattachement des modules</Link>, celui d&apos;un module déposé dans son
-          formulaire (<Link href="/admin/modules">Modules</Link>).
+          Les règles de notation et de décision, copiées dans chaque résultat scellé. Une évaluation déjà passée garde le
+          barème de son époque.
         </p>
       </section>
 
@@ -176,6 +172,12 @@ export default async function Bareme({ searchParams }: { searchParams: Promise<{
               <input type="number" name="minQuestions" min={LIMITES_BAREME.minQuestions.min} max={LIMITES_BAREME.minQuestions.max} step={1} defaultValue={bareme.minQuestions} />
             </label>
           </div>
+          {/* Venu de l'introduction (question 91), sous le seuil par défaut. */}
+          <p className="legende" style={{ margin: 0 }}>
+            Le seuil propre d&apos;un module de la fiche se règle dans{" "}
+            <Link href="/admin/rattachement">Rattachement des modules</Link>, celui d&apos;un module déposé dans son
+            formulaire (<Link href="/admin/modules">Modules</Link>).
+          </p>
           <div className="rangee">
             <label className="champ">
               <span>Bande de garde (défaut : le poids d&apos;une question)</span>

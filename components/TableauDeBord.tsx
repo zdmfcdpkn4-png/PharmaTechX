@@ -231,14 +231,14 @@ function GroupesModules({
 }) {
   return (
     <div className="groupes-modules">
-      {groupes.map((g, i) => {
+      {groupes.map((g) => {
         // Avancement du grand module : ses critères acquis sur son total.
         const acquis = g.modules.filter((m) => etatDe(m) === "acquis").length;
         return (
           <details
             key={g.cle}
             className="bloc groupe-modules"
-            open={estOuvert(g.cle, i === 0)}
+            open={estOuvert(g.cle, false)}
             onToggle={(e) => basculer(g.cle, e.currentTarget.open)}
           >
             <summary>
@@ -358,7 +358,8 @@ export function TableauDeBord({
   const [identifiant, setIdentifiant] = useState(essai ? IDENTIFIANT_ESSAI : (identifiantRattache ?? ""));
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
-  // Replis des grands modules : premier groupe ouvert par défaut, choix de
+  // Replis des grands modules : tous repliés par défaut (question 91 ; avant,
+  // le premier ouvert), la jauge « acquis » lisible sur chacun ; choix de
   // l'agent gardé le temps de la session (jamais nominatif, jamais transmis).
   const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
   const [replisLus, setReplisLus] = useState(false);
@@ -413,7 +414,7 @@ export function TableauDeBord({
       return suite;
     });
   const tousOuverts = (groupes: GroupeModules[]) =>
-    groupes.length > 0 && groupes.every((g, i) => estOuvert(g.cle, i === 0));
+    groupes.length > 0 && groupes.every((g) => estOuvert(g.cle, false));
   const BoutonReplis = ({ groupes }: { groupes: GroupeModules[] }) =>
     groupes.length > 1 ? (
       <button

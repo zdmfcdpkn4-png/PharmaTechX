@@ -83,9 +83,8 @@ export default async function PageEvaluation({
       <section className="panneau-titre">
         <h1>Évaluation — {mod.titre}</h1>
         <p>
-          Seuil de réussite {mod.seuilReussite}&nbsp;%. Les questions éliminatoires invalident le
-          critère en cas d&apos;erreur, quel que soit le score global. Ce résultat ne vaut pas
-          habilitation : il constitue la preuve de l&apos;étape 2 sur 6.
+          Seuil {mod.seuilReussite}&nbsp;% ; une erreur à une question éliminatoire invalide le critère, quel que soit le
+          score. Ce résultat ne vaut pas habilitation : c&apos;est la preuve de l&apos;étape 2 sur 6.
         </p>
       </section>
 

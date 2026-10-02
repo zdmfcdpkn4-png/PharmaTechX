@@ -228,16 +228,6 @@ export default async function PageModule({
             </li>
           )}
           {critere?.obligatoire && <li className="etiquette etiquette--obligatoire">Obligatoire</li>}
-          <li className="legende">
-            {bloc ? `Bloc ${bloc.numero} — ` : ""}
-            {mod.affectation === "tronc-commun"
-              ? "tronc commun, tous postes"
-              : depose
-                ? `filière${mod.postes.length > 1 ? "s" : ""} ${mod.postes.join(", ")}`
-                : "critère de poste"}
-            {mod.niveaux.length > 0 ? ` · niveau${mod.niveaux.length > 1 ? "x" : ""} ${mod.niveaux.join(", ")}` : depose ? " · tous niveaux" : ""}
-            {" · "}revalidation {typeof mod.periodiciteMois === "number" ? `${mod.periodiciteMois} mois` : A_PRECISER}
-          </li>
         </ul>
         <div className="titre-vignette">
           <Badge nom={badgeEffectif(mod.badge, mod.titre, mod.objectif)} taille={96} />
@@ -261,6 +251,17 @@ export default async function PageModule({
           )}
           <li className="etiquette etiquette--neutre">
             Seuil {mod.seuilReussite} %{nbElim > 0 ? ` · ${nbElim} éliminatoire${nbElim > 1 ? "s" : ""}` : ""}
+          </li>
+          {/* Rejoint les pastilles (question 91) : une rangée de repères au lieu de deux. */}
+          <li className="legende">
+            {bloc ? `Bloc ${bloc.numero} — ` : ""}
+            {mod.affectation === "tronc-commun"
+              ? "tronc commun, tous postes"
+              : depose
+                ? `filière${mod.postes.length > 1 ? "s" : ""} ${mod.postes.join(", ")}`
+                : "critère de poste"}
+            {mod.niveaux.length > 0 ? ` · niveau${mod.niveaux.length > 1 ? "x" : ""} ${mod.niveaux.join(", ")}` : depose ? " · tous niveaux" : ""}
+            {" · "}revalidation {typeof mod.periodiciteMois === "number" ? `${mod.periodiciteMois} mois` : A_PRECISER}
           </li>
         </ul>
       </section>

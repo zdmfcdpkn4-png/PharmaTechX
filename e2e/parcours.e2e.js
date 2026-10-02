@@ -527,7 +527,8 @@ Justification : cf. procédure interne.`,
   // Sans adresse de retour, l'arborescence réduite au module (vue par défaut, 01/10/2026) ; la liste se demande.
   await page.waitForURL(/admin\/questions\?module=comportement-zac&ok=creee/);
   assert.equal(await page.locator("nav.bascule-vue a[aria-current=true]").innerText(), "Arborescence", "après création, l'arborescence");
-  await page.locator("details.arbo-question", { hasText: "Question de test créée dans le formulaire" }).first().waitFor();
+  // Repliée, filtre compris (question 91) : la question est dans l'arbre, pas encore en vue.
+  await page.locator("details.arbo-question", { hasText: "Question de test créée dans le formulaire" }).first().waitFor({ state: "attached" });
   await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
   await page.waitForSelector("text=Question de test créée dans le formulaire");
   const ligneCreee = page.locator(".question-ligne", { hasText: "Question de test créée dans le formulaire" });
@@ -922,7 +923,7 @@ Justification : cf. procédure interne.`,
 
   /**
    * Déplie les grands modules repliés (question 37, choix c) : à l'accueil,
-   * les critères sont groupés par bloc et un seul groupe est ouvert au départ.
+   * les critères sont groupés par bloc, tous repliés au départ (question 91).
    */
   const deplierTousLesGroupes = async () => {
     for (let garde = 0; garde < 20; garde++) {
@@ -931,6 +932,16 @@ Justification : cf. procédure interne.`,
       await replies.first().click();
     }
   };
+
+  /**
+   * Ouvre les replis qui contiennent un élément (question 91 : les programmes
+   * se replient par bloc), pour le cocher comme on le ferait après les avoir
+   * dépliés.
+   */
+  const ouvrirAncetres = (loc) =>
+    loc.evaluate((el) => {
+      for (let d = el.closest("details"); d; d = d.parentElement?.closest("details") ?? null) d.open = true;
+    });
 
   // 5. quatre yeux : le tuteur modifie le schéma importé par l'administrateur, puis valide les neuf autres ;
   //    le schéma, dont il est devenu l'auteur, attend l'administrateur
@@ -1497,7 +1508,7 @@ Justification : justification deux.`;
   const seuilDe = async (id) =>
     (await page.textContent("section.panneau-titre p")).replace(/ /g, " ");
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
-  assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/);
+  assert.match(await seuilDe(idModule), /Seuil 70 %/);
   ok("module déposé : deux questions importées et validées, présentation affichée, seuil propre 70 %");
 
   // 12d. barème harmonisé : la part d'une proposition fausse de QIM passée à
@@ -1511,9 +1522,9 @@ Justification : justification deux.`;
   await page.goto(BASE + "/reperes");
   await page.waitForSelector("text=faux -0,5");
   await page.goto(BASE + "/module/comportement-zac/evaluation");
-  assert.match(await seuilDe("comportement-zac"), /Seuil de réussite 85 %/, "seuil par défaut sur un module du code");
+  assert.match(await seuilDe("comportement-zac"), /Seuil 85 %/, "seuil par défaut sur un module du code");
   await page.goto(BASE + "/module/" + idModule + "/evaluation");
-  assert.match(await seuilDe(idModule), /Seuil de réussite 70 %/, "seuil propre du module déposé conservé");
+  assert.match(await seuilDe(idModule), /Seuil 70 %/, "seuil propre du module déposé conservé");
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("p.question-bareme:has-text('faux -0,5')");
   // le « je ne sais pas » est proposé à côté de Vrai et Faux (question 35)
@@ -1872,14 +1883,19 @@ Justification : justification deux.`;
   const nbGroupes = await page.locator(".groupe-modules").count();
   assert.ok(nbGroupes > 1, "les critères du socle sont répartis en grands modules");
 
-  // onglet neuf : un seul grand module ouvert, le reste replié
+  // onglet neuf : tous les grands modules repliés (question 91 ; avant, le premier ouvert), la jauge lisible sur chacun
   const ongletNeuf = await ctx.newPage();
   await ongletNeuf.goto(BASE + "/");
   await ongletNeuf.waitForSelector(".groupe-modules");
   assert.equal(
     await ongletNeuf.locator(".groupe-modules[open]").count(),
-    1,
-    "un seul grand module ouvert dans un onglet neuf",
+    0,
+    "tous les grands modules repliés dans un onglet neuf",
+  );
+  assert.equal(
+    await ongletNeuf.locator(".groupe-modules > summary .etiquette", { hasText: /\d+ \/ \d+ acquis/ }).count(),
+    await ongletNeuf.locator(".groupe-modules").count(),
+    "chaque grand module replié dit ses acquis",
   );
   await ongletNeuf.close();
 
@@ -2583,6 +2599,11 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("input[name=nom]");
   await page.fill("input[name=nom]", "Intérimaire test");
   await page.fill("input[name=destinataire]", "Préparateur intérimaire, trois mois");
+  // Blocs repliés à l'arrivée, avec leur nombre de modules (question 91).
+  assert.equal(await page.locator("details.programme-groupe[open]").count(), 0, "programme à la carte : blocs repliés");
+  await ouvrirAncetres(page.locator("input[name=modules][value=comportement-zac]"));
+  await ouvrirAncetres(page.locator("input[name=modules][value=protection-operateur-cytotoxiques]"));
+  await ouvrirAncetres(page.locator("input[name=modules][value=critere-b1-02]"));
   await page.check("input[name=modules][value=comportement-zac]");
   await page.fill("input[name='rang-comportement-zac']", "2");
   await page.check("input[name=modules][value=protection-operateur-cytotoxiques]");
@@ -2657,6 +2678,7 @@ Justification : cf. procédure interne.`,
   // modifié, le programme repasse en brouillon et quitte les postes
   await rebrancher(codeTuteur);
   await page.goto(BASE + "/admin/programmes/" + idProgramme);
+  await ouvrirAncetres(page.locator("input[name=modules][value=critere-b1-02]"));
   await page.uncheck("input[name=modules][value=critere-b1-02]");
   await page.click("button:has-text('Enregistrer les modifications')");
   await page.waitForURL(/ok=modifie-a-revalider/);
@@ -3155,6 +3177,13 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/admin\/filieres\/sterilisation$/);
   const lignePgm = (id) => page.locator(`#programme li.ligne-programme[data-module="${id}"]`);
   await page.click("#programme summary:has-text(\"Ajouter des modules d'autres filières\")");
+  // Les blocs y sont repliés, avec leur nombre de modules (question 91).
+  assert.equal(
+    await page.locator("#programme details.programme-groupe[open]").count(),
+    0,
+    "page d'une filière : blocs du programme repliés",
+  );
+  await ouvrirAncetres(lignePgm("critere-b6-01"));
   await lignePgm("critere-b6-01").locator("input[type=checkbox][name=dans]").check();
   await lignePgm("critere-b6-01").locator('input[name="niv:critere-b6-01"][value="S1"]').check();
   await page.click("button:has-text('Enregistrer le programme')");
@@ -3184,6 +3213,7 @@ Justification : cf. procédure interne.`,
     c.disabled = false;
     c.checked = false;
   });
+  await ouvrirAncetres(lignePgm("critere-b5-09"));
   await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').check();
   await page.click("button:has-text('Enregistrer le programme')");
   await page.waitForURL(/erreur=programme/);
@@ -3195,15 +3225,17 @@ Justification : cf. procédure interne.`,
     0,
     "tout ou rien : le niveau coché sur B5-09 n'est pas enregistré",
   );
+  await ouvrirAncetres(lignePgm("critere-b5-09"));
   await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').check();
   await page.click("button:has-text('Enregistrer le programme')");
   await page.waitForURL(/ok=programme&n=1/);
   await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]:checked').waitFor({ state: "attached" });
   assert.equal(await lignePgm("critere-b5-09").locator(".ligne-programme-alerte").count(), 0, "B5-09 proposé au niveau N2");
+  await ouvrirAncetres(lignePgm("critere-b5-09"));
   await lignePgm("critere-b5-09").locator('input[name="niv:critere-b5-09"][value="N2"]').uncheck();
   await page.click("button:has-text('Enregistrer le programme')");
   // même adresse qu'avant : c'est l'alerte revenue qui prouve la page redessinée
-  await lignePgm("critere-b5-09").locator(".ligne-programme-alerte").waitFor();
+  await lignePgm("critere-b5-09").locator(".ligne-programme-alerte").waitFor({ state: "attached" });
   // Un niveau ajouté depuis la page d'une filière s'y rattache, et l'on y revient.
   await page.goto(BASE + "/admin/filieres/sterilisation");
   const ajoutNiveauIci = page.locator("form", { hasText: "Ajouter un niveau à cette filière" });
@@ -3217,11 +3249,13 @@ Justification : cf. procédure interne.`,
   const autreOnglet = await page.context().newPage();
   await autreOnglet.goto(BASE + "/admin/filieres/sterilisation");
   await autreOnglet.click("#programme summary:has-text(\"Ajouter des modules d'autres filières\")");
+  await ouvrirAncetres(autreOnglet.locator('#programme li.ligne-programme[data-module="critere-b6-10"]'));
   await autreOnglet.locator('#programme li.ligne-programme[data-module="critere-b6-10"] input[type=checkbox][name=dans]').check();
   await autreOnglet.click("button:has-text('Enregistrer le programme')");
   await autreOnglet.waitForURL(/ok=programme&n=1/);
   await autreOnglet.close();
   // Retirer B6-01 : la filière et son niveau S1 quittent le module, qui revient à la fiche.
+  await ouvrirAncetres(lignePgm("critere-b6-01"));
   await lignePgm("critere-b6-01").locator("input[type=checkbox][name=dans]").uncheck();
   await page.click("button:has-text('Enregistrer le programme')");
   await page.waitForURL(/ok=programme&n=1/);
@@ -3231,6 +3265,7 @@ Justification : cf. procédure interne.`,
     1,
     "B6-10, ajouté dans l'autre onglet, reste au programme : seule la case changée a compté",
   );
+  await ouvrirAncetres(lignePgm("critere-b6-10"));
   await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]").uncheck();
   await page.click("button:has-text('Enregistrer le programme')");
   await lignePgm("critere-b6-10").locator("input[type=checkbox][name=dans]:not(:checked)").waitFor({ state: "attached" });
@@ -3332,7 +3367,10 @@ Justification : cf. procédure interne.`,
   // un module de l'arbre conduit à la liste filtrée sur ce module ; la couverture est repliée (02/10/2026)
   assert.equal(await page.locator("details.couverture[open]").count(), 0, "couverture repliée par défaut");
   await page.locator("details.couverture > summary").click();
-  const premier = page.locator(".arbre-module a").first();
+  // Ses groupes aussi (question 91) : on ouvre le premier.
+  assert.equal(await page.locator("details.arbre-groupe[open]").count(), 0, "groupes de la couverture repliés");
+  await page.locator("details.arbre-groupe > summary").first().click();
+  const premier = page.locator("details.arbre-groupe").first().locator(".arbre-module a").first();
   const cible = await premier.getAttribute("href");
   assert.match(cible, /\/admin\/questions\?vue=liste&module=/, "un module de l'arbre renvoie à sa liste");
   await premier.click();
@@ -3737,16 +3775,19 @@ Justification : cf. procédure interne.`,
   const bascule = page.locator("nav.bascule-vue");
   assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arborescence est la vue par défaut");
   assert.match(await bascule.locator("a:has-text('Liste')").getAttribute("href"), /vue=liste/, "la liste se demande");
-  // Entrées de validation (01/10/2026) : elles ouvrent aussi l'arborescence, filtre gardé,
-  // branches ouvertes jusqu'aux modules, questions repliées.
+  // Entrées de validation (01/10/2026) : elles ouvrent aussi l'arborescence, filtre gardé ; repliée, filtre
+  // compris (question 91), chaque branche disant combien de questions elle montre.
   await page.goto(BASE + "/admin");
   await page.locator("a.tuile", { hasText: "questions à vérifier" }).click();
   await page.waitForURL(/\/admin\/questions\?statut=a_verifier$/);
   assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "la tuile « à vérifier » ouvre l'arborescence");
   assert.equal(await page.locator("form.filtres select[name=statut]").inputValue(), "a_verifier", "filtre « à vérifier » gardé");
   assert.ok((await page.locator("details.arbo-question").count()) >= 1, "les questions à vérifier sont dans l'arbre");
-  assert.equal(await page.locator("details.arbo-module:not([open])").count(), 0, "sous le filtre, ouverte jusqu'aux modules");
-  assert.equal(await page.locator("details.arbo-question[open]").count(), 0, "questions repliées");
+  assert.equal(await page.locator("details.arbo-noeud[open]").count(), 0, "sous le filtre aussi, tout est replié");
+  assert.ok(
+    (await page.locator("details.arbo-filiere > summary .arbo-affichees").allTextContents()).every((t) => /^\d+ questions? affichées?$/.test(t)),
+    "chaque filière dit combien de questions elle montre",
+  );
   await page.keyboard.press("Control+k");
   await page.waitForSelector(".acces-rapide--ouvert");
   assert.equal(
@@ -3902,8 +3943,16 @@ Justification : cf. procédure interne.`,
   await compteBarre(afficheesLot).waitFor();
   await barre.locator("button:has-text('Désélectionner')").click();
   await barre.waitFor({ state: "hidden" });
-  // Case du module : ses questions affichées, chacune une fois.
+  // Case du module : ses questions affichées, chacune une fois. L'arbre est replié, filtre compris (question 91) :
+  // on ouvre la branche du module, qui reste ouverte le temps de la session, retour sur la page compris.
   const BRANCHE_LOT = "arb-_2a__2f_N1a_2f_comportement-zac";
+  await page.locator("#arb-_2a_ > summary").click();
+  await page.locator("#arb-_2a__2f_N1a > summary").click();
+  await page.locator(`#${BRANCHE_LOT} > summary`).click();
+  await page.goto(BASE + "/admin/questions?module=comportement-zac");
+  await page.locator(`#${BRANCHE_LOT}[open]`).waitFor();
+  assert.equal(await page.locator("#arb-_2a__2f_N1a[open]").count(), 1, "la branche ouverte le reste au retour sur la page");
+  ok("arborescence repliée, filtre compris ; une branche ouverte le reste pendant la session (question 91)");
   const dansModule = await page.evaluate(
     (b) => new Set([...document.querySelectorAll(`#${b} input.case-question`)].map((c) => c.value)).size,
     BRANCHE_LOT,

@@ -141,11 +141,9 @@ export default async function Reperes() {
         <p className="sur-titre">Repères</p>
         <h1>Comment l&apos;habilitation se conduit, et comment elle s&apos;évalue</h1>
         <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>
-          Le dispositif en six étapes, les formats d&apos;évaluation et leur barème, le
-          programme complet des critères, les conditions des niveaux et les questions les
-          plus fréquentes. <strong>Un module validé à l&apos;écran ne vaut pas
-          habilitation</strong> : les quatre dernières étapes se déroulent au poste de
-          travail et devant le pharmacien responsable.
+          Le dispositif, le barème, le programme, les niveaux et les questions fréquentes.{" "}
+          <strong>Valider un module à l&apos;écran ne vaut pas habilitation</strong> : les étapes 3 à 6 se font au poste
+          et devant le pharmacien.
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <Link href="/#modules" className="bouton">

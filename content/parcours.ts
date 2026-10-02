@@ -80,8 +80,8 @@ export const parcoursIntegration: Parcours = {
   titre: "Parcours d'intégration",
   destinataire:
     "Nouvel arrivant en unité de production — préparateur en pharmacie, interne, pharmacien en prise de poste",
-  description:
-    "Acquisition des compétences jusqu'à la première habilitation. Le socle transversal (blocs 1 et 3) est prérequis aux deux parcours ; viennent ensuite les critères de la filière et du niveau visés.",
+  // Une phrase en tête du programme (question 91, choix a, 02/10/2026).
+  description: "Le socle transversal (blocs 1 et 3) d'abord, puis les critères de votre filière et de votre niveau.",
   blocs: blocs(),
 };
 
@@ -89,7 +89,8 @@ export const parcoursMaintien: Parcours = {
   id: "maintien",
   titre: "Parcours de maintien d'habilitation",
   destinataire: "Agent déjà habilité, en revalidation périodique",
-  description: `${maintien.activiteMinimale} Réévaluation de l'habilitation tous les ${maintien.periodiciteMois / 12} ans. ${maintien.reserve}`,
+  // Les faits de la fiche (`maintien`), en une phrase (question 91).
+  description: `Réévaluation tous les ${maintien.periodiciteMois / 12} ans, avancée si un complément de formation est nécessaire ; ${maintien.activiteMinimale.charAt(0).toLowerCase()}${maintien.activiteMinimale.slice(1)}`,
   blocs: blocs(),
 };
 

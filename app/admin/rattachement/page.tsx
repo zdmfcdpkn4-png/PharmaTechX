@@ -42,10 +42,8 @@ export default async function Rattachement({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Rattachement des modules</h1>
         <p>
-          À quels profils chaque critère de la fiche est proposé : filières, niveaux, parcours, et son seuil.
-          Pour composer le programme d&apos;une filière d&apos;un seul écran, voir sa page dans{" "}
-          <Link href="/admin/filieres">Filières</Link> : elle enregistre au même endroit. Un module déposé se
-          règle dans son propre formulaire (<Link href="/admin/modules">Modules</Link>).
+          À quels profils chaque critère de la fiche est proposé, et avec quel seuil. Un module déposé se règle dans{" "}
+          <Link href="/admin/modules">son propre formulaire</Link>.
         </p>
       </section>
 

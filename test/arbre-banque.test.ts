@@ -110,14 +110,15 @@ test("élagage : seuls les modules retenus, et les branches qui en portent encor
   assert.equal(arbre[1].niveaux.length, 3, "l'arbre d'origine n'est pas modifié");
 });
 
-test("repli par défaut : tout replié (24/09/2026) ; sous un filtre, ouvert jusqu'aux modules", () => {
+test("repli par défaut : tout replié (24/09/2026), filtre actif compris (question 91)", () => {
   const defaut = { plis: "defaut" as const, ouvrir: null, filtre: false };
   assert.equal(estOuvert("chimiotherapie", 1, defaut), false, "filières repliées elles aussi");
   assert.equal(estOuvert("chimiotherapie/N2", 2, defaut), false);
   assert.equal(estOuvert("chimiotherapie/N2/double", 3, defaut), false);
   const filtre = { ...defaut, filtre: true };
-  assert.equal(estOuvert("chimiotherapie/N2", 2, filtre), true);
-  assert.equal(estOuvert("chimiotherapie/N2/double", 3, filtre), true);
+  assert.equal(estOuvert("chimiotherapie", 1, filtre), false, "un filtre n'ouvre plus l'arbre");
+  assert.equal(estOuvert("chimiotherapie/N2", 2, filtre), false);
+  assert.equal(estOuvert("chimiotherapie/N2/double", 3, filtre), false);
   assert.equal(estOuvert("chimiotherapie/N2/double/q-1", 4, filtre), false, "une question ne s'ouvre qu'à la demande");
 });
 

@@ -64,10 +64,25 @@ export function ChoixProfil({
         {apprenants && (
           <label className="champ">
             <span>Apprenant (facultatif)</span>
-            <input type="text" name="agent" defaultValue={agent} placeholder="AG-001" autoComplete="off" maxLength={20} />
+            <input
+              type="text"
+              name="agent"
+              defaultValue={agent}
+              placeholder="AG-001"
+              autoComplete="off"
+              maxLength={20}
+              aria-describedby="aide-apprenant"
+            />
           </label>
         )}
       </div>
+      {/* Venu de l'introduction (question 91), sous le champ qu'il concerne. */}
+      {apprenants && (
+        <p id="aide-apprenant" className="legende" style={{ margin: 0 }}>
+          Avec l&apos;identifiant d&apos;un apprenant, c&apos;est son ordre propre sur ce profil qu&apos;on range : quand il est
+          rattaché, il passe avant celui du profil.
+        </p>
+      )}
       <div className="actions">
         <button type="submit" className="bouton">
           Afficher les modules

@@ -41,14 +41,9 @@ export default async function Modules({
       <section className="panneau-titre">
         <h1>Modules</h1>
         <p>
-          Le texte des 53 critères de la fiche reste versionné avec le site (décision du 18/09/2026).
-          Un <strong>module déposé</strong> s&apos;ajoute depuis cet écran, à la manière d&apos;un dépôt
-          du Lecteur QIM · QCM : titre, objectif, présentation courte, rattachement facultatif à un
-          critère, profils (filières, niveaux, parcours), seuil de réussite. Ses questions se déposent
-          depuis la banque, ses documents depuis Dépôt documents. Il n&apos;entre au programme
-          qu&apos;une fois <strong>publié</strong>. Publier, retirer ou repasser en brouillon est{" "}
-          <strong>réservé à l&apos;administration</strong>, et un module publié ne se modifie
-          qu&apos;en administration (règle des quatre yeux, décision du 18/09/2026).
+          Ajoutez un module ici : il n&apos;entre au programme qu&apos;une fois <strong>publié</strong> par
+          l&apos;administration. Ses questions se déposent dans la banque, ses documents dans{" "}
+          <Link href="/admin/documents">Documents</Link>.
         </p>
       </section>
 

@@ -140,13 +140,8 @@ export default async function Ordonnancement({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Ordonnancement des modules</h1>
         <p>
-          Choisissez un profil de poste, son niveau cible et le parcours : seuls les modules de ce profil —
-          socle et filière, au niveau choisi — sont proposés. Rangez-les en glissant la poignée, avec les
-          flèches, ou en tapant leur numéro. Un profil qui a son ordre voit à l&apos;accueil ses modules
-          numérotés dans cet ordre ; les autres suivent l&apos;ordre général, regroupé par bloc.
-          {apprenants
-            ? " Avec l'identifiant d'un apprenant, c'est son ordre propre sur ce profil qu'on range : quand il est rattaché, il passe avant celui du profil."
-            : ""}
+          Choisissez un profil et son niveau, puis rangez ses modules : glisser, flèches ou numéro. Le profil les voit
+          ensuite numérotés dans cet ordre.
         </p>
       </section>
       {sp.ok && MESSAGES[sp.ok] && (

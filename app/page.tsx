@@ -223,10 +223,8 @@ export default async function Accueil({
           </a>
         </div>
         <p className="avertissement-hero">
-          <strong>Valider un module à l&apos;écran ne vaut pas habilitation.</strong> Ce site
-          couvre les étapes 1 et 2 sur 6 ; les quatre suivantes se déroulent au poste de
-          travail et devant le pharmacien responsable —{" "}
-          <Link href="/reperes#dispositif">le dispositif en détail</Link>.
+          <strong>Valider un module à l&apos;écran ne vaut pas habilitation</strong> :{" "}
+          <Link href="/reperes#dispositif">les étapes 3 à 6</Link> se font au poste et devant le pharmacien.
         </p>
         <p className="mentions-hero">
           {rediges.length} critère{rediges.length > 1 ? "s" : ""} évaluable{rediges.length > 1 ? "s" : ""} sur {criteres.length}

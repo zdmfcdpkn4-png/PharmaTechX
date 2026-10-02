@@ -55,10 +55,8 @@ export default async function Niveaux({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Niveaux</h1>
         <p>
-          Les niveaux d&apos;habilitation, rangés par métier. La fiche d&apos;habilitation livrée avec le site
-          reste la référence : un niveau déposé la <strong>corrige</strong> quand son code existe déjà, et
-          l&apos;<strong>étend</strong> sinon. Les rapports déjà émis portent leur propre copie des libellés :
-          les modifier ici ne les réécrit pas. Un niveau se rattache à une <Link href="/admin/filieres">filière</Link>.
+          Les niveaux d&apos;habilitation, rangés par métier, chacun rattaché à une{" "}
+          <Link href="/admin/filieres">filière</Link>. Modifier un libellé ne réécrit pas les rapports déjà émis.
         </p>
       </section>
 

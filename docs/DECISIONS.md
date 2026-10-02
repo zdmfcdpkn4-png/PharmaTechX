@@ -6223,6 +6223,114 @@ lire une seule fois.
 - Mesures à 1 280 et 390 px : ni la page ni le tableau ne débordent ;
   l'heure et l'action ne se coupent plus.
 
+## Arborescences repliées, introductions courtes (02/10/2026, question 91, choix a, lot 1)
+
+**Demande.** « À », valant « a » : l'accueil prend la forme du chemin ; les
+quatre autres points suivent la proposition, en trois lots. Ce premier lot :
+les arborescences repliées et les introductions d'une ou deux phrases.
+
+**Fait — arborescences.**
+- Repliées à l'arrivée, filtre actif compris :
+  - banque, vue Arborescence : un filtre ne l'ouvre plus jusqu'aux modules ;
+    chaque branche dit combien de questions elle montre, ce qui dit où ouvrir ;
+  - couverture de la banque : ses groupes aussi ;
+  - Mes modules : tous les blocs, le premier compris ; la jauge « n / N
+    acquis » reste lisible sur chacun ;
+  - programme d'une filière : un repli par bloc, avec son nombre de modules ;
+    le tronc commun aussi, page du socle comprise ;
+  - programme à la carte : chaque bloc, avec le nombre de modules choisis,
+    création comprise ;
+  - éditeur d'une question : « Aussi posée dans » et ses blocs, avec leurs
+    nombres.
+- Une branche ouverte le reste le temps de la session de l'onglet : au retour
+  sur la page, après un geste ou un filtre (`components/MemoirePlis.tsx`).
+  Seules les clés des branches ouvertes sont gardées, dans le stockage de
+  session du navigateur : rien de nominatif, rien de transmis, oublié à la
+  fermeture de l'onglet. Le choix est retenu au clic sur l'intitulé, souris
+  ou clavier : retenu à l'ouverture effective, il se perdait quand on
+  quittait la page aussitôt (constaté au parcours de bout en bout). Mes
+  modules gardait déjà ses replis ainsi.
+- Banque : « Tout replier » efface ce souvenir ; « Tout déplier » ne le touche
+  pas. Les deux referment ou ouvrent désormais aussi une branche ouverte à la
+  main : l'arbre est refait.
+- Au retour d'un geste dans la banque, la branche du geste se rouvre, comme
+  avant.
+- Non touchés : le menu ; les arborescences déjà repliées (Repères,
+  Rattachement des modules, Blocs et critères, Niveaux, sources d'un module) ;
+  la liste « Classer dans un module », qui s'ouvre sur la recherche.
+- L'éditeur d'une question ne garde pas de souvenir : son repli vaut pour la
+  question ouverte.
+
+**Fait — introductions.** Les textes proposés, sur 22 écrans : programme
+(intégration et maintien), évaluation, Repères, « Comment sont rattachées
+les questions ? », Pilotage, Statistiques, Rapports, Signalements, Journal,
+Personnel, Déposer des questions, Modules, Documents, Filières, Niveaux,
+Blocs et critères, Niveaux des questions, Rattachement des modules, Ordre,
+Programmes à la carte, Barème, Signature. Codes d'accès et « Tester en
+apprenant » changent de page au lot 2 : leur texte viendra avec.
+- « Valider un module à l'écran ne vaut pas habilitation » reste sur le
+  programme, l'évaluation et les Repères ; sur le programme, « les étapes 3 à
+  6 » mène au dispositif détaillé.
+- Ce qui servait au moment d'agir passe sous le champ ou le lien concerné :
+  - Personnel : la correspondance entre identifiants et personnes, tenue par
+    le pharmacien responsable hors du site, sous « Identifiants d'agents » ;
+  - Signalements : « corrigée, elle repart à vérifier », après le lien vers
+    la fiche ;
+  - Documents : « un document général apparaît sur le programme des profils
+    cochés », sous ces cases ;
+  - Filières et Niveaux : « déjà dans la fiche, le dépôt la corrige ; sinon,
+    il l'étend », sous l'identifiant d'une filière et le code d'un niveau ;
+  - Ordre : l'ordre propre d'un apprenant, sous son champ ;
+  - Barème : où se règle le seuil d'un module, sous le seuil par défaut ;
+  - Signature : le rattachement au code d'accès, au-dessus du dépôt ;
+  - Pilotage : « lu sur les rapports émis, d'ordinaire l'essai qui réussit »,
+    à la fin du périmètre.
+- Retirés, parce que l'écran le dit déjà ou que c'est un renvoi historique :
+  les renvois aux décisions (« décision du 18/09/2026 », « question 59 »…),
+  « 300 par page » (la pagination le dit), le stockage des documents (un encart
+  dit s'il manque), le remplacement d'un rapport annulé (son formulaire le
+  dit), la publication réservée à l'administration (dite près des boutons).
+- Liens gardés : « Comment sont rattachées les questions ? » au dépôt ; une
+  ligne « Modules · Rattachement des modules · Niveaux des questions » sur la
+  page des rattachements.
+- Page d'un module : la ligne bloc · niveau · revalidation rejoint les
+  pastilles (sections, questions, seuil) ; le texte de formation n'est pas
+  touché.
+- Le parcours de maintien se dit en une phrase, tirée des mêmes valeurs de la
+  fiche (`maintien`, `content/habilitation.ts`).
+
+**Corrigé au passage.** Les blocs repliables des programmes (filière, à la
+carte) et les groupes de la couverture n'avaient aucun signe d'ouverture :
+leur intitulé, mis en ligne, perd le triangle du navigateur. Ils prennent le
+« + / – » des autres replis, et le chevron de l'arborescence pour la
+couverture.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 445 tests ; celui du repli de la banque dit
+  désormais qu'un filtre n'ouvre plus l'arbre.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 109 étapes, sans erreur de page
+  ni erreur serveur. Une étape nouvelle : sous un filtre, l'arbre est
+  replié ; une branche ouverte le reste au retour sur la page. Adaptées :
+  la tuile « à vérifier » (arbre replié), la couverture (groupes repliés),
+  Mes modules (aucun bloc ouvert dans un onglet neuf, la jauge sur chacun),
+  le programme d'une filière et le programme à la carte (blocs repliés),
+  le seuil de l'évaluation (« Seuil 70 % »).
+- Mesures sur la base laissée par le parcours, à 1 280 et 390 px :
+  - banque sous filtre (« à vérifier », un module) : aucune branche
+    ouverte ; chaque filière dit « n questions affichées » ; 1,6 et 2,8
+    écrans de haut ;
+  - la filière ouverte le reste au retour sur la page ; « Tout replier »
+    l'oublie ;
+  - couverture : 0 groupe ouvert sur 4 ; filière Chimiothérapie : 0 bloc
+    ouvert sur 9 ; programme à la carte : 0 sur 8 ; Mes modules : 0 sur 2 ;
+  - programme de l'agent : 3,5 écrans de haut sur poste (4,9 avant) et 5,3
+    sur téléphone (9,2 avant) ;
+  - introductions : 635 mots affichés sur les 22 écrans (la proposition en
+    comptait 1 440 avant, 639 après) ; aucune page ne déborde à 390 px ;
+  - page d'un module : la ligne bloc · niveau · revalidation suit les
+    pastilles.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

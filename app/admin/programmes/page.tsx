@@ -20,10 +20,9 @@ export default async function Programmes() {
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Programmes à la carte</h1>
         <p>
-          Pour un profil qui ne suit pas la fiche d&apos;habilitation — intérimaire, remplaçant —, un programme
-          composé à la main : les modules choisis un à un, dans l&apos;ordre voulu. Il est marqué « {MENTION_DEGRADE} »
-          partout où il paraît, et n&apos;est proposé aux postes qu&apos;une fois validé par un code de tutorat ou
-          d&apos;administration. Le modifier le renvoie en brouillon.
+          Un programme composé à la main pour un profil hors fiche (intérimaire, remplaçant), marqué « {MENTION_DEGRADE} »
+          partout. Il n&apos;est proposé qu&apos;une fois validé par le tutorat ou l&apos;administration ; le modifier le
+          renvoie en brouillon.
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <Link href="/admin/programmes/nouveau" className="bouton">

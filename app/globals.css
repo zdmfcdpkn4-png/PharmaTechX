@@ -2051,6 +2051,14 @@ dl.rgpd dd { margin: 0; max-width: 66ch; }
 details.programme-groupe { border: 1px solid var(--bord); border-radius: var(--rayon-sm); margin-top: 0.5rem; background: var(--surface); }
 details.programme-groupe > summary { cursor: pointer; padding: 0.625rem 0.875rem; font-weight: 600; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; min-height: var(--cible); }
 .programme-modules { padding: 0 0.875rem 0.625rem; display: grid; gap: 0.375rem; }
+/* Programme d'une filière (question 91) : un bloc replié par groupe de cases. */
+details.programme-groupe > fieldset { margin: 0; padding: 0 0.875rem 0.625rem; border: 0; min-width: 0; }
+/* Replié par défaut (question 91) : le signe dit qu'il s'ouvre, comme sur les autres replis ; l'intitulé en
+   flex n'a plus le triangle du navigateur. */
+details.programme-groupe > summary { list-style: none; }
+details.programme-groupe > summary::-webkit-details-marker { display: none; }
+details.programme-groupe > summary::after { content: "+"; margin-left: auto; color: var(--texte-doux); font-weight: 700; }
+details.programme-groupe[open] > summary::after { content: "–"; }
 .programme-modules li { display: flex; align-items: center; gap: 0.75rem; }
 .programme-module { flex: 1 1 auto; min-width: 0; display: flex; gap: 0.5rem; align-items: flex-start; }
 .programme-module input { margin-top: 0.2rem; width: 20px; height: 20px; flex: none; }
@@ -2267,6 +2275,17 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
   cursor: pointer; font-weight: 600;
 }
 .arbre-groupe > summary::marker { color: var(--marque); }
+/* Repliés par défaut (question 91) : le chevron de l'arborescence voisine, l'intitulé en flex n'ayant plus le
+   triangle du navigateur. */
+.arbre-groupe > summary { list-style: none; }
+.arbre-groupe > summary::-webkit-details-marker { display: none; }
+.arbre-groupe > summary::before {
+  content: ""; flex: none; width: 0.45rem; height: 0.45rem; margin: 0 0.25rem 0 0.125rem;
+  border-right: 2px solid var(--marque); border-bottom: 2px solid var(--marque);
+  transform: rotate(-45deg); transition: transform 0.18s ease;
+}
+.arbre-groupe[open] > summary::before { transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .arbre-groupe > summary::before { transition: none; } }
 .arbre-niveau { padding: 0 0.75rem 0.5rem 1.5rem; }
 .arbre-niveau-titre {
   display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;

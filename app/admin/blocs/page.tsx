@@ -57,11 +57,8 @@ export default async function Blocs({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Blocs et critères</h1>
         <p>
-          Les blocs de compétence de la fiche d&apos;habilitation et leurs critères. Un bloc déposé{" "}
-          <strong>corrige</strong> un bloc de la fiche — titre, référence, filière — ou en{" "}
-          <strong>ajoute</strong> un, qui reçoit des modules hors fiche. Les critères, versionnés avec le site,
-          se lisent ici sans s&apos;y modifier ; leur rattachement se règle dans{" "}
-          <Link href="/admin/rattachement">Rattachement des modules</Link>.
+          Les blocs de compétence et leurs critères ; un bloc déposé <strong>corrige</strong> un bloc de la fiche ou en{" "}
+          <strong>ajoute</strong> un. Les critères se lisent ici sans s&apos;y modifier.
         </p>
       </section>
 

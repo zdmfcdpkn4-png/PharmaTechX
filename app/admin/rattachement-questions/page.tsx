@@ -34,20 +34,14 @@ export default async function RattachementQuestions() {
         {/* Rangée dans les Repères le 02/10/2026, avec l'entrée du menu. */}
         <p className="legende" style={{ margin: 0 }}>Repères</p>
         <h1>Comment sont rattachées les questions&nbsp;?</h1>
+        {/* Une ou deux phrases (question 91) ; le détail est dans les schémas. */}
         <p>
-          <strong>Ce n&apos;est pas la question qui ouvre un niveau, c&apos;est son module.</strong> Une question
-          appartient à un module, et le module est coché pour des filières et des niveaux. L&apos;agent entre avec
-          un code qui porte sa filière et son niveau : il reçoit le tronc commun et les modules publiés cochés pour
-          eux, puis, dans chaque module, des questions validées, sous le plafond de son niveau. Les étiquettes de
-          profil d&apos;une question ne font que la réserver, dans son module, à certaines filières ou certains
-          niveaux.
+          <strong>Ce n&apos;est pas la question qui ouvre un niveau, c&apos;est son module.</strong> L&apos;agent reçoit
+          les modules cochés pour sa filière et son niveau, puis leurs questions validées, sous le plafond de son niveau.
         </p>
         <p className="legende" style={{ margin: 0 }}>
-          Un module déposé se coche dans son formulaire (<Link href="/admin/modules">Modules</Link>), celui
-          d&apos;un critère dans {ecran("/admin/rattachement", "Rattachement des modules")} ; une question se
-          range au <Link href="/admin/questions/import">dépôt</Link> ou dans la{" "}
-          <Link href="/admin/questions">Banque de questions</Link> ; le plafond se règle dans{" "}
-          {ecran("/admin/niveaux-questions", "Niveaux des questions")}.
+          <Link href="/admin/modules">Modules</Link> · {ecran("/admin/rattachement", "Rattachement des modules")} ·{" "}
+          {ecran("/admin/niveaux-questions", "Niveaux des questions")}
         </p>
       </section>
 

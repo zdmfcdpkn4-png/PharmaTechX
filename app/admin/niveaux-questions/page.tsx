@@ -64,9 +64,8 @@ export default async function NiveauxQuestions({
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
         <h1>Niveaux des questions</h1>
         <p>
-          Chaque question porte un niveau, du plus simple au plus exigeant. Le niveau d&apos;habilitation visé fixe le
-          niveau le plus élevé tiré, et chaque tirage suit une répartition entre les niveaux admis. Les noms se
-          changent ici ; leur nombre reste trois, le tirage et le barème étant bâtis sur trois.
+          Chaque question porte l&apos;un des trois niveaux ; le niveau d&apos;habilitation visé fixe le plus élevé tiré.
+          Les noms se changent ici, pas leur nombre.
         </p>
       </section>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge } from "./Badge";
+import { MemoirePlis } from "./MemoirePlis";
 import type { Filiere, Niveau } from "@/content/habilitation";
 
 /**
@@ -14,8 +15,9 @@ import type { Filiere, Niveau } from "@/content/habilitation";
  * rattachement, ce n'est pas un doublon. Un module sans filière est au tronc
  * commun, un module sans niveau vaut pour tous les niveaux de sa filière.
  *
- * Rien de dynamique : des `<details>`, donc pas une ligne de script, et le
- * repli fonctionne sans JavaScript comme le reste du site.
+ * Des `<details>` : le repli fonctionne sans JavaScript comme le reste du
+ * site. Tout s'ouvre replié ; une branche ouverte le reste le temps de la
+ * session (`MemoirePlis`, question 91), seule part de script.
  */
 
 export interface ModuleArbre {
@@ -140,7 +142,7 @@ function Groupe({
   const orphelins = [...new Set(modules.flatMap((m) => m.niveaux).filter((c) => !connus.has(c)))];
 
   return (
-    <details className="arbre-groupe" open>
+    <details className="arbre-groupe" data-pli={`couverture:${cle}`}>
       <summary>
         <Badge nom={badge} />
         <span className="arbre-titre">{titre}</span>
@@ -226,10 +228,12 @@ export function ArbreBanque({
 
   const total = cumul(modules);
 
-  // Repliée par défaut (02/10/2026, question 89, lot 2) : la liste vient d'abord, la couverture se déplie.
+  // Repliée par défaut (02/10/2026, question 89, lot 2) : la liste vient d'abord, la couverture se déplie ;
+  // ses groupes aussi (question 91).
   return (
     <section className="section arbre">
-      <details className="couverture">
+      <MemoirePlis arbre="couverture" />
+      <details className="couverture" data-pli="couverture:*">
         <summary className="section-titre">
           <h2 style={{ fontSize: "1.15rem" }}>Couverture de la banque</h2>
           <span className="compte">

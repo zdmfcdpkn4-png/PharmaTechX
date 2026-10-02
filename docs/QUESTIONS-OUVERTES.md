@@ -459,6 +459,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     Pour écarter ou changer un point (une entrée de menu, une phrase),
     dites lequel.
 
+    Tranchée le 02/10/2026 (choix a, réponse « À », valant « a »), mise en
+    œuvre en trois lots. Lot 1, fait : les six arborescences s'ouvrent
+    repliées, filtre compris, et une branche ouverte le reste le temps de
+    la session ; les introductions de 22 écrans tiennent en une ou deux
+    phrases, et ce qui servait au moment d'agir est passé sous le champ
+    concerné. Lots 2 (accueil et menus) et 3 (filtres) à suivre. Détail
+    dans `DECISIONS.md`.
+
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un
     choix point par point. Six points, aucun commencé :

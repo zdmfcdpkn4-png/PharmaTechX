@@ -25,9 +25,8 @@ export default async function Signature({ searchParams }: { searchParams: Promis
       <section className="panneau-titre">
         <h1>Signature du pharmacien</h1>
         <p>
-          L&apos;image déposée ici est incrustée dans le rapport au visa du pharmacien, qui clôt le
-          rapport. Elle est rattachée à votre code d&apos;accès (« {session.libelle} ») et conservée en
-          base. Un rapport clos garde l&apos;image telle qu&apos;elle était au moment du visa.
+          Votre signature, incrustée dans le rapport à votre visa, qui le clôt. Un rapport clos garde l&apos;image du moment
+          du visa.
         </p>
       </section>
 
@@ -41,6 +40,10 @@ export default async function Signature({ searchParams }: { searchParams: Promis
       ) : (
         <section className="carte">
           <h2 style={{ fontSize: "1.15rem" }}>Image de signature</h2>
+          {/* Venu de l'introduction (question 91), au-dessus du dépôt. */}
+          <p className="legende">
+            Rattachée à votre code d&apos;accès (« {session.libelle} ») et conservée en base.
+          </p>
           <DepotSignature courante={courante ? dataUri(courante) : null} />
           {courante && (
             <form action={actionRetirerSignature} style={{ marginTop: "1rem" }}>
