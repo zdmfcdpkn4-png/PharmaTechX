@@ -4,6 +4,8 @@ import { requete, sql, transaction, sqlSur, type Role } from "@/lib/db";
 import type { Legende } from "./schema";
 import { lireBlocs, lireIdentifiants } from "./rattachement-question";
 import type { QuestionAuCompte } from "./arbre-banque";
+import { modulesAAjouter } from "./lot-questions";
+import { peutValider, validationParAuteur, type AuteurQuestion } from "./quatre-yeux";
 import type {
   MiseEnSituation,
   ModeReponse,
@@ -393,20 +395,37 @@ export async function enregistrerQuestion(
   return ident;
 }
 
+type Requeteur = typeof sql;
+
+/**
+ * Changement de statut, geste de relecture : il ne change pas l'auteur
+ * courant. Une écriture pour le bouton d'une question et pour le geste en lot
+ * (question 89), qui fait la même chose question par question.
+ */
+async function ecrireStatut(
+  s: Requeteur,
+  ids: string[],
+  statut: StatutQuestion,
+  par: string,
+  parAuteur: boolean,
+): Promise<void> {
+  if (ids.length === 0) return;
+  await s`
+    UPDATE questions SET statut = ${statut},
+      valide_par = CASE WHEN ${statut} = 'valide' THEN ${par} ELSE valide_par END,
+      valide_le = CASE WHEN ${statut} = 'valide' THEN NOW() ELSE valide_le END,
+      valide_par_auteur = CASE WHEN ${statut} = 'valide' THEN ${parAuteur} ELSE valide_par_auteur END,
+      edite_le = NOW()
+    WHERE id = ANY(${ids}::text[])`;
+}
+
 export async function changerStatutQuestion(
   id: string,
   statut: StatutQuestion,
   acteur: { role: Role; libelle: string; acces?: number | null },
   parAuteur = false,
 ): Promise<void> {
-  const par = `${acteur.role} · ${acteur.libelle}`;
-  await sql`
-    UPDATE questions SET statut = ${statut},
-      valide_par = CASE WHEN ${statut} = 'valide' THEN ${par} ELSE valide_par END,
-      valide_le = CASE WHEN ${statut} = 'valide' THEN NOW() ELSE valide_le END,
-      valide_par_auteur = CASE WHEN ${statut} = 'valide' THEN ${parAuteur} ELSE valide_par_auteur END,
-      edite_le = NOW()
-    WHERE id = ${id}`;
+  await ecrireStatut(sql, [id], statut, `${acteur.role} · ${acteur.libelle}`, parAuteur);
 }
 
 /**
@@ -448,6 +467,165 @@ export async function reclasserQuestions(
       RETURNING q.id, avant.module_id AS de, avant.statut AS statut_avant`;
     await s`DELETE FROM questions_modules WHERE module_id = ${cible} AND question_id = ANY(${ids}::text[])`;
     return r.rows;
+  });
+}
+
+/** Une question telle que la lit un geste en lot (question 89), verrouillée le temps de la transaction. */
+interface LigneLot extends AuteurQuestion {
+  id: string;
+  module_id: string;
+  statut: StatutQuestion;
+  niveau_question: NiveauQuestion | null;
+  /** Modules où elle est aussi posée, l'origine mise à part. */
+  aussi: string[];
+}
+
+async function lireLot(s: Requeteur, ids: string[]): Promise<LigneLot[]> {
+  const r = await s<Omit<LigneLot, "aussi">>`
+    SELECT id, module_id, statut, niveau_question, cree_par, cree_par_acces, edite_par, edite_par_acces
+    FROM questions WHERE id = ANY(${ids}::text[]) ORDER BY id FOR UPDATE`;
+  const m = await s<{ question_id: string; module_id: string }>`
+    SELECT question_id, module_id FROM questions_modules WHERE question_id = ANY(${ids}::text[]) ORDER BY module_id`;
+  return r.rows.map((q) => ({
+    ...q,
+    aussi: m.rows.filter((x) => x.question_id === q.id && x.module_id !== q.module_id).map((x) => x.module_id),
+  }));
+}
+
+/**
+ * Une modification par un geste en lot (questions 12, 74 et 89, choix a) :
+ * une validée repasse « à vérifier », et celui qui agit devient l'auteur
+ * courant. `niveau`, s'il est donné, est le nouveau niveau de question.
+ */
+async function marquerModifiees(
+  s: Requeteur,
+  ids: string[],
+  acteur: { role: Role; libelle: string; acces?: number | null },
+  niveau?: { valeur: NiveauQuestion | null },
+): Promise<void> {
+  if (ids.length === 0) return;
+  const par = `${acteur.role} · ${acteur.libelle}`;
+  await s`
+    UPDATE questions SET
+      statut = CASE WHEN statut = 'valide' THEN 'a_verifier' ELSE statut END,
+      niveau_question = CASE WHEN ${niveau !== undefined}::boolean THEN ${niveau?.valeur ?? null}::text ELSE niveau_question END,
+      valide_par = NULL,
+      valide_le = NULL,
+      valide_par_auteur = FALSE,
+      edite_par = ${par},
+      edite_par_acces = ${acteur.acces ?? null},
+      edite_le = NOW(),
+      version = version + 1
+    WHERE id = ANY(${ids}::text[])`;
+}
+
+/** Ce qu'un geste en lot a changé, question par question, pour le journal. */
+export interface FaitLot {
+  id: string;
+  module_id: string;
+  statut_avant: StatutQuestion;
+  /** Modules où elle est posée avant le geste, origine comprise : leurs pages sont à rafraîchir. */
+  modules: string[];
+}
+
+function fait(q: LigneLot): FaitLot {
+  return { id: q.id, module_id: q.module_id, statut_avant: q.statut, modules: [q.module_id, ...q.aussi] };
+}
+
+/**
+ * « Poser aussi dans » en lot (question 89, choix a) : chaque question entre
+ * aussi dans les modules choisis où elle n'est pas déjà, son module d'origine
+ * mis à part. Une transaction ; une question sans rien de nouveau n'est pas
+ * touchée.
+ */
+export async function poserAussiDansQuestions(
+  ids: string[],
+  modules: string[],
+  acteur: { role: Role; libelle: string; acces?: number | null },
+): Promise<(FaitLot & { ajoutes: string[] })[]> {
+  if (ids.length === 0 || modules.length === 0) return [];
+  return transaction(async (client) => {
+    const s = sqlSur(client);
+    const faits = (await lireLot(s, ids))
+      .map((q) => ({ ...fait(q), ajoutes: modulesAAjouter({ module_id: q.module_id, aussi_dans: q.aussi }, modules) }))
+      .filter((f) => f.ajoutes.length > 0);
+    if (faits.length === 0) return [];
+    const couples = faits.flatMap((f) => f.ajoutes.map((m) => [f.id, m] as const));
+    await s`
+      INSERT INTO questions_modules (question_id, module_id)
+      SELECT * FROM unnest(${couples.map((c) => c[0])}::text[], ${couples.map((c) => c[1])}::text[])
+      ON CONFLICT DO NOTHING`;
+    await marquerModifiees(s, faits.map((f) => f.id), acteur);
+    return faits;
+  });
+}
+
+/**
+ * « Retirer d'un module » en lot (question 89, choix a) : le module quitte les
+ * « aussi posée dans » des questions choisies. Il ne se retire pas d'une
+ * question dont il est l'origine : elle se reclasse.
+ */
+export async function retirerDuModuleQuestions(
+  ids: string[],
+  module: string,
+  acteur: { role: Role; libelle: string; acces?: number | null },
+): Promise<{ faits: FaitLot[]; origine: number }> {
+  if (ids.length === 0) return { faits: [], origine: 0 };
+  return transaction(async (client) => {
+    const s = sqlSur(client);
+    const lues = await lireLot(s, ids);
+    const faits = lues.filter((q) => q.module_id !== module && q.aussi.includes(module)).map(fait);
+    if (faits.length > 0) {
+      await s`DELETE FROM questions_modules WHERE module_id = ${module} AND question_id = ANY(${faits.map((f) => f.id)}::text[])`;
+      await marquerModifiees(s, faits.map((f) => f.id), acteur);
+    }
+    return { faits, origine: lues.filter((q) => q.module_id === module).length };
+  });
+}
+
+/** « Niveau » en lot (question 89, choix a) : `null` remet le niveau « à préciser ». */
+export async function changerNiveauQuestions(
+  ids: string[],
+  niveau: NiveauQuestion | null,
+  acteur: { role: Role; libelle: string; acces?: number | null },
+): Promise<(FaitLot & { niveau_avant: NiveauQuestion | null })[]> {
+  if (ids.length === 0) return [];
+  return transaction(async (client) => {
+    const s = sqlSur(client);
+    const faits = (await lireLot(s, ids))
+      .filter((q) => (q.niveau_question ?? null) !== niveau)
+      .map((q) => ({ ...fait(q), niveau_avant: q.niveau_question ?? null }));
+    await marquerModifiees(s, faits.map((f) => f.id), acteur, { valeur: niveau });
+    return faits;
+  });
+}
+
+/**
+ * « Statut » en lot (question 89, choix a) : ce que font les boutons de
+ * chaque question, question par question. Valider exige un autre code que
+ * l'auteur courant, sauf en administration, où la validation par l'auteur est
+ * tracée ; une question refusée n'est pas touchée. L'auteur ne change pas.
+ */
+export async function changerStatutQuestions(
+  ids: string[],
+  statut: StatutQuestion,
+  acteur: { role: Role; libelle: string; acces?: number | null },
+): Promise<{ faits: (FaitLot & { parAuteur: boolean })[]; refusees: (FaitLot & { auteur: string })[] }> {
+  if (ids.length === 0) return { faits: [], refusees: [] };
+  return transaction(async (client) => {
+    const s = sqlSur(client);
+    const faits: (FaitLot & { parAuteur: boolean })[] = [];
+    const refusees: (FaitLot & { auteur: string })[] = [];
+    for (const q of await lireLot(s, ids)) {
+      if (q.statut === statut) continue;
+      const base = fait(q);
+      if (statut === "valide" && !peutValider(q, acteur)) refusees.push({ ...base, auteur: q.edite_par ?? q.cree_par });
+      else faits.push({ ...base, parAuteur: statut === "valide" && validationParAuteur(q, acteur) });
+    }
+    const par = `${acteur.role} · ${acteur.libelle}`;
+    await ecrireStatut(s, faits.filter((f) => f.parAuteur).map((f) => f.id), statut, par, true);
+    await ecrireStatut(s, faits.filter((f) => !f.parAuteur).map((f) => f.id), statut, par, false);
+    return { faits, refusees };
   });
 }
 
@@ -507,6 +685,19 @@ export async function listerDepotsQuestions(): Promise<LigneDepotQuestions[]> {
   const r = await sql<LigneDepotQuestions>`
     SELECT id, nom, module_id, nb, nb_a_verifier, depose_par, depose_le::text
     FROM depots_questions ORDER BY depose_le DESC LIMIT 100`;
+  return r.rows;
+}
+
+/**
+ * Dépôts dont des questions sont encore en banque, avec leur nombre actuel
+ * (filtre « Dépôt », question 89, lot 2) : un dépôt dont toutes les questions
+ * ont été effacées ne s'y propose plus.
+ */
+export async function depotsEnBanque(): Promise<{ id: string; nom: string; depose_le: string; n: number }[]> {
+  const r = await sql<{ id: string; nom: string; depose_le: string; n: number }>`
+    SELECT d.id, d.nom, d.depose_le::text, COUNT(q.id)::int AS n
+    FROM depots_questions d JOIN questions q ON q.depot_id = d.id
+    GROUP BY d.id, d.nom, d.depose_le ORDER BY d.depose_le DESC LIMIT 100`;
   return r.rows;
 }
 

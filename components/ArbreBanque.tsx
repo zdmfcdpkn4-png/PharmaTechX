@@ -226,14 +226,16 @@ export function ArbreBanque({
 
   const total = cumul(modules);
 
+  // Repliée par défaut (02/10/2026, question 89, lot 2) : la liste vient d'abord, la couverture se déplie.
   return (
     <section className="section arbre">
-      <div className="section-titre">
-        <h2 style={{ fontSize: "1.15rem" }}>Couverture de la banque</h2>
-        <span className="compte">
-          <Compte c={total} modules={modules.length} />
-        </span>
-      </div>
+      <details className="couverture">
+        <summary className="section-titre">
+          <h2 style={{ fontSize: "1.15rem" }}>Couverture de la banque</h2>
+          <span className="compte">
+            <Compte c={total} modules={modules.length} />
+          </span>
+        </summary>
       <p className="legende">
         Filière, puis niveau, puis module. Un module rattaché à deux niveaux figure sous chacun.
         Les modules sans question apparaissent en grisé : ce sont les trous de la banque.
@@ -274,6 +276,7 @@ export function ArbreBanque({
           actif={moduleActif}
         />
       ))}
+      </details>
     </section>
   );
 }

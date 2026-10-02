@@ -2381,24 +2381,18 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
 .barre-selection {
   position: fixed; z-index: 46; left: 50%; transform: translateX(-50%);
   bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  width: min(60rem, calc(100% - 2rem));
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  width: min(66rem, calc(100% - 2rem));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.625rem;
   padding: 0.625rem 0.875rem; border-radius: var(--rayon);
   background: var(--marque-fonce); color: var(--marque-contraste); box-shadow: var(--ombre-haute);
 }
 .barre-selection[hidden] { display: none; }
 .barre-selection-compte { margin: 0; font-size: 0.9375rem; white-space: nowrap; }
-.barre-selection-champ {
-  display: inline-flex; align-items: center; gap: 0.5rem; flex: 1 1 18rem; min-width: 0;
-  font-size: 0.875rem; font-weight: 600;
-}
-.barre-selection-champ > span { white-space: nowrap; }
-.barre-selection-champ select {
-  flex: 1 1 auto; min-width: 0; min-height: var(--cible); padding: 0 0.5rem;
-  font: inherit; font-weight: 400; border-radius: var(--rayon-sm);
-  border: 1px solid var(--surface); background: var(--surface); color: var(--texte);
-}
-.barre-selection-annonce { margin: 0; flex: 1 1 100%; font-size: 0.875rem; line-height: 1.45; }
+/* Les gestes (question 89, choix a) : un bouton chacun sur poste, « Actions… » sur téléphone. */
+.barre-selection-gestes { display: inline-flex; flex-wrap: wrap; gap: 0.375rem; }
+.barre-selection-gestes .bouton { padding: 0 0.75rem; }
+.barre-selection-vider { gap: 0.375rem; }
+.barre-selection .barre-selection-actions { display: none; }
 .barre-selection .bouton { background: var(--surface); border-color: var(--surface); color: var(--marque-fonce); }
 .barre-selection .bouton:hover { background: var(--marque-clair); border-color: var(--marque-clair); color: var(--marque-fonce); }
 .barre-selection .bouton--secondaire,
@@ -2415,11 +2409,127 @@ body.a-selection { padding-bottom: calc(var(--hauteur-selection, 9rem) + 1.5rem 
 body.a-selection .retour-haut { bottom: calc(var(--hauteur-selection, 9rem) + 1.25rem + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 40rem) {
   .barre-selection { width: calc(100% - 1rem); bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); padding: 0.5rem 0.625rem; }
-  .barre-selection-champ { flex-basis: 100%; }
-  .barre-selection-champ > span { display: none; }
+  .barre-selection-gestes { display: none; }
+  .barre-selection .barre-selection-actions { display: inline-flex; }
+  .barre-selection-vider-texte { display: none; }
+}
+
+/* Fenêtre d'un geste en lot (question 89, choix a) : centrée sur poste, en
+   tiroir du bas sur téléphone. La liste défile ; l'effet annoncé et les
+   boutons restent en vue. */
+.fenetre-lot {
+  width: min(42rem, calc(100% - 2rem)); max-width: none; max-height: min(88vh, 48rem);
+  padding: 0; border: none; border-radius: var(--rayon-xl);
+  background: var(--surface); color: var(--texte); box-shadow: var(--ombre-haute);
+}
+.fenetre-lot[open] { display: flex; flex-direction: column; }
+.fenetre-lot::backdrop { background: rgba(22, 32, 42, 0.45); }
+.fenetre-lot-corps { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.fenetre-lot-titre { margin: 0; padding: 1.125rem 1.375rem 0.5rem; font-size: 1.2rem; color: var(--marque); text-wrap: balance; }
+.fenetre-lot-choix {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.25rem 1.375rem 0.75rem;
+  display: grid; gap: 0.625rem; align-content: start;
+}
+.fenetre-lot-choix > .legende { margin: 0; }
+.fenetre-lot-pied { display: grid; gap: 0.625rem; padding: 0.75rem 1.375rem 1.125rem; border-top: 1px solid var(--bord); }
+.fenetre-lot-pied .actions { margin: 0; }
+.fenetre-lot-effet {
+  margin: 0; padding: 0.625rem 0.875rem; border-radius: var(--rayon-sm);
+  background: var(--surface-douce); font-size: 0.875rem; line-height: 1.5;
+}
+.fenetre-lot-menu { display: grid; gap: 0.5rem; }
+.fenetre-lot-menu button {
+  display: grid; gap: 0.125rem; width: 100%; min-height: var(--cible); padding: 0.625rem 0.875rem;
+  font: inherit; text-align: left; color: var(--texte); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-sm);
+}
+.fenetre-lot-menu button:hover { border-color: var(--marque); background: var(--marque-clair); }
+.fenetre-lot-menu strong { color: var(--marque); }
+.fenetre-lot-radios { margin: 0; padding: 0; border: none; display: grid; gap: 0.125rem; min-width: 0; }
+.fenetre-lot-radios legend { padding: 0; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 600; }
+.fenetre-lot-radios label {
+  display: flex; align-items: flex-start; gap: 0.625rem; min-height: var(--cible); padding: 0.5rem 0;
+  font-size: 0.9375rem; cursor: pointer;
+}
+.fenetre-lot-radios input { width: 20px; height: 20px; margin: 0.125rem 0 0; flex: none; accent-color: var(--marque); }
+.fenetre-lot .aussi-bloc[hidden], .fenetre-lot .cases label[hidden] { display: none; }
+.fenetre-lot .aussi-bloc > summary { font-size: 0.9375rem; }
+.fenetre-lot .cases { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+.fenetre-lot .cases label { align-items: flex-start; padding: 0.375rem 0; }
+.fenetre-lot .cases input { flex: none; margin-top: 0.125rem; }
+@media (max-width: 40rem) {
+  .fenetre-lot { width: 100%; max-height: 88vh; margin: auto 0 0; border-radius: 18px 18px 0 0; }
+  .fenetre-lot-titre, .fenetre-lot-choix, .fenetre-lot-pied { padding-left: 1rem; padding-right: 1rem; }
+  .fenetre-lot-pied { padding-bottom: calc(1.125rem + env(safe-area-inset-bottom, 0px)); }
 }
 @media print {
-  .barre-selection, .selection-banque, .case-cible { display: none !important; }
+  .barre-selection, .selection-banque, .case-cible, .fenetre-lot { display: none !important; }
+}
+
+/* ── banque : en-tête resserré, recherche, filtres et puces (question 89, lot 2) ── */
+.panneau-titre--compact { padding: 1.125rem 1.5rem; gap: 0.5rem; }
+.panneau-titre-tete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; }
+.panneau-titre-tete h1 { margin: 0; }
+.panneau-titre-tete .actions { margin: 0; }
+.panneau-titre--compact > p { margin: 0; max-width: 72ch; }
+.filtres { display: grid; gap: 0.625rem; }
+.filtres-ligne { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 0.75rem; }
+.filtres-ligne .champ, .filtres-panneau .champ { min-width: 0; margin: 0; }
+.recherche-banque { position: relative; display: block; flex: 2 1 18rem; min-width: 0; }
+.recherche-banque svg {
+  position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; color: var(--texte-doux); pointer-events: none;
+}
+.recherche-banque input {
+  display: block; width: 100%; min-height: var(--cible); padding: 0 1rem 0 2.5rem;
+  font: inherit; font-size: 1rem; border: 1px solid var(--bord-fort); border-radius: 12px;
+  background: var(--surface); color: var(--texte);
+}
+.filtre-court { flex: 1 1 9rem; }
+.filtre-module { flex: 3 1 16rem; }
+.filtres-ligne select, .filtres-panneau select { width: 100%; }
+.filtres-plus { border-top: 1px solid var(--bord); padding-top: 0.25rem; }
+.filtres-plus > summary {
+  display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--cible);
+  cursor: pointer; font-size: 0.9375rem; font-weight: 600; color: var(--marque);
+}
+.filtres-nb {
+  display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; padding: 0 0.35rem;
+  border-radius: 999px; background: var(--marque); color: var(--marque-contraste); font-size: 0.75rem; font-weight: 700;
+}
+.filtres-panneau {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.625rem 0.75rem; padding: 0.25rem 0 0.5rem;
+}
+.filtres-pied { margin: 0; align-items: center; }
+.puces { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.5rem; margin: 0; }
+.puce {
+  display: inline-flex; align-items: center; gap: 0.375rem; max-width: 100%; min-height: 36px;
+  padding: 0.125rem 0.375rem 0.125rem 0.75rem; border-radius: 999px; border: 1px solid rgba(0, 85, 134, 0.22);
+  background: var(--marque-clair); color: var(--marque-fonce); font-size: 0.8125rem; font-weight: 600;
+  text-decoration: none; overflow-wrap: anywhere;
+}
+.puce:hover { border-color: var(--marque); }
+.puce-x {
+  display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px;
+  border-radius: 999px; background: rgba(0, 85, 134, 0.12); font-size: 0.8rem;
+}
+.puces-effacer { font-size: 0.8125rem; }
+/* Vue et sélection sur une ligne, juste au-dessus des questions. */
+.selection-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; margin: 1rem 0 0.5rem; }
+.selection-ligne .bascule-vue, .selection-ligne .selection-banque { margin: 0; }
+/* Couverture de la banque, repliée : son titre est le résumé, avec un chevron. */
+.couverture > summary { cursor: pointer; list-style: none; justify-content: flex-start; align-items: center; }
+.couverture > summary::-webkit-details-marker { display: none; }
+.couverture > summary::before {
+  content: ""; flex: none; width: 0.5rem; height: 0.5rem; margin-right: 0.125rem;
+  border-right: 2px solid var(--marque); border-bottom: 2px solid var(--marque);
+  transform: rotate(-45deg); transition: transform 0.18s ease;
+}
+.couverture[open] > summary::before { transform: rotate(45deg); }
+.couverture > summary .compte { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .couverture > summary::before { transition: none; }
 }
 
 /* ── banque de badges : pictogrammes des domaines ─────────────────────────── */

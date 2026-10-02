@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { LigneQuestion } from "@/content/banque-db";
-import { peutValider, validationParAuteur, type CodeActeur } from "@/content/quatre-yeux";
+import { memeCode, peutValider, validationParAuteur, type CodeActeur } from "@/content/quatre-yeux";
 import { LIBELLES_NIVEAU_QUESTION, type LibellesNiveaux } from "@/content/niveaux-questions";
 import { CONSEILS_REPERE, LIBELLES_REPERE, SEUILS_STAT, questionARevoir, type Repere, type Taux } from "@/lib/statistiques";
 import { FORMULAIRE_SELECTION } from "@/content/reclassement";
@@ -17,10 +17,18 @@ import { LIBELLES_STATUT } from "./commun";
 /**
  * Case de sélection d'une question (02/10/2026, question 88, choix a), hors de
  * son résumé dépliable : la cocher ne déplie rien. Rattachée par `form` au
- * formulaire de la barre de sélection (`SelectionBanque`). La cible tactile
- * fait la taille d'un bouton du site.
+ * formulaire des gestes en lot (`SelectionBanque`). La cible tactile fait la
+ * taille d'un bouton du site. Elle dit de la question ce qu'il faut pour
+ * annoncer chaque geste avant de l'appliquer (question 89) : module, statut,
+ * autres modules, niveau, et si la session en est l'auteur courant.
  */
-export function CaseQuestion({ q }: { q: Pick<LigneQuestion, "id" | "module_id" | "statut" | "enonce"> }) {
+export function CaseQuestion({
+  q,
+  session,
+}: {
+  q: Pick<LigneQuestion, "id" | "module_id" | "statut" | "enonce" | "aussi_dans" | "niveau_question" | "cree_par" | "cree_par_acces" | "edite_par" | "edite_par_acces">;
+  session: CodeActeur;
+}) {
   const debut = q.enonce.length > 90 ? `${q.enonce.slice(0, 90)}…` : q.enonce;
   return (
     <label className="case-cible">
@@ -32,6 +40,9 @@ export function CaseQuestion({ q }: { q: Pick<LigneQuestion, "id" | "module_id" 
         value={q.id}
         data-module={q.module_id}
         data-statut={q.statut}
+        data-aussi={q.aussi_dans.join(" ")}
+        data-niveau={q.niveau_question ?? ""}
+        data-moi={memeCode(q, session) ? "1" : "0"}
         aria-label={`Sélectionner la question : ${debut}`}
       />
     </label>

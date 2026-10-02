@@ -377,6 +377,30 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
+    02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un
+    choix point par point. Six points, aucun commencé :
+    1. pages d'erreur à la charte ;
+    2. la même barre de filtres sur Pilotage et Statistiques ;
+    3. en-têtes plus courts sur téléphone ;
+    4. un filtre pour le journal ;
+    5. un repli opaque quand le système demande moins de transparence ;
+    6. une remise en ordre des jetons du CSS.
+
+    Constaté depuis le lot 1 : un geste en lot écrit une ligne au journal
+    par question, et l'écran du journal ne montre que les 300 dernières
+    actions. Valider les 53 questions du pool en prend 53.
+    - **a (recommandé)** : le filtre du journal seulement (point 4) : par
+      action, par date, par question, au-delà des 300 dernières. Contre :
+      les cinq autres restent en attente.
+    - **b** : les points 2, 3 et 4, ceux qui se voient chaque semaine.
+      Contre : trois chantiers d'un coup sur des écrans qui marchent ;
+      Pilotage et Statistiques ont leurs propres filtres, à reprendre.
+    - **c** : aucun pour l'instant. Contre : le journal se lira de plus en
+      plus mal à mesure des gestes en lot.
+
+    Pour un autre assortiment, donnez les numéros.
+
 89. **Reclasser plusieurs questions d'un coup : que devient une question
     validée** — posée le 01/10/2026, sur « Faire en sorte dans la gestion des
     questions de pouvoir sélectionner plusieurs questions de la banque pour
@@ -406,6 +430,15 @@ telle. Ordre : ce qui change le déploiement en premier.
 
     Sauf réserve de votre part, une réponse vaut accord pour la suite du lot
     1 et pour le lot 2. Le lot 3 attend un choix point par point.
+
+    Tranchée le 02/10/2026 (choix a, réponse « 89 à », « à » valant « a »)
+    et mise en œuvre : la règle ne change pas. Classer, poser aussi dans,
+    retirer d'un module et changer le niveau en lot remettent une validée
+    « à vérifier », celui qui agit devenant son auteur courant ; le statut
+    en lot suit les boutons de chaque question, quatre yeux question par
+    question. Sans réserve, la suite du lot 1 et le lot 2 sont faits ; la
+    suppression en lot, proposée à part, ne l'est pas. Le lot 3 fait
+    l'objet de la question 90. Détail dans `DECISIONS.md`.
 
     **Première version, du 01/10/2026**, avec le détail des lots. Proposé le
     même jour ; rien n'est modifié avant accord.

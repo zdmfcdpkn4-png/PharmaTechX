@@ -221,7 +221,7 @@ signalements des apprenants.
 
 Deux présentations de la même banque (23/09/2026, question 64, choix b) :
 la **Liste**, précédée de la couverture (filière, niveau, module, avec les
-comptes) ; l'**Arborescence**, par défaut et repliée depuis le 24/09/2026,
+comptes), repliée depuis le 02/10/2026 ; l'**Arborescence**, par défaut et repliée depuis le 24/09/2026,
 qui prolonge cette couverture jusqu'aux questions, en `<details>`
 repliables au clavier et sans script. Depuis le 01/10/2026, toutes les
 entrées l'ouvrent, validation comprise ; la liste ne s'ouvre que par la
@@ -230,13 +230,26 @@ figure sous chacun et le dit ; les filtres valent pour les deux vues ;
 après un geste (valider, retirer, modifier, supprimer), l'arborescence
 rouvre la branche où il a été fait et y ramène.
 
-**Reclassement en lot** (02/10/2026, question 88, choix a) : dans les deux
+**Gestes en lot** (02/10/2026, questions 88 et 89, choix a) : dans les deux
 vues, une case par question et par module, « Tout sélectionner » et Maj +
-clic ; une barre en bas de l'écran classe les questions cochées dans un
-autre module, après avoir annoncé l'effet. Règle de toute modification : une
-validée repasse « à vérifier », celui qui classe devient l'auteur courant ;
-chaque déplacement va au journal (`reclassement-question`). Calculs dans
-`content/reclassement.ts`, barre dans `components/SelectionBanque.tsx`.
+clic ; une barre en bas de l'écran ouvre, pour les questions cochées, une
+fenêtre par geste — classer dans un module, poser aussi dans d'autres
+modules, retirer d'un module, niveau, statut — qui annonce l'effet avant
+d'appliquer (« Actions… » sur téléphone). Règle de toute modification : une
+validée repasse « à vérifier », celui qui agit devient l'auteur courant ; le
+statut suit les boutons de chaque question, règle des quatre yeux question
+par question. Chaque question changée va au journal. Calculs dans
+`content/reclassement.ts` et `content/lot-questions.ts`, barre et fenêtre
+dans `components/SelectionBanque.tsx`.
+
+**Recherche et filtres** (02/10/2026, question 89, lot 2) : recherche dans
+l'énoncé, les propositions et leurs justifications, la justification et
+l'identifiant ; statut, niveau et module en vue, le reste sous « Plus de
+filtres et tri » — dépôt, signalement ouvert, bloc, filière, niveau
+d'habilitation, obligatoires, statistiques, tri dans chaque module ; les
+filtres actifs en puces, chacune retire le sien. Au menu Questions : « À
+vérifier », qui porte le compteur, et « Signalées ». Calculs dans
+`content/filtres-banque.ts`.
 
 `/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
 à la manière des dépôts du Lecteur QIM · QCM) : le texte des 53 critères

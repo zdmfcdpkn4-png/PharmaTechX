@@ -17,15 +17,20 @@ import { lireBlocs, lireIdentifiants, modulesDeLaQuestion } from "@/content/ratt
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { retourBanque } from "@/content/arbre-banque";
 import { lireIdentifiantsQuestions } from "@/content/reclassement";
+import { AUSSI_MAX, lireGeste, lireStatutLot } from "@/content/lot-questions";
 import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
+  changerNiveauQuestions,
   changerStatutQuestion,
+  changerStatutQuestions,
   enregistrerDepotQuestions,
   enregistrerQuestion,
   enregistrerSituation,
   insererLot,
   lireQuestion,
+  poserAussiDansQuestions,
   reclasserQuestions,
+  retirerDuModuleQuestions,
   supprimerQuestion,
   supprimerSituation,
   textesValidesParModule,
@@ -280,36 +285,128 @@ export async function actionChangerStatutQuestion(formData: FormData) {
 }
 
 /**
- * Reclassement en lot (02/10/2026, question 88, choix a) : les questions
- * cochées dans la banque passent dans le module choisi. Tutorat et
- * administration, comme toute modification d'une question ; chaque question
- * déplacée a sa ligne au journal. Le module choisi doit exister et ne pas être
- * retiré.
+ * Gestes en lot de la barre de sélection (questions 88 et 89, choix a) :
+ * classer, poser aussi dans, retirer d'un module, niveau, statut. Tutorat et
+ * administration, comme toute modification d'une question ; une transaction
+ * par geste ; une ligne au journal par question changée, et par validation
+ * refusée ; retour sur la même vue de la banque, avec le bilan.
+ *
+ * Classer, poser aussi et retirer d'un module, changer le niveau : une
+ * modification — une validée repasse « à vérifier », celui qui agit devient
+ * l'auteur courant. Le statut : ce que font les boutons de chaque question,
+ * la règle des quatre yeux jouant question par question.
  */
-export async function actionClasserQuestions(formData: FormData) {
+export async function actionLotQuestions(formData: FormData) {
   const s = await sessionRequise("tuteur");
+  const geste = lireGeste(formData.get("geste"));
   const ids = lireIdentifiantsQuestions(formData.getAll("ids"));
-  const cible = chaine(formData, "module", 80);
   const retour = retourBanque(formData.get("retour")) ?? "/admin/questions";
-  const destination = (await getTousModulesAvecDeposes()).find((m) => m.id === cible);
-  if (!destination || destination.statut === "retire" || ids.length === 0) {
-    redirect(retourBanque(retour, { erreur: "classement" }) ?? retour);
+  function refuser(): never {
+    redirect(retourBanque(retour, { erreur: "lot", geste: geste ?? "" }) ?? retour);
   }
-  const faits = await reclasserQuestions(ids, cible, s);
+  // `fait` distingue deux gestes au bilan identique : la page repart d'une sélection vide.
+  function conclure(bilan: Record<string, string | number>, modules: Iterable<string>): never {
+    revalidatePath("/admin/questions");
+    for (const m of new Set(modules)) revalidatePath(`/module/${m}`);
+    const ajouts = Object.fromEntries(Object.entries(bilan).map(([k, v]) => [k, String(v)]));
+    redirect(retourBanque(retour, { ok: "lot", geste: geste ?? "", ...ajouts, fait: Date.now().toString(36) }) ?? retour);
+  }
+  if (!geste || ids.length === 0) refuser();
+  const modules = await getTousModulesAvecDeposes();
+  const ouverts = new Set(modules.filter((m) => m.statut !== "retire").map((m) => m.id));
+  const apres = (statut: StatutQuestion) => (statut === "valide" ? "a_verifier" : statut);
+  const revues = (faits: { statut_avant: StatutQuestion }[]) => faits.filter((f) => f.statut_avant === "valide").length;
+
+  if (geste === "classer") {
+    const cible = chaine(formData, "module", 80);
+    if (!ouverts.has(cible)) refuser();
+    const faits = await reclasserQuestions(ids, cible, s);
+    for (const f of faits) {
+      await journaliser(s, "reclassement-question", f.id, {
+        de: f.de,
+        vers: cible,
+        statutAvant: f.statut_avant,
+        statutApres: apres(f.statut_avant),
+        lot: ids.length,
+      });
+    }
+    conclure({ nb: faits.length, revues: revues(faits), vers: cible }, [cible, ...faits.map((f) => f.de)]);
+  }
+
+  if (geste === "aussi") {
+    const choisis = lireIdentifiants(formData.getAll("modules")).filter((m) => ouverts.has(m)).slice(0, AUSSI_MAX);
+    if (choisis.length === 0) refuser();
+    const faits = await poserAussiDansQuestions(ids, choisis, s);
+    for (const f of faits) {
+      await journaliser(s, "rattachement-question:ajout", f.id, {
+        moduleId: f.module_id,
+        modules: f.ajoutes,
+        statutAvant: f.statut_avant,
+        statutApres: apres(f.statut_avant),
+        lot: ids.length,
+      });
+    }
+    conclure(
+      { nb: faits.length, revues: revues(faits), mods: choisis.length, ajouts: faits.reduce((t, f) => t + f.ajoutes.length, 0) },
+      faits.flatMap((f) => [...f.modules, ...f.ajoutes]),
+    );
+  }
+
+  if (geste === "retirer") {
+    const quitte = chaine(formData, "module", 80);
+    if (!modules.some((m) => m.id === quitte)) refuser();
+    const { faits } = await retirerDuModuleQuestions(ids, quitte, s);
+    for (const f of faits) {
+      await journaliser(s, "rattachement-question:retrait", f.id, {
+        moduleId: f.module_id,
+        module: quitte,
+        statutAvant: f.statut_avant,
+        statutApres: apres(f.statut_avant),
+        lot: ids.length,
+      });
+    }
+    conclure({ nb: faits.length, revues: revues(faits), vers: quitte }, faits.flatMap((f) => f.modules));
+  }
+
+  if (geste === "niveau") {
+    const brut = chaine(formData, "niveau", 20);
+    const niveau = lireNiveauQuestion(brut);
+    if (brut !== "a_preciser" && niveau === null) refuser();
+    const faits = await changerNiveauQuestions(ids, niveau, s);
+    for (const f of faits) {
+      await journaliser(s, "niveau-question", f.id, {
+        moduleId: f.module_id,
+        de: f.niveau_avant,
+        vers: niveau,
+        statutAvant: f.statut_avant,
+        statutApres: apres(f.statut_avant),
+        lot: ids.length,
+      });
+    }
+    conclure({ nb: faits.length, revues: revues(faits), cible: niveau ?? "a_preciser" }, faits.flatMap((f) => f.modules));
+  }
+
+  const statut = lireStatutLot(chaine(formData, "statut", 12));
+  if (!statut) refuser();
+  const { faits, refusees } = await changerStatutQuestions(ids, statut, s);
   for (const f of faits) {
-    await journaliser(s, "reclassement-question", f.id, {
-      de: f.de,
-      vers: cible,
-      statutAvant: f.statut_avant,
-      statutApres: f.statut_avant === "valide" ? "a_verifier" : f.statut_avant,
+    await journaliser(s, f.parAuteur ? "statut-question:valide-par-auteur" : `statut-question:${statut}`, f.id, {
+      moduleId: f.module_id,
       lot: ids.length,
     });
   }
-  revalidatePath("/admin/questions");
-  for (const m of new Set([cible, ...faits.map((f) => f.de)])) revalidatePath(`/module/${m}`);
-  const revues = faits.filter((f) => f.statut_avant === "valide").length;
-  redirect(
-    retourBanque(retour, { ok: "classees", nb: String(faits.length), revues: String(revues), vers: cible }) ?? retour,
+  for (const r of refusees) {
+    await journaliser(s, "statut-question:refus-quatre-yeux", r.id, { moduleId: r.module_id, auteur: r.auteur, lot: ids.length });
+  }
+  conclure(
+    {
+      nb: faits.length,
+      revues: statut === "a_verifier" ? revues(faits) : 0,
+      cible: statut,
+      auteur: faits.filter((f) => f.parAuteur).length,
+      refus: refusees.length,
+    },
+    faits.flatMap((f) => f.modules),
   );
 }
 

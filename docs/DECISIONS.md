@@ -6026,6 +6026,150 @@ ensuite est tracé « validée par son auteur ».
     l'administration comme pour le tutorat ;
   - étape 14c : un agent ne la voit ni au volet ni à l'accès rapide.
 
+## Gestes en lot, recherche et filtres de la banque (02/10/2026, question 89, choix a)
+
+**Demande.** « 89 à », « à » valant « a » (correction automatique du
+téléphone). La question disait : « Sauf réserve de votre part, une réponse
+vaut accord pour la suite du lot 1 et pour le lot 2. Le lot 3 attend un
+choix point par point. » Aucune réserve : les lots 1 et 2 sont faits, le
+lot 3 fait l'objet de la question 90.
+
+**Règle retenue (choix a) : elle ne change pas** (questions 12 et 74).
+- Classer, poser aussi dans, retirer d'un module, changer le niveau
+  modifient la question : une validée repasse « à vérifier », et celui qui
+  agit devient son auteur courant.
+- Changer le statut est un geste de relecture : ce que font les boutons de
+  chaque question, question par question, sans changer l'auteur. Valider
+  exige un autre code que l'auteur courant ; l'administration valide aussi
+  les siennes, tracées « validée par son auteur » ; au tutorat, la question
+  est refusée, et le refus va au journal.
+- Une question que le geste ne change pas n'est pas touchée.
+- Écartés : le statut gardé par les gestes en lot (b), deux règles selon le
+  geste (c) ; contre-arguments à la question 89.
+
+**Fait — suite du lot 1 : les gestes en lot.**
+- La barre de sélection porte cinq gestes : « Classer dans un module… »,
+  « Poser aussi dans… », « Retirer d'un module… », « Niveau… »,
+  « Statut… ». Sur téléphone, « Actions… » ouvre d'abord la liste des
+  gestes.
+- Chaque geste s'ouvre dans une fenêtre (élément `dialog` natif : Échap la
+  ferme, le reste de la page attend). Elle chiffre l'effet avant
+  d'appliquer :
+  - questions changées et inchangées ;
+  - validées qui repasseront « à vérifier » ;
+  - rattachements nouveaux ;
+  - refus des quatre yeux et validations par l'auteur.
+  Le bouton dit « Appliquer à N questions » ; il reste inactif quand rien
+  ne changerait.
+- Poser aussi dans : les modules non retirés, rangés par bloc, avec une
+  recherche par titre ou par code ; le module d'origine et ceux où la
+  question est déjà posée sont ignorés.
+- Retirer d'un module : seuls sont proposés les modules où l'une des
+  questions choisies est aussi posée. Le module d'origine ne se retire pas :
+  il se change par « Classer ».
+- Niveau : les niveaux en vigueur (question 81) et « À préciser ».
+- Statut : valider, remettre à vérifier, retirer.
+- Serveur (`actionLotQuestions`, tutorat et administration) :
+  - une transaction par geste, les questions verrouillées le temps du geste ;
+  - une ligne au journal par question changée : `reclassement-question`,
+    `rattachement-question:ajout`, `rattachement-question:retrait`,
+    `niveau-question`, `statut-question:…` ;
+  - une ligne par validation refusée : `statut-question:refus-quatre-yeux` ;
+  - retour sur la même vue de la banque, avec le bilan.
+- La case de chaque question dit ce qu'il faut pour annoncer l'effet :
+  module, statut, autres modules, niveau, et si la session en est l'auteur
+  courant. Le serveur recalcule tout sur la base, avec les mêmes fonctions
+  (`content/lot-questions.ts`).
+- Non fait : la suppression en lot. Proposée à part le 01/10 pour la
+  question 88, elle ne la sert plus ; une suppression reste un geste
+  d'administration, question par question.
+
+**Fait — lot 2 : filtres et menu.**
+- Recherche dans l'énoncé, les propositions et leur justification, la
+  justification de la question, les mots attendus d'un schéma et
+  l'identifiant ; sans casse ni accents ; tous les mots cherchés doivent y
+  être.
+- En vue : statut, niveau de question, module. Sous « Plus de filtres et
+  tri », avec le nombre de filtres actifs :
+  - dépôt : ceux dont des questions sont encore en banque, avec leur nombre,
+    et « écrites dans l'éditeur, sans dépôt » ;
+  - signalement ouvert ;
+  - bloc, filière, niveau d'habilitation, obligatoires, statistiques ;
+  - tri, dans chaque module : ordre de dépôt (par défaut), plus récentes,
+    dernières modifiées, énoncé de A à Z.
+- Les filtres actifs en puces : chacune retire le sien ; « Tout effacer »
+  à partir de deux.
+- Présentation resserrée :
+  - le titre, deux actions (« Nouvelle question », « Déposer des
+    questions ») et une phrase ; « Mises en situation » reste au menu ;
+  - la légende de l'arborescence en deux lignes, le schéma complet en lien ;
+  - la couverture de la vue Liste repliée ;
+  - la bascule Liste | Arborescence à côté de « Tout sélectionner », juste
+    au-dessus des questions.
+- Menu Questions :
+  - « À vérifier », la banque filtrée, porte désormais le compteur des
+    questions et fiches à vérifier, que portait « Banque de questions » ;
+  - « Signalées » n'en porte pas : Suivi › Signalements compte déjà les
+    signalements ouverts, et deux chiffres pour la même file se
+    contrediraient.
+
+**Écarts à la maquette du 01/10.**
+- Les filtres en vue gardent leur intitulé, et le formulaire son bouton
+  « Filtrer » : la page marche sans script, comme le reste de la banque.
+- Sur téléphone, statut, niveau et module restent en vue sous la
+  recherche ; la maquette les rangeait sous « Filtres et tri ». Les y
+  ranger aurait demandé un script ou des champs en double.
+- Le tri est sous « Plus de filtres et tri », pas sur la ligne de
+  sélection : il doit partir avec le formulaire.
+
+**Limites.**
+- L'écran du journal ne montre que les 300 dernières actions ; un geste sur
+  53 questions en écrit 53. Le filtre du journal est au lot 3 (question 90).
+- La recherche lit la banque en base ; les questions versionnées avec le
+  site (`content/modules/`) n'y sont pas, comme avant.
+- Le tri range les questions dans chaque module. Dans la Liste, les modules
+  suivent leur première question ; dans l'Arborescence, ils gardent leur
+  place.
+- Les étiquettes de blocs et de profils (question 74) ne se changent pas en
+  lot : elles restent dans l'éditeur.
+- Une question retirée reste retirée quand un geste la modifie, comme dans
+  l'éditeur.
+
+**Les 22 questions du pool (question 88).** Rien ne change pour elles : la
+règle ne joue que sur les validées, elles sont « à vérifier ». Le mode
+d'emploi de la section précédente change de boutons, une fois le site
+redéployé : cocher les questions, « Classer dans un module… » dans la
+barre, choisir le module, relire l'effet, « Appliquer à 9 questions » (puis
+à 13 pour le module 6).
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 441 tests, dont 8 nouveaux (gestes en lot : lecture,
+  plans, annonces, bilans ; recherche et tri).
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 108 étapes, sans erreur de page
+  ni erreur serveur. L'étape 14a ter bis, refaite :
+  - classer, en administration puis au tutorat ; une question déjà en
+    place laissée ;
+  - recherche par un mot de l'énoncé tapé en majuscules, et sa puce ;
+  - poser aussi dans deux modules cherchés par leur code, Entrée
+    n'appliquant pas le geste ; retirer d'un module, seuls les modules
+    concernés proposés ;
+  - niveau posé par l'administration, puis changé par le tutorat, qui
+    devient l'auteur courant ;
+  - valider en lot au tutorat : la sienne refusée, l'autre validée ;
+    l'administration valide les autres, puis une des siennes, tracée
+    « validée par son auteur » ; remettre à vérifier, retirer ;
+  - journal : une ligne par question changée et par refus ;
+  - à 390 px : « Actions… », les cinq gestes, la fenêtre dans l'écran,
+    sans défilement de côté ;
+  - « Plus de filtres et tri » et son nombre, puces, tri de A à Z dans
+    chaque module, filtre « Dépôt », « Tout effacer », menu.
+- Ailleurs dans le parcours : la couverture repliée (étape de
+  l'arborescence de la banque), le compteur sur « À vérifier » (accès
+  rapide).
+- Mesures à 1 280 et 390 px : la barre tient sur une ligne ; la recherche
+  et les listes ont le même bas ; ni la page ni la fenêtre ne débordent.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

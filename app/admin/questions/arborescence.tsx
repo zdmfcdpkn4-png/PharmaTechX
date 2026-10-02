@@ -71,7 +71,7 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
   const horsProfil = !admiseAuProfil(etiquettesProfil(q), profil);
   return (
     <li className="arbo-ligne">
-      <CaseQuestion q={q} />
+      <CaseQuestion q={q} session={ctx.session} />
       <details id={ancreDe(chemin)} className="arbo-noeud arbo-question" open={estOuvert(chemin, 4, ctx.etat)}>
         <summary>
           <EtiquettesQuestion
@@ -248,11 +248,10 @@ export function ArborescenceBanque({
           <Compte c={cumul(distincts)} modules={distincts.length} />
         </span>
       </div>
+      {/* Légende resserrée (question 89, lot 2) : le détail est dans le schéma. */}
       <p className="legende">
-        Filière, puis niveau, puis module, puis question. Un module rattaché à deux niveaux figure sous chacun, avec ses
-        questions ; une question posée dans plusieurs modules figure sous chacun d&apos;eux. Les modules sans question
-        apparaissent en grisé. Ce qui relie métier, filière, niveau, bloc, critère, module et question :{" "}
-        <Link href="/admin/rattachement-questions#qui-voit">le schéma complet</Link>.
+        Filière, niveau, module, question. Un module ou une question qui relève de plusieurs branches figure sous chacune ;
+        un module sans question est grisé. <Link href="/admin/rattachement-questions#qui-voit">Le schéma complet</Link>.
       </p>
       <p className="arbo-plis">
         <Link href={lienPlis("tout")}>Tout déplier</Link>

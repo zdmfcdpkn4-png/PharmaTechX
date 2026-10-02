@@ -205,11 +205,16 @@ export default async function RootLayout({
             titre: "Questions",
             picto: "questions",
             liens: [
+              { href: "/admin/questions", libelle: "Banque de questions" },
+              // La banque filtrée (question 89, lot 2) : le compteur va à ce qu'il compte, les questions
+              // et fiches à vérifier. « Signalées » n'en porte pas : Suivi › Signalements compte déjà les
+              // signalements ouverts, et deux chiffres pour la même file se contrediraient.
               {
-                href: "/admin/questions",
-                libelle: "Banque de questions",
+                href: "/admin/questions?statut=a_verifier",
+                libelle: "À vérifier",
                 compte: comptes.contenusAVerifier,
               },
+              { href: "/admin/questions?signalees=1", libelle: "Signalées" },
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
               { href: "/admin/questions/situations", libelle: "Mises en situation" },
