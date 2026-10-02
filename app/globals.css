@@ -2355,6 +2355,73 @@ details.sources li { font-size: 0.8125rem; line-height: 1.5; max-width: none; }
   .arbo-noeud > summary::before { transition: none; }
 }
 
+/* ── sélection et reclassement en lot (02/10/2026, question 88, choix a) ──── */
+/* La case d'une question ou d'un module se tient hors de son résumé : la
+   cocher ne déplie rien. Sa cible fait la taille d'un bouton du site. */
+.arbo-ligne { display: flex; align-items: flex-start; gap: 0.125rem; }
+.arbo-ligne > details { flex: 1 1 auto; min-width: 0; }
+.case-cible {
+  flex: none; display: inline-grid; place-items: center;
+  width: var(--cible); height: var(--cible); margin: 0;
+  border-radius: var(--rayon-sm); cursor: pointer;
+}
+.case-cible:hover { background: var(--marque-clair); }
+.case-cible input { width: 20px; height: 20px; margin: 0; accent-color: var(--marque); cursor: pointer; }
+.case-cible--vide, .case-cible--vide:hover { background: none; cursor: default; }
+.question-ligne .etape-tete .case-cible { margin: -0.375rem 0 -0.375rem -0.5rem; }
+.section-titre .case-cible { margin-left: -0.5rem; }
+.selection-banque { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: 0.25rem 0 0.5rem; }
+.case-tout {
+  display: inline-flex; align-items: center; gap: 0.5rem; min-height: var(--cible);
+  font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.case-tout input { width: 20px; height: 20px; margin: 0; accent-color: var(--marque); }
+/* Barre d'actions : flottante en bas, sur poste comme sur téléphone, toujours
+   sous le pouce et jamais sous l'en-tête. */
+.barre-selection {
+  position: fixed; z-index: 46; left: 50%; transform: translateX(-50%);
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  width: min(60rem, calc(100% - 2rem));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  padding: 0.625rem 0.875rem; border-radius: var(--rayon);
+  background: var(--marque-fonce); color: var(--marque-contraste); box-shadow: var(--ombre-haute);
+}
+.barre-selection[hidden] { display: none; }
+.barre-selection-compte { margin: 0; font-size: 0.9375rem; white-space: nowrap; }
+.barre-selection-champ {
+  display: inline-flex; align-items: center; gap: 0.5rem; flex: 1 1 18rem; min-width: 0;
+  font-size: 0.875rem; font-weight: 600;
+}
+.barre-selection-champ > span { white-space: nowrap; }
+.barre-selection-champ select {
+  flex: 1 1 auto; min-width: 0; min-height: var(--cible); padding: 0 0.5rem;
+  font: inherit; font-weight: 400; border-radius: var(--rayon-sm);
+  border: 1px solid var(--surface); background: var(--surface); color: var(--texte);
+}
+.barre-selection-annonce { margin: 0; flex: 1 1 100%; font-size: 0.875rem; line-height: 1.45; }
+.barre-selection .bouton { background: var(--surface); border-color: var(--surface); color: var(--marque-fonce); }
+.barre-selection .bouton:hover { background: var(--marque-clair); border-color: var(--marque-clair); color: var(--marque-fonce); }
+.barre-selection .bouton--secondaire,
+.barre-selection .bouton--discret { background: transparent; border-color: rgba(255, 255, 255, 0.7); color: var(--marque-contraste); }
+.barre-selection .bouton--secondaire:hover,
+.barre-selection .bouton--discret:hover { background: rgba(255, 255, 255, 0.14); border-color: var(--marque-contraste); color: var(--marque-contraste); }
+.barre-selection .bouton:disabled { opacity: 0.55; cursor: not-allowed; }
+.barre-selection :focus-visible { outline-color: var(--marque-contraste); }
+.barre-selection-vider { margin-left: auto; }
+/* Rien du bas de la page, pied compris, ne reste sous la barre ; le retour en
+   haut monte au-dessus. `--hauteur-selection` suit la hauteur réelle de la
+   barre, plus haute quand elle annonce l'effet. */
+body.a-selection { padding-bottom: calc(var(--hauteur-selection, 9rem) + 1.5rem + env(safe-area-inset-bottom, 0px)); }
+body.a-selection .retour-haut { bottom: calc(var(--hauteur-selection, 9rem) + 1.25rem + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 40rem) {
+  .barre-selection { width: calc(100% - 1rem); bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); padding: 0.5rem 0.625rem; }
+  .barre-selection-champ { flex-basis: 100%; }
+  .barre-selection-champ > span { display: none; }
+}
+@media print {
+  .barre-selection, .selection-banque, .case-cible { display: none !important; }
+}
+
 /* ── banque de badges : pictogrammes des domaines ─────────────────────────── */
 /* Dessinés dans `components/Badge.tsx`, en trait monochrome : ils héritent de
    la couleur du texte, restent lisibles en impression N&B et ne dépendent

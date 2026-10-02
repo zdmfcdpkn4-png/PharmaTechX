@@ -812,7 +812,12 @@ Justification : cf. procédure interne.`,
   assert.equal(await illustrationDe("Photographie collée"), 0, "image retirée dans l'aperçu : la question n'en a pas");
   assert.equal(await illustrationDe("Deux images collées"), 1, "image collée gardée");
   assert.equal(await illustrationDe("Image annoncée, non collée"), 1, "image ajoutée dans l'aperçu");
-  ok("illustrations dès le dépôt : images du Word sur leur question, seconde image signalée, image ajoutée et retirée dans l'aperçu");
+  // « Retirer l'illustration » dans l'éditeur (02/10/2026) : l'image part vraiment ; avant, elle restait.
+  await page.check("input[name=retirerImage]");
+  await page.click("button:has-text('Enregistrer les modifications')");
+  await page.waitForURL(/ok=modifiee/);
+  assert.equal(await illustrationDe("Image annoncée, non collée"), 0, "« Retirer l'illustration » retire l'image d'une question existante");
+  ok("illustrations dès le dépôt : images du Word sur leur question, seconde image signalée, image ajoutée et retirée dans l'aperçu ; retirée dans l'éditeur");
 
   // 4c quater. justification par proposition (question 85, choix a) : l'extrait et le piège de
   //            chaque lettre vont à sa proposition, dans l'aperçu, la banque et la correction ;
@@ -1711,7 +1716,7 @@ Justification : justification deux.`;
   ok("réglage d'un module du code : parcours restreint au maintien, écart signalé, puis fiche rétablie");
 
   // 12g bis. rattachement des questions (question 87, choix a) : les deux schémas dans le site,
-  // au menu Squelette, et depuis le dépôt et la banque ; dessin large sur poste, en colonne sur
+  // aux Repères (au menu Squelette jusqu'au 02/10/2026), et depuis le dépôt et la banque ; dessin large sur poste, en colonne sur
   // téléphone, sans débord.
   await page.goto(BASE + "/admin/questions/import");
   await page.click(".panneau-titre a[href='/admin/rattachement-questions']");
@@ -1721,13 +1726,22 @@ Justification : justification deux.`;
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
     1,
-    "lien « Comment sont rattachées les questions ? » du menu Squelette",
+    "lien « Comment sont rattachées les questions ? » au menu",
   );
+  // Repères (02/10/2026) : l'entrée quitte le sous-menu Squelette.
+  assert.equal(
+    await page
+      .locator("#volet-principal details.rail-groupe:has(> summary .picto-menu--reperes) a[href='/admin/rattachement-questions']")
+      .count(),
+    1,
+    "l'entrée est rangée dans les Repères",
+  );
+  assert.equal(await page.locator(".panneau-titre .legende", { hasText: "Repères" }).count(), 1, "la page se dit des Repères");
   // Libellés du 02/10/2026 : une question pour les schémas, « Dépôt documents » pour les documents.
   // textContent : le sous-menu Modules peut être replié, son texte reste lisible.
   const libelleMenu = async (href) =>
     (await page.locator(`#volet-principal a[href='${href}']`).first().textContent()).replace(/\s+/g, " ").trim();
-  assert.equal(await libelleMenu("/admin/rattachement-questions"), "Comment sont rattachées les questions ?", "libellé du menu Squelette");
+  assert.equal(await libelleMenu("/admin/rattachement-questions"), "Comment sont rattachées les questions ?", "libellé de l'entrée des Repères");
   assert.equal(await libelleMenu("/admin/documents"), "Dépôt documents", "libellé du menu Modules");
   const variantesSchemas = () =>
     page.evaluate(() =>
@@ -1763,7 +1777,7 @@ Justification : justification deux.`;
     1,
     "l'explication de l'arborescence renvoie au schéma complet",
   );
-  ok("comment sont rattachées les questions (question 87, choix a ; libellé du 02/10/2026) : page du menu Squelette, ouverte depuis le dépôt et la banque ; menu « Dépôt documents » ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord, le premier avec ses dix éléments ; l'arborescence de la banque y renvoie");
+  ok("comment sont rattachées les questions (question 87, choix a ; libellé et place du 02/10/2026) : page des Repères, ouverte depuis le dépôt et la banque ; menu « Dépôt documents » ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord, le premier avec ses dix éléments ; l'arborescence de la banque y renvoie");
 
   // 12h. volet de navigation (question 37, choix c) : barre latérale sur poste,
   // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
@@ -3467,7 +3481,7 @@ Justification : cf. procédure interne.`,
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
     1,
-    "tutorat : lien « Comment sont rattachées les questions ? » du menu Squelette",
+    "tutorat : lien « Comment sont rattachées les questions ? » dans les Repères",
   );
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement']").count(),
@@ -3840,6 +3854,126 @@ Justification : cf. procédure interne.`,
   await rebrancher(codeTuteur);
   ok("banque en arborescence : vue par défaut, repliée, bascule vers la liste, Tout déplier / Tout replier, module rattaché à deux niveaux signalé, filtres gardés, créer, valider, modifier, retirer et supprimer ramènent à la branche, rouverte, en vue et avec le focus ; rien ne déborde à 360 px");
 
+  // 14a ter bis. reclassement en lot (02/10/2026, question 88, choix a) : cases dans l'arborescence et la
+  //              liste, « Tout sélectionner », case d'un module, Maj + clic ; l'effet est annoncé avant
+  //              d'appliquer ; une validée repasse « à vérifier » ; chaque déplacement va au journal ; le
+  //              tutorat classe aussi ; rien ne déborde à 390 px. Les trois questions sont supprimées à la fin.
+  await rebrancher(codeAdmin);
+  const ENONCES_LOT = [1, 2, 3].map((i) => `Question à reclasser ${i} (${Date.now()}) ?`);
+  for (const enonce of ENONCES_LOT) {
+    await page.goto(BASE + "/admin/questions/nouvelle?module=comportement-zac");
+    await page.fill("textarea[name=enonce]", enonce);
+    const champsLot = page.locator(".proposition--editeur input[type=text]");
+    await champsLot.nth(0).fill("Oui");
+    await champsLot.nth(1).fill("Non");
+    await page.locator(".proposition--editeur input[type=checkbox]").nth(0).check();
+    await page.click("button:has-text('Créer la question')");
+    await page.waitForURL(/ok=creee/);
+  }
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac&statut=a_verifier");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+    page.locator(".question-ligne", { hasText: ENONCES_LOT[0] }).locator("form button:has-text('Valider')").click(),
+  ]);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
+  const idsLot = [];
+  for (const enonce of ENONCES_LOT) {
+    idsLot.push(await page.locator(".question-ligne", { hasText: enonce }).locator("input.case-question").getAttribute("value"));
+  }
+  assert.ok(idsLot.every((id) => /^q-/.test(id)), "une case par question dans la liste, à son identifiant");
+  // Arborescence du module : rien de coché, pas de barre.
+  await page.goto(BASE + "/admin/questions?module=comportement-zac");
+  const barre = page.locator("form.barre-selection");
+  const compteBarre = (n) => barre.locator(".barre-selection-compte", { hasText: new RegExp(`^${n} sélectionnées?$`) });
+  assert.equal(await barre.isVisible(), false, "rien de sélectionné : pas de barre d'actions");
+  const afficheesLot = await page.evaluate(() => new Set([...document.querySelectorAll("input.case-question")].map((c) => c.value)).size);
+  assert.match(await page.locator(".case-tout").innerText(), new RegExp(`Tout sélectionner \\(${afficheesLot} affichées?\\)`));
+  await page.locator(".case-tout input").check();
+  await compteBarre(afficheesLot).waitFor();
+  await barre.locator("button:has-text('Désélectionner')").click();
+  await barre.waitFor({ state: "hidden" });
+  // Case du module : ses questions affichées, chacune une fois.
+  const BRANCHE_LOT = "arb-_2a__2f_N1a_2f_comportement-zac";
+  const dansModule = await page.evaluate(
+    (b) => new Set([...document.querySelectorAll(`#${b} input.case-question`)].map((c) => c.value)).size,
+    BRANCHE_LOT,
+  );
+  await page.locator(`input.case-module[data-branche='${BRANCHE_LOT}']`).check();
+  await compteBarre(dansModule).waitFor();
+  await page.locator(`input.case-module[data-branche='${BRANCHE_LOT}']`).uncheck();
+  await barre.waitFor({ state: "hidden" });
+  // Maj + clic : la plage entre deux cases.
+  const caseLot = (id) => page.locator(`input.case-question[value='${id}']`).first();
+  await caseLot(idsLot[0]).click();
+  await caseLot(idsLot[2]).click({ modifiers: ["Shift"] });
+  await compteBarre(3).waitFor();
+  assert.equal(await caseLot(idsLot[1]).isChecked(), true, "Maj + clic coche la question du milieu");
+  // L'effet, dit avant d'appliquer.
+  await barre.locator("select").selectOption("critere-b1-02");
+  await barre.locator("button:has-text('Classer…')").click();
+  const annonce = await barre.locator(".barre-selection-annonce").innerText();
+  assert.match(annonce, /^Classer 3 questions dans « B1-02 — /, "nombre et module annoncés");
+  assert.match(annonce, /1 validée repassera « à vérifier »/, "la validée est annoncée");
+  assert.match(annonce, /Vous deviendrez l'auteur courant des questions déplacées\./);
+  await barre.locator("button:has-text('Confirmer')").click();
+  await page.waitForURL(/ok=classees/);
+  assert.match(
+    await page.locator(".encart--ok").first().innerText(),
+    /^3 questions classées dans « B1-02 — .+ »\. 1 validée repasse « à vérifier »\.$/,
+  );
+  await barre.waitFor({ state: "hidden" }); // après le geste, la sélection repart vide
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02");
+  for (const enonce of ENONCES_LOT) {
+    await page.locator(".question-ligne", { hasText: enonce }).waitFor();
+  }
+  assert.equal(
+    await page.locator(".question-ligne", { hasText: ENONCES_LOT[0] }).locator(".etiquette:text-is('À vérifier')").count(),
+    1,
+    "la validée reclassée repasse à vérifier",
+  );
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
+  for (const enonce of ENONCES_LOT) {
+    assert.equal(await page.locator(".question-ligne", { hasText: enonce }).count(), 0, "plus dans le module d'origine");
+  }
+  await page.goto(BASE + "/admin/journal");
+  assert.ok((await page.locator("code:text-is('reclassement-question')").count()) >= 3, "un déplacement, une ligne au journal");
+  // Le tutorat classe aussi, depuis la liste ; une question déjà dans le module ne bouge pas.
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02");
+  await page.locator(`input.case-question[value='${idsLot[1]}']`).check();
+  await page.locator(`input.case-question[value='${idsLot[2]}']`).check();
+  await compteBarre(2).waitFor();
+  await barre.locator("select").selectOption("critere-b1-02");
+  await barre.locator("button:has-text('Classer…')").click();
+  assert.match(await barre.locator(".barre-selection-annonce").innerText(), /^Rien à classer : les questions choisies sont déjà dans « B1-02 — /);
+  assert.equal(await barre.locator("button:has-text('Confirmer')").isDisabled(), true, "rien à classer : rien à confirmer");
+  await barre.locator("button:has-text('Annuler')").click();
+  await barre.locator("select").selectOption("comportement-zac");
+  await barre.locator("button:has-text('Classer…')").click();
+  await barre.locator("button:has-text('Confirmer')").click();
+  await page.waitForURL(/ok=classees/);
+  assert.match(await page.locator(".encart--ok").first().innerText(), /^2 questions classées dans « B1-01 — /);
+  // Téléphone : la barre tient dans l'écran, sans défilement de côté.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(BASE + "/admin/questions?vue=liste&module=comportement-zac");
+  await page.locator(`input.case-question[value='${idsLot[1]}']`).check();
+  await compteBarre(1).waitFor();
+  const cadreBarre = await barre.boundingBox();
+  assert.ok(cadreBarre && cadreBarre.x >= 0 && cadreBarre.x + cadreBarre.width <= 390 && cadreBarre.y + cadreBarre.height <= 844, "barre dans l'écran à 390 px");
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), 0, "sélection sans défilement horizontal à 390 px");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  // Remise en ordre : les trois questions supprimées.
+  await rebrancher(codeAdmin);
+  for (const enonce of ENONCES_LOT) {
+    const moduleLot = enonce === ENONCES_LOT[0] ? "critere-b1-02" : "comportement-zac";
+    await page.goto(BASE + `/admin/questions?vue=liste&module=${moduleLot}`);
+    await Promise.all([
+      page.waitForResponse((r) => r.request().method() === "POST" && r.status() === 303),
+      page.locator(".question-ligne", { hasText: enonce }).locator("form button:has-text('Supprimer')").click(),
+    ]);
+  }
+  ok("reclassement en lot (question 88, choix a) : cases dans l'arborescence et la liste, tout sélectionner, case de module, Maj + clic ; effet annoncé avant d'appliquer, validée repassée à vérifier, journalisé ; tutorat compris ; question déjà en place laissée ; barre dans l'écran à 390 px");
+
   // 14a quater. une question dans plusieurs blocs et plusieurs profils (question 74, choix c) : créée
   //             dans comportement-zac (bloc 1, tronc commun), aussi posée dans un module du bloc 4
   //             (chimiothérapie) et un du bloc 6 (préparatoire), étiquetée bloc 7 et filière
@@ -4056,6 +4190,11 @@ Justification : cf. procédure interne.`,
     await page2.locator(".acces-rapide a[href='/admin/pilotage']").count(),
     0,
     "aucun écran d'administration dans l'accès rapide d'un poste",
+  );
+  assert.equal(
+    await page2.locator(".acces-rapide a[href='/admin/rattachement-questions'], #volet-principal a[href='/admin/rattachement-questions']").count(),
+    0,
+    "Repères d'un poste : pas d'entrée « Comment sont rattachées les questions ? », réservée à la gestion",
   );
   await page2.keyboard.press("Escape");
   await page2.waitForSelector(".acces-rapide", { state: "hidden" });

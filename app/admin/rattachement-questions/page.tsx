@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 /**
  * Rattachement des questions (question 87, choix a, 01/10/2026) : les deux
  * schémas de la page « Rattachement des questions », publiée d'abord à part,
- * entrent dans le site, au sous-menu Squelette. Le dépôt des questions et la
- * banque y renvoient. Tutorat et administration : ils déposent tous deux.
+ * entrent dans le site, au sous-menu Squelette, puis aux Repères le 02/10/2026,
+ * sous le titre « Comment sont rattachées les questions ? ». Le dépôt des
+ * questions et la banque y renvoient. Tutorat et administration : ils déposent
+ * tous deux.
  *
  * Les schémas sont fixes : ils décrivent le fonctionnement du site, pas les
  * réglages en base. Seuls les nombres et les codes tirés de la fiche
@@ -29,7 +31,8 @@ export default async function RattachementQuestions() {
   return (
     <>
       <section className="panneau-titre">
-        <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
+        {/* Rangée dans les Repères le 02/10/2026, avec l'entrée du menu. */}
+        <p className="legende" style={{ margin: 0 }}>Repères</p>
         <h1>Comment sont rattachées les questions&nbsp;?</h1>
         <p>
           <strong>Ce n&apos;est pas la question qui ouvre un niveau, c&apos;est son module.</strong> Une question

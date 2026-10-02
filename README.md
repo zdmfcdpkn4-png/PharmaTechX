@@ -230,6 +230,14 @@ figure sous chacun et le dit ; les filtres valent pour les deux vues ;
 après un geste (valider, retirer, modifier, supprimer), l'arborescence
 rouvre la branche où il a été fait et y ramène.
 
+**Reclassement en lot** (02/10/2026, question 88, choix a) : dans les deux
+vues, une case par question et par module, « Tout sélectionner » et Maj +
+clic ; une barre en bas de l'écran classe les questions cochées dans un
+autre module, après avoir annoncé l'effet. Règle de toute modification : une
+validée repasse « à vérifier », celui qui classe devient l'auteur courant ;
+chaque déplacement va au journal (`reclassement-question`). Calculs dans
+`content/reclassement.ts`, barre dans `components/SelectionBanque.tsx`.
+
 `/admin/modules` — **modules déposés** (décision du 18/09/2026, question 10,
 à la manière des dépôts du Lecteur QIM · QCM) : le texte des 53 critères
 reste dans le code, mais un tuteur ou l'administrateur ajoute un module avec
@@ -273,10 +281,12 @@ l'administration.
   rangé.
 - `/admin/rattachement` : le réglage des modules du code, venu de l'écran
   Modules, et les deux parcours en lecture.
-- `/admin/rattachement-questions` (question 87, choix a), au menu
-  « Comment sont rattachées les questions ? » depuis le 02/10/2026 : deux schémas
+- `/admin/rattachement-questions` (question 87, choix a) : deux schémas
   fixes, qui voit quelle question et où ranger une question qui recoupe un
-  critère ; liée depuis le dépôt et la banque, ouverte au tutorat.
+  critère ; liée depuis le dépôt et la banque, ouverte au tutorat. Depuis le
+  02/10/2026, elle s'appelle « Comment sont rattachées les questions ? » et
+  son entrée a quitté Squelette pour les Repères, où seuls le tutorat et
+  l'administration la voient.
 - `/admin/ordonnancement` et `/admin/programmes` : l'ordre et les programmes
   à la carte, inchangés.
 

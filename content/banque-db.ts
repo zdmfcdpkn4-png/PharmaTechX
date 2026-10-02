@@ -365,7 +365,9 @@ export async function enregistrerQuestion(
       options = EXCLUDED.options,
       legendes = EXCLUDED.legendes,
       mode_reponse = EXCLUDED.mode_reponse,
-      image_id = COALESCE(EXCLUDED.image_id, questions.image_id),
+      -- L'action passe toujours l'image voulue : la nouvelle, celle déjà posée, ou aucune
+      -- (« Retirer l'illustration », qui ne retirait rien avant le 02/10/2026).
+      image_id = EXCLUDED.image_id,
       justification = EXCLUDED.justification,
       eliminatoire = EXCLUDED.eliminatoire,
       reservee = EXCLUDED.reservee,
@@ -405,6 +407,48 @@ export async function changerStatutQuestion(
       valide_par_auteur = CASE WHEN ${statut} = 'valide' THEN ${parAuteur} ELSE valide_par_auteur END,
       edite_le = NOW()
     WHERE id = ${id}`;
+}
+
+/**
+ * Reclassement en lot (02/10/2026, question 88, choix a) : les questions
+ * choisies changent de module d'origine, en une transaction. Règle de toute
+ * modification (questions 12 et 74) : une validée repasse « à vérifier », et
+ * celui qui classe devient l'auteur courant. Le module choisi quitte leurs
+ * « aussi posée dans » ; l'ancien module n'y entre pas. Celles déjà dans le
+ * module choisi ne sont pas touchées. Rend ce qui a bougé, pour le journal.
+ */
+export async function reclasserQuestions(
+  ids: string[],
+  cible: string,
+  acteur: { role: Role; libelle: string; acces?: number | null },
+): Promise<{ id: string; de: string; statut_avant: StatutQuestion }[]> {
+  if (ids.length === 0) return [];
+  const par = `${acteur.role} · ${acteur.libelle}`;
+  const acces = acteur.acces ?? null;
+  return transaction(async (client) => {
+    const s = sqlSur(client);
+    const r = await s<{ id: string; de: string; statut_avant: StatutQuestion }>`
+      WITH avant AS (
+        SELECT id, module_id, statut FROM questions
+        WHERE id = ANY(${ids}::text[]) AND module_id <> ${cible}
+        FOR UPDATE
+      )
+      UPDATE questions q SET
+        module_id = ${cible},
+        statut = CASE WHEN avant.statut = 'valide' THEN 'a_verifier' ELSE avant.statut END,
+        valide_par = NULL,
+        valide_le = NULL,
+        valide_par_auteur = FALSE,
+        edite_par = ${par},
+        edite_par_acces = ${acces},
+        edite_le = NOW(),
+        version = q.version + 1
+      FROM avant
+      WHERE q.id = avant.id
+      RETURNING q.id, avant.module_id AS de, avant.statut AS statut_avant`;
+    await s`DELETE FROM questions_modules WHERE module_id = ${cible} AND question_id = ANY(${ids}::text[])`;
+    return r.rows;
+  });
 }
 
 export async function supprimerQuestion(id: string): Promise<void> {

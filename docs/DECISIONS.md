@@ -5926,6 +5926,106 @@ n'a reçu aucune réponse. La cause était dans le parcours, pas dans le site.
   - l'étape 12g bis lit les deux libellés au menu ;
   - les étapes 12g bis et 13 attendent le nouveau titre.
 
+## Reclassement en lot, et en-têtes « Module N — … » reconnus au dépôt (02/10/2026, question 88, choix a)
+
+**Demande.** « Change le libellé « rattachement des questions » en
+« comment sont rattachées les questions ? » et le repositionner dans les
+repères. A pour la question 88. Je viens de créer le module 6, peux-tu
+reclasser les questions ? »
+
+**Constaté le même jour, en lecture seule, dans la base en ligne.**
+- Le module 6 existe : « Pool de manipulation (Module 6) », publié, filière
+  du pool, N2R. Un module 5 a aussi été créé.
+- Les 53 questions du pool n'ont pas bougé : 22 sont toujours dans le
+  mauvais module (question 88).
+
+**Non fait : déplacer moi-même les 22.** Aucune écriture dans la base en
+ligne sans « fais-le dans la base », et le site en ligne m'est
+inaccessible d'ici. Le choix a les fait reclasser depuis la banque, avec
+l'outil construit ci-dessous.
+
+**Fait.**
+- Sélection dans la banque, arborescence comme liste :
+  - une case par question, hors de son résumé : la cocher ne déplie rien ;
+  - une case par module, qui coche ses questions affichées, et se montre à
+    moitié cochée si une partie seulement l'est ;
+  - « Tout sélectionner » : ce que montrent les filtres ;
+  - Maj + clic : une plage, dans l'ordre de la page ;
+  - une question posée dans plusieurs modules a une case sous chacun : elles
+    bougent ensemble, et la question compte une fois.
+- Une barre en bas de l'écran, sur poste comme sur téléphone :
+  - « Classer dans » un module (tout module non retiré), puis « Classer… » ;
+  - l'effet est dit avant d'appliquer : nombre de questions, celles déjà en
+    place, les validées qui repasseront « à vérifier », l'auteur courant ;
+  - « Confirmer » ou « Annuler » ; « Désélectionner ».
+- Règle de toute modification, inchangée en attendant la question 89
+  (questions 12 et 74) :
+  - une validée repasse « à vérifier », et celui qui classe devient son
+    auteur courant ;
+  - le module choisi quitte les « aussi posée dans » de la question ;
+    l'ancien module n'y entre pas ;
+  - une question déjà dans le module choisi n'est pas touchée.
+- Serveur : tutorat et administration ; une seule transaction ; une ligne
+  au journal par question déplacée (`reclassement-question` : de, vers,
+  statut avant et après) ; retour sur la même vue de la banque, avec le
+  bilan.
+- Dépôt (`lib/import-module.ts`) : en dernier recours, un en-tête
+  « Module N — … » désigne le seul module dont le titre porte « Module N »
+  en mots entiers, où que ce soit ; si plusieurs titres le portent, la
+  question reste à choisir. Le Word du pool, rejoué contre les titres en
+  ligne : 4, 13, 13, 10 et 13 questions vers les modules 1, 2, 3, 4 et 6,
+  sans rien à choisir.
+- Repères : l'entrée « Comment sont rattachées les questions ? » quitte le
+  sous-menu Squelette pour les Repères. Elle n'y est montrée qu'au tutorat
+  et à l'administration : la page leur reste réservée, et un agent ne voit
+  pas de lien qu'il ne pourrait pas ouvrir. Le surtitre de la page devient
+  « Repères ».
+- Les deux défauts relevés le 01/10 (question 89) :
+  - « Retirer l'illustration » retire l'image d'une question existante ;
+    l'enregistrement gardait l'ancienne ;
+  - « Nouvelle question » ne promet plus le statut « validée », que le
+    serveur refuse depuis la question 12.
+
+**Pour reclasser les 22, une fois le site redéployé.**
+1. Banque, module 3 : cocher les 9 premières, de « règles d'hygiène et de
+   tenue en ZAC » à la QIM « bris de flacon sous isolateur » (la première,
+   puis Maj + clic sur la neuvième) ; « Classer dans » le module 2 ;
+   « Classer… », relire l'annonce, « Confirmer ».
+2. Module 4 : cocher les 13 dernières, de « classes de chimiothérapies
+   cytotoxiques » à « expression de la posologie » ; « Classer dans » le
+   module 6.
+
+Elles sont « à vérifier » : leur statut ne change pas. Celui qui les classe
+devient leur auteur courant ; un code d'administration qui les valide
+ensuite est tracé « validée par son auteur ».
+
+**Limites.**
+- La sélection repart vide à chaque nouvelle page : un filtre, « Tout
+  déplier », un geste.
+- Sur téléphone, sans touche Maj : une à une, ou par la case du module.
+- Restent, après la question 89 : « Poser aussi dans », le niveau et le
+  statut en lot (lot 1), puis le lot 2.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 433 tests, dont 5 nouveaux (reclassement :
+  identifiants, plan, annonce, bilan ; dépôt : « Module N — … »).
+- `npm run build`.
+- Mesures à 1 280 et 390 px : la barre tient dans l'écran, sans débord ; le
+  bouton de retour en haut passe au-dessus d'elle, qu'elle annonce l'effet
+  ou non.
+- Parcours de bout en bout, deux passes de 108 étapes, sans erreur de page
+  ni erreur serveur :
+  - nouvelle étape 14a ter bis : trois questions créées, une validée ;
+    « Tout sélectionner », case du module, Maj + clic ; annonce lue ;
+    classées dans B1-02, la validée repassée « à vérifier », trois lignes
+    au journal ; le tutorat les classe à son tour depuis la liste, une
+    question déjà en place laissée ; barre dans l'écran à 390 px ;
+    supprimées à la fin ;
+  - étape 4c ter : « Retirer l'illustration » retire l'image ;
+  - étapes 12g bis et 13 : l'entrée est dans les Repères, pour
+    l'administration comme pour le tutorat ;
+  - étape 14c : un agent ne la voit ni au volet ni à l'accès rapide.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

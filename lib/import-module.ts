@@ -63,6 +63,11 @@ export type Resolution = { id: string; raison?: undefined } | { id: null; raison
  * compris) et le titre exact ; puis le début du titre s'il ne désigne qu'un
  * module. Ce début se compte en mots entiers depuis le 01/10/2026 : l'en-tête
  * « Module 1 — … » ne désigne pas un titre « Module 10 — … ».
+ *
+ * En dernier recours (02/10/2026), un en-tête numéroté « Module 6 — … »
+ * désigne le seul module dont le titre porte « Module 6 » en mots entiers, où
+ * qu'ils soient : « Pool de manipulation - (Module 6) ». Si plusieurs titres
+ * le portent, la question reste à choisir.
  */
 export function resoudreLigneModule(valeur: string, modules: ModuleRepere[]): Resolution {
   const brut = valeur
@@ -84,7 +89,14 @@ export function resoudreLigneModule(valeur: string, modules: ModuleRepere[]): Re
       else if (k.length >= 8 && titre.startsWith(`${k} `)) debuts.add(m.id);
     }
   }
-  const trouves = exacts.size > 0 ? exacts : debuts;
+  let trouves = exacts.size > 0 ? exacts : debuts;
+  if (trouves.size === 0) {
+    const numero = cles.map((k) => /^module (\d+)(?: |$)/.exec(k)?.[1]).find(Boolean);
+    if (numero) {
+      const porteur = new RegExp(`(?:^| )module ${numero}(?: |$)`);
+      trouves = new Set(modules.filter((m) => porteur.test(cle(m.titre))).map((m) => m.id));
+    }
+  }
   if (trouves.size === 1) return { id: [...trouves][0] };
   if (trouves.size === 0) return { id: null, raison: `aucun module ne répond à « ${brut} »` };
   const noms = reperesModules(modules);

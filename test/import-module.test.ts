@@ -56,6 +56,34 @@ test("en-tête numéroté « Module 1 — Titre » : le titre seul, ou « Module
   assert.equal(resoudreLigneModule("Module 1 — Organisation", classeur).id, null, "« Module 1 » ne désigne pas « Module 10 »");
 });
 
+test("en-tête « Module 6 — … » : le seul module dont le titre porte « Module 6 », où que ce soit (02/10/2026)", () => {
+  const pool: ModuleRepere[] = [
+    { id: "mod-p1", titre: "Pool de manipulation - (Module 1)", critere: "" },
+    { id: "mod-p2", titre: "Pool de manipulation - (Module 2)", critere: "" },
+    { id: "mod-p6", titre: "Pool de manipulation (Module 6)", critere: "" },
+    { id: "mod-p10", titre: "Pool de manipulation - (Module 10)", critere: "" },
+    ...MODULES,
+  ];
+  assert.deepEqual(resoudreLigneModule("Module 2 — Risque cytotoxique et moyen de protection", pool), { id: "mod-p2" });
+  assert.deepEqual(resoudreLigneModule("Module 6 — circuit de la préparation de chimiothérapie", pool), { id: "mod-p6" }, "titre sans tiret");
+  assert.deepEqual(resoudreLigneModule("Module 1 : Présentation de l’unité", pool), { id: "mod-p1" }, "« Module 1 » ne désigne pas « Module 10 »");
+  assert.deepEqual(resoudreLigneModule("Module 10 — Doses standards", pool), { id: "mod-p10" });
+  const absent = resoudreLigneModule("Module 7 — Préparations particulières", pool);
+  assert.equal(absent.id, null, "aucun titre ne porte « Module 7 »");
+  assert.match(absent.raison ?? "", /aucun module ne répond/);
+  const deuxPools = resoudreLigneModule("Module 2 — Risque cytotoxique", [
+    ...pool,
+    { id: "mod-s2", titre: "Pool de stérilisation - (Module 2)", critere: "" },
+  ]);
+  assert.equal(deuxPools.id, null, "deux titres portent « Module 2 » : à choisir");
+  assert.match(deuxPools.raison ?? "", /plusieurs modules répondent à « Module 2 — Risque cytotoxique » : mod-p2, mod-s2/);
+  assert.deepEqual(
+    resoudreLigneModule("B1-01 — Comportement et habillage en zone à atmosphère contrôlée", pool),
+    { id: "comportement-zac" },
+    "le code du critère et le titre passent avant le numéro",
+  );
+});
+
 test("nom court : le code du critère s'il est seul à le porter, sinon l'identifiant", () => {
   const noms = reperesModules(MODULES);
   assert.equal(noms.get("critere-b1-05"), "B1-05");

@@ -16,6 +16,7 @@ import { identifiantsConnus } from "@/content/referentiel-db";
 import { lireBlocs, lireIdentifiants, modulesDeLaQuestion } from "@/content/rattachement-question";
 import { peutValider, validationParAuteur } from "@/content/quatre-yeux";
 import { retourBanque } from "@/content/arbre-banque";
+import { lireIdentifiantsQuestions } from "@/content/reclassement";
 import { lireModeReponse, lireNiveauQuestion, trousDuTexte, type Reference, type TypeQuestion } from "@/content/types";
 import {
   changerStatutQuestion,
@@ -24,6 +25,7 @@ import {
   enregistrerSituation,
   insererLot,
   lireQuestion,
+  reclasserQuestions,
   supprimerQuestion,
   supprimerSituation,
   textesValidesParModule,
@@ -275,6 +277,40 @@ export async function actionChangerStatutQuestion(formData: FormData) {
   revalidatePath("/admin/questions");
   for (const m of modulesDeLaQuestion(q)) revalidatePath(`/module/${m}`);
   redirect(retour);
+}
+
+/**
+ * Reclassement en lot (02/10/2026, question 88, choix a) : les questions
+ * cochées dans la banque passent dans le module choisi. Tutorat et
+ * administration, comme toute modification d'une question ; chaque question
+ * déplacée a sa ligne au journal. Le module choisi doit exister et ne pas être
+ * retiré.
+ */
+export async function actionClasserQuestions(formData: FormData) {
+  const s = await sessionRequise("tuteur");
+  const ids = lireIdentifiantsQuestions(formData.getAll("ids"));
+  const cible = chaine(formData, "module", 80);
+  const retour = retourBanque(formData.get("retour")) ?? "/admin/questions";
+  const destination = (await getTousModulesAvecDeposes()).find((m) => m.id === cible);
+  if (!destination || destination.statut === "retire" || ids.length === 0) {
+    redirect(retourBanque(retour, { erreur: "classement" }) ?? retour);
+  }
+  const faits = await reclasserQuestions(ids, cible, s);
+  for (const f of faits) {
+    await journaliser(s, "reclassement-question", f.id, {
+      de: f.de,
+      vers: cible,
+      statutAvant: f.statut_avant,
+      statutApres: f.statut_avant === "valide" ? "a_verifier" : f.statut_avant,
+      lot: ids.length,
+    });
+  }
+  revalidatePath("/admin/questions");
+  for (const m of new Set([cible, ...faits.map((f) => f.de)])) revalidatePath(`/module/${m}`);
+  const revues = faits.filter((f) => f.statut_avant === "valide").length;
+  redirect(
+    retourBanque(retour, { ok: "classees", nb: String(faits.length), revues: String(revues), vers: cible }) ?? retour,
+  );
 }
 
 export async function actionSupprimerQuestion(formData: FormData) {

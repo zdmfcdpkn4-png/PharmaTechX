@@ -116,6 +116,12 @@ export default async function RootLayout({
         { href: "/reperes#evaluation", libelle: "L'évaluation et son barème" },
         { href: "/reperes#programme", libelle: "Programme complet" },
         { href: "/reperes#niveaux", libelle: "Conditions des niveaux" },
+        // Schémas du rattachement des questions (question 87, choix a), rangés dans les Repères
+        // le 02/10/2026 : la page reste réservée au tutorat et à l'administration, l'entrée aussi.
+        // Espace insécable : le « ? » ne passe pas seul à la ligne.
+        ...(gestionnaire
+          ? [{ href: "/admin/rattachement-questions", libelle: "Comment sont rattachées les questions\u00a0?" }]
+          : []),
         { href: "/reperes#questions", libelle: "Questions fréquentes" },
       ],
     },
@@ -221,8 +227,8 @@ export default async function RootLayout({
           },
           // Squelette de la formation (question 81, choix a, 26/09/2026) : tout ce
           // qui compose la formation, en un sous-menu. Droits inchangés : le
-          // tutorat garde l'ordre et les programmes, et lit les filières et,
-          // depuis la question 87, le rattachement des questions.
+          // tutorat garde l'ordre et les programmes, et lit les filières. Les
+          // schémas du rattachement des questions sont passés aux Repères le 02/10/2026.
           {
             titre: "Squelette",
             picto: "squelette",
@@ -236,9 +242,6 @@ export default async function RootLayout({
                     { href: "/admin/rattachement", libelle: "Rattachement des modules" },
                   ]
                 : []),
-              // Schémas du rattachement des questions (question 87, choix a) : tutorat et administration.
-              // Libellé en question depuis le 02/10/2026 ; espace insécable : le « ? » ne passe pas seul à la ligne.
-              { href: "/admin/rattachement-questions", libelle: "Comment sont rattachées les questions\u00a0?" },
               { href: "/admin/ordonnancement", libelle: "Ordre" },
               { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],

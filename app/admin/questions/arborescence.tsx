@@ -9,6 +9,8 @@ import { admiseAuProfil, type ProfilTirage } from "@/content/tirage";
 import type { LibellesNiveaux } from "@/content/niveaux-questions";
 import {
   ActionsQuestion,
+  CaseModule,
+  CaseQuestion,
   ContenuQuestion,
   EtiquettesQuestion,
   RattachementQuestion,
@@ -68,7 +70,8 @@ function QuestionArbre({ q, bm, profil, ctx }: { q: LigneQuestion; bm: BrancheMo
   // Étiquettes de profil (question 74) : sous une branche qu'elles excluent, la question n'est pas tirée.
   const horsProfil = !admiseAuProfil(etiquettesProfil(q), profil);
   return (
-    <li>
+    <li className="arbo-ligne">
+      <CaseQuestion q={q} />
       <details id={ancreDe(chemin)} className="arbo-noeud arbo-question" open={estOuvert(chemin, 4, ctx.etat)}>
         <summary>
           <EtiquettesQuestion
@@ -107,7 +110,8 @@ function ModuleArbre({ bm, profil, ctx }: { bm: BrancheModule; profil: ProfilTir
   const c = ctx.comptes[m.id] ?? AUCUNE;
   const vide = c.valides + c.aVerifier === 0;
   return (
-    <li>
+    <li className="arbo-ligne">
+      <CaseModule branche={ancreDe(bm.chemin)} titre={m.titre} nombre={questions.length} />
       <details
         id={ancreDe(bm.chemin)}
         className={`arbo-noeud arbo-module${vide ? " arbo-module--vide" : ""}`}

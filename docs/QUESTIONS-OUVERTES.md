@@ -384,7 +384,31 @@ telle. Ordre : ce qui change le déploiement en premier.
     plusieurs module. Améliore le système de filtre et le menu […] », avec
     un prompt de refonte de tableau de bord, à « proposer avant d'agir ».
 
-    Proposé le même jour ; rien n'est modifié avant accord.
+    **Reposée le 02/10/2026**, après la question 88 (choix a). Le
+    reclassement en lot existe désormais (« Classer dans un module »), avec
+    la règle actuelle : une validée reclassée repasse « à vérifier », et
+    celui qui la classe devient son auteur courant. Les 22 questions du pool
+    sont « à vérifier » : la réponse ne change rien pour elles. Elle décide
+    de la règle des questions validées, pour le reclassement déjà fait et
+    pour les gestes qui restent au lot 1 (poser aussi dans, niveau, statut).
+    - **a (recommandé)** : la règle ne change pas. Contre :
+      - deux temps à chaque reclassement d'une validée ;
+      - elle sort des tirages jusqu'à sa revalidation ;
+      - un tuteur ne revalide pas ce qu'il a lui-même reclassé.
+    - **b** : les gestes en lot gardent le statut, le contenu ne changeant
+      pas ; chaque changement est tracé au journal, avant et après. Contre :
+      cela déroge à la question 74, et une question validée pour un module
+      peut être posée à d'autres agents, ailleurs, sans second regard.
+    - **c** : le niveau et « aussi posée dans » gardent le statut ; changer le
+      module d'origine, c'est-à-dire reclasser, remet « à vérifier ». Contre :
+      deux règles à retenir, et ajouter un module expose quand même la
+      question à d'autres agents sans second regard.
+
+    Sauf réserve de votre part, une réponse vaut accord pour la suite du lot
+    1 et pour le lot 2. Le lot 3 attend un choix point par point.
+
+    **Première version, du 01/10/2026**, avec le détail des lots. Proposé le
+    même jour ; rien n'est modifié avant accord.
     - **Lot 1, actions en lot.** Une case par question, dans l'arborescence
       et dans la liste, et une par module. « Tout sélectionner » ne prend que
       ce que montrent les filtres. Une barre d'actions :
@@ -494,6 +518,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     seul module dont le titre contient « Module 2 » ; si plusieurs modules
     répondent, la question reste à choisir. Cela ne touche que les dépôts à
     venir.
+
+    Tranchée le 02/10/2026 (choix a, réponse « A pour la question 88 ») et
+    mise en œuvre : sélection multiple dans la banque et « Classer dans un
+    module » ; dépôt qui relie « Module N — … » ; module 6 créé en ligne par
+    le pharmacien responsable le même jour. Les 22 questions se reclassent
+    depuis la banque une fois le site redéployé. Détail dans `DECISIONS.md`.
 
     **Première version, du 01/10/2026, dépassée le soir même** (« Banque du
     pool déjà en ligne : la redéposer, ou la corriger sur place »), posée sur

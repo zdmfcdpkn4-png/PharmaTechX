@@ -3,6 +3,7 @@ import type { LigneQuestion } from "@/content/banque-db";
 import { peutValider, validationParAuteur, type CodeActeur } from "@/content/quatre-yeux";
 import { LIBELLES_NIVEAU_QUESTION, type LibellesNiveaux } from "@/content/niveaux-questions";
 import { CONSEILS_REPERE, LIBELLES_REPERE, SEUILS_STAT, questionARevoir, type Repere, type Taux } from "@/lib/statistiques";
+import { FORMULAIRE_SELECTION } from "@/content/reclassement";
 import { actionChangerStatutQuestion, actionSupprimerQuestion } from "./actions";
 import { LIBELLES_STATUT } from "./commun";
 
@@ -12,6 +13,45 @@ import { LIBELLES_STATUT } from "./commun";
  * la même question avec les mêmes boutons, et un geste ajouté ici l'est dans
  * les deux.
  */
+
+/**
+ * Case de sélection d'une question (02/10/2026, question 88, choix a), hors de
+ * son résumé dépliable : la cocher ne déplie rien. Rattachée par `form` au
+ * formulaire de la barre de sélection (`SelectionBanque`). La cible tactile
+ * fait la taille d'un bouton du site.
+ */
+export function CaseQuestion({ q }: { q: Pick<LigneQuestion, "id" | "module_id" | "statut" | "enonce"> }) {
+  const debut = q.enonce.length > 90 ? `${q.enonce.slice(0, 90)}…` : q.enonce;
+  return (
+    <label className="case-cible">
+      <input
+        type="checkbox"
+        className="case-question"
+        form={FORMULAIRE_SELECTION}
+        name="ids"
+        value={q.id}
+        data-module={q.module_id}
+        data-statut={q.statut}
+        aria-label={`Sélectionner la question : ${debut}`}
+      />
+    </label>
+  );
+}
+
+/** Case qui sélectionne toutes les questions affichées d'un module : celles de l'élément `branche`. */
+export function CaseModule({ branche, titre, nombre }: { branche: string; titre: string; nombre: number }) {
+  if (nombre === 0) return <span className="case-cible case-cible--vide" aria-hidden="true" />;
+  return (
+    <label className="case-cible">
+      <input
+        type="checkbox"
+        className="case-module"
+        data-branche={branche}
+        aria-label={`Sélectionner ${nombre > 1 ? `les ${nombre} questions affichées` : "la question affichée"} de « ${titre} »`}
+      />
+    </label>
+  );
+}
 
 /**
  * Format, statut, signalements, niveau et rôle dans le tirage. `ici` : le

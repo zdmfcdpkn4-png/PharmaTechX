@@ -24,8 +24,8 @@ export default async function NouvelleQuestion({
       <section className="panneau-titre">
         <h1>Nouvelle question</h1>
         <p>
-          QCM (tout ou rien), QIM (barème à la discordance) ou schéma à compléter. Elle entre au
-          statut choisi ; « validée » la pose immédiatement aux apprenants.
+          QCM (tout ou rien), QIM (barème à la discordance) ou schéma à compléter. Elle entre
+          « à vérifier » : elle n&apos;est posée aux apprenants qu&apos;une fois validée, depuis la banque.
         </p>
       </section>
       <EditeurQuestion

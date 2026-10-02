@@ -32,8 +32,12 @@ import { questionARevoir, reperes, tauxAgents } from "@/lib/statistiques";
 import { reperesBanque } from "@/lib/statistiques-db";
 import { SectionFiches } from "./fiches";
 import { ArborescenceBanque } from "./arborescence";
+import { SelectionBanque } from "@/components/SelectionBanque";
+import { bilanReclassement } from "@/content/reclassement";
 import {
   ActionsQuestion,
+  CaseModule,
+  CaseQuestion,
   ContenuQuestion,
   EtiquettesQuestion,
   RattachementQuestion,
@@ -86,6 +90,10 @@ export default async function Questions({
     ouvrir?: string;
     ok?: string;
     erreur?: string;
+    /** Reclassement en lot (02/10/2026) : questions déplacées, validées revenues à vérifier, module choisi. */
+    nb?: string;
+    revues?: string;
+    vers?: string;
   }>;
 }) {
   const p = await searchParams;
@@ -202,6 +210,13 @@ export default async function Questions({
   ];
   // Adresse de la vue courante, filtres compris : un geste ou une création y ramène.
   const retourVue = vueArbre ? `/admin/questions?${new URLSearchParams(parametresArbre).toString()}` : retour;
+  // Reclassement en lot : tout module qui n'est pas retiré ; la clé fait repartir la sélection à chaque page.
+  const ciblesClassement = modules
+    .filter((m) => m.statut !== "retire")
+    .map((m) => ({ id: m.id, libelle: `${etiquetteModule(m)} — ${m.titre}` }));
+  const cleSelection = new URLSearchParams(
+    Object.entries(p).filter((e): e is [string, string] => typeof e[1] === "string"),
+  ).toString();
   const filtreQuestions = Boolean(
     statut || filtreNiveau || seulesObligatoires || filtreBloc !== undefined || filtreFiliere || filtreHabilitation || seulesARevoir,
   );
@@ -250,6 +265,16 @@ export default async function Questions({
       </section>
 
       {p.ok && MESSAGES[p.ok] && <p className="encart encart--ok">{MESSAGES[p.ok]}</p>}
+      {p.ok === "classees" && (
+        <p className="encart encart--ok" role="status">
+          {bilanReclassement(Number(p.nb) || 0, Number(p.revues) || 0, p.vers ? titreModule(p.vers) : "le module choisi")}
+        </p>
+      )}
+      {p.erreur === "classement" && (
+        <p className="encart encart--attention" role="alert">
+          Classement impossible : cochez au moins une question et choisissez un module qui n&apos;est pas retiré.
+        </p>
+      )}
       {p.erreur && ERREURS_FICHE[p.erreur] && (
         <p className="encart encart--attention" role="alert">
           {ERREURS_FICHE[p.erreur]}
@@ -407,6 +432,9 @@ export default async function Questions({
         retour={retourVue}
       />
 
+      {/* Sélection et reclassement en lot (02/10/2026, question 88, choix a) ; une nouvelle page repart à zéro. */}
+      <SelectionBanque key={cleSelection} modules={ciblesClassement} retour={retourVue} />
+
       {vueArbre ? (
         <>
           <ArborescenceBanque
@@ -432,8 +460,9 @@ export default async function Questions({
           )}
 
           {[...parModule.entries()].map(([mid, liste]) => (
-            <section key={mid} className="section">
+            <section key={mid} id={`liste-${mid}`} className="section">
               <div className="section-titre">
+                <CaseModule branche={`liste-${mid}`} titre={titreModule(mid)} nombre={liste.length} />
                 <h2 style={{ fontSize: "1.15rem" }}>{titreModule(mid)}</h2>
                 <span className="compte">
                   <Link href={`/module/${mid}`}>voir le module</Link>
@@ -443,6 +472,7 @@ export default async function Questions({
                 {liste.map((q) => (
                   <li key={q.id} className="carte question-ligne">
                     <div className="etape-tete">
+                      <CaseQuestion q={q} />
                       <EtiquettesQuestion q={q} signalements={signales[q.id] ?? 0} ici={mid} stat={stats.get(q.id)} libellesNiveaux={libellesNiveaux} />
                       <TraceQuestion q={q} />
                     </div>
