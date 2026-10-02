@@ -509,7 +509,14 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/erreur=type-inconnu/);
   await page.waitForSelector("[role=alert]:has-text('Choisissez le type de profil')");
   assert.equal(await page.locator("li.carte").count(), codesAvantForge, "type forgé : aucun code créé");
-  ok("code tuteur créé : " + codeTuteur + ", nommé " + libelleTuteur + " par le site ; aucun champ libre, type forgé refusé");
+  // L'administration est réservée au type PHARMACIEN (question 97, choix a) : un autre type est refusé.
+  await page.selectOption("select[name=role]", "admin");
+  await page.selectOption("select[name=type]", "OPQ");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/erreur=type-role/);
+  await page.waitForSelector("[role=alert]:has-text('est de type Pharmacien')");
+  assert.equal(await page.locator("li.carte").count(), codesAvantForge, "administration d'un autre type : aucun code créé");
+  ok("code tuteur créé : " + codeTuteur + ", nommé " + libelleTuteur + " par le site ; aucun champ libre, type forgé refusé, administration réservée au type Pharmacien");
 
   // 2b. signature du pharmacien déposée (image réduite dans le navigateur)
   await page.goto(BASE + "/admin/signature");

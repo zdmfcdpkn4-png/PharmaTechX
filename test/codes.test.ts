@@ -8,6 +8,7 @@ import {
   lireTypeCode,
   motifLibelle,
   normaliserCode,
+  typeAdmisPour,
   verifierCode,
 } from "../lib/codes";
 
@@ -82,4 +83,12 @@ test("le motif reconnaît les noms au format du type, et eux seuls", () => {
     "3",
     "un nom donné par le site se relit par son motif",
   );
+});
+
+test("l'administration est réservée au type PHARMACIEN ; tutorat et poste restent ouverts à tous", () => {
+  for (const t of TYPES_CODE) {
+    assert.equal(typeAdmisPour("admin", t.id), t.id === "PHARMACIEN", `admin · ${t.id}`);
+    assert.equal(typeAdmisPour("tuteur", t.id), true, `tuteur · ${t.id}`);
+    assert.equal(typeAdmisPour("poste", t.id), true, `poste · ${t.id}`);
+  }
 });

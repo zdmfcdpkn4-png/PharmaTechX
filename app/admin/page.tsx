@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
 const MESSAGES: Record<string, string> = {
   "role-interdit": "Votre rôle ne permet pas de créer ce type de code.",
   "type-inconnu": "Choisissez le type de profil dans la liste. Rien n\u2019a été créé.",
+  "type-role":
+    "Un code d\u2019administration est de type Pharmacien : il porte le visa et la signature du pharmacien responsable. Rien n\u2019a été créé.",
   "role-interdit-bascule": "Votre rôle ne permet pas d\u2019agir sur ce code.",
   "confirmation-code-invalide":
     "Code incorrect : rien n\u2019a été modifié. La tentative est au journal.",
@@ -138,6 +140,7 @@ export default async function Admin({
               <small className="legende" style={{ display: "block", marginTop: ".375rem" }}>
                 Le site nomme le code : PHARMACIEN-0, PHARMACIEN-1… Un numéro n&apos;est jamais redonné, même
                 après suppression du code.
+                {estAdmin && " Un code d\u2019administration est de type Pharmacien."}
               </small>
             </label>
           </div>

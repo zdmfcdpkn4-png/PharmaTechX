@@ -377,6 +377,29 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+98. **Type et programme : le type d'un code de poste suit-il le métier de
+    sa filière et de son niveau ?** — posée le 02/10/2026, conséquence des
+    questions 95 à 97.
+
+    Filières et niveaux appartiennent à un métier, celui de leur fiche
+    d'habilitation : préparateur ; pharmacien / interne (niveaux PH-) ; aide
+    en pharmacie (AP-) ; agent d'entretien (AE-). Le type n'y est pas
+    relié : rien n'empêche un code de poste OPQ d'ouvrir le programme N1a
+    d'un préparateur.
+    - **a (recommandé)** : pour les codes de poste, le type fixe le métier —
+      PREPARATEUR → préparateur ; PHARMACIEN et INTERNE → pharmacien /
+      interne ; OPQ → aide en pharmacie ; ASH → agent d'entretien. Le
+      serveur refuse une filière ou un niveau d'un autre métier ; tutorat et
+      administration restent libres. Contre : si, dans l'unité, un OPQ n'est
+      pas aide en pharmacie ou un ASH pas agent d'entretien, leurs codes ne
+      peuvent plus recevoir le bon programme.
+    - **b** : relier seulement PREPARATEUR, PHARMACIEN et INTERNE ; OPQ et
+      ASH restent libres. Contre : un code de poste OPQ ou ASH peut encore
+      ouvrir le programme d'un autre métier.
+    - **c** : ne rien relier, comme aujourd'hui. Contre : l'accord entre le
+      type et le programme repose sur la seule attention de qui crée le
+      code.
+
 97. **Rôle et type : l'administration réservée au type PHARMACIEN ?** —
     posée le 02/10/2026, conséquence des questions 95 et 96.
 
@@ -396,6 +419,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : aucune restriction, comme aujourd'hui ; la procédure interne
       seule en répond. Contre : un code d'administration ASH-0 signerait les
       rapports comme pharmacien responsable, sans que rien ne l'arrête.
+
+    Tranchée le 02/10/2026 (choix a, réponse « À », valant « a »). Le site
+    ne crée plus de code d'administration que de type PHARMACIEN ; tutorat
+    et poste restent ouverts à tous les types. La procédure interne garde
+    sa part : le type dit « pharmacien », pas « pharmacien responsable ou
+    suppléant ». Détail dans `DECISIONS.md`.
 
 96. **Types de profil des codes : faut-il compléter la liste ?** — posée
     le 02/10/2026, suite de la question 95 : le « … » de « pharmacien -

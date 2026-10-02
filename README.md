@@ -61,7 +61,7 @@ créer ses propres codes, révoquer celui-ci, puis **supprimer la variable**.
 
 | Rôle | Peut faire |
 |---|---|
-| **admin** | Tout : codes de tous rôles, banque de questions (valider aussi les siennes, validation tracée — 23/09/2026), modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable |
+| **admin** | Tout : codes de tous rôles, banque de questions (valider aussi les siennes, validation tracée — 23/09/2026), modules déposés (**publication, retrait**), documents, ordonnancement, signalements, journal, **barème et seuils**, visa « pharmacien responsable », annulation et purge des rapports, purge d'une progression, signature. Pas de rôle « pharmacien » distinct (décision du 18/09/2026, question 9) : les codes d'administration sont réservés au pharmacien responsable ; le site n'en crée que de type Pharmacien (question 97) |
 | **tuteur** | Banque de questions (créer, déposer, valider les questions d'un autre code, retirer), **modules déposés** (créer, modifier en brouillon), mises en situation, documents (par module ou par profil), ordonnancement, signalements, codes de poste, identifiants d'agents, code personnel d'un agent (réinitialisation), arbitrage et visa « tuteur » |
 | **poste** | Suivre son programme, passer les évaluations et les entraînements, lire les documents, exporter ou émettre son rapport, rattacher sa progression. Code requis pour tout le site dès qu'une base est configurée |
 

@@ -71,6 +71,15 @@ export function lireTypeCode(brut: unknown): TypeCode | null {
   return TYPES_CODE.find((t) => t.id === brut)?.id ?? null;
 }
 
+/**
+ * L'administration est réservée au type PHARMACIEN (02/10/2026, question 97, choix a) : tout code
+ * d'administration porte le visa « pharmacien responsable », la signature, l'annulation et la purge
+ * (question 9). Tutorat et poste restent ouverts à tous les types.
+ */
+export function typeAdmisPour(role: string, type: TypeCode): boolean {
+  return role !== "admin" || type === "PHARMACIEN";
+}
+
 /** Nom d'un code : son type et son numéro. */
 export function libelleDuCode(type: TypeCode, numero: number): string {
   return `${type}-${numero}`;

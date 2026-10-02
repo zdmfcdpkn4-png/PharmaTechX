@@ -24,7 +24,7 @@ import {
   peutGererRole,
   sessionRequise,
 } from "@/lib/auth";
-import { lireTypeCode } from "@/lib/codes";
+import { lireTypeCode, typeAdmisPour } from "@/lib/codes";
 import { journaliser } from "@/lib/journal";
 import { detacher } from "@/lib/progression";
 import { moduleExiste, modulesDuParcours } from "@/content/store";
@@ -95,6 +95,8 @@ export async function actionCreerCode(formData: FormData) {
   // fermée, et le premier numéro jamais donné pour ce type le font (`creerAcces`).
   const type = lireTypeCode(formData.get("type"));
   if (!type) redirect("/admin?erreur=type-inconnu");
+  // L'administration est réservée au type PHARMACIEN (question 97, choix a).
+  if (!typeAdmisPour(role, type)) redirect("/admin?erreur=type-role");
 
   const filiere = String(formData.get("filiere") ?? "") || null;
   const niveau = String(formData.get("niveau") ?? "") || null;

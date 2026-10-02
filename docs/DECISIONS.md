@@ -7252,6 +7252,43 @@ interne » (PH-). Le rôle est la question 97.
   page ni erreur serveur ; le formulaire propose les cinq types, dans cet
   ordre.
 
+## L'administration réservée au type Pharmacien (02/10/2026, question 97, choix a)
+
+**Question.** Tout code d'administration porte le visa « pharmacien
+responsable », la signature, l'annulation et la purge (question 9). La
+question 9 laissait à la procédure interne le soin de réserver ces codes au
+pharmacien responsable et à son suppléant, le site ne connaissant pas la
+fonction. Le type de profil (questions 95 et 96) la lui donne. Choix a :
+l'administration seulement pour le type PHARMACIEN.
+
+**Fait.**
+- Le serveur refuse un code d'administration d'un autre type
+  (`typeAdmisPour`, `lib/codes.ts`, appelé par `actionCreerCode`). Rien
+  n'est créé ; message « Un code d'administration est de type
+  Pharmacien… ».
+- La légende du type le dit à l'administration, seule à pouvoir créer ces
+  codes.
+- Tutorat et poste restent ouverts à tous les types.
+
+**Écartés.**
+- PHARMACIEN et INTERNE (b) : un code d'administration d'interne
+  signerait les rapports clos comme pharmacien responsable.
+- Aucune restriction (c) : rien n'arrêtait un code d'administration ASH.
+
+**Limites.**
+- Le type dit « pharmacien », pas « pharmacien responsable ou
+  suppléant » : la procédure interne garde cette part de la question 9.
+- Les codes déjà créés et le code d'amorçage « Administrateur initial »
+  ne passent pas par cette règle, qui ne vaut qu'à la création.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 484 tests, dont un nouveau (`test/codes.test.ts`) :
+  chaque type face à chaque rôle, PHARMACIEN seul admis à l'administration.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de
+  page ni erreur serveur. Un code d'administration de type OPQ y est
+  refusé, message affiché, aucun code créé.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
