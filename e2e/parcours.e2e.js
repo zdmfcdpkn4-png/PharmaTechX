@@ -418,9 +418,10 @@ Justification : cf. procédure interne.`,
   assert.match(codeAdmin, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/, "ADMIN_INITIAL posé pour la vérification");
   await page.fill("input[name=code]", codeAdmin);
   await page.click('button:has-text("Entrer")');
-  await page.waitForURL(/\/admin/);
+  // Accueil après la connexion, pour tous les profils (question 91, choix a).
+  await page.waitForURL(/\/accueil$/);
   await page.waitForSelector("text=Administrateur initial");
-  ok("amorçage par ADMIN_INITIAL : session administrateur ouverte");
+  ok("amorçage par ADMIN_INITIAL : session administrateur ouverte, sur l'accueil");
 
   // 1 ter. visite guidée du premier passage (19/09/2026) : elle s'ouvre seule,
   //        se parcourt, se ferme, ne revient pas, et se rouvre à la demande.
@@ -476,7 +477,9 @@ Justification : cf. procédure interne.`,
     await page.waitForSelector(".recap", { state: "detached" });
   };
 
-  // 2. codes tuteur et poste
+  // 2. codes tuteur et poste, sur la page des codes d'accès (Équipe, question 91)
+  await page.goto(BASE + "/admin");
+  await page.waitForSelector("h1:has-text(\"Codes d'accès\")");
   await page.selectOption("select[name=role]", "tuteur");
   await page.fill("input[name=libelle]", "Tuteur test");
   await page.click("button:has-text(\"Générer le code\")");
@@ -917,7 +920,7 @@ Justification : cf. procédure interne.`,
     await page.waitForURL(/\/connexion/);
     await page.fill("input[name=code]", code);
     await page.click("button:has-text('Entrer')");
-    await page.waitForURL(/\/admin$/);
+    await page.waitForURL(/\/accueil$/);
     return fermerVisite();
   };
 
@@ -950,6 +953,13 @@ Justification : cf. procédure interne.`,
   assert.match(visiteTuteur.entete, /sur 6/i, "visite tutorat : six étapes");
   assert.match(visiteTuteur.texte, /code de tutorat/, "visite tutorat : texte du profil");
   ok("visite guidée : le tutorat a la sienne, distincte de celle de l'administration");
+  // Accueil du tutorat (question 91, choix a) : le même circuit, sans réglages ; la publication reste à l'administration.
+  assert.equal(new URL(page.url()).pathname, "/accueil", "le tutorat arrive sur l'accueil");
+  assert.equal(await page.locator(".circuit-arret").count(), 6, "tutorat : six arrêts");
+  assert.equal(await page.locator(".a-cote a[href='/admin/bareme']").count(), 0, "tutorat : pas de réglages à côté du circuit");
+  assert.match(await page.locator(".circuit-arret", { hasText: "Publier" }).innerText(), /Réservé à l'administration/);
+  assert.equal(await page.locator("#volet-principal .rail-sous-titre", { hasText: "Réglages" }).count(), 0, "Réglages quitte le menu du tutorat");
+  ok("accueil du tutorat : le circuit, sans réglages ; publication réservée à l'administration");
   await page.goto(BASE + "/admin/questions?vue=liste&module=critere-b1-02&statut=a_verifier");
 
   // 6. édition du schéma : image et légendes visibles, une légende posée au clic
@@ -1753,7 +1763,7 @@ Justification : justification deux.`;
   const libelleMenu = async (href) =>
     (await page.locator(`#volet-principal a[href='${href}']`).first().textContent()).replace(/\s+/g, " ").trim();
   assert.equal(await libelleMenu("/admin/rattachement-questions"), "Comment sont rattachées les questions ?", "libellé de l'entrée des Repères");
-  assert.equal(await libelleMenu("/admin/documents"), "Dépôt documents", "libellé du menu Modules");
+  assert.equal(await libelleMenu("/admin/documents"), "Documents", "libellé du menu Modules (question 91)");
   const variantesSchemas = () =>
     page.evaluate(() =>
       [...document.querySelectorAll("figure.logigramme")].map((f) =>
@@ -1821,10 +1831,10 @@ Justification : justification deux.`;
   assert.equal(await page.locator("#volet-principal details a[href='/donnees-personnelles']").count(), 0, "le lien a quitté Repères");
   assert.equal(await page.locator(".pied a[href='/donnees-personnelles']").count(), 0, "plus de ligne RGPD au pied");
   assert.equal(await page.locator("main a[href='/donnees-personnelles']").count(), 0, "plus de lien RGPD dans l'accueil");
-  await page.click("#volet-principal > a.rail-onglet");
+  await page.click("#volet-principal > a.rail-onglet[href='/donnees-personnelles']");
   await page.waitForSelector("h1:has-text('Vos données et vos droits')");
   assert.equal(
-    await page.locator("#volet-principal > a.rail-onglet").getAttribute("aria-current"),
+    await page.locator("#volet-principal > a.rail-onglet[href='/donnees-personnelles']").getAttribute("aria-current"),
     "page",
     "l'onglet RGPD se marque page courante",
   );
@@ -1843,14 +1853,14 @@ Justification : justification deux.`;
   const sousParties = await page.locator("#volet-principal .rail-sous-titre").allInnerTexts();
   assert.deepEqual(
     sousParties.map((t) => t.toLowerCase()),
-    ["suivi", "questions", "modules", "squelette", "réglages"],
+    ["suivi", "équipe", "questions", "modules", "squelette", "réglages"],
     "sous-parties de l'administration",
   );
-  ok("volet : l'administration rangée en Suivi, Questions, Modules, Squelette et Réglages");
+  ok("volet : l'administration rangée en Suivi, Équipe, Questions, Modules, Squelette et Réglages");
   // Sous-menus repliables (22/09/2026) : sur l'accueil, aucun ne porte la
   // page — tous restent repliés, leurs liens hors de vue.
   const sousMenu = (titre) => page.locator(`#volet-principal details.rail-sous:has(.rail-sous-titre:text-is("${titre}"))`);
-  for (const titre of ["Suivi", "Questions", "Modules", "Squelette", "Réglages"]) {
+  for (const titre of ["Suivi", "Équipe", "Questions", "Modules", "Squelette", "Réglages"]) {
     assert.equal(await sousMenu(titre).getAttribute("open"), null, `sous-menu ${titre} replié sur l'accueil`);
   }
   assert.equal(
@@ -2095,10 +2105,10 @@ Justification : justification deux.`;
   const bandeauxAdmin = page.locator(".acces-rapide button.ar-groupe:has(.ar-groupe-court)");
   assert.deepEqual(
     (await bandeauxAdmin.locator(".ar-groupe-court").allTextContents()).map((s) => s.trim()),
-    ["Suivi", "Questions", "Modules", "Squelette", "Réglages"],
-    "cinq sous-menus d'administration, chacun sous son seul nom",
+    ["Suivi", "Équipe", "Questions", "Modules", "Squelette", "Réglages"],
+    "six sous-menus d'administration, chacun sous son seul nom",
   );
-  assert.match(await bandeauxAdmin.nth(1).textContent(), /Administration · Questions/, "le nom lu garde « Administration »");
+  assert.match(await bandeauxAdmin.nth(2).textContent(), /Administration · Questions/, "le nom lu garde « Administration »");
   // Question 77 (choix a, 25/09/2026) : chaque tête de menu porte le pictogramme de
   // son thème, le même dans le tiroir et dans le volet ; l'écusson ne reste que sur
   // le groupe « Administration » du volet.
@@ -2112,9 +2122,10 @@ Justification : justification deux.`;
   const bandeauxTiroir = page.locator(".acces-rapide .ar-defilant button.ar-groupe");
   assert.deepEqual(
     await themes(bandeauxTiroir),
-    ["formation", "reperes", "suivi", "questions", "modules", "squelette", "reglages"],
+    ["formation", "reperes", "suivi", "equipe", "questions", "modules", "squelette", "reglages"],
     "tiroir : un pictogramme par bandeau, celui de son thème",
   );
+  assert.equal(await page.locator(".acces-rapide .ar-defilant a.ar-item[href='/accueil']:has(.picto-menu--accueil)").count(), 1, "tiroir : l'accueil en entrée directe");
   assert.equal(await page.locator(".acces-rapide .ar-defilant a.ar-item:has(.picto-menu--rgpd)").count(), 1, "tiroir : cadenas de l'entrée RGPD");
   assert.equal(await page.locator(".acces-rapide .picto-menu--administration").count(), 0, "tiroir : plus d'écusson");
   assert.deepEqual(
@@ -2124,9 +2135,10 @@ Justification : justification deux.`;
   );
   assert.deepEqual(
     await themes(page.locator("#volet-principal .rail-sous-titre")),
-    ["suivi", "questions", "modules", "squelette", "reglages"],
+    ["suivi", "equipe", "questions", "modules", "squelette", "reglages"],
     "volet : les sous-menus portent les mêmes pictogrammes que le tiroir",
   );
+  assert.equal(await page.locator("#volet-principal > a.rail-onglet[href='/accueil'] .picto-menu--accueil").count(), 1, "volet : l'accueil en tête");
   assert.equal(await page.locator("#volet-principal a.rail-onglet .picto-menu--rgpd").count(), 1, "volet : cadenas de l'onglet RGPD");
   assert.equal(
     await page.locator(".acces-rapide .picto-menu[aria-hidden='true'], #volet-principal .picto-menu[aria-hidden='true']").count(),
@@ -2138,8 +2150,8 @@ Justification : justification deux.`;
   await page.fill(".ar-recherche input", "administration");
   assert.equal(
     await page.locator(".acces-rapide .ar-defilant span.ar-groupe:has(.ar-groupe-court)").count(),
-    5,
-    "la recherche « administration » trouve encore les écrans des cinq sous-menus",
+    6,
+    "la recherche « administration » trouve encore les écrans des six sous-menus",
   );
   await page.fill(".ar-recherche input", "");
   assert.equal(
@@ -2668,8 +2680,19 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/connexion/);
   await page.fill("input[name=code]", codeInterimaire);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL((u) => new URL(u).pathname === "/");
+  await page.waitForURL((u) => new URL(u).pathname === "/accueil");
   await fermerVisite();
+  // Accueil de l'agent (question 91, choix a) : six étapes, les quatre hors du site grisées, une seule courante.
+  await page.waitForSelector("h1:has-text('Mon habilitation')");
+  assert.equal(await page.locator(".chemin-etape").count(), 6, "six étapes");
+  assert.equal(await page.locator(".chemin-etape--hors").count(), 4, "quatre étapes hors du site");
+  assert.equal(await page.locator(".chemin-etape[aria-current=step]").count(), 1, "une étape courante, sur le site");
+  assert.equal(await page.locator(".chemin-etape--vers-site").count(), 1, "trait plein de l'étape 1 à l'étape 2 seulement");
+  await page.waitForSelector("text=Valider un module à l'écran ne vaut pas habilitation");
+  ok("accueil de l'agent : six étapes, quatre grisées hors du site, une courante");
+  // Le chemin mène au programme du code (question 91) : « Mon programme » garde l'adresse du programme à la carte.
+  await page.click(".accueil-liens a:has-text('Mon programme')");
+  await page.waitForURL(/\?programme=\d+/);
   await page.waitForSelector("h2:has-text('Programme à la carte « Intérimaire test »')");
   assert.match(
     await page.locator(".panneau-titre .sur-titre").first().innerText(),
@@ -3511,7 +3534,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/\/connexion/);
   await page.fill("input[name=code]", codeTuteur);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
   // Le tutorat a déjà vu la sienne (étape 5) : elle ne doit pas revenir.
   assert.equal(await fermerVisite(), null, "la visite du tutorat revient après avoir été vue");
   await page.goto(BASE + "/admin/journal");
@@ -3777,10 +3800,40 @@ Justification : cf. procédure interne.`,
   assert.match(await bascule.locator("a:has-text('Liste')").getAttribute("href"), /vue=liste/, "la liste se demande");
   // Entrées de validation (01/10/2026) : elles ouvrent aussi l'arborescence, filtre gardé ; repliée, filtre
   // compris (question 91), chaque branche disant combien de questions elle montre.
-  await page.goto(BASE + "/admin");
-  await page.locator("a.tuile", { hasText: "questions à vérifier" }).click();
+  // Accueil de l'administration (question 91, choix a) : six arrêts ; ce qui attend, compté comme « À faire ».
+  await page.goto(BASE + "/accueil");
+  await page.waitForSelector("h1:has-text('Le circuit')");
+  assert.equal(await page.locator(".circuit-arret").count(), 6, "six arrêts au circuit");
+  const totalCircuit = (await page.locator(".circuit-compte").allTextContents()).reduce((n, t) => n + Number(t.trim()), 0);
+  await page.keyboard.press("Control+k");
+  await page.waitForSelector(".acces-rapide--ouvert");
+  const totalAFaire = (await page.locator(".ar-zone--faire .ar-item .ar-compte").allTextContents()).reduce(
+    (n, t) => n + Number(t.trim()),
+    0,
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".acces-rapide", { state: "hidden" });
+  assert.equal(totalCircuit, totalAFaire, "le circuit compte ce que compte « À faire »");
+  assert.ok(totalCircuit > 0, "des questions attendent leur vérification à cette étape");
+  assert.deepEqual(
+    (await page.locator(".a-cote a").allInnerTexts()).map((t) => t.trim()),
+    ["Codes d'accès", "Squelette", "Réglages", "Repères"],
+    "à côté du circuit",
+  );
+  assert.equal(await page.locator(".bandeau-titre").getAttribute("href"), "/accueil", "le bandeau ramène à l'accueil");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(BASE + "/accueil");
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
+    0,
+    "accueil sans défilement horizontal à 390 px",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(BASE + "/accueil");
+  ok("accueil de l'administration : le circuit en six arrêts, mêmes comptes que « À faire », à côté du circuit, sans débord à 390 px");
+  await page.locator(".circuit-arret", { hasText: "Vérifier" }).locator("a.circuit-lien").click();
   await page.waitForURL(/\/admin\/questions\?statut=a_verifier$/);
-  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "la tuile « à vérifier » ouvre l'arborescence");
+  assert.equal(await bascule.locator("a[aria-current=true]").innerText(), "Arborescence", "l'arrêt « Vérifier » ouvre l'arborescence");
   assert.equal(await page.locator("form.filtres select[name=statut]").inputValue(), "a_verifier", "filtre « à vérifier » gardé");
   assert.ok((await page.locator("details.arbo-question").count()) >= 1, "les questions à vérifier sont dans l'arbre");
   assert.equal(await page.locator("details.arbo-noeud[open]").count(), 0, "sous le filtre aussi, tout est replié");
@@ -4435,7 +4488,8 @@ Justification : cf. procédure interne.`,
   //      à la requête suivante ; réactiver ne rouvre pas les sessions d'avant
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
+  await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
   await page.fill("input[name=libelle]", "Poste jetable");
   await page.click("button:has-text(\"Générer le code\")");
@@ -4449,7 +4503,8 @@ Justification : cf. procédure interne.`,
     await page2.goto(BASE + "/connexion");
     await page2.fill("input[name=code]", codeJetable);
     await page2.click("button:has-text('Entrer')");
-    await page2.waitForURL(/\/$/);
+    // Accueil après la connexion, pour tous les profils (question 91, choix a).
+    await page2.waitForURL(/\/accueil$/);
   };
   const apiJetable = async () => (await page2.request.get(BASE + "/api/images/inconnu")).status();
   await entrerJetable();
@@ -4663,7 +4718,7 @@ Justification : cf. procédure interne.`,
   const vignette = (f) => page.locator(`.titre-vignette img.badge--illustration[src$="/badges/${f}"]`);
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/admin/modules");
   assert.ok(
     (await page.locator('.grille-badges--vignettes img.badge--illustration').count()) >= 20,
@@ -4741,7 +4796,7 @@ Justification : cf. procédure interne.`,
   };
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/#progression");
   await page.fill("#progression input[name=identifiant]", "AG-002");
   await page.click("#progression button:has-text('Reprendre ma progression')");
@@ -4768,7 +4823,8 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/admin");
   // Profil choisi au départ (24/09/2026) : programme et niveau cible s'ouvrent dessus, comme avec un
   // code de poste ; le menu y mène par « Tester en apprenant ».
-  assert.equal(await page.locator("#volet-principal a[href='/admin#t-essai']").count(), 1, "lien « Tester en apprenant » au menu");
+  assert.equal(await page.locator("#volet-principal a[href='/admin/essai']").count(), 1, "lien « Tester en apprenant » au menu, sous Modules");
+  await page.goto(BASE + "/admin/essai");
   const sectionEssai = page.locator("section[aria-labelledby='t-essai']");
   await sectionEssai.locator("select[name=essaiFiliere]").selectOption("chimiotherapie");
   await sectionEssai.locator("select[name=essaiNiveau]").selectOption("N2");
@@ -4841,7 +4897,7 @@ Justification : cf. procédure interne.`,
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click(".bandeau-essai button:has-text('Terminer le test')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/admin\/essai$/);
   await page.waitForSelector("text=Administrateur initial");
   assert.equal(await page.locator(".bandeau-essai").count(), 0, "bandeau retiré à la fin du test");
   if (baseAvant) {
@@ -4859,7 +4915,8 @@ Justification : cf. procédure interne.`,
   // le tutorat démarre et termine un test de la même façon
   await page.fill("input[name=code]", codeTuteur);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
+  await page.goto(BASE + "/admin/essai");
   await page.click("button:has-text('Démarrer un test')");
   await page.waitForURL((u) => u.pathname === "/");
   await fermerVisite();
@@ -4870,7 +4927,7 @@ Justification : cf. procédure interne.`,
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click(".bandeau-essai button:has-text('Terminer le test')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/admin\/essai$/);
   assert.equal(await page.locator(".bandeau-essai").count(), 0, "tutorat : bandeau retiré à la fin du test");
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
@@ -4916,7 +4973,7 @@ Justification : cf. procédure interne.`,
   };
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/#progression");
   await page.fill("#progression input[name=identifiant]", "AG-002");
   await page.fill("#progression input[name=code]", "5678");
@@ -4987,7 +5044,7 @@ Justification : cf. procédure interne.`,
   await page3.goto(BASE + "/connexion");
   await page3.fill("input[name=code]", codeAdmin);
   await page3.click("button:has-text('Entrer')");
-  await page3.waitForURL(/\/admin$/);
+  await page3.waitForURL(/\/accueil$/);
   await page3.goto(BASE + "/admin/pilotage");
   await page3.waitForSelector("h1");
   await page3.waitForLoadState("networkidle");
@@ -5019,7 +5076,7 @@ Justification : cf. procédure interne.`,
   //             progression l'emporte. Identifiant clos ou inconnu refusé.
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
-  await page.waitForURL(/\/admin$/);
+  await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/admin/ordonnancement");
   await page.selectOption("select[name=filiere]", "chimiotherapie");
   await page.selectOption("select[name=niveau]", "N1c");

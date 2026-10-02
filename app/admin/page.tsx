@@ -1,17 +1,11 @@
 import Link from "next/link";
-import { getSession, peutGererRole, LIBELLES_ROLE } from "@/lib/auth";
+import { getSession, peutGererRole } from "@/lib/auth";
 import { listerAcces } from "@/lib/db";
-import { modeStockage } from "@/lib/stockage";
-import { modeConservation } from "@/lib/config";
 import { getReferentiel } from "@/content/referentiel-db";
-import { compterSignalementsOuverts, totauxQuestions } from "@/content/banque-db";
-import { comptesRapports } from "@/lib/rapports";
 import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
-import { actionDemarrerEssai } from "@/app/actions-essai";
-import { LIBELLE_ESSAI, MENTION_ESSAI } from "@/lib/essai";
 
 export const dynamic = "force-dynamic";
 
@@ -46,27 +40,16 @@ export default async function Admin({
   const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [acces, totaux, ouverts, programmes] = await Promise.all([
-    listerAcces(),
-    // Une question posée dans plusieurs modules (question 74) compte une fois.
-    totauxQuestions(),
-    compterSignalementsOuverts(),
-    listerProgrammes().catch(() => []),
-  ]);
+  const [acces, programmes] = await Promise.all([listerAcces(), listerProgrammes().catch(() => [])]);
   const programmesValides = programmes.filter((x) => x.statut === "valide");
-  const aVerifier = totaux.aVerifier;
-  const validees = totaux.valides;
-  const conservation = modeConservation();
-  const rapports = conservation === "pseudonyme" ? await comptesRapports() : null;
 
   return (
     <>
+      {/* Codes d'accès (question 91, choix a) : la page « Accès », sous Équipe ; ses tuiles et l'état du
+          stockage sont passés à l'accueil, le test de l'apprenant sur sa propre page. */}
       <section className="panneau-titre">
-        <h1>Administration</h1>
-        <p>
-          Connecté comme <strong>{session.libelle}</strong> — profil {LIBELLES_ROLE[session.role].toLowerCase()}.
-          {!estAdmin && " Les codes administrateur et tuteur ne vous sont pas accessibles."}
-        </p>
+        <h1>Codes d&apos;accès</h1>
+        <p>Un code ouvre un profil, pas un compte ; il n&apos;est montré qu&apos;une fois, à sa création.</p>
       </section>
 
       {p.nouveau && (
@@ -90,87 +73,9 @@ export default async function Admin({
         <p className="encart encart--attention" role="alert">{MESSAGES[p.erreur]}</p>
       )}
 
-      <div className="tuiles">
-        <Link href="/admin/questions?statut=a_verifier" className="tuile tuile--lien">
-          <span className="valeur">{aVerifier}</span>
-          <span className="libelle">questions à vérifier</span>
-        </Link>
-        <Link href="/admin/questions" className="tuile tuile--lien">
-          <span className="valeur">{validees}</span>
-          <span className="libelle">questions validées en base</span>
-        </Link>
-        <Link href="/admin/signalements" className="tuile tuile--lien">
-          <span className="valeur">{ouverts}</span>
-          <span className="libelle">signalements ouverts</span>
-        </Link>
-        {rapports && (
-          <Link href="/admin/rapports" className="tuile tuile--lien">
-            <span className="valeur">{rapports.emis + rapports.vise_tuteur}</span>
-            <span className="libelle">rapports en attente de visa</span>
-          </Link>
-        )}
-      </div>
-
-      <p className="legende">
-        Stockage des documents : {modeStockage() === "blob" ? "Vercel Blob" : modeStockage() === "base" ? "base de données" : "aucun"} ·
-        conservation des rapports : {conservation === "pseudonyme" ? "pseudonyme (rapports enregistrés sous identifiant d'agent, circuit de visas)" : "aucune (rapport téléchargé, signature papier)"}.
-      </p>
-
-      {/* Mode test (23/09/2026, choix a) : le parcours apprenant jusqu'au rapport
-          émis, sans rien écrire en base. */}
-      <section className="carte" aria-labelledby="t-essai">
-        <h2 id="t-essai">Tester le parcours apprenant</h2>
-        <p>
-          Parcourez le site comme un apprenant, sous « {LIBELLE_ESSAI} » : modules, entraînement, évaluation,
-          jusqu&apos;au rapport émis. Rien n&apos;est écrit en base — ni progression, ni rapport, ni visa, ni
-          journal. Le rapport porte un numéro ESSAI-…, hors de la séquence, et le filigrane « {MENTION_ESSAI} ».
-        </p>
-        <p className="legende">
-          Pendant le test, un signalement n&apos;est pas transmis, et un schéma à découvrir se juge comme en vrai,
-          avec le code d&apos;un autre tuteur. Les écrans d&apos;administration reviennent à la fin du test. Le
-          navigateur garde ses repères locaux (visite guidée vue, dernière lecture) : testez depuis votre propre
-          poste plutôt que depuis celui d&apos;un apprenant.
-        </p>
-        {/* Profil facultatif (24/09/2026) : le programme s'ouvre dessus et le
-            niveau devient le niveau cible des évaluations, comme avec un code de poste. */}
-        <form action={actionDemarrerEssai}>
-          <div className="rangee">
-            <label className="champ">
-              <span>Filière</span>
-              <select name="essaiFiliere" defaultValue="">
-                <option value="">Au choix, à l&apos;écran</option>
-                {filieres
-                  .filter((f) => f.id !== "socle")
-                  .map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.libelle}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="champ">
-              <span>Niveau (niveau cible des évaluations)</span>
-              <select name="essaiNiveau" defaultValue="">
-                <option value="">Au choix, à l&apos;écran</option>
-                {niveaux.map((n) => (
-                  <option key={n.code} value={n.code}>
-                    {n.libelle}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="legende">
-            Un profil choisi ouvre directement son programme ; ses évaluations tirent au niveau choisi, comme pour
-            un agent muni d&apos;un code de poste. Sans choix, l&apos;apprenant test les choisit à l&apos;écran.
-          </p>
-          <button type="submit" className="bouton">Démarrer un test</button>
-        </form>
-      </section>
-
       {/* ─────────────────────────────────────────────── codes d'accès */}
       <div className="section-titre">
-        <h2>Codes d&apos;accès</h2>
+        <h2>Les codes</h2>
         <span className="compte">{acces.length} code(s)</span>
       </div>
 
@@ -189,6 +94,10 @@ export default async function Admin({
                   <option value="admin">Admin — gestion complète</option>
                 )}
               </select>
+              {/* Venu de l'introduction (question 91), sous le choix qu'il concerne. */}
+              {!estAdmin && (
+                <span className="legende">Les codes d&apos;administration et de tutorat ne vous sont pas accessibles.</span>
+              )}
             </label>
             <label className="champ">
               <span>Libellé du profil</span>

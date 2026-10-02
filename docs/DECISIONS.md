@@ -6331,6 +6331,146 @@ couverture.
   - page d'un module : la ligne bloc · niveau · revalidation suit les
     pastilles.
 
+## L'accueil « le chemin » et les menus reclassés (02/10/2026, question 91, choix a, lot 2)
+
+**Demande.** « À », valant « a » : l'accueil prend la forme du chemin. Ce
+deuxième lot : la page d'accueil et les menus, textes de la proposition.
+
+**Fait — l'accueil (`/accueil`).**
+- Après la connexion, tous les profils y arrivent ; avant, l'agent arrivait
+  sur le programme et la gestion sur la page des codes. Une adresse demandée
+  avant la connexion reste servie. Le programme garde son adresse (`/`).
+- L'agent : « Mon habilitation », les six étapes de la fiche
+  (`content/habilitation.ts`), de haut en bas, chacune avec son médaillon.
+  - Les étapes 1 et 2, sur le site, sont des cartes ; les étapes 3 à 6 sont
+    grisées, avec leur lieu : « Au poste », « Pharmacien », « Tous les
+    2 ans » (tiré de `maintien`).
+  - Étape 1 : modules acquis sur modules ouvrables, une jauge, et
+    « Commencer » ou « Reprendre » sur le module que désigne « Reprendre »
+    au programme (même calcul, `choisirReprise`) ; tout acquis, « Mes
+    modules ».
+  - Étape 2 : évaluations passées et réussies ; « Reprendre l'évaluation »
+    pour une évaluation laissée en plan (agent rattaché).
+  - « Vous êtes ici » sur l'étape en cours ; tout acquis à l'écran, l'étape
+    3 porte « Prochaine étape ».
+  - En tête : filière · niveau du code, et « Six étapes ; ce site couvre les
+    deux premières. Valider un module à l'écran ne vaut pas habilitation. »
+    Liens : Mon programme (programme à la carte ou ordre du profil compris),
+    Le dispositif, Vos données.
+  - Le programme d'arrivée vient de `lib/arrivee.ts` : mêmes règles que le
+    programme (programme à la carte du code, sinon socle et filière au
+    niveau du code, dans l'ordre du profil ou de l'apprenant). Les deux
+    fichiers se renvoient l'un à l'autre : une règle changée dans l'un se
+    change dans l'autre.
+- Le tutorat et l'administration : « Le circuit », six arrêts dans l'ordre
+  — Déposer, Vérifier, Publier, Former, Viser, Suivre —, chacun avec son
+  médaillon, une ligne, un lien sur tout l'arrêt et ses écrans voisins.
+  - Les pastilles sont les comptes de « À faire », répartis par arrêt :
+    Vérifier (questions et fiches à vérifier), Viser (rapports à viser,
+    verdicts à arbitrer), Suivre (signalements ouverts, quiz de plus de
+    24 mois). Leur somme est le total de « À faire » : un test et le
+    parcours de bout en bout le vérifient.
+  - Sans conservation des rapports, « Viser » reste, sans lien : « Rapport
+    téléchargé, signé sur papier ».
+  - Publier : le nombre de modules en brouillon ; pour le tutorat,
+    « Réservé à l'administration ».
+  - « À côté du circuit », ce qui n'est pas une étape : Codes d'accès,
+    Squelette, Réglages (administration seule), Repères.
+  - En tête : le profil et le total en attente ; en légende : les étapes 1
+    et 2, le stockage des documents et la conservation des rapports, venus
+    de la page des codes.
+- Les tuiles de la page des codes (à vérifier, validées, signalements,
+  rapports en attente de visa) sont passées dans le circuit.
+- Médaillons du site, toujours légendés ; le nom lu de chaque arrêt et de
+  chaque étape dit son rang (« arrêt 2 sur 6 », « étape 1 sur 6 ») et ce
+  qui attend.
+
+**Fait — menus.**
+- « Accueil » en tête du volet, du tiroir et de l'accès rapide, pour tous ;
+  il se lit « Le circuit » ou « Mon habilitation ». Pictogramme : une
+  maison. Le titre du bandeau, « Formation & habilitation », y ramène ; le
+  fil de l'administration commence par « Accueil ».
+- « Équipe », nouveau sous-menu (pictogramme : deux silhouettes) : Codes
+  d'accès (l'ancien Réglages › Accès) et Personnel (venu de Suivi, quand la
+  conservation est active).
+- « Journal » passe de Réglages à Suivi, toujours réservé à
+  l'administration.
+- « Tester en apprenant » passe de Questions à Modules, sur sa page
+  (`/admin/essai`) ; il était une section en bas de la page des codes. La
+  fin d'un test y ramène.
+- « Dépôt documents » devient « Documents ». Ce libellé avait été demandé
+  le matin même (décision « Deux libellés », plus haut) ; la proposition
+  annonçait son changement, et elle a été retenue.
+- Réglages garde Barème et Signature, réservés à l'administration ; vide
+  pour le tutorat, il quitte son menu.
+- Ordre des sous-menus inchangé, Équipe insérée après Suivi : Suivi,
+  Équipe, Questions, Modules, Squelette, Réglages.
+- Visite guidée de l'administration : l'étape « Les codes d'accès » dit où
+  ils sont (sous Équipe).
+
+**Fait — les deux pages déplacées.**
+- Codes d'accès (`/admin`, adresse inchangée) : titre « Codes d'accès » ;
+  « Un code ouvre un profil, pas un compte ; il n'est montré qu'une fois, à
+  sa création. » La phrase propre au tutorat (« Les codes d'administration
+  et de tutorat ne vous sont pas accessibles ») passe sous le choix du rôle.
+  La liste s'intitule « Les codes ».
+- Tester en apprenant : « Parcourez le site comme un apprenant, jusqu'au
+  rapport émis : rien n'est écrit en base. Le rapport porte un numéro
+  ESSAI-… et le filigrane « ESSAI — sans valeur de preuve ». » Sous le
+  bouton : « Testez depuis votre propre poste : le navigateur garde ses
+  repères. » Retirées de l'introduction, parce que l'écran les dit au
+  moment d'agir : le signalement non transmis pendant un test (dit à
+  l'apprenant test quand il signale) ; le code d'un autre tuteur pour juger
+  un schéma à découvrir (le serveur refuse celui de la session et le dit).
+
+**Inchangé.**
+- Les adresses : `/`, `/admin`, `/admin/documents` ; les favoris restent
+  bons. L'ancien lien `/admin#t-essai` ouvre la page des codes.
+- Le bandeau, l'accès rapide et sa file « À faire », Formation, Repères,
+  RGPD, Squelette (question 81), « Signalées » (question 89).
+
+**Corrigé en cours de route.** Le trait du chemin était d'un seul tenant,
+plein sur ses premiers 30 % : il dépassait au-dessus du premier médaillon
+et passait au pointillé avant l'étape 2 dès que la carte de l'étape 1
+grandissait (téléphone). Chaque étape trace désormais son tronçon, du centre
+de son médaillon à celui du suivant : plein vers une étape du site,
+pointillé ensuite.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 451 tests, dont six pour l'accueil
+  (`test/accueil.test.ts`) : les six étapes alignées sur la fiche, l'étape
+  en cours, la somme des pastilles égale au total de « À faire » (deux
+  profils, avec et sans conservation), le visa sur papier sans
+  conservation, le tutorat sans réglages, les médaillons du site.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 112 étapes, sans erreur de page
+  ni erreur serveur.
+  - Nouveau : l'accueil de chaque profil — tutorat (six arrêts, sans
+    réglages, publication réservée), agent (six étapes, quatre hors du
+    site, une en cours, le seul tronçon plein de l'étape 1 à l'étape 2),
+    administration (total du circuit égal à celui de « À faire », « à côté
+    du circuit », bandeau qui y ramène, aucun débord à 390 px).
+  - Adaptés : l'arrivée après chaque connexion, la page des codes, le
+    libellé « Documents », six sous-menus avec Équipe, l'accueil en tête du
+    volet et du tiroir, la recherche « administration », l'arrêt
+    « Vérifier » à la place de la tuile, « Tester en apprenant » sur sa page
+    et la fin d'un test qui y ramène.
+- Mesures sur la base laissée par le parcours, à 1 280 et 390 px :
+  - accueil de l'administration : 1,1 et 2,0 écrans de haut ; 14 en
+    attente (12 à vérifier, 2 à viser), comme « À faire » ;
+  - accueil du tutorat : 1,1 et 1,9 écrans ; « Réservé à
+    l'administration » sous Publier ; Réglages ni au menu ni à côté du
+    circuit ;
+  - accueil de l'agent : 1,3 et 1,6 écrans, contre 3,5 et 5,3 pour le
+    programme, où il arrivait (mesure du lot 1) ; l'étape 1 en cours, son
+    bouton « Commencer » ouvre le module annoncé, « Mon programme » ouvre le
+    programme ;
+  - le trait du chemin part du centre de chaque médaillon et arrive au
+    centre du suivant, à 0 px près, aux deux largeurs ;
+  - Codes d'accès : 17 mots d'introduction, 2,2 et 3,4 écrans ; Tester en
+    apprenant : 32 mots, 1,0 et 1,4 écran ;
+  - aucune page ne déborde à 390 px.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

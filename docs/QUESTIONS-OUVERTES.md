@@ -464,8 +464,14 @@ telle. Ordre : ce qui change le déploiement en premier.
     repliées, filtre compris, et une branche ouverte le reste le temps de
     la session ; les introductions de 22 écrans tiennent en une ou deux
     phrases, et ce qui servait au moment d'agir est passé sous le champ
-    concerné. Lots 2 (accueil et menus) et 3 (filtres) à suivre. Détail
-    dans `DECISIONS.md`.
+    concerné. Lot 2, fait : après la connexion, chaque profil arrive sur
+    son accueil — le chemin de l'agent (six étapes, les quatre hors du site
+    grisées), le circuit du tutorat et de l'administration (six arrêts,
+    comptés comme « À faire ») ; « Accueil » ouvre le menu, « Équipe »
+    réunit codes d'accès et personnel, le journal passe à Suivi, « Tester
+    en apprenant » à Modules sur sa propre page, « Dépôt documents »
+    devient « Documents », Réglages quitte le menu du tutorat. Lot 3
+    (filtres) à suivre. Détail dans `DECISIONS.md`.
 
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un

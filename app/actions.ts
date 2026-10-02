@@ -65,7 +65,8 @@ export async function actionConnexion(formData: FormData) {
   // un chemin du site seulement, jamais une adresse externe.
   const suite = String(formData.get("suite") ?? "").slice(0, 300);
   if (/^\/(?![\/\\])/.test(suite) && !suite.startsWith("/connexion")) redirect(suite);
-  redirect(r.session.role === "poste" ? "/" : "/admin");
+  // Accueil après la connexion, pour tous les profils (question 91, choix a).
+  redirect("/accueil");
 }
 
 export async function actionDeconnexion() {

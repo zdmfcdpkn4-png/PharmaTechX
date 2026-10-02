@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <article>
       <p className="fil">
-        <Link href="/">Programme</Link> › Administration
+        <Link href="/accueil">Accueil</Link> › Administration
       </p>
       {children}
     </article>

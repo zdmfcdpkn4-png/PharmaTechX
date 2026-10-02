@@ -14,17 +14,27 @@ import type { ReactNode } from "react";
  */
 
 export type ThemeMenu =
+  | "accueil"
   | "formation"
   | "reperes"
   | "administration"
   | "rgpd"
   | "suivi"
+  | "equipe"
   | "questions"
   | "modules"
   | "squelette"
   | "reglages";
 
 const TRACES: Record<ThemeMenu, ReactNode> = {
+  // Maison : l'accueil, le chemin ou le circuit (question 91).
+  accueil: (
+    <>
+      <path d="M3.5 11L12 4l8.5 7" />
+      <path d="M6 9.5V20h12V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </>
+  ),
   // Toque de diplômé : se former.
   formation: (
     <>
@@ -60,6 +70,15 @@ const TRACES: Record<ThemeMenu, ReactNode> = {
     <>
       <path d="M4 4v16h16" />
       <path d="M8 15l3.5-4 3 2.5L19 8" />
+    </>
+  ),
+  // Deux silhouettes : l'équipe — codes d'accès et personnel (question 91).
+  equipe: (
+    <>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M15.5 14.6c.5-.1 1-.1 1.5-.1 2.5 0 4 1.9 4 4.5" />
     </>
   ),
   // Bulle et point d'interrogation : la banque de questions.

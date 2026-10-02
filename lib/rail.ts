@@ -3,7 +3,7 @@
  * elles qui décident quel sous-menu s'ouvre, donc elles qu'on teste.
  */
 
-export type IdGroupe = "formation" | "reperes" | "administration" | "rgpd";
+export type IdGroupe = "accueil" | "formation" | "reperes" | "administration" | "rgpd";
 
 /**
  * Le groupe qui porte la page courante s'ouvre de lui-même, dans la barre
@@ -11,6 +11,7 @@ export type IdGroupe = "formation" | "reperes" | "administration" | "rgpd";
  * règle, pour que les deux surfaces ouvrent le même groupe.
  */
 export function groupePorteLaPage(id: IdGroupe, chemin: string): boolean {
+  if (id === "accueil") return chemin === "/accueil";
   if (id === "administration") return chemin.startsWith("/admin");
   if (id === "reperes") return chemin.startsWith("/reperes");
   if (id === "rgpd") return chemin.startsWith("/donnees-personnelles");

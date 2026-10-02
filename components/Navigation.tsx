@@ -48,6 +48,11 @@ export interface GroupeRail {
    * l'onglet RGPD, qui porte seul toute l'information sur les données.
    */
   onglet?: boolean;
+  /**
+   * Tête du volet (question 91, choix a) : un intitulé cliquable, comme un
+   * onglet, placé en premier. C'est la forme de l'accueil.
+   */
+  tete?: boolean;
 }
 
 /**
@@ -127,7 +132,7 @@ export function Navigation({
       <Link
         key={g.id}
         href={l.href}
-        className="rail-onglet"
+        className={g.tete ? "rail-onglet rail-onglet--tete" : "rail-onglet"}
         aria-current={courant(l.href) ? "page" : undefined}
       >
         <span className="rail-onglet-titre">
@@ -139,7 +144,7 @@ export function Navigation({
     );
   };
 
-  const groupe = (g: GroupeRail) => g.onglet ? onglet(g) : (
+  const groupe = (g: GroupeRail) => g.onglet || g.tete ? onglet(g) : (
     <details
       key={g.id}
       className="rail-groupe"
@@ -186,7 +191,8 @@ export function Navigation({
 
   return (
     <>
-      {groupes.filter((g) => !g.onglet).map(groupe)}
+      {groupes.filter((g) => g.tete).map(groupe)}
+      {groupes.filter((g) => !g.onglet && !g.tete).map(groupe)}
       {administration && groupe(administration)}
       {groupes.filter((g) => g.onglet).map(groupe)}
 

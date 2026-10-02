@@ -156,6 +156,8 @@ export default async function Accueil({
   // la filière du code de poste, au niveau du code — dans l'ordre de la fiche,
   // ou dans celui du profil s'il en a un (question 55).
   // Un module sans niveau coché est proposé à tous les niveaux (question 86, choix a).
+  // L'accueil de l'agent (question 91) refait ce calcul sans paramètre d'adresse,
+  // dans `lib/arrivee.ts` : une règle changée ici se change aussi là-bas.
   const auNiveau = (liste: ModuleResume[]) =>
     niveauInitial ? liste.filter((m) => proposeAuNiveau(m, niveauInitial)) : liste;
   const etape = (m: ModuleResume): EtapeReprise => ({

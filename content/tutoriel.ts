@@ -144,11 +144,11 @@ const ADMIN: EtapeTutoriel[] = [
     lien: "Ouvrir le pilotage",
   },
   {
-    titre: "Les accès",
+    titre: "Les codes d'accès",
     texte:
-      "Créer, révoquer et supprimer les codes de tous les rôles. Un code se remplace, il ne se retrouve pas : la base les conserve hachés. Révoquer un code ferme aussitôt les sessions qu'il avait ouvertes.",
+      "Créer, révoquer et supprimer les codes de tous les rôles, sous Équipe. Un code se remplace, il ne se retrouve pas : la base les conserve hachés. Révoquer un code ferme aussitôt les sessions qu'il avait ouvertes.",
     href: "/admin",
-    lien: "Gérer les accès",
+    lien: "Gérer les codes d'accès",
   },
   {
     titre: "Le squelette de la formation et le barème",

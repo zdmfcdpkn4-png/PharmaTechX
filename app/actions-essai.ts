@@ -17,7 +17,7 @@ export async function actionDemarrerEssai(formData?: FormData) {
   const s = await sessionRequise("tuteur");
   // Profil facultatif (24/09/2026) : une filière et un niveau du référentiel
   // servi, comme sur un code de poste ; le socle n'est pas une filière de poste.
-  // Champs nommés à part : la page porte aussi le formulaire des codes d'accès.
+  // Champs nommés à part : la page portait aussi le formulaire des codes d'accès.
   const { filieres, niveaux } = await getReferentiel();
   const lu = (cle: string) => String(formData?.get(cle) ?? "").trim();
   const filiere = filieres.find((f) => f.id !== "socle" && f.id === lu("essaiFiliere"))?.id ?? null;
@@ -32,5 +32,6 @@ export async function actionTerminerEssai() {
   const retablie = s ? sessionRetablie(s) : null;
   if (!retablie) redirect("/");
   await remplacerSession(retablie);
-  redirect("/admin");
+  // Retour à la page du test (question 91), d'où il a été lancé.
+  redirect("/admin/essai");
 }

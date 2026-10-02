@@ -256,7 +256,7 @@ vérifier », qui porte le compteur, et « Signalées ». Calculs dans
 reste dans le code, mais un tuteur ou l'administrateur ajoute un module avec
 titre, objectif, présentation courte, rattachement facultatif à un critère de
 la fiche, **profils** (filières, niveaux, parcours) et seuil propre ; ses
-questions se déposent depuis la banque, ses documents depuis Dépôt documents.
+questions se déposent depuis la banque, ses documents depuis Documents.
 Cycle brouillon (visible des tuteurs et administrateurs) → publié (au
 programme des profils choisis ; sans niveau coché, à tous les niveaux de ses
 filières — question 86) → retiré. Publication, retrait, retour en
@@ -303,7 +303,7 @@ l'administration.
 - `/admin/ordonnancement` et `/admin/programmes` : l'ordre et les programmes
   à la carte, inchangés.
 
-`/admin/documents` (au menu « Dépôt documents » depuis le 02/10/2026) — documents rattachés à un module (du code ou déposé) ou
+`/admin/documents` (au menu « Documents ») — documents rattachés à un module (du code ou déposé) ou
 généraux ; un document général se lie à un ou plusieurs profils (filières,
 niveaux) et apparaît sur le programme de ces profils. La nature **fiche de
 synthèse**, rattachée à un module, s'affiche en fin de test une fois validée
@@ -451,6 +451,7 @@ les mêmes écrans.
 | Rôles, codes, sessions, limiteur | `lib/auth.ts`, `lib/limiteur.ts` |
 | Réglages d'exploitation | `lib/config.ts`, `.env.example` |
 | Actions d'administration | `app/actions.ts`, `app/admin/**/actions.ts` |
+| Accueil après la connexion : le chemin de l'agent, le circuit de la gestion (question 91) | `app/accueil/page.tsx` ; étapes et arrêts `content/accueil.ts` ; chemin de l'agent `components/CheminAgent.tsx` ; programme d'arrivée `lib/arrivee.ts`, à garder d'accord avec `app/page.tsx` |
 | Volet de navigation (barre latérale, tiroir) | `components/Menu.tsx`, `components/Navigation.tsx` ; liens composés dans `app/layout.tsx` |
 | Repères (dispositif, barème, programme, niveaux, questions) | `app/reperes/page.tsx` |
 | Couleurs et charte HdV | `app/globals.css` |

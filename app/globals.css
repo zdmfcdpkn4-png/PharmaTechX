@@ -3825,3 +3825,106 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
   animation: intro-trace var(--t-bouton) linear both;
 }
 @keyframes intro-bouton-sort { to { opacity: 0; visibility: hidden; } }
+
+/* ── Accueil après la connexion (question 91, choix a) : « le chemin » ─────
+   L'agent suit ses six étapes de haut en bas, le long d'un trait ; les deux
+   étapes du site sont des cartes, les quatre autres grisées. Le tutorat et
+   l'administration suivent le circuit, six arrêts sur une ligne sur poste,
+   puis trois, puis un sous la largeur d'un téléphone. Médaillons du site,
+   toujours légendés. */
+.accueil-titre h1 { margin-bottom: 0.25rem; }
+.accueil-carte { display: grid; gap: 1rem; }
+
+.chemin { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.chemin-etape { position: relative; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0.875rem; align-items: center; }
+/* Le trait du chemin, tronçon par tronçon : chaque étape trace le sien, du centre de son médaillon à celui
+   du suivant — plein vers une étape du site, pointillé ensuite. Un trait unique, en pourcentage de la hauteur,
+   dépassait du premier médaillon et changeait de nature au mauvais endroit dès que la carte de l'étape 1
+   grandissait (téléphone). Les cartes du site gardent leur médaillon en haut : le tronçon part de son centre. */
+.chemin-etape--site .chemin-medaillon { align-self: start; }
+.chemin-etape:not(:last-child)::before {
+  content: ""; position: absolute; left: 30.5px; top: 32px; width: 3px; height: calc(100% + 0.75rem); border-radius: 2px;
+  background: repeating-linear-gradient(var(--bord-fort) 0 5px, transparent 5px 10px);
+}
+/* Même poids que la règle du pointillé, `:not(:last-child)` comptant comme une classe : écrite après, elle l'emporte. */
+.chemin-etape.chemin-etape--vers-site::before { background: var(--marque); }
+.chemin-medaillon { position: relative; width: 64px; height: 64px; }
+.chemin-medaillon .badge { position: relative; z-index: 1; box-shadow: 0 0 0 4px var(--surface); }
+.chemin-numero {
+  position: absolute; z-index: 2; right: -4px; top: -4px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--marque); color: var(--marque-contraste); font-weight: 700; font-size: 0.75rem; line-height: 22px; text-align: center;
+}
+.chemin-corps { display: grid; gap: 0.25rem; min-width: 0; justify-items: start; }
+.chemin-etape--site .chemin-corps {
+  justify-self: stretch; background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-sm); padding: 0.625rem 0.875rem;
+}
+.chemin-etape--ici .chemin-corps { border-color: var(--marque); box-shadow: var(--ombre); }
+.chemin-titre { font-weight: 700; color: var(--marque); font-size: 1.0625rem; }
+.chemin-detail { color: var(--texte-doux); font-size: 0.875rem; }
+.chemin-ici {
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--marque-contraste); background: var(--marque-accent-texte); border-radius: 999px; padding: 0.125rem 0.5rem;
+}
+.jauge-chemin { display: block; width: min(16rem, 100%); height: 6px; border-radius: 999px; background: var(--surface-douce); overflow: hidden; }
+.jauge-chemin > span { display: block; height: 100%; border-radius: inherit; background: var(--marque-accent); }
+.chemin-action { margin-top: 0.25rem; max-width: 100%; white-space: normal; text-align: left; }
+.chemin-lien { font-size: 0.875rem; }
+.chemin-etape--hors .badge { filter: grayscale(1); opacity: 0.55; }
+.chemin-etape--hors .chemin-numero { background: var(--trait-faible); }
+.chemin-etape--hors .chemin-titre { color: var(--texte-doux); font-weight: 600; }
+.chemin-ou {
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texte-doux);
+  border: 1px solid var(--bord-fort); border-radius: 999px; padding: 0.0625rem 0.5rem;
+}
+.accueil-liens { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin: 0; }
+
+.circuit { list-style: none; margin: 0; padding: 0; position: relative; display: grid; gap: 1rem 0.75rem; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+/* Le trait du circuit, à hauteur des médaillons. */
+.circuit::before { content: ""; position: absolute; left: 8%; right: 8%; top: 44px; height: 3px; border-radius: 2px; background: var(--marque); opacity: 0.3; }
+.circuit-arret { position: relative; display: grid; justify-items: center; align-content: start; text-align: center; gap: 0.25rem; min-width: 0; }
+.circuit-medaillon { position: relative; width: 88px; height: 88px; }
+.circuit-medaillon .badge { position: relative; z-index: 1; box-shadow: 0 0 0 5px var(--surface), var(--ombre); }
+.circuit-compte {
+  position: absolute; z-index: 2; top: -2px; right: -6px; min-width: 26px; height: 26px; padding: 0 0.4rem; border-radius: 999px;
+  background: var(--marque-accent-texte); color: var(--marque-contraste); font-weight: 700; font-size: 0.8125rem; line-height: 26px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.circuit-titre { font-weight: 700; font-size: 1.0625rem; color: var(--marque); margin-top: 0.25rem; }
+/* Tout l'arrêt est la cible du lien principal ; les liens voisins passent au-dessus. */
+.circuit-lien { color: inherit; text-decoration: none; }
+.circuit-lien::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: var(--rayon-sm); }
+.circuit-lien:focus-visible { outline: none; }
+.circuit-lien:focus-visible::after { outline: 3px solid var(--marque-anneau); outline-offset: 2px; }
+.circuit-detail { font-size: 0.8125rem; color: var(--texte-doux); }
+.circuit-autres { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.125rem 0.625rem; font-size: 0.8125rem; }
+.circuit-arret--hors .badge { filter: grayscale(1); opacity: 0.55; }
+.circuit-arret--hors .circuit-titre { color: var(--texte-doux); }
+.circuit-sous {
+  margin: 0.5rem 0 0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texte-doux);
+}
+.a-cote { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.625rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+.a-cote-lien {
+  display: flex; align-items: center; gap: 0.625rem; min-height: var(--cible); padding: 0.5rem 0.75rem;
+  background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-sm); font-weight: 600; color: var(--marque); text-decoration: none;
+}
+.a-cote-lien:hover { border-color: var(--marque); }
+@media (prefers-reduced-motion: no-preference) {
+  .circuit-arret, .a-cote-lien { transition: transform var(--transition), border-color var(--transition); }
+  .circuit-arret:hover, .a-cote-lien:hover { transform: translateY(-2px); }
+}
+/* Trois arrêts par rangée, puis un : le trait, qui ne relierait plus qu'un rang, s'efface. */
+@media (max-width: 62rem) {
+  .circuit { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .circuit::before { display: none; }
+}
+@media (max-width: 34rem) {
+  .circuit { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+  .circuit-arret { grid-template-columns: 64px minmax(0, 1fr); justify-items: start; text-align: left; column-gap: 0.875rem; }
+  .circuit-medaillon { grid-row: span 3; width: 64px; height: 64px; }
+  .circuit-medaillon .badge { width: 64px; height: 64px; }
+  .circuit-titre { margin-top: 0; }
+  .circuit-autres { justify-content: flex-start; }
+}
+
+/* Accueil en tête du volet (question 91) : sans la marge de l'onglet RGPD, placé en fin. */
+.rail a.rail-onglet--tete { margin: 0 0 0.5rem; }

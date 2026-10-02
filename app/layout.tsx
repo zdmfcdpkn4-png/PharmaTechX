@@ -96,6 +96,13 @@ export default async function RootLayout({
   // seul endroit qui connaisse la session, la conservation et la base.
   const progressionVisible = conservation && baseConfiguree();
   const groupes: GroupeRail[] = [
+    // Accueil en tête du menu (question 91, choix a) : le chemin de l'agent, le circuit de la gestion.
+    {
+      id: "accueil",
+      titre: "Accueil",
+      tete: true,
+      liens: [{ href: "/accueil", libelle: gestionnaire ? "Le circuit" : "Mon habilitation" }],
+    },
     {
       id: "formation",
       titre: "Formation",
@@ -196,6 +203,17 @@ export default async function RootLayout({
                 libelle: "Signalements",
                 compte: signalementsOuverts,
               },
+              // Le journal se lit comme le pilotage ; il ne règle rien (question 91, choix a).
+              ...(session?.role === "admin" ? [{ href: "/admin/journal", libelle: "Journal" }] : []),
+            ],
+          },
+          // Équipe (question 91, choix a) : créer le code d'un nouvel arrivant revient chaque semaine ;
+          // il était sous Réglages, sous le nom « Accès ».
+          {
+            titre: "Équipe",
+            picto: "equipe",
+            liens: [
+              { href: "/admin", libelle: "Codes d'accès" },
               ...(conservation ? [{ href: "/admin/personnel", libelle: "Personnel" }] : []),
             ],
           },
@@ -218,8 +236,6 @@ export default async function RootLayout({
               { href: "/admin/questions/import", libelle: "Déposer des questions" },
               { href: "/admin/questions/nouvelle", libelle: "Écrire une question" },
               { href: "/admin/questions/situations", libelle: "Mises en situation" },
-              // Mode test (24/09/2026) : passer une évaluation en apprenant, à un niveau choisi, sans rien enregistrer.
-              { href: "/admin#t-essai", libelle: "Tester en apprenant" },
             ],
           },
           {
@@ -227,7 +243,9 @@ export default async function RootLayout({
             picto: "modules",
             liens: [
               { href: "/admin/modules", libelle: "Modules" },
-              { href: "/admin/documents", libelle: "Dépôt documents" },
+              { href: "/admin/documents", libelle: "Documents" },
+              // Mode test (24/09/2026), sur sa page depuis la question 91 : il essaie le programme, pas une question.
+              { href: "/admin/essai", libelle: "Tester en apprenant" },
             ],
           },
           // Squelette de la formation (question 81, choix a, 26/09/2026) : tout ce
@@ -251,20 +269,20 @@ export default async function RootLayout({
               { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],
           },
-          {
-            titre: "Réglages",
-            picto: "reglages",
-            liens: [
-              { href: "/admin", libelle: "Accès" },
-              ...(session?.role === "admin"
-                ? [
+          // Réglages garde le barème et la signature, réservés à l'administration : vide pour le tutorat, il
+          // quitte son menu (question 91, choix a).
+          ...(session?.role === "admin"
+            ? [
+                {
+                  titre: "Réglages",
+                  picto: "reglages" as const,
+                  liens: [
                     { href: "/admin/bareme", libelle: "Barème" },
                     { href: "/admin/signature", libelle: "Signature" },
-                    { href: "/admin/journal", libelle: "Journal" },
-                  ]
-                : []),
-            ],
-          },
+                  ],
+                },
+              ]
+            : []),
         ],
       }
     : null;
@@ -352,7 +370,7 @@ export default async function RootLayout({
               </div>
 
               <div className="bandeau">
-                <Link href="/" className="bandeau-titre">
+                <Link href="/accueil" className="bandeau-titre">
                   Formation &amp; habilitation
                 </Link>
                 <div className="bandeau-sous">

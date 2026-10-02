@@ -89,14 +89,15 @@ const sansAccent = (s: string) =>
 /** Aplatit le volet en une liste de liens, groupe par groupe, dans l'ordre du volet. */
 function entreesDuVolet(groupes: GroupeRail[], administration: GroupeRail | null, chemin: string): Entree[] {
   const out: Entree[] = [];
-  // Même ordre que le volet : les onglets (RGPD) ferment la liste.
+  // Même ordre que le volet : l'accueil en tête, les onglets (RGPD) ferment la liste.
   const ordre = [
-    ...groupes.filter((g) => !g.onglet),
+    ...groupes.filter((g) => g.tete),
+    ...groupes.filter((g) => !g.onglet && !g.tete),
     ...(administration ? [administration] : []),
     ...groupes.filter((g) => g.onglet),
   ];
   for (const g of ordre) {
-    if (g.onglet) {
+    if (g.onglet || g.tete) {
       // Entrée directe, comme l'onglet du volet : l'intitulé du groupe, puis
       // celui de la page. Les deux restent dans le texte que filtre la recherche.
       const l = g.liens?.[0];

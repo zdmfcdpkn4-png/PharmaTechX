@@ -30,6 +30,13 @@ le pictogramme de son thème, le même dans « Aller à » et dans le volet ;
 l'écusson ne reste que sur le groupe « Administration » du volet. Complétés :
 § 2 d et § 3.3 ; critère 12 étendu au § 8, vérifié de bout en bout.
 
+**Révisée le 02/10/2026** (question 91, choix a, lot 2) : « Accueil » ouvre
+« Aller à », en entrée directe comme l'onglet RGPD, avec son pictogramme (une
+maison) ; un sixième sous-menu, « Équipe », se range après Suivi. « À faire »
+ne change pas : l'accueil du tutorat et de l'administration en reprend les
+comptes, arrêt par arrêt. Complété : § 3.3 ; critère 12 étendu au § 8, vérifié
+de bout en bout.
+
 ---
 
 ## 1. Le problème que ce composant règle — et celui qu'il ne règle pas
@@ -211,7 +218,12 @@ dans le volet ; aucune hauteur ne change. Depuis la question 81 (choix a,
 26/09/2026), un cinquième sous-menu, « Squelette », se range entre Modules et
 Réglages, sous trois cadres reliés : filières, niveaux, blocs et critères,
 niveaux des questions, rattachement des modules, ordre et programmes à la
-carte.
+carte. Depuis la question 91 (choix a, 02/10/2026), « Accueil » ouvre la zone,
+en entrée directe — le circuit pour le tutorat et l'administration, le chemin
+pour l'agent — avec une maison pour pictogramme ; un sixième sous-menu,
+« Équipe » (deux silhouettes), se range après Suivi : codes d'accès et
+personnel. Réglages, réduit au barème et à la signature, n'apparaît plus au
+tutorat.
 
 ### 3.4 Le champ de recherche
 
@@ -372,7 +384,7 @@ Sept mesures, chacune rattachée à un principe de la section 2.
 | 9 | Ouverture perçue < 100 ms, aucun appel réseau | les compteurs voyagent avec la page |
 | 10 | Sur poste, le tiroir recouvre le volet et laisse la colonne de lecture découverte, ni assombrie ni floutée ; un clic sur la page le ferme sans suivre le lien (question 61) | e2e à 1 280 px : bords du tiroir, du volet et de la colonne mesurés ; calque transparent ; clic sur un lien de la page → adresse inchangée, focus au hamburger |
 | 11 | « À faire » se replie : l'intitulé porte alors le total de la file, « Aller à » récupère la place, l'état tient d'une ouverture à l'autre, une recherche en montre quand même les résultats (question 75) | e2e : repli, total égal à la somme des compteurs, hauteur d'« Aller à », fermeture et réouverture, recherche, dépli |
-| 12 | Les sous-menus d'administration portent leur seul nom à l'écran, « Administration » restant dans le nom lu et dans la recherche ; une ligne par bandeau sur poste ; le volet garde son groupe « Administration » (question 76). Chaque tête de menu porte le pictogramme de son thème, le même dans le tiroir et dans le volet, décoratif ; l'écusson ne reste que sur le groupe « Administration » du volet (question 77) | e2e à 1 280 px : noms visibles, nom lu, pictogramme de chaque bandeau, groupe, sous-menu et onglet RGPD, attributs cachés au lecteur d'écran, hauteur des bandeaux, recherche « administration », volet |
+| 12 | Les sous-menus d'administration portent leur seul nom à l'écran, « Administration » restant dans le nom lu et dans la recherche ; une ligne par bandeau sur poste ; le volet garde son groupe « Administration » (question 76). Chaque tête de menu porte le pictogramme de son thème, le même dans le tiroir et dans le volet, décoratif ; l'écusson ne reste que sur le groupe « Administration » du volet (question 77). « Accueil » ouvre « Aller à » et le volet, en entrée directe ; six sous-menus avec « Équipe » (question 91) | e2e à 1 280 px : noms visibles, nom lu, pictogramme de chaque bandeau, groupe, sous-menu, onglet RGPD et accueil, attributs cachés au lecteur d'écran, hauteur des bandeaux, recherche « administration », volet |
 
 ---
 
