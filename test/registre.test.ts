@@ -73,6 +73,7 @@ const rapport: RapportComplet = {
     verdictBrut: "indetermine",
   },
   exclusions: [],
+  procedure_reference: "",
   visas: [
     { id: 1, rapport_id: "abc", qualite: "apprenant", role_session: "poste", libelle_session: "", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T12:02:00.000Z", signature_id: null },
     { id: 2, rapport_id: "abc", qualite: "tuteur", role_session: "tuteur", libelle_session: "Tuteur test", commentaire: "", empreinte: "ff00", signe_le: "2026-09-18T13:05:00.000Z", signature_id: null },

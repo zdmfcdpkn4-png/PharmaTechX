@@ -80,6 +80,8 @@ export interface LigneRapport {
   arbitrage: ArbitrageRapport | null;
   /** NULL tant que les exclusions ne sont pas fixées. */
   exclusions: ExclusionQuestion[] | null;
+  /** Procédure en vigueur à l'émission ; vide : aucune ; NULL : rapport émis avant le 02/10/2026. */
+  procedure_reference: string | null;
 }
 
 export interface LigneVisa {
@@ -135,7 +137,8 @@ export const LIBELLES_STATUT_RAPPORT: Record<StatutRapport, string> = {
 };
 
 const COLONNES_RAPPORT = `id, numero, module_id, module_titre, critere_id, agent_id, agent_identifiant,
-  tirage, resultat, empreinte, statut, emis_le::text, annule_motif, annule_le::text, arbitrage, exclusions`;
+  tirage, resultat, empreinte, statut, emis_le::text, annule_motif, annule_le::text, arbitrage, exclusions,
+  procedure_reference`;
 
 const COLONNES_VISA = `id, rapport_id, qualite, role_session, libelle_session, commentaire, empreinte,
   signe_le::text, signature_id`;
@@ -164,6 +167,8 @@ export async function emettreRapport(e: {
   agentIdentifiant: string;
   roleSession: Role | "aucun";
   libelleSession: string;
+  /** Procédure de référence en vigueur, scellée avec le rapport ; `null` : aucune. */
+  procedure: string | null;
 }): Promise<{ id: string; numero: string; emisLe: Date }> {
   return transaction(async (client) => {
     const s = sqlSur(client);
@@ -173,9 +178,9 @@ export async function emettreRapport(e: {
     const r = e.resultat;
     const emis = await s<{ emis_le: Date }>`
       INSERT INTO rapports (id, numero, module_id, module_titre, critere_id, agent_id,
-        agent_identifiant, tirage, resultat, empreinte)
+        agent_identifiant, tirage, resultat, empreinte, procedure_reference)
       VALUES (${id}, ${numero}, ${r.moduleId}, ${r.moduleTitre}, ${r.critereId}, ${e.agentId},
-        ${e.agentIdentifiant}, ${r.tirage}, ${JSON.stringify(r)}::jsonb, ${e.empreinte})
+        ${e.agentIdentifiant}, ${r.tirage}, ${JSON.stringify(r)}::jsonb, ${e.empreinte}, ${e.procedure ?? ""})
       RETURNING emis_le`;
     await s`
       INSERT INTO visas (rapport_id, qualite, role_session, libelle_session, commentaire, empreinte)

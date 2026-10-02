@@ -5650,6 +5650,101 @@ Source : Procédure statistiques — section 5`;
   assert.match((await page.locator("form.filtres .filtres-compte").innerText()).trim(), /^\d+ modules? évalués?$/, "statistiques : un tri ne réduit pas la liste, le compte reste entier");
   ok("filtres de la banque sur Personnel, Programmes, Mises en situation, Filières, Niveaux, Repères, Pilotage et Statistiques : compte retenu, somme des options, puces, « Tout effacer » (question 91, lot 3)");
 
+  // 14d nonies. À compléter (02/10/2026) : les encadrés jaunes se renseignent depuis Réglages › À compléter.
+  //    Renseigné, un élément remplace son encadré partout ; un rapport déjà émis garde la procédure de son
+  //    émission ; effacé, l'encadré revient. L'administration seule ; chaque geste est journalisé.
+  const piedProcedure = () => page.locator("footer p", { hasText: "Procédure de référence" });
+  const complement = (cle) => page.locator(`section.complement[id="${cle}"]`);
+  const renseigner = async (cle, texte) => {
+    await complement(cle).locator("[name=texte]").fill(texte);
+    await complement(cle).locator("button:has-text('Enregistrer')").click();
+    // Comme ailleurs sur le site, l'ancre de la redirection n'est pas attendue : seul le retour compte.
+    await page.waitForURL((u) => new URL(u).searchParams.get("ok") === "renseigne");
+  };
+  const effacer = async (cle) => {
+    await page.goto(BASE + "/admin/complements");
+    await complement(cle).locator("button:has-text('Effacer')").click();
+    await page.waitForURL((u) => new URL(u).searchParams.get("ok") === "efface");
+  };
+  // Depuis les statistiques, le tutorat est connecté : l'administration reprend la main.
+  await rebrancher(codeAdmin);
+  assert.equal(await page.locator("#volet-principal a[href='/admin/complements']").count(), 1, "Réglages › À compléter au menu");
+  await page.goto(BASE + "/admin/complements");
+  await page.locator("h1", { hasText: "À compléter" }).waitFor();
+  const nbComplements = await page.locator("section.complement").count();
+  assert.ok(nbComplements >= 8, "la procédure, les cinq mentions RGPD, les données locales du texte et les documents à rattacher");
+  assert.equal((await page.locator(".panneau-titre .sur-titre").textContent()).trim(), `0 sur ${nbComplements} renseigné`);
+  assert.equal(
+    await piedProcedure().locator("a.a-completer-lien[href='/admin/complements#procedure'] .a-preciser").count(),
+    1,
+    "pied : l'encadré mène l'administration à son champ",
+  );
+  // La procédure : le pied et la page RGPD la portent ; le rapport émis avant garde « [à compléter] ».
+  await renseigner("procedure", "PR-E2E-01 — Habilitation de test");
+  await complement("procedure").locator(".etiquette", { hasText: "Renseigné" }).waitFor();
+  assert.match(await piedProcedure().innerText(), /Procédure de référence\s*:\s*PR-E2E-01 — Habilitation de test/);
+  assert.equal(await piedProcedure().locator(".a-preciser").count(), 0, "pied : plus d'encadré");
+  await page.goto(BASE + "/admin/rapports");
+  const rapportEmis = (await page.locator("a[href^='/admin/rapports/']").evaluateAll((l) => l.map((a) => a.getAttribute("href")))).find((h) =>
+    /^\/admin\/rapports\/[\w-]+$/.test(h),
+  );
+  assert.ok(rapportEmis, "un rapport émis plus tôt dans le parcours");
+  const imprime = await (await page.request.get(BASE + rapportEmis + "/imprimer")).text();
+  assert.ok(imprime.includes("procédure [à compléter]"), "un rapport émis avant garde la procédure de son émission");
+  assert.ok(!imprime.includes("PR-E2E-01"), "la procédure renseignée après ne réécrit pas le rapport");
+  // Une mention RGPD ; les quatre autres restent des encadrés, qui mènent l'administration à leur champ.
+  await page.goto(BASE + "/admin/complements");
+  await renseigner("rgpd-responsable", "CHD de test, représenté par son directeur.");
+  await page.goto(BASE + "/donnees-personnelles");
+  assert.equal((await page.locator("dl.rgpd dt:text-is('Responsable') + dd").innerText()).trim(), "CHD de test, représenté par son directeur");
+  assert.equal(await page.locator("dl.rgpd a.a-completer-lien .a-preciser").count(), 4, "page RGPD : quatre mentions encore à compléter");
+  assert.match(await page.locator("section.carte > p.legende", { hasText: "Procédure" }).innerText(), /Procédure : PR-E2E-01 — Habilitation de test\./);
+  // Un document « à rattacher » d'un module rédigé : sa référence remplace l'encadré.
+  const cleZac = "ressource:comportement-zac:proc-habillage";
+  await page.goto(BASE + "/module/comportement-zac");
+  const ligneHabillage = () => page.locator("li", { hasText: "Procédure interne — habillage et circulation en ZAC" });
+  assert.equal(await ligneHabillage().locator("a.a-completer-lien .a-preciser", { hasText: "à rattacher" }).count(), 1);
+  const encoreARattacher = async () => Number(((await page.locator(".section-titre", { hasText: "Documents rattachés" }).innerText()).match(/(\d+) encore à rattacher/) ?? [0, 0])[1]);
+  const avantRattache = await encoreARattacher();
+  await page.goto(BASE + "/admin/complements");
+  await renseigner(cleZac, "PR-ZAC-07 — Habillage et circulation");
+  await page.goto(BASE + "/module/comportement-zac");
+  assert.match(await ligneHabillage().innerText(), /PR-ZAC-07 — Habillage et circulation/);
+  assert.equal(await ligneHabillage().locator(".a-preciser").count(), 0, "module : la référence remplace l'encadré");
+  assert.equal(await encoreARattacher(), avantRattache - 1, "module : un document de moins à rattacher");
+  // Une donnée locale du texte : la deuxième du module, à sa place dans sa section ; la première reste à préciser.
+  const cleTenue = "texte:comportement-zac:2";
+  await page.goto(BASE + "/admin/complements");
+  assert.match(await complement(cleTenue).locator("h3").innerText(), /^Tenue exacte, composition des sas et sens de circulation dans l'unité$/);
+  await renseigner(cleTenue, "tenue de test, sas de test et circulation de test");
+  await page.goto(BASE + "/module/comportement-zac");
+  assert.match(await page.locator("section#section-4").innerText(), /sens de circulation dans l'unité : tenue de test, sas de test et circulation de test\./);
+  assert.equal(await page.locator("section#section-4 .a-preciser").count(), 0, "texte : la donnée remplace l'encadré");
+  assert.equal(
+    await page.locator("section#section-2 a.a-completer-lien[href='/admin/complements#texte:comportement-zac:1'] .a-preciser").count(),
+    1,
+    "texte : la donnée précédente reste à préciser, et mène l'administration à son champ",
+  );
+  await page.goto(BASE + "/admin/complements");
+  assert.equal((await page.locator(".panneau-titre .sur-titre").textContent()).trim(), `4 sur ${nbComplements} renseignés`);
+  // Journal ; le tutorat n'y a pas accès.
+  await page.goto(BASE + "/admin/journal?action=" + encodeURIComponent("complement:renseigne"));
+  for (const cle of ["procedure", "rgpd-responsable", cleZac, cleTenue]) {
+    await page.locator("td", { hasText: cle }).first().waitFor();
+  }
+  await rebrancher(codeTuteur);
+  await page.goto(BASE + "/admin/complements");
+  assert.notEqual(new URL(page.url()).pathname, "/admin/complements", "le tutorat n'ouvre pas À compléter");
+  assert.equal(await page.locator("#volet-principal a[href='/admin/complements']").count(), 0, "ni au menu du tutorat");
+  await rebrancher(codeAdmin);
+  // Effacés : les encadrés reviennent.
+  for (const cle of ["procedure", "rgpd-responsable", cleZac, cleTenue]) await effacer(cle);
+  assert.equal(await piedProcedure().locator(".a-preciser").count(), 1, "pied : l'encadré revient");
+  assert.equal((await page.locator(".panneau-titre .sur-titre").textContent()).trim(), `0 sur ${nbComplements} renseigné`);
+  await page.goto(BASE + "/admin/journal?action=" + encodeURIComponent("complement:efface"));
+  await page.locator("td", { hasText: "procedure" }).first().waitFor();
+  ok("à compléter : la procédure, une mention RGPD, une donnée locale du texte et un document à rattacher renseignés depuis le site, visibles au pied, sur la page RGPD et sur le module ; un rapport émis avant garde la sienne ; effacés, les encadrés reviennent ; administration seule, journalisé");
+
   // Quitter depuis une page sans ancre, comme `rebrancher` : l'adresse « #actions »
   // fait défiler la page après son rendu, en douceur, et ce défilement pouvait
   // l'emporter sur le retour en haut — l'en-tête, masqué à la descente, gardait

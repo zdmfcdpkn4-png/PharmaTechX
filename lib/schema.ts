@@ -508,6 +508,9 @@ export const SCHEMA: string[] = [
      modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
    )`,
   `ALTER TABLE modules_deposes ADD COLUMN IF NOT EXISTS bloc INTEGER`,
+  // Procédure de référence scellée à l'émission (02/10/2026) : elle se renseigne depuis le site, et la
+  // changer ne réécrit pas un rapport déjà émis. Vide : aucune n'était en vigueur ; NULL : rapport d'avant.
+  `ALTER TABLE rapports ADD COLUMN IF NOT EXISTS procedure_reference TEXT`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

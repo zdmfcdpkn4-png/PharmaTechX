@@ -1,5 +1,7 @@
 import "server-only";
-import { dureeConservationMois, miseEnService, procedureReference } from "@/lib/config";
+import { dureeConservationMois, miseEnService } from "@/lib/config";
+import { procedureEnVigueur } from "@/lib/complements-db";
+import { procedureDuRapport } from "@/content/complements";
 import { contexteDecision, type RapportComplet } from "@/lib/rapports";
 import { dataUri, lireSignature } from "@/lib/signatures";
 import type { EditionRapport } from "@/lib/registre";
@@ -43,7 +45,8 @@ export async function rendreRapportEnregistre(r: RapportComplet, edition?: Editi
       visas,
       conservation: "pseudonyme",
       dureeConservationMois: dureeConservationMois(),
-      procedure: procedureReference(),
+      // Celle de l'émission ; un rapport d'avant le sceau garde l'ancienne lecture, celle en vigueur.
+      procedure: procedureDuRapport(r.procedure_reference, await procedureEnVigueur()),
       miseEnService: miseEnService(),
       dateEdition: edition?.le ?? new Date(r.emis_le),
       logos: await logosIncorpores(),

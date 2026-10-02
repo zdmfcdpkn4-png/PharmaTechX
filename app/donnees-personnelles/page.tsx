@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { conservationActive, dureeConservationMois, procedureReference } from "@/lib/config";
+import { getSession } from "@/lib/auth";
+import { lireComplements } from "@/lib/complements-db";
+import { procedureEffective } from "@/content/complements";
+import { ACompleter } from "@/components/ACompleter";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +17,19 @@ export const dynamic = "force-dynamic";
  * légale, destinataires, durée, droits, réclamation — en une ligne chacun.
  * Le détail vit dans la fiche de registre (`docs/RGPD.md`). Les éléments
  * propres à l'établissement restent [à compléter] tant que le DPO ne les a
- * pas fournis : ils ne sont pas inventés.
+ * pas fournis : ils ne sont pas inventés. Ils se renseignent depuis Réglages ›
+ * À compléter (02/10/2026).
  */
-export default function DonneesPersonnelles() {
+export default async function DonneesPersonnelles() {
   const active = conservationActive();
   const duree = dureeConservationMois();
-  const procedure = procedureReference();
-  const aCompleter = <code className="a-preciser">[à compléter]</code>;
+  const [renseignes, session] = await Promise.all([lireComplements(), getSession()]);
+  const procedure = procedureEffective(renseignes.procedure, procedureReference());
+  const admin = session?.role === "admin";
+  // Une mention renseignée, sans son point final (la phrase met le sien), sinon son encadré — qui mène
+  // l'administration à son champ.
+  const texte = (cle: string) => renseignes[cle]?.texte.replace(/\.$/, "") ?? "";
+  const mention = (cle: string) => texte(cle) || <ACompleter cle={cle} admin={admin} />;
 
   return (
     <article>
@@ -48,27 +58,40 @@ export default function DonneesPersonnelles() {
           <dd>
             Tracer l&apos;étape 2 de l&apos;habilitation. Améliorer les formations : vos évaluations conservées
             entrent, agrégées, dans des statistiques de réussite par module et par question — sans nom, sans
-            décision sur vous, aucun taux sous cinq agents. Base légale : {aCompleter} avec le DPO (pas le
-            consentement).
+            décision sur vous, aucun taux sous cinq agents. Base légale :{" "}
+            {texte("rgpd-base-legale") || (
+              <>
+                <ACompleter cle="rgpd-base-legale" admin={admin} /> avec le DPO (pas le consentement)
+              </>
+            )}
+            .
           </dd>
           <dt>Qui y accède</dt>
-          <dd>Tuteurs, pharmacien responsable, administrateur du site ; aucun tiers. Hébergement : {aCompleter}.</dd>
+          <dd>Tuteurs, pharmacien responsable, administrateur du site ; aucun tiers. Hébergement : {mention("rgpd-hebergement")}.</dd>
           <dt>Combien de temps</dt>
           <dd>
             Jusqu&apos;à suppression par l&apos;administrateur{duree ? ` (cible : ${duree} mois)` : ""} ; durée de
-            référence <code className="a-preciser">[à préciser]</code> avec le DPO.
+            référence{" "}
+            {texte("rgpd-duree") ? (
+              <>: {texte("rgpd-duree")}</>
+            ) : (
+              <>
+                <ACompleter cle="rgpd-duree" admin={admin} texte="[à préciser]" /> avec le DPO
+              </>
+            )}
+            .
           </dd>
           <dt>Vos droits</dt>
           <dd>
             Accès, rectification (un rapport scellé s&apos;annule et se réémet), limitation, opposition ; effacement
             dans la limite de la traçabilité de l&apos;habilitation. Auprès du pharmacien responsable ou du DPO :{" "}
-            {aCompleter}. Réclamation : CNIL (cnil.fr).
+            {mention("rgpd-contact")}. Réclamation : CNIL (cnil.fr).
           </dd>
           <dt>Responsable</dt>
-          <dd>{aCompleter}</dd>
+          <dd>{mention("rgpd-responsable")}</dd>
         </dl>
         <p className="legende" style={{ marginBottom: 0 }}>
-          Procédure : {procedure ? <code>{procedure}</code> : aCompleter}. Fiche de registre à valider par le DPO avant
+          Procédure : {procedure ? <code>{procedure}</code> : <ACompleter cle="procedure" admin={admin} />}. Fiche de registre à valider par le DPO avant
           la mise en service.
         </p>
       </section>

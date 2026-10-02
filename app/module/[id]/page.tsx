@@ -17,6 +17,9 @@ import { LectureModule } from "@/components/LectureModule";
 import { NoterConsultation } from "@/components/NoterConsultation";
 import { conservationActive } from "@/lib/config";
 import { SEUILS_STAT, bilanModule } from "@/lib/statistiques";
+import { lireComplements } from "@/lib/complements-db";
+import { MARQUEUR_TEXTE, cleRessource, cleTexte } from "@/content/complements";
+import { ACompleter } from "@/components/ACompleter";
 import { lireEssais } from "@/lib/statistiques-db";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +48,31 @@ export default async function PageModule({
   // Documents déposés réservés aux sessions ouvertes par un code (question 13, choix b).
   const depots = baseConfiguree() && session ? await depotsDuModule(mod.id).catch(() => []) : [];
   const reserves = baseConfiguree() && !session ? await compterDepotsDuModule(mod.id).catch(() => 0) : 0;
+  // Renseignés dans Réglages › À compléter (02/10/2026) : les données locales du texte d'un module rédigé,
+  // et ses documents « à rattacher » — leur référence, et le document déposé choisi, qui quitte alors la
+  // liste des autres documents.
+  const renseignes: Awaited<ReturnType<typeof lireComplements>> =
+    mod.ressources.some((r) => !r.url) || (!depose && mod.sections.some((s) => s.corps.includes(MARQUEUR_TEXTE)))
+      ? await lireComplements()
+      : {};
+  // Chaque [à préciser] du texte, dans l'ordre de lecture, a sa clé ; un module déposé garde ses encadrés.
+  let rangTexte = 0;
+  const marqueursSections = mod.sections.map((s) =>
+    depose
+      ? undefined
+      : Array.from({ length: s.corps.split(MARQUEUR_TEXTE).length - 1 }, () => {
+          const cle = cleTexte(mod.id, ++rangTexte);
+          return { cle, valeur: renseignes[cle]?.texte ?? null };
+        }),
+  );
+  const etatRessource = (r: (typeof mod.ressources)[number]) => {
+    const v = r.url ? undefined : renseignes[cleRessource(mod.id, r.id)];
+    const lien = r.url ?? depots.find((d) => d.id === v?.document)?.url ?? null;
+    return { lien, reference: v?.texte ?? "", fait: Boolean(lien || v?.texte) };
+  };
+  const pris = new Set(mod.ressources.map((r) => (r.url ? null : renseignes[cleRessource(mod.id, r.id)]?.document)));
+  const autresDepots = depots.filter((d) => !pris.has(d.id));
+  const aRattacher = mod.ressources.filter((r) => !etatRessource(r).fait).length;
   // Entré par un programme à la carte (question 50) : on enchaîne dans son
   // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
   const idProgramme = lireIdProgramme(sp.programme);
@@ -74,7 +102,7 @@ export default async function PageModule({
             <section key={i} id={`section-${i + 1}`} aria-labelledby={`titre-section-${i + 1}`}>
               <p className="sur-titre">Section {i + 1} sur {mod.sections.length}</p>
               <h2 id={`titre-section-${i + 1}`} tabIndex={-1}>{s.titre}</h2>
-              <Corps texte={s.corps} />
+              <Corps texte={s.corps} marqueurs={marqueursSections[i]} admin={session?.role === "admin"} />
               {s.references && s.references.length > 0 && (
                 <details className="sources">
                   <summary>Sources de cette section</summary>
@@ -101,13 +129,13 @@ export default async function PageModule({
         </div>
       )}
 
-      {(mod.ressources.length > 0 || depots.length > 0 || reserves > 0) && (
+      {(mod.ressources.length > 0 || autresDepots.length > 0 || reserves > 0) && (
         <section className="carte" style={{ marginTop: "1.5rem" }}>
           <div className="section-titre" style={{ marginTop: 0 }}>
             <h2>Documents rattachés</h2>
             <span className="compte">
-              {mod.ressources.length + depots.length + reserves}
-              {mod.ressources.some((r) => !r.url) ? ` · ${mod.ressources.filter((r) => !r.url).length} encore à rattacher` : ""}
+              {mod.ressources.length + autresDepots.length + reserves}
+              {aRattacher > 0 ? ` · ${aRattacher} encore à rattacher` : ""}
             </span>
           </div>
           {reserves > 0 && (
@@ -117,7 +145,7 @@ export default async function PageModule({
             </p>
           )}
           <ul className="liste-nue">
-            {depots.map((d) => (
+            {autresDepots.map((d) => (
               <li key={`d-${d.id}`}>
                 <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
                 <a href={d.url} target="_blank" rel="noreferrer">
@@ -126,21 +154,28 @@ export default async function PageModule({
                 <span className="legende">— déposé le {new Date(d.depose_le).toLocaleDateString("fr-FR")}</span>
               </li>
             ))}
-            {mod.ressources.map((r) => (
-              <li key={r.id} className={r.url ? "" : "est-vide"}>
-                <span className="etiquette etiquette--neutre">{libelleNature(r.nature)}</span>{" "}
-                {r.url ? (
-                  <a href={r.url} target="_blank" rel="noreferrer">
-                    {r.titre}
-                  </a>
-                ) : (
-                  <>
-                    {r.titre} — <code className="a-preciser">à rattacher</code>{" "}
-                    <span className="legende">{r.commentaire ?? "document à déposer"}</span>
-                  </>
-                )}
-              </li>
-            ))}
+            {mod.ressources.map((r) => {
+              const { lien, reference, fait } = etatRessource(r);
+              return (
+                <li key={r.id} className={fait ? "" : "est-vide"}>
+                  <span className="etiquette etiquette--neutre">{libelleNature(r.nature)}</span>{" "}
+                  {lien ? (
+                    <a href={lien} target="_blank" rel="noreferrer">
+                      {r.titre}
+                    </a>
+                  ) : (
+                    r.titre
+                  )}
+                  {reference && <span className="legende"> — {reference}</span>}
+                  {!fait && (
+                    <>
+                      {" "}— <ACompleter cle={cleRessource(mod.id, r.id)} admin={session?.role === "admin"} texte="à rattacher" />{" "}
+                      <span className="legende">{r.commentaire ?? "document à déposer"}</span>
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

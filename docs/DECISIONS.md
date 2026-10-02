@@ -6754,6 +6754,105 @@ compte faux :
   - Téléphone (390 px) : une ou deux lignes ; 2,0 écrans de haut, comme
     au lot 2. Aucun débord.
 
+## À compléter : les encadrés jaunes se renseignent depuis le site (02/10/2026, demande directe)
+
+**Demande.** « Dans ma partie administration du site, rendre accessible
+l'ajout des données et des références en lien avec les encadrés jaunes du
+site précisant à compléter, afin de pouvoir ajuster et renseigner ces
+éléments directement depuis le site. »
+
+**Inventaire.** Quinze encadrés jaunes attendaient une donnée ou une
+référence :
+- la procédure de référence, en pied de chaque page, sur la page RGPD et
+  sur chaque rapport. Jusqu'ici, seule la variable Render
+  `PROCEDURE_HABILITATION` la portait ;
+- cinq mentions de la page RGPD : responsable du traitement, contact pour
+  exercer ses droits, base légale, hébergement, durée de conservation de
+  référence ;
+- cinq données locales du texte des deux modules rédigés : classes des
+  locaux et régime de pression ; tenue, sas et circulation ; configuration
+  de l'unité ; fréquence de changement des gants ; kit de déversement,
+  déclaration et référent ;
+- quatre documents « à rattacher » des mêmes modules : deux procédures
+  internes, une fiche réflexe, une séquence vidéo.
+
+**Fait.**
+- Réglages › À compléter (`/admin/complements`), réservé à
+  l'administration :
+  - les quinze éléments en quatre groupes, chacun avec l'endroit où il se
+    voit, ce qu'il faut fournir et un champ ;
+  - « Enregistrer » et « Effacer » ; en tête, combien sont renseignés ;
+  - un document à rattacher reçoit sa référence, et au choix un document
+    déposé du module.
+- Renseigné, un élément remplace son encadré partout où il paraît ;
+  effacé, l'encadré revient. Une donnée du texte prend la place exacte de
+  son marqueur, dans la phrase.
+- En session d'administration, chaque encadré jaune mène à son champ. Pour
+  les autres profils, il reste un simple marqueur.
+- Stockage : table `parametres`, une ligne par élément (`complement:…`),
+  avec qui l'a posé et quand ; 500 caractères au plus. Un document choisi
+  doit être un document validé du module.
+- Journal : `complement:renseigne` et `complement:efface`, avec la valeur
+  d'avant et d'après.
+- La procédure renseignée sur le site prime sur `PROCEDURE_HABILITATION`,
+  qui n'est plus qu'un repli.
+- Sur la page d'un module, le document déposé choisi pour un document à
+  rattacher quitte la liste des autres documents : il ne paraît pas deux
+  fois.
+
+**Le rapport garde la procédure de son émission.** Un rapport relisait
+jusqu'ici la procédure à chaque impression : changer la variable Render
+réécrivait les rapports déjà émis. Elle est désormais scellée à l'émission
+(`rapports.procedure_reference`) :
+- vide si aucune n'était en vigueur : le rapport imprime alors
+  [à compléter] ;
+- un rapport émis avant cette version garde l'ancienne lecture, la
+  procédure en vigueur.
+
+**Limite.** Chaque [à préciser] d'un module rédigé est compté dans l'ordre
+de lecture (clé `texte:<module>:<n>`). Si le texte d'un module change dans
+le code, une donnée renseignée peut changer de place : à vérifier dans
+À compléter après chaque modification d'un texte.
+
+**Ce qui reste hors du site.**
+- `MISE_EN_SERVICE` : ce n'est pas un encadré, et la date change la nature
+  de toutes les pièces produites ; elle reste dans Render.
+- La fiche de registre (`docs/RGPD.md`) : un document du dépôt, pas une
+  page du site.
+- Les valeurs saisies vivent en base, pas dans le dépôt public : une
+  référence interne ne s'y publie pas (question 43).
+
+**Inchangé.**
+- Les textes des modules restent dans le code (question 10, choix a) ;
+  seuls leurs marqueurs se renseignent.
+- Les variables Render restent lues, en repli.
+- `docs/A-COMPLETER.md` dit, élément par élément, où chacun se renseigne
+  désormais ; son relevé des données locales est corrigé (cinq, et non
+  deux).
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 473 tests, dont cinq nouveaux
+  (`test/complements.test.ts`) : le catalogue, les documents à rattacher,
+  les données du texte dans l'ordre de lecture et leurs libellés, les
+  valeurs bornées, la préséance site > Render, la procédure scellée du
+  rapport.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 116 étapes, sans erreur de page
+  ni erreur serveur. L'étape nouvelle :
+  - renseigne la procédure, une mention RGPD, une donnée du texte et un
+    document à rattacher, et les retrouve au pied, sur la page RGPD et sur
+    le module ;
+  - vérifie qu'un rapport émis avant garde « procédure [à compléter] » ;
+  - vérifie que la donnée suivante du texte reste un encadré qui mène à son
+    champ ;
+  - refuse la page au tutorat, trouve les gestes au journal, efface, et
+    les encadrés reviennent.
+- Mesures sur la base laissée par le parcours : aucun débord à 1 280 ni à
+  390 px. La page À compléter fait 5,9 écrans de haut sur poste et 8,9 sur
+  téléphone, quinze formulaires compris. Pour l'administration, tous les
+  encadrés de la page RGPD (7) et de la page du module ZAC (5) sont des
+  liens vers leur champ.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

@@ -14,6 +14,7 @@ import { refusEmissionEntrainement } from "@/content/jugement";
 import { IDENTIFIANT_ESSAI, numeroEssai } from "@/lib/essai";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import type { ReponseEmission } from "./types-rapports";
+import { procedureEnVigueur } from "@/lib/complements-db";
 
 /**
  * Émission d'un rapport par l'apprenant. Aucun nom n'entre ici (décision du
@@ -94,6 +95,7 @@ export async function actionEmettreRapport(entree: {
     agentIdentifiant: agent.identifiant,
     roleSession: session?.role ?? "aucun",
     libelleSession: session?.libelle ?? "",
+    procedure: await procedureEnVigueur(),
   });
   await journaliser(
     { role: session?.role ?? "poste", libelle: session?.libelle ?? "sans code" },

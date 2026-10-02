@@ -1,4 +1,6 @@
 import React from "react";
+import { MARQUEUR_TEXTE } from "@/content/complements";
+import { ACompleter } from "./ACompleter";
 
 /**
  * Rendu du corps des modules.
@@ -10,59 +12,65 @@ import React from "react";
  * sans introduire d'injection. Aucun HTML brut n'est interprété.
  */
 
-function enrichir(texte: string, cle: string): React.ReactNode[] {
+/** Rend le marqueur suivant du texte : sa donnée renseignée, ou son encadré. */
+type Marque = (cle: string) => React.ReactNode;
+
+function enrichir(texte: string, cle: string, marque: Marque): React.ReactNode[] {
   const morceaux: React.ReactNode[] = [];
   const motif = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
   let dernier = 0;
   let m: RegExpExecArray | null;
   let i = 0;
+  // Le marqueur [à préciser] est mis en évidence partout, même hors balise code, et toujours dans
+  // l'ordre de lecture : c'est cet ordre qui donne sa clé à chaque donnée locale (02/10/2026).
+  const marques = (t: string): React.ReactNode[] =>
+    t.split(MARQUEUR_TEXTE).flatMap((p, j, tous) => [
+      ...(p ? [p] : []),
+      ...(j < tous.length - 1 ? [marque(`${cle}-ap-${i++}`)] : []),
+    ]);
 
   while ((m = motif.exec(texte)) !== null) {
-    if (m.index > dernier) morceaux.push(texte.slice(dernier, m.index));
+    if (m.index > dernier) morceaux.push(...marques(texte.slice(dernier, m.index)));
     const jeton = m[0];
     const k = `${cle}-${i++}`;
     if (jeton.startsWith("**")) {
-      morceaux.push(<strong key={k}>{jeton.slice(2, -2)}</strong>);
+      morceaux.push(<strong key={k}>{marques(jeton.slice(2, -2))}</strong>);
     } else if (jeton.startsWith("`")) {
       const contenu = jeton.slice(1, -1);
-      morceaux.push(
-        contenu === "[à préciser]" ? (
-          <code key={k} className="a-preciser">
-            {contenu}
-          </code>
-        ) : (
-          <code key={k}>{contenu}</code>
-        ),
-      );
+      morceaux.push(contenu === MARQUEUR_TEXTE ? marque(k) : <code key={k}>{marques(contenu)}</code>);
     } else {
-      morceaux.push(<em key={k}>{jeton.slice(1, -1)}</em>);
+      morceaux.push(<em key={k}>{marques(jeton.slice(1, -1))}</em>);
     }
     dernier = m.index + jeton.length;
   }
-  if (dernier < texte.length) morceaux.push(texte.slice(dernier));
-
-  // Le marqueur [à préciser] est mis en évidence même hors balise code.
-  return morceaux.flatMap((n, idx) => {
-    if (typeof n !== "string") return [n];
-    const parts = n.split("[à préciser]");
-    if (parts.length === 1) return [n];
-    const out: React.ReactNode[] = [];
-    parts.forEach((p, j) => {
-      if (p) out.push(p);
-      if (j < parts.length - 1) {
-        out.push(
-          <code key={`${cle}-ap-${idx}-${j}`} className="a-preciser">
-            [à préciser]
-          </code>,
-        );
-      }
-    });
-    return out;
-  });
+  if (dernier < texte.length) morceaux.push(...marques(texte.slice(dernier)));
+  return morceaux;
 }
 
-export function Corps({ texte }: { texte: string }) {
+/** Une donnée locale du texte : sa clé (Réglages › À compléter) et sa valeur, si elle est renseignée. */
+export interface MarqueurTexte {
+  cle: string;
+  valeur: string | null;
+}
+
+/**
+ * `marqueurs` : les données locales de ce texte, dans l'ordre de lecture ; une
+ * valeur renseignée remplace son encadré, et l'encadré d'une donnée manquante
+ * mène l'administration (`admin`) à son champ. Sans eux, l'encadré seul.
+ */
+export function Corps({ texte, marqueurs, admin }: { texte: string; marqueurs?: MarqueurTexte[]; admin?: boolean }) {
   const blocs = texte.split(/\n{2,}/);
+  let rang = 0;
+  const marque: Marque = (k) => {
+    const d = marqueurs?.[rang++];
+    if (d?.valeur) return <React.Fragment key={k}>{d.valeur}</React.Fragment>;
+    if (d) return <ACompleter key={k} cle={d.cle} admin={admin} texte={MARQUEUR_TEXTE} />;
+    return (
+      <code key={k} className="a-preciser">
+        {MARQUEUR_TEXTE}
+      </code>
+    );
+  };
 
   return (
     <>
@@ -73,7 +81,7 @@ export function Corps({ texte }: { texte: string }) {
           return (
             <ul key={i}>
               {lignes.map((l, j) => (
-                <li key={j}>{enrichir(l.replace(/^\s*-\s+/, ""), `${i}-${j}`)}</li>
+                <li key={j}>{enrichir(l.replace(/^\s*-\s+/, ""), `${i}-${j}`, marque)}</li>
               ))}
             </ul>
           );
@@ -84,7 +92,7 @@ export function Corps({ texte }: { texte: string }) {
             <ol key={i}>
               {lignes.map((l, j) => (
                 <li key={j}>
-                  {enrichir(l.replace(/^\s*\d+\.\s+/, ""), `${i}-${j}`)}
+                  {enrichir(l.replace(/^\s*\d+\.\s+/, ""), `${i}-${j}`, marque)}
                 </li>
               ))}
             </ol>
@@ -94,12 +102,12 @@ export function Corps({ texte }: { texte: string }) {
         if (lignes.every((l) => /^\s*>\s?/.test(l))) {
           return (
             <p key={i} className="point-cle">
-              {enrichir(lignes.map((l) => l.replace(/^\s*>\s?/, "")).join(" "), `${i}`)}
+              {enrichir(lignes.map((l) => l.replace(/^\s*>\s?/, "")).join(" "), `${i}`, marque)}
             </p>
           );
         }
 
-        return <p key={i}>{enrichir(bloc, `${i}`)}</p>;
+        return <p key={i}>{enrichir(bloc, `${i}`, marque)}</p>;
       })}
     </>
   );

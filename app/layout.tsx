@@ -26,7 +26,9 @@ import { comptesAttente } from "@/lib/attente";
 import { etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { dernierEnCours, emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
-import { conservationActive, miseEnService, procedureReference } from "@/lib/config";
+import { conservationActive, miseEnService } from "@/lib/config";
+import { procedureEnVigueur } from "@/lib/complements-db";
+import { ACompleter } from "@/components/ACompleter";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import { actionTerminerEssai } from "@/app/actions-essai";
@@ -75,7 +77,8 @@ export default async function RootLayout({
         emissionsDeLAgent(ratt.agentId).catch(() => []),
       ])
     : [[], []];
-  const procedure = procedureReference();
+  // Renseignée dans Réglages › À compléter, sinon posée dans Render (02/10/2026).
+  const procedure = await procedureEnVigueur();
   const enService = miseEnService();
   // Introduction animée (27/09/2026) : une fois par session de navigation,
   // tant que le cookie de session posé par le composant manque.
@@ -279,6 +282,8 @@ export default async function RootLayout({
                   liens: [
                     { href: "/admin/bareme", libelle: "Barème" },
                     { href: "/admin/signature", libelle: "Signature" },
+                    // Les encadrés jaunes du site, renseignés depuis le site (02/10/2026).
+                    { href: "/admin/complements", libelle: "À compléter" },
                   ],
                 },
               ]
@@ -474,7 +479,7 @@ export default async function RootLayout({
                 ) : null}
                 Un rapport ne vaut pas habilitation&nbsp;: les étapes suivantes se déroulent hors du
                 site. Procédure de référence&nbsp;:{" "}
-                {procedure ? <code>{procedure}</code> : <code className="a-preciser">[à compléter]</code>}
+                {procedure ? <code>{procedure}</code> : <ACompleter cle="procedure" admin={session?.role === "admin"} />}
               </p>
             </div>
           </footer>

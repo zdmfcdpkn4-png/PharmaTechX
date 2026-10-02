@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { composerProgramme, comptesQuestionsBase, getModule, getParcours, getTousModulesAvecDeposes } from "@/content/store";
-import { miseEnService, modeConservation, procedureReference } from "@/lib/config";
+import { miseEnService, modeConservation } from "@/lib/config";
+import { procedureEnVigueur } from "@/lib/complements-db";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { dernierEnCours, rattachement } from "@/lib/progression";
@@ -186,6 +187,8 @@ export default async function Accueil({
         detail: `${questionsRenseignees(enCours.etat)} sur ${enCours.etat.questionIds.length} questions`,
       }
     : null;
+  // Renseignée dans Réglages › À compléter, sinon posée dans Render : le rapport téléchargé la porte.
+  const procedure = await procedureEnVigueur();
 
   return (
     <>
@@ -291,7 +294,7 @@ export default async function Accueil({
           parcoursTitre={programmeOuvert ? `Programme à la carte « ${programmeOuvert.nom} »` : parcours.titre}
           aLaCarte={aLaCarte}
           conservation={conservation}
-          procedure={procedureReference()}
+          procedure={procedure}
           miseEnService={miseEnService()}
           documents={documents}
           filiereInitiale={filiereInitiale}

@@ -3,6 +3,13 @@
 Inventaire des marqueurs `[à compléter]`, `[à préciser]` et `[à vérifier]`
 portés par le site, relevé dans le dépôt le 21/09/2026.
 
+**Depuis le 02/10/2026**, les encadrés jaunes que le site affiche se
+renseignent depuis le site : **Réglages › À compléter** (`/admin/complements`),
+administration seule. Ce sont la procédure (A1), les cinq mentions de la
+page RGPD (A3, A4), les données locales du texte des modules rédigés (B2) et
+leurs documents à rattacher (B3). Renseigné, un élément remplace son encadré
+partout ; effacé, l'encadré revient.
+
 Pour chacun : **où il se voit**, **ce qui le porte**, **ce qu'il faut
 fournir**, **qui décide**. Rien n'y est rempli par une valeur vraisemblable :
 un marqueur affiché vaut mieux qu'un chiffre inventé sur une pièce opposable.
@@ -24,14 +31,16 @@ Trois familles, dans l'ordre de ce qu'elles bloquent :
 | | |
 |---|---|
 | **Où ça se voit** | Pied de page de **tous** les écrans (`app/layout.tsx`), page `/donnees-personnelles`, et **sur chaque rapport** — le rapport imprime littéralement « procédure `[à compléter]` » |
-| **Ce qui le porte** | Variable d'environnement `PROCEDURE_HABILITATION`, lue par `procedureReference()` (`lib/config.ts`) |
+| **Ce qui le porte** | Réglages › À compléter, depuis le 02/10/2026 ; en repli, la variable d'environnement `PROCEDURE_HABILITATION`, lue par `procedureReference()` (`lib/config.ts`) |
 | **À fournir** | Le code et le titre de la procédure dans votre système documentaire, en une chaîne — par exemple `CHD-PR-0000 — Habilitation des préparateurs en pharmacotechnie` |
 | **Qui décide** | Vous, pharmacien responsable |
-| **Où le poser** | Tableau de bord Render, puis redéploiement |
+| **Où le poser** | Réglages › À compléter ; sans base de données, le tableau de bord Render, puis redéploiement |
 
 Tant qu'elle manque, le rapport dit de lui-même qu'il n'est rattaché à aucune
 procédure. C'est voulu (décision du 18/09/2026, question 7, choix b) : un
 document opposable qui ne cite pas la procédure qui l'encadre doit le dire.
+Depuis le 02/10/2026, chaque rapport garde la procédure en vigueur à son
+émission : la renseigner ou la changer ne réécrit pas les rapports déjà émis.
 
 ### A2. Date de mise en service
 
@@ -65,6 +74,10 @@ annoncer.
 La durée d'archivage du dossier d'habilitation fait référence — `[à vérifier]`
 dans votre plan d'archivage.
 
+La phrase de la page RGPD, « durée de référence `[à préciser]` avec le DPO »,
+se renseigne dans Réglages › À compléter. La cible en mois reste dans
+`RAPPORTS_CONSERVATION_MOIS`.
+
 ### A4. Ce que le DPO doit arrêter
 
 Tenu dans `docs/RGPD.md` (§ 2, fiche de registre, et § 4, ce qui reste à
@@ -86,6 +99,9 @@ faire). Les cases de la fiche de registre encore ouvertes :
 
 Ces cases ne sont pas du code : aucune ne se pose dans le site. Elles se
 remplissent dans `docs/RGPD.md`, qui sert de projet de fiche de registre.
+Les cinq mentions que la page RGPD du site affiche se renseignent, elles,
+dans Réglages › À compléter : responsable du traitement, contact pour exercer
+ses droits, base légale, hébergement, durée de référence.
 
 ---
 
@@ -109,12 +125,21 @@ développement : la rédaction peut commencer aujourd'hui.
 Les deux textes existants s'appuient sur le référentiel externe — ANSM, BPP
 2023, BPF annexe 1, ISO 14644 — et laissent les valeurs de l'unité ouvertes.
 Le marqueur est **dans le corps du texte**, mis en évidence à l'écran par
-`components/Corps.tsx`, à deux endroits mesurés :
+`components/Corps.tsx`, à cinq endroits (relevé corrigé le 02/10/2026 : le
+premier relevé n'en comptait que deux) :
 
 | Fichier | Ligne | Phrase |
 |---|---|---|
 | `content/modules/comportement-zac.ts` | 86 | « Classes retenues local par local au CHD Vendée, et régime de pression associé : `[à préciser]`. » |
+| `content/modules/comportement-zac.ts` | 110 | « Tenue exacte, composition des sas et sens de circulation dans l'unité : `[à préciser]`. » |
 | `content/modules/protection-operateur.ts` | 108 | « Configuration de l'unité (type d'enceinte, régime de pression, dispositifs de transfert retenus au CHD Vendée) : `[à préciser]`. » |
+| `content/modules/protection-operateur.ts` | 123 | « Fréquence retenue dans l'unité : `[à préciser]` — la valeur la plus couramment retenue … » |
+| `content/modules/protection-operateur.ts` | 140 | « Emplacement du kit de déversement, circuit de déclaration interne et référent à joindre : `[à préciser]`. » |
+
+Depuis le 02/10/2026, chacune se renseigne dans Réglages › À compléter : la
+valeur prend la place du marqueur, dans la phrase. Les clés suivent l'ordre
+de lecture : après une modification du texte dans le code, vérifier dans
+À compléter que chaque valeur est restée à sa place.
 
 À fournir (question 21 de `QUESTIONS-OUVERTES.md`) : classe ISO de chaque
 local, régime de pression associé, composition et fonctionnement des sas,
@@ -134,6 +159,11 @@ figurent dans la question 22 de `QUESTIONS-OUVERTES.md` comme procédures que
 ou par vous, puis rattachés au module ou au critère concerné. Aucun marqueur
 ne s'affiche tant qu'ils manquent : c'est un manque silencieux, et c'est
 justement pourquoi il est listé ici.
+
+Les quatre documents que la fiche des deux modules rédigés marque « à
+rattacher » (deux procédures internes, une fiche réflexe, une séquence
+vidéo) se renseignent, depuis le 02/10/2026, dans Réglages › À compléter :
+leur référence, et au choix le document déposé dans Documents.
 
 **Ce que les portfolios du 22/09/2026 changent.** Ils portent **85
 références** de documents qualité internes, rattachées ligne à ligne. Mais le

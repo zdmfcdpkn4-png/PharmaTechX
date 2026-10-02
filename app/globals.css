@@ -485,6 +485,12 @@ a.carte-lien:hover .carte {
   white-space: nowrap;
 }
 
+/* Encadré à compléter, pour l'administration : il mène à son champ de Réglages › À compléter (02/10/2026). */
+.a-completer-lien { text-decoration: none; }
+.a-completer-lien:hover .a-preciser,
+.a-completer-lien:focus-visible .a-preciser { border-style: solid; }
+.complement { scroll-margin-top: var(--decalage); }
+
 /* Critères sans module : lignes discrètes, repliées par bloc. */
 .ligne-critere {
   display: flex;
