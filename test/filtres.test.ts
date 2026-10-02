@@ -1,0 +1,165 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  adresseFiltree,
+  compteRetenu,
+  correspond,
+  libellePuce,
+  lireChoix,
+  lireJour,
+  lireTexte,
+  parametresActifs,
+  periode,
+  pucesFiltres,
+  type ChampFiltre,
+} from "../content/filtres";
+import {
+  DOCUMENTS_GENERAUX,
+  SANS_PROGRAMME,
+  codeRetenu,
+  documentRetenu,
+  etapeRapport,
+  lireFiltreCodes,
+  lireFiltreDocuments,
+  lireFiltreModules,
+  lireFiltreRapports,
+  lireFiltreSignalements,
+  moduleDeposeRetenu,
+  rapportRetenu,
+  signalementRetenu,
+  statutDeLEtape,
+} from "../content/filtres-listes";
+
+const ETAT: ChampFiltre = {
+  nom: "etat",
+  libelle: "État",
+  options: [
+    { valeur: "actif", libelle: "Actifs" },
+    { valeur: "revoque", libelle: "Révoqués" },
+  ],
+  valeur: "revoque",
+  minuscule: true,
+};
+const PROFIL: ChampFiltre = { nom: "profil", libelle: "Profil", options: [{ valeur: "tuteur", libelle: "Tutorat" }], valeur: "" };
+
+test("lecture des paramètres : texte resserré et coupé, choix permis, jour valide, période remise dans l'ordre", () => {
+  assert.equal(lireTexte("  poste   isolateur "), "poste isolateur");
+  assert.equal(lireTexte(["a", "b"]), "a", "un paramètre répété : le premier");
+  assert.equal(lireTexte(42), "");
+  assert.equal(lireTexte("x".repeat(300)).length, 100);
+  assert.equal(lireChoix("tuteur", ["poste", "tuteur"]), "tuteur");
+  assert.equal(lireChoix("pharmacien", ["poste", "tuteur"]), "", "valeur inconnue : aucun filtre");
+  assert.equal(lireJour("2026-10-02"), "2026-10-02");
+  assert.equal(lireJour("2026-02-30"), "", "jour impossible");
+  assert.deepEqual(periode("2026-10-02", "2026-09-01"), ["2026-09-01", "2026-10-02"]);
+  assert.deepEqual(periode("", "2026-09-01"), ["", "2026-09-01"]);
+});
+
+test("recherche : chaque mot, sans casse ni accents, dans n'importe quel ordre", () => {
+  assert.ok(correspond("Poste isolateur — Bloc A", "bloc isolateur"));
+  assert.ok(correspond("Réévaluation", "reevaluation"));
+  assert.ok(!correspond("Poste isolateur", "isolateur hotte"));
+  assert.ok(correspond("n'importe quoi", ""), "recherche vide : tout est retenu");
+});
+
+test("puces : une par filtre actif, chacune retire le sien et garde les autres ; libellés", () => {
+  const recherche = { valeur: "bloc A", placeholder: "" };
+  const puces = pucesFiltres("/admin", [["vue", "liste"]], recherche, [PROFIL, ETAT]);
+  assert.deepEqual(
+    puces.map((p) => p.libelle),
+    ["Recherche : « bloc A »", "État : révoqués"],
+  );
+  assert.equal(puces[0].href, "/admin?vue=liste&etat=revoque", "sans la recherche, état et paramètre gardé restent");
+  assert.equal(puces[1].href, "/admin?vue=liste&q=bloc+A");
+  assert.deepEqual(parametresActifs(undefined, [PROFIL, ETAT]), [["etat", "revoque"]]);
+  assert.equal(adresseFiltree("/admin/modules", []), "/admin/modules");
+  assert.equal(libellePuce({ nom: "du", libelle: "Du", type: "jour", valeur: "2026-10-01" }), "Du 01/10/2026");
+  assert.equal(libellePuce({ ...PROFIL, valeur: "tuteur" }), "Profil : Tutorat", "sans minuscule demandée, l'option telle quelle");
+  assert.equal(
+    libellePuce({ nom: "etape", libelle: "Statut", options: [{ valeur: "clos", libelle: "Clos (4)", puce: "Clos" }], valeur: "clos", minuscule: true }),
+    "Statut : clos",
+    "la puce ne reprend pas le compte de l'option",
+  );
+});
+
+test("compte retenu : « n sur N » sous un filtre, accordé au nombre qui précède", () => {
+  assert.equal(compteRetenu(12, 41, ["code", "codes"], true), "12 codes sur 41");
+  assert.equal(compteRetenu(1, 41, ["code", "codes"], true), "1 code sur 41");
+  assert.equal(compteRetenu(0, 41, ["code", "codes"], true), "0 code sur 41");
+  assert.equal(compteRetenu(41, 41, ["code", "codes"], false), "41 codes");
+  assert.equal(compteRetenu(1, 1, ["code", "codes"], false), "1 code");
+});
+
+test("codes d'accès : libellé, profil, état, filière et niveau exacts, programme à la carte ou aucun", () => {
+  const ref = { filieres: ["chimiotherapie", "sterile"], niveaux: ["N1a", "N2"], programmes: [3] };
+  const code = { role: "poste", libelle: "Intérimaire bloc", filiere: "chimiotherapie", niveau: "N1a", programme_id: 3, actif: true };
+  const f = lireFiltreCodes({ q: "interimaire", profil: "poste", etat: "actif", filiere: "chimiotherapie", niveau: "N1a", programme: "3" }, ref);
+  assert.ok(codeRetenu(code, f));
+  assert.ok(!codeRetenu({ ...code, actif: false }, f), "révoqué écarté par « actifs »");
+  assert.ok(!codeRetenu({ ...code, filiere: null }, f), "un code sans filière n'est pas un code de cette filière");
+  assert.ok(!codeRetenu(code, { ...f, programme: SANS_PROGRAMME }));
+  assert.ok(codeRetenu({ ...code, programme_id: null }, { ...f, programme: SANS_PROGRAMME }));
+  assert.equal(lireFiltreCodes({ programme: "99", profil: "pharmacien" }, ref).programme, "", "programme inconnu ignoré");
+});
+
+test("rapports : étape du circuit, statut demandé à la base, verdict après arbitrage", () => {
+  assert.equal(etapeRapport({ statut: "emis", verdictBrut: "indetermine", arbitre: false }), "a_arbitrer");
+  assert.equal(etapeRapport({ statut: "emis", verdictBrut: "indetermine", arbitre: true }), "a_viser_tuteur");
+  assert.equal(etapeRapport({ statut: "emis", verdictBrut: "acquis", arbitre: false }), "a_viser_tuteur");
+  assert.equal(etapeRapport({ statut: "vise_tuteur", verdictBrut: "acquis", arbitre: false }), "a_viser_pharmacien");
+  assert.equal(etapeRapport({ statut: "clos", verdictBrut: "acquis", arbitre: false }), "clos");
+  assert.equal(statutDeLEtape("a_arbitrer"), "emis");
+  assert.equal(statutDeLEtape("a_viser_pharmacien"), "vise_tuteur");
+  assert.equal(statutDeLEtape(""), undefined);
+  const f = lireFiltreRapports({ etape: "a_arbitrer", verdict: "acquis", du: "2026-10-02", au: "2026-09-01", module: "inconnu" }, ["comportement-zac"]);
+  assert.deepEqual([f.du, f.au, f.module], ["2026-09-01", "2026-10-02", ""]);
+  assert.ok(!rapportRetenu({ etape: "a_viser_tuteur", verdict: "acquis" }, f));
+  assert.ok(rapportRetenu({ etape: "a_arbitrer", verdict: "acquis" }, f));
+  assert.ok(!rapportRetenu({ etape: "a_arbitrer", verdict: "non_acquis" }, f));
+});
+
+test("signalements : ouvert ou clos, motif, objet (question ou fiche), module", () => {
+  const s = { statut: "traite", motif: "Ambigu", depot_id: null, module_id: "comportement-zac" };
+  const f = lireFiltreSignalements({ etat: "clos", motif: "Ambigu", objet: "question", module: "comportement-zac" }, ["comportement-zac"]);
+  assert.ok(signalementRetenu(s, f));
+  assert.ok(signalementRetenu({ ...s, statut: "rejete" }, f), "rejeté : clos aussi");
+  assert.ok(!signalementRetenu({ ...s, statut: "ouvert" }, f));
+  assert.ok(!signalementRetenu({ ...s, depot_id: 4 }, f), "une fiche n'est pas une question");
+  assert.equal(lireFiltreSignalements({ motif: "Inventé" }, []).motif, "");
+  assert.equal(lireFiltreSignalements({ motif: "Fichier illisible ou qui ne s'ouvre pas" }, []).motif, "Fichier illisible ou qui ne s'ouvre pas");
+});
+
+test("modules déposés : recherche, statut, bloc ; un tronc commun ou un module sans niveau concerne chaque profil", () => {
+  const ref = { blocs: [1, 5], filieres: ["chimiotherapie", "sterile"], niveaux: ["N1a", "N2"] };
+  const m = {
+    id: "mod-x",
+    titre: "Élimination des déchets cytotoxiques",
+    objectif: "Trier",
+    critere_id: "B5-09",
+    statut: "publie",
+    bloc: 5,
+    filieres: [] as string[],
+    niveaux: ["N2"],
+  };
+  const f = lireFiltreModules({ q: "dechets", statut: "publie", bloc: "5", filiere: "sterile", niveau: "n2" }, ref);
+  assert.equal(f.niveau, "", "le niveau se lit tel que le référentiel l'écrit");
+  assert.ok(moduleDeposeRetenu(m, { ...f, niveau: "N2" }), "tronc commun : retenu pour la filière stérile");
+  assert.ok(!moduleDeposeRetenu(m, { ...f, niveau: "N1a" }), "niveau coché N2 : pas N1a");
+  assert.ok(moduleDeposeRetenu(m, { ...f, q: "B5-09" }), "la recherche lit le critère");
+  assert.ok(!moduleDeposeRetenu({ ...m, filieres: ["chimiotherapie"] }, f));
+  assert.ok(!moduleDeposeRetenu(m, { ...f, bloc: "1" }));
+});
+
+test("documents : nature, rattachement (général ou module), profil du document ou de son module", () => {
+  const ref = { natures: ["procedure-interne", "synthese"], modules: ["comportement-zac"], filieres: ["chimiotherapie"], niveaux: ["N1a"] };
+  const general = { titre: "PHAR-FT160 — Habillage", nature: "procedure-interne", module_id: null, filieres: ["chimiotherapie"], niveaux: [] as string[] };
+  const rattache = { titre: "Fiche ZAC", nature: "synthese", module_id: "comportement-zac", filieres: [] as string[], niveaux: [] as string[] };
+  const profil = (id: string) => (id === "comportement-zac" ? { postes: ["sterile"], niveaux: [] } : undefined);
+  const f = lireFiltreDocuments({ module: DOCUMENTS_GENERAUX, filiere: "chimiotherapie" }, ref);
+  assert.ok(documentRetenu(general, f, profil));
+  assert.ok(!documentRetenu(rattache, f, profil), "rattaché : pas un document général");
+  assert.ok(!documentRetenu(rattache, { ...f, module: "comportement-zac" }, profil), "son module n'est pas posé en chimiothérapie");
+  assert.ok(documentRetenu(rattache, { ...f, module: "comportement-zac", filiere: "" }, profil));
+  assert.ok(documentRetenu(general, { ...f, q: "ft160 habillage" }, profil));
+  assert.equal(lireFiltreDocuments({ nature: "inconnue" }, ref).nature, "");
+});

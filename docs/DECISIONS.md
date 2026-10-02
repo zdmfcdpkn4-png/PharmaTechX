@@ -6471,6 +6471,92 @@ pointillé ensuite.
     apprenant : 32 mots, 1,0 et 1,4 écran ;
   - aucune page ne déborde à 390 px.
 
+## La barre de filtres sur cinq listes (02/10/2026, question 91, choix a, lot 3a)
+
+**Demande.** « À », valant « a » : la barre de la banque sur les autres
+listes, écran par écran, dans l'ordre de la proposition. Ce premier volet :
+Codes d'accès, Rapports, Signalements, Modules, Documents.
+
+**Fait — la barre commune.** Celle de la banque (question 89), reprise
+telle quelle et partagée (`components/BarreFiltres.tsx`) :
+- une recherche, deux ou trois listes en vue, les autres sous « Plus de
+  filtres », qui dit combien y sont actifs ;
+- « Filtrer », et le nombre de lignes retenues : « 3 codes sur 9 » sous un
+  filtre, « 9 codes » sans ;
+- une puce par filtre actif, qui le retire en gardant les autres ; « Tout
+  effacer » dès deux ;
+- formulaire en GET : les filtres restent dans l'adresse, le retour arrière
+  et un lien envoyé les retrouvent.
+- Lecture des paramètres et compte dans `content/filtres.ts` ; ce que
+  retient chaque liste dans `content/filtres-listes.ts` ; testés à part
+  (`test/filtres.test.ts`). Une valeur inconnue dans l'adresse est ignorée,
+  pas une erreur.
+- Filière et niveau suivent la règle de la banque : une liste vide ne
+  limite rien. Un module du tronc commun, ou sans niveau coché, concerne
+  donc chaque filière et chaque niveau.
+
+**Fait — écran par écran.**
+- Codes d'accès : recherche dans le libellé ; Profil, État (actifs,
+  révoqués) ; plus : filière, niveau, programme à la carte (ou aucun). La
+  proposition annonçait aussi l'identifiant d'agent : un code n'en porte
+  pas — il ouvre un profil, pas un compte —, la recherche lit donc le seul
+  libellé. Filière et niveau d'un code se retiennent exactement : un code
+  sans filière n'est pas celui d'une filière.
+- Rapports : recherche d'un numéro ou d'un identifiant d'agent ; Statut —
+  à arbitrer, à viser par le tuteur, à viser par le pharmacien, clos,
+  annulés —, chacun avec son nombre ; Module (ceux qui ont des rapports, avec
+  le leur) ; plus : période (du, au, en jours de Paris), verdict retenu. La
+  barre remplace les boutons de statut.
+  - « À arbitrer » : émis, score dans la bande de garde, pas encore
+    arbitré ; « à viser par le tuteur » : les autres émis.
+  - Recherche, module, période et statut se filtrent dans la base, avant
+    le plafond des 300 plus récents ; l'étape fine et le verdict se lisent
+    ensuite sur la décision enregistrée. Quand la lecture atteint le
+    plafond, la barre le dit et renvoie au registre, qui les donne tous.
+- Signalements : État (ouverts ; clos, traités ou rejetés), Motif (ceux des
+  deux formulaires, questions et fiches), Objet (question, fiche) ; plus :
+  module. Pas de recherche, comme proposé. La lecture garde son plafond de
+  200, les ouverts d'abord, et la barre le dit quand il est atteint.
+- Modules : recherche dans le titre, l'objectif, le critère et
+  l'identifiant ; Statut, Bloc (celui du critère de la fiche prime) ; plus :
+  filière, niveau.
+- Documents : recherche dans le titre ; Nature, Rattachement (documents
+  généraux, ou un module) ; plus : filière, niveau — le profil d'un document
+  général est le sien, celui d'un document rattaché, son module. Le bouton
+  « Documents » d'un module ouvre désormais la liste filtrée sur lui ; le
+  dépôt reste prérempli comme avant.
+- Une liste sans aucune ligne n'a pas de barre ; une liste vidée par les
+  filtres le dit (« Aucun module ne correspond à ces filtres »).
+
+**Inchangé.** Les adresses ; les formulaires de création et de dépôt,
+au-dessus des listes ; la purge des rapports ; la banque et le journal, qui
+ont déjà leur barre.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 460 tests, dont neuf pour la barre et les cinq
+  listes (`test/filtres.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 113 étapes, sans erreur de page
+  ni erreur serveur. Une étape nouvelle contrôle les cinq listes : la liste
+  compte ce que dit la barre, chaque étape des rapports retient le nombre
+  que son option annonce, une puce retire son filtre, « Tout effacer »
+  ramène à l'adresse nue.
+  - Constaté en l'écrivant : les deux rapports émis par le parcours, sur
+    trois questions, tombent dans la bande de garde ; ils sont « à
+    arbitrer », pas « à viser par le tuteur ». Le contrôle lit donc
+    l'étape à l'écran au lieu de la supposer.
+- Mesures sur la base laissée par le parcours, à 1 280 et 390 px :
+  - codes : 4 ; profil « poste » et état « actifs » : 1 code sur 4 ;
+  - rapports : 2, tous deux à arbitrer ; « à viser par le tuteur » : 0
+    rapport sur 2 ;
+  - signalements : 4 ; clos et portant sur une question : 3 sur 4 ;
+  - modules déposés : 5 ; publiés : 4 sur 5 ; documents : 4 ; généraux :
+    1 sur 4 ;
+  - la barre fait 225 px de haut sur poste (271 avec deux puces) ; sur
+    téléphone, de 277 à 402 px, jusqu'à la moitié d'un écran, comme celle
+    de la banque dont elle est la copie ;
+  - aucune page ne déborde à 390 px, « Plus de filtres » ouvert compris.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

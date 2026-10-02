@@ -794,6 +794,9 @@ export async function enregistrerSignalementFiche(s: {
     VALUES (NULL, ${s.depotId}, ${s.moduleId}, ${s.motif}, ${s.note})`;
 }
 
+/** Au plus autant de signalements à l'écran, les ouverts d'abord (question 91, lot 3 : la barre le dit). */
+export const PLAFOND_SIGNALEMENTS = 200;
+
 export async function listerSignalements(): Promise<LigneSignalement[]> {
   const r = await sql<LigneSignalement>`
     SELECT s.id, s.question_id, s.depot_id, s.module_id, s.motif, s.note, s.statut, s.cree_le::text,
@@ -802,7 +805,7 @@ export async function listerSignalements(): Promise<LigneSignalement[]> {
     FROM signalements s
       LEFT JOIN questions q ON q.id = s.question_id
       LEFT JOIN depots d ON d.id = s.depot_id
-    ORDER BY (s.statut = 'ouvert') DESC, s.cree_le DESC LIMIT 200`;
+    ORDER BY (s.statut = 'ouvert') DESC, s.cree_le DESC LIMIT ${PLAFOND_SIGNALEMENTS}`;
   return r.rows;
 }
 

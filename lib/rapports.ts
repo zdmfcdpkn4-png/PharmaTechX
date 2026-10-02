@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import type { PoolClient, QueryResultRow } from "pg";
 import { requete, sql, sqlSur, transaction, type Role } from "./db";
 import { formaterNumeroRapport } from "./schema";
+import { motifCible } from "./journal-filtre";
 import { decider, verdictFinal, type Decision, type Verdict } from "./decision";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 
@@ -186,13 +187,39 @@ export async function emettreRapport(e: {
 
 // ───────────────────────────────────────────────────────────────── lecture
 
-export async function listerRapports(filtre: { statut?: StatutRapport } = {}): Promise<LigneRapport[]> {
-  const statut = filtre.statut ?? null;
+/** Au plus autant de rapports à l'écran, les plus récents ; le registre, lui, les donne tous. */
+export const PLAFOND_RAPPORTS = 300;
+
+export interface FiltreListeRapports {
+  statut?: StatutRapport;
+  moduleId?: string;
+  /** Partie du numéro ou de l'identifiant d'agent, sans casse (question 91, lot 3). */
+  q?: string;
+  /** Premier et dernier jour d'émission, inclus, à l'heure de Paris. */
+  du?: string;
+  au?: string;
+}
+
+export async function listerRapports(filtre: FiltreListeRapports = {}): Promise<LigneRapport[]> {
+  // `%`, `_` et `\` cherchés valent pour eux-mêmes, comme la cible du journal.
+  const motif = filtre.q ? motifCible(filtre.q) : null;
   const r = await direct<LigneRapport>(
     `SELECT ${COLONNES_RAPPORT} FROM rapports
-     WHERE ($1::text IS NULL OR statut = $1) ORDER BY emis_le DESC LIMIT 300`,
-    [statut],
+     WHERE ($1::text IS NULL OR statut = $1)
+       AND ($2::text IS NULL OR module_id = $2)
+       AND ($3::text IS NULL OR numero ILIKE $3 OR agent_identifiant ILIKE $3)
+       AND ($4::date IS NULL OR emis_le >= ($4::date::timestamp AT TIME ZONE 'Europe/Paris'))
+       AND ($5::date IS NULL OR emis_le < (($5::date + 1)::timestamp AT TIME ZONE 'Europe/Paris'))
+     ORDER BY emis_le DESC LIMIT ${PLAFOND_RAPPORTS}`,
+    [filtre.statut ?? null, filtre.moduleId ?? null, motif, filtre.du ?? null, filtre.au ?? null],
   );
+  return r.rows;
+}
+
+/** Les modules qui ont des rapports, avec leur nombre : la liste du filtre « Module » (question 91, lot 3). */
+export async function modulesDesRapports(): Promise<{ module_id: string; titre: string; n: number }[]> {
+  const r = await sql<{ module_id: string; titre: string; n: number }>`
+    SELECT module_id, MAX(module_titre) AS titre, COUNT(*)::int AS n FROM rapports GROUP BY module_id ORDER BY 2`;
   return r.rows;
 }
 

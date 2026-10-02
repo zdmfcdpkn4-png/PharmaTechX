@@ -6,11 +6,23 @@ import { mentionDePreuve } from "@/lib/mention";
 import { LIBELLES_COURTS_VERDICT } from "@/lib/decision";
 import {
   LIBELLES_STATUT_RAPPORT,
+  PLAFOND_RAPPORTS,
   compterPurgeables,
   comptesRapports,
   listerRapports,
-  type StatutRapport,
+  modulesDesRapports,
 } from "@/lib/rapports";
+import { rapportsEnAttente, SANS_FILTRE } from "@/lib/pilotage-db";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import {
+  ETAPES_RAPPORT,
+  VERDICTS_RAPPORT,
+  etapeRapport,
+  lireFiltreRapports,
+  rapportRetenu,
+  statutDeLEtape,
+  type EtapeRapport,
+} from "@/content/filtres-listes";
 import { decisionEnregistree } from "@/lib/registre";
 import { actionPurgerAvant } from "./actions";
 import { getTousModulesAvecDeposes } from "@/content/store";
@@ -18,8 +30,6 @@ import { moduleOuvrable } from "../questions/commun";
 import { LienModule } from "@/components/LienModule";
 
 export const dynamic = "force-dynamic";
-
-const STATUTS: StatutRapport[] = ["emis", "vise_tuteur", "clos", "annule"];
 
 const MESSAGES: Record<string, string> = {
   date: "Indiquez une date valide (AAAA-MM-JJ).",
@@ -29,7 +39,8 @@ const MESSAGES: Record<string, string> = {
 export default async function Rapports({
   searchParams,
 }: {
-  searchParams: Promise<{ statut?: string; ok?: string; n?: string; erreur?: string; avant?: string }>;
+  /** Question 91 (lot 3) : recherche, étape, module, période et verdict, en plus de la purge (`avant`). */
+  searchParams: Promise<{ ok?: string; n?: string; erreur?: string; avant?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   if (!conservationActive()) {
@@ -48,13 +59,38 @@ export default async function Rapports({
       </>
     );
   }
-  const statut = STATUTS.includes(p.statut as StatutRapport) ? (p.statut as StatutRapport) : undefined;
-  const [rapports, comptes, session, modules] = await Promise.all([
-    listerRapports({ statut }),
+  const modulesRapports = await modulesDesRapports();
+  const filtre = lireFiltreRapports(p, modulesRapports.map((m) => m.module_id));
+  const [lus, comptes, session, modules, enAttente] = await Promise.all([
+    listerRapports({
+      statut: statutDeLEtape(filtre.etape),
+      moduleId: filtre.module || undefined,
+      q: filtre.q || undefined,
+      du: filtre.du || undefined,
+      au: filtre.au || undefined,
+    }),
     comptesRapports(),
     getSession(),
     getTousModulesAvecDeposes(),
+    rapportsEnAttente(SANS_FILTRE).catch(() => []),
   ]);
+  // L'étape fine d'un rapport émis et le verdict retenu se lisent sur la décision enregistrée.
+  const rapports = lus
+    .map((r) => {
+      const { decision, verdictFinal } = decisionEnregistree(r);
+      return { r, decision, verdictFinal, etape: etapeRapport({ statut: r.statut, verdictBrut: decision.verdictBrut, arbitre: Boolean(r.arbitrage) }) };
+    })
+    .filter((x) => rapportRetenu({ etape: x.etape, verdict: x.verdictFinal }, filtre));
+  const total = comptes.emis + comptes.vise_tuteur + comptes.clos + comptes.annule;
+  // Combien à chaque étape, comme le disaient les boutons d'avant.
+  const aArbitrer = enAttente.filter((r) => r.statut === "emis" && r.verdict_brut === "indetermine" && !r.arbitre).length;
+  const parEtape: Record<EtapeRapport, number> = {
+    a_arbitrer: aArbitrer,
+    a_viser_tuteur: comptes.emis - aArbitrer,
+    a_viser_pharmacien: comptes.vise_tuteur,
+    clos: comptes.clos,
+    annule: comptes.annule,
+  };
   const enService = miseEnService();
   const avant = p.avant && /^\d{4}-\d{2}-\d{2}$/.test(p.avant) ? p.avant : "";
   const purgeables = avant ? await compterPurgeables(new Date(`${avant}T00:00:00+02:00`)) : null;
@@ -82,16 +118,42 @@ export default async function Rapports({
         <p className={`encart ${p.ok ? "encart--ok" : "encart--attention"}`} role="status">{message}</p>
       )}
 
-      <nav className="nav-sections" aria-label="Filtre par statut" style={{ marginLeft: 0 }}>
-        <Link href="/admin/rapports" className={`bouton bouton--compact ${statut ? "bouton--discret" : ""}`}>
-          Tous
-        </Link>
-        {STATUTS.map((s) => (
-          <Link key={s} href={`/admin/rapports?statut=${s}`} className={`bouton bouton--compact ${statut === s ? "" : "bouton--discret"}`}>
-            {LIBELLES_STATUT_RAPPORT[s].split(" — ")[0]} ({comptes[s]})
-          </Link>
-        ))}
-      </nav>
+      {/* La barre de la banque (question 91, choix a, lot 3) : elle remplace les boutons de statut. */}
+      <BarreFiltres
+        adresse="/admin/rapports"
+        recherche={{ valeur: filtre.q, placeholder: "Numéro ou identifiant d'agent" }}
+        champs={[
+          {
+            nom: "etape",
+            libelle: "Statut",
+            options: ETAPES_RAPPORT.map((e) => ({ valeur: e.valeur, libelle: `${e.libelle} (${parEtape[e.valeur]})`, puce: e.libelle })),
+            valeur: filtre.etape,
+            minuscule: true,
+          },
+          {
+            nom: "module",
+            libelle: "Module",
+            options: modulesRapports.map((m) => ({ valeur: m.module_id, libelle: `${m.titre.slice(0, 60)} (${m.n})`, puce: m.titre.slice(0, 60) })),
+            valeur: filtre.module,
+            large: true,
+          },
+        ]}
+        plus={[
+          { nom: "du", libelle: "Du", type: "jour", valeur: filtre.du },
+          { nom: "au", libelle: "Au", type: "jour", valeur: filtre.au },
+          {
+            nom: "verdict",
+            libelle: "Verdict",
+            options: VERDICTS_RAPPORT.map((v) => ({ valeur: v, libelle: LIBELLES_COURTS_VERDICT[v].charAt(0).toUpperCase() + LIBELLES_COURTS_VERDICT[v].slice(1) })),
+            valeur: filtre.verdict,
+            minuscule: true,
+          },
+        ]}
+        retenus={rapports.length}
+        total={total}
+        unite={["rapport", "rapports"]}
+        plafond={lus.length === PLAFOND_RAPPORTS ? `(lus parmi les ${PLAFOND_RAPPORTS} plus récents ; le registre les donne tous)` : undefined}
+      />
 
       <table className="tableau">
         <thead>
@@ -106,8 +168,7 @@ export default async function Rapports({
           </tr>
         </thead>
         <tbody>
-          {rapports.map((r) => {
-            const { decision, verdictFinal } = decisionEnregistree(r);
+          {rapports.map(({ r, decision, verdictFinal }) => {
             return (
               <tr key={r.id}>
                 <td><Link href={`/admin/rapports/${r.id}`}>{r.numero}</Link></td>
@@ -145,7 +206,7 @@ export default async function Rapports({
             );
           })}
           {rapports.length === 0 && (
-            <tr><td colSpan={7} className="legende">Aucun rapport.</td></tr>
+            <tr><td colSpan={7} className="legende">{total === 0 ? "Aucun rapport." : "Aucun rapport ne correspond à ces filtres."}</td></tr>
           )}
         </tbody>
       </table>

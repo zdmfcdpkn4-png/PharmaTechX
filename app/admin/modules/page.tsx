@@ -3,7 +3,11 @@ import { badgeEffectif } from "@/content/badges";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { lireBareme } from "@/lib/bareme-db";
-import { STATUTS_MODULE, listerModulesDeposes } from "@/content/modules-db";
+import { STATUTS_MODULE, listerModulesDeposes, versModule } from "@/content/modules-db";
+import { listeBlocs } from "@/content/blocs-db";
+import { getReferentiel } from "@/content/referentiel-db";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { STATUTS_FILTRE_MODULE, lireFiltreModules, moduleDeposeRetenu } from "@/content/filtres-listes";
 import { FormulaireModule } from "./formulaire";
 import { actionEnregistrerModule, actionStatutModule, actionSupprimerModule } from "./actions";
 
@@ -30,11 +34,32 @@ const ERREURS: Record<string, string> = {
 export default async function Modules({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string; message?: string }>;
+  /** Question 91 (lot 3) : recherche, statut, bloc, filière, niveau. */
+  searchParams: Promise<{ ok?: string; erreur?: string; message?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
-  const [deposes, bareme] = await Promise.all([listerModulesDeposes(), lireBareme()]);
+  const [deposes, bareme, blocs, { filieres, niveaux }] = await Promise.all([
+    listerModulesDeposes(),
+    lireBareme(),
+    listeBlocs(),
+    getReferentiel(),
+  ]);
+  // Filtres de la liste (question 91, choix a, lot 3). Bloc et profil lus comme le programme les lit : le
+  // bloc d'un critère de la fiche prime, et une filière ou un niveau absents ne limitent rien.
+  const filieresPostes = filieres.filter((f) => f.id !== "socle");
+  const filtre = lireFiltreModules(p, {
+    blocs: blocs.map((b) => b.numero),
+    filieres: filieresPostes.map((f) => f.id),
+    niveaux: niveaux.map((n) => String(n.code)),
+  });
+  const retenus = deposes.filter((m) => {
+    const v = versModule(m);
+    return moduleDeposeRetenu(
+      { ...m, bloc: typeof v.bloc === "number" ? v.bloc : null, filieres: v.postes, niveaux: v.niveaux },
+      filtre,
+    );
+  });
 
   return (
     <>
@@ -60,8 +85,49 @@ export default async function Modules({
         <span className="compte">{deposes.length} module(s)</span>
       </div>
       {deposes.length === 0 && <p className="encart">Aucun module déposé. Créez-en un ci-dessous.</p>}
+      {deposes.length > 0 && (
+        <BarreFiltres
+          adresse="/admin/modules"
+          recherche={{ valeur: filtre.q, placeholder: "Titre, objectif ou critère" }}
+          champs={[
+            {
+              nom: "statut",
+              libelle: "Statut",
+              options: STATUTS_FILTRE_MODULE.map((x) => ({ valeur: x, libelle: STATUTS_MODULE[x] })),
+              valeur: filtre.statut,
+              minuscule: true,
+            },
+            {
+              nom: "bloc",
+              libelle: "Bloc",
+              options: blocs.map((b) => ({ valeur: String(b.numero), libelle: `${b.numero} — ${b.titre.slice(0, 50)}`, puce: String(b.numero) })),
+              valeur: filtre.bloc,
+              large: true,
+            },
+          ]}
+          plus={[
+            {
+              nom: "filiere",
+              libelle: "Filière",
+              tous: "Toutes",
+              options: filieresPostes.map((f) => ({ valeur: f.id, libelle: f.libelle })),
+              valeur: filtre.filiere,
+            },
+            {
+              nom: "niveau",
+              libelle: "Niveau",
+              options: niveaux.map((n) => ({ valeur: String(n.code), libelle: n.libelle })),
+              valeur: filtre.niveau,
+            },
+          ]}
+          retenus={retenus.length}
+          total={deposes.length}
+          unite={["module", "modules"]}
+        />
+      )}
       <ul className="liste-nue">
-        {deposes.map((m) => (
+        {deposes.length > 0 && retenus.length === 0 && <li className="legende">Aucun module ne correspond à ces filtres.</li>}
+        {retenus.map((m) => (
           <li key={m.id} className="carte">
             <div className="etape-tete">
               <span

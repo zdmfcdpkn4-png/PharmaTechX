@@ -8,6 +8,8 @@ import { NATURES_DOCUMENT, libelleNature } from "@/content/types";
 import { actionDeposer, actionSupprimerDepot } from "@/app/actions";
 import { etiquetteModule, moduleOuvrable, titreModule } from "../questions/commun";
 import { LienModule } from "@/components/LienModule";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { DOCUMENTS_GENERAUX, documentRetenu, lireFiltreDocuments } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +26,26 @@ const MESSAGES: Record<string, string> = {
 export default async function Documents({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string; ok?: string; module?: string }>;
+  /**
+   * `module` : celui d'un module (bouton « Documents » de l'écran Modules) préremplit le dépôt et filtre la
+   * liste ; `general`, les documents généraux. Question 91 (lot 3) : recherche, nature, filière, niveau.
+   */
+  searchParams: Promise<{ erreur?: string; ok?: string; module?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   const { filieres, niveaux } = await getReferentiel();
   const [depots, modules] = await Promise.all([listerDepots(), getTousModulesAvecDeposes()]);
   const moduleInitial = modules.some((m) => m.id === p.module) ? p.module : "";
+  // Filtres de la liste (question 91, choix a, lot 3).
+  const filieresPostes = filieres.filter((f) => f.id !== "socle");
+  const filtre = lireFiltreDocuments(p, {
+    natures: Object.keys(NATURES_DOCUMENT),
+    modules: modules.map((m) => m.id),
+    filieres: filieresPostes.map((f) => f.id),
+    niveaux: niveaux.map((n) => String(n.code)),
+  });
+  const parId = new Map(modules.map((m) => [m.id, m]));
+  const retenus = depots.filter((d) => documentRetenu(d, filtre, (id) => parId.get(id)));
 
   return (
     <>
@@ -130,8 +146,54 @@ export default async function Documents({
         <h2>Documents déposés</h2>
         <span className="compte">{depots.length} document(s)</span>
       </div>
+      {depots.length > 0 && (
+        <BarreFiltres
+          adresse="/admin/documents"
+          recherche={{ valeur: filtre.q, placeholder: "Rechercher un titre" }}
+          champs={[
+            {
+              nom: "nature",
+              libelle: "Nature",
+              options: (Object.keys(NATURES_DOCUMENT) as (keyof typeof NATURES_DOCUMENT)[]).map((n) => ({
+                valeur: n,
+                libelle: NATURES_DOCUMENT[n],
+              })),
+              valeur: filtre.nature,
+              minuscule: true,
+            },
+            {
+              nom: "module",
+              libelle: "Rattachement",
+              options: [
+                { valeur: DOCUMENTS_GENERAUX, libelle: "Documents généraux (proposés par profil)", puce: "documents généraux" },
+                ...modules.map((m) => ({ valeur: m.id, libelle: `${etiquetteModule(m)} — ${m.titre.slice(0, 60)}`, puce: m.titre.slice(0, 60) })),
+              ],
+              valeur: filtre.module,
+              large: true,
+            },
+          ]}
+          plus={[
+            {
+              nom: "filiere",
+              libelle: "Filière",
+              tous: "Toutes",
+              options: filieresPostes.map((f) => ({ valeur: f.id, libelle: f.libelle })),
+              valeur: filtre.filiere,
+            },
+            {
+              nom: "niveau",
+              libelle: "Niveau",
+              options: niveaux.map((n) => ({ valeur: String(n.code), libelle: n.libelle })),
+              valeur: filtre.niveau,
+            },
+          ]}
+          retenus={retenus.length}
+          total={depots.length}
+          unite={["document", "documents"]}
+        />
+      )}
       <ul className="liste-nue">
-        {depots.map((d) => (
+        {retenus.map((d) => (
           <li key={d.id} className="carte">
             <span className="etiquette etiquette--neutre">{libelleNature(d.nature)}</span>{" "}
             {d.nature === "synthese" && (
@@ -177,6 +239,7 @@ export default async function Documents({
           </li>
         ))}
         {depots.length === 0 && <li className="legende">Aucun document déposé.</li>}
+        {depots.length > 0 && retenus.length === 0 && <li className="legende">Aucun document ne correspond à ces filtres.</li>}
       </ul>
     </>
   );

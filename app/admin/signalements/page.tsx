@@ -1,11 +1,19 @@
 import Link from "next/link";
-import { listerSignalements } from "@/content/banque-db";
+import { PLAFOND_SIGNALEMENTS, listerSignalements } from "@/content/banque-db";
 import { LIBELLES_STATUT_SIGNALEMENT } from "@/content/signalements";
 import { getModule, getTousModulesAvecDeposes } from "@/content/store";
 import { banqueDuModule } from "@/content/types";
 import { actionRejeterSignalement, actionTraiterSignalement } from "../questions/actions";
 import { moduleOuvrable, titreModule } from "../questions/commun";
 import { LienModule } from "@/components/LienModule";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import {
+  ETATS_SIGNALEMENT,
+  MOTIFS_FILTRE,
+  OBJETS_SIGNALEMENT,
+  lireFiltreSignalements,
+  signalementRetenu,
+} from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +27,19 @@ function enonceDuCode(moduleId: string, questionId: string): string | null {
   return m ? (banqueDuModule(m).find((q) => q.id === questionId)?.enonce ?? null) : null;
 }
 
-export default async function Signalements() {
-  const [signalements, modules] = await Promise.all([listerSignalements(), getTousModulesAvecDeposes()]);
+export default async function Signalements({
+  searchParams,
+}: {
+  /** Question 91 (lot 3) : état, motif, objet, module. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [lus, modules, p] = await Promise.all([listerSignalements(), getTousModulesAvecDeposes(), searchParams]);
+  // Les modules cités par un signalement : la liste du filtre « Module ».
+  const modulesCites = [...new Set(lus.map((s) => s.module_id))]
+    .map((id) => ({ id, titre: titreModule(modules, id) }))
+    .sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  const filtre = lireFiltreSignalements(p, modulesCites.map((m) => m.id));
+  const signalements = lus.filter((s) => signalementRetenu(s, filtre));
   const duCode = new Map(
     signalements.map((s) => [s.id, s.enonce || !s.question_id ? null : enonceDuCode(s.module_id, s.question_id)]),
   );
@@ -30,6 +49,30 @@ export default async function Signalements() {
         <h1>Signalements</h1>
         <p>Les remarques des apprenants sur une question ou une fiche de synthèse. Corrigez, puis closez le signalement.</p>
       </section>
+      {/* La barre de la banque (question 91, choix a, lot 3). */}
+      {lus.length > 0 && (
+        <BarreFiltres
+          adresse="/admin/signalements"
+          champs={[
+            { nom: "etat", libelle: "État", options: ETATS_SIGNALEMENT, valeur: filtre.etat, minuscule: true },
+            { nom: "motif", libelle: "Motif", options: MOTIFS_FILTRE.map((m) => ({ valeur: m, libelle: m })), valeur: filtre.motif, minuscule: true },
+            { nom: "objet", libelle: "Objet", options: OBJETS_SIGNALEMENT, valeur: filtre.objet, minuscule: true },
+          ]}
+          plus={[
+            {
+              nom: "module",
+              libelle: "Module",
+              options: modulesCites.map((m) => ({ valeur: m.id, libelle: m.titre.slice(0, 70) })),
+              valeur: filtre.module,
+              large: true,
+            },
+          ]}
+          retenus={signalements.length}
+          total={lus.length}
+          unite={["signalement", "signalements"]}
+          plafond={lus.length === PLAFOND_SIGNALEMENTS ? `(lus parmi les ${PLAFOND_SIGNALEMENTS} premiers, les ouverts d'abord)` : undefined}
+        />
+      )}
       <ul className="liste-nue">
         {signalements.map((s) => (
           <li key={s.id} className="carte">
@@ -94,7 +137,9 @@ export default async function Signalements() {
             )}
           </li>
         ))}
-        {signalements.length === 0 && <li className="legende">Aucun signalement.</li>}
+        {signalements.length === 0 && (
+          <li className="legende">{lus.length === 0 ? "Aucun signalement." : "Aucun signalement ne correspond à ces filtres."}</li>
+        )}
       </ul>
     </>
   );

@@ -5414,6 +5414,89 @@ Source : Procédure statistiques — section 5`;
   assert.equal(await page.locator("#actions button:has-text('Supprimer cette action')").count(), 0, "tutorat : aucune suppression");
   ok("statistiques de réussite : sept essais de cinq agents (émis et conservé comptés une fois, rapport seul compté) ; classement, fiche, banque, page du module, Pilotage et tableurs concordent ; premier essai 40 % (IC 12–77), final 80 % ; question très difficile, piège qui accroche, mauvaises réponses que personne ne choisit ; action consignée, comparée, supprimée par l'administration seule ; journalisé");
 
+  // 14d septies. la barre de la banque sur cinq autres listes (question 91, choix a, lot 3) : recherche, listes,
+  //              « Plus de filtres », compte retenu, une puce par filtre, « Tout effacer » ; les filtres restent
+  //              dans l'adresse. Sous le tutorat, connecté à l'étape précédente.
+  const compteFiltres = async () => {
+    const t = (await page.locator("form.filtres .filtres-compte").innerText()).trim();
+    const m = /^(\d+) \S+ sur (\d+)/.exec(t);
+    assert.ok(m, "compte « n sur N » sous un filtre — " + t);
+    return { retenus: Number(m[1]), total: Number(m[2]) };
+  };
+  const premieresEtiquettes = (items) => items.evaluateAll((l) => l.map((li) => li.querySelector(".etiquette")?.textContent?.trim() ?? ""));
+  // Codes d'accès : profil, puis état ; deux puces, « Tout effacer ».
+  await page.goto(BASE + "/admin?profil=tuteur");
+  let compte = await compteFiltres();
+  assert.equal(await page.locator("li.carte").count(), compte.retenus, "codes : la liste compte ce que dit la barre");
+  assert.ok(compte.retenus >= 1 && compte.retenus < compte.total, "codes : le filtre retient une partie");
+  assert.ok((await premieresEtiquettes(page.locator("li.carte"))).every((e) => e === "tuteur"), "codes : tutorat seulement");
+  await page.goto(BASE + "/admin?profil=tuteur&etat=actif");
+  assert.equal(await page.locator("form.filtres .puce").count(), 2, "codes : une puce par filtre");
+  await page.locator("form.filtres .puce", { hasText: "État : actifs" }).click();
+  await page.waitForURL((u) => new URL(u).search === "?profil=tuteur");
+  await page.goto(BASE + "/admin?profil=tuteur&etat=actif");
+  await page.click("form.filtres a.puces-effacer");
+  await page.waitForURL((u) => new URL(u).pathname === "/admin" && new URL(u).search === "");
+  assert.match((await page.locator("form.filtres .filtres-compte").innerText()).trim(), /^\d+ codes?$/, "codes : sans filtre, le total seul");
+  // Rapports : la première étape qui en compte, puis la recherche d'un identifiant d'agent. Les deux rapports
+  // émis à l'étape précédente, sur trois questions, peuvent attendre un arbitrage : l'étape se lit à l'écran.
+  await page.goto(BASE + "/admin/rapports");
+  const etapesRapport = await page.locator("form.filtres select[name=etape] option").evaluateAll((os) =>
+    os.map((o) => ({ valeur: o.value, n: Number((/\((\d+)\)$/.exec(o.textContent) ?? [0, 0])[1]) })).filter((o) => o.valeur && o.n > 0),
+  );
+  assert.ok(etapesRapport.length > 0, "rapports : au moins une étape en compte");
+  const lignesRapports = page.locator("table.tableau tbody tr:has(a[href^='/admin/rapports/'])");
+  const statutAttendu = { a_arbitrer: /émis/i, a_viser_tuteur: /émis/i, a_viser_pharmacien: /visé par le tuteur/i, clos: /clos/i, annule: /annulé/i };
+  for (const etape of etapesRapport) {
+    await page.goto(BASE + "/admin/rapports?etape=" + etape.valeur);
+    compte = await compteFiltres();
+    assert.equal(compte.retenus, etape.n, `rapports : « ${etape.valeur} » retient ce qu'annonce l'option`);
+    assert.equal(await lignesRapports.count(), compte.retenus, "rapports : la liste compte ce que dit la barre");
+    assert.ok(
+      (await lignesRapports.locator("td:nth-child(6)").allInnerTexts()).every((t) => statutAttendu[etape.valeur].test(t)),
+      `rapports : le statut de l'étape « ${etape.valeur} »`,
+    );
+    if (etape.valeur === "a_arbitrer") {
+      assert.ok((await lignesRapports.locator("td:nth-child(5)").allInnerTexts()).every((t) => t.includes("arbitrage attendu")), "rapports : à arbitrer, arbitrage attendu");
+    }
+  }
+  await page.goto(BASE + "/admin/rapports?q=" + encodeURIComponent(agentsStat[4]));
+  assert.equal(await lignesRapports.count(), 1, "rapports : un identifiant d'agent, son rapport");
+  await page.locator("form.filtres .puce", { hasText: "Recherche" }).waitFor();
+  // Signalements : clos, puis fiches.
+  await page.goto(BASE + "/admin/signalements?etat=clos");
+  compte = await compteFiltres();
+  assert.equal(await page.locator("li.carte").count(), compte.retenus, "signalements : la liste compte ce que dit la barre");
+  assert.ok(
+    (await premieresEtiquettes(page.locator("li.carte"))).every((e) => e === "Traité" || e === "Rejeté"),
+    "signalements : clos seulement, traités ou rejetés",
+  );
+  await page.goto(BASE + "/admin/signalements?objet=fiche");
+  assert.ok((await page.locator("li.carte").count()) >= 1, "signalements : celui de la fiche de synthèse");
+  assert.equal(
+    await page.locator("li.carte").count(),
+    await page.locator("li.carte:has(.etiquette:text-is('Fiche de synthèse'))").count(),
+    "signalements : fiches seulement",
+  );
+  // Modules : publiés, puis recherche d'un titre.
+  await page.goto(BASE + "/admin/modules?statut=publie");
+  compte = await compteFiltres();
+  assert.equal(await page.locator("li.carte").count(), compte.retenus, "modules : la liste compte ce que dit la barre");
+  assert.ok((await premieresEtiquettes(page.locator("li.carte"))).every((e) => e === "Publié"), "modules : publiés seulement");
+  await page.goto(BASE + "/admin/modules?q=" + encodeURIComponent("statistiques test"));
+  assert.equal(await page.locator("li.carte").count(), 1, "modules : la recherche lit le titre");
+  // Documents : généraux, puis fiches de synthèse.
+  await page.goto(BASE + "/admin/documents?module=general");
+  compte = await compteFiltres();
+  assert.ok(compte.retenus >= 1 && compte.retenus < compte.total, "documents : les généraux, une partie");
+  assert.ok(
+    (await page.locator("li.carte .legende").allInnerTexts()).every((t) => t.startsWith("document général")),
+    "documents : généraux seulement",
+  );
+  await page.goto(BASE + "/admin/documents?nature=synthese");
+  assert.ok((await premieresEtiquettes(page.locator("li.carte"))).every((e) => e === "Fiche de synthèse"), "documents : fiches seulement");
+  ok("filtres de la banque sur Codes d'accès, Rapports, Signalements, Modules et Documents : compte retenu, puces, « Tout effacer », filtres dans l'adresse (question 91, lot 3)");
+
   // Quitter depuis une page sans ancre, comme `rebrancher` : l'adresse « #actions »
   // fait défiler la page après son rendu, en douceur, et ce défilement pouvait
   // l'emporter sur le retour en haut — l'en-tête, masqué à la descente, gardait

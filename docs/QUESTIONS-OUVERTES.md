@@ -470,8 +470,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     comptés comme « À faire ») ; « Accueil » ouvre le menu, « Équipe »
     réunit codes d'accès et personnel, le journal passe à Suivi, « Tester
     en apprenant » à Modules sur sa propre page, « Dépôt documents »
-    devient « Documents », Réglages quitte le menu du tutorat. Lot 3
-    (filtres) à suivre. Détail dans `DECISIONS.md`.
+    devient « Documents », Réglages quitte le menu du tutorat. Lot 3,
+    premier volet fait : la barre de la banque sur Codes d'accès, Rapports,
+    Signalements, Modules et Documents ; le second volet (Personnel,
+    Programmes à la carte, Mises en situation, Rattachement des modules,
+    Filières, Niveaux, Repères, Pilotage et Statistiques) suit. Détail dans
+    `DECISIONS.md`.
 
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un

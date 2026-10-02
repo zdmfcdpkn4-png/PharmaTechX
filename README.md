@@ -452,6 +452,7 @@ les mêmes écrans.
 | Réglages d'exploitation | `lib/config.ts`, `.env.example` |
 | Actions d'administration | `app/actions.ts`, `app/admin/**/actions.ts` |
 | Accueil après la connexion : le chemin de l'agent, le circuit de la gestion (question 91) | `app/accueil/page.tsx` ; étapes et arrêts `content/accueil.ts` ; chemin de l'agent `components/CheminAgent.tsx` ; programme d'arrivée `lib/arrivee.ts`, à garder d'accord avec `app/page.tsx` |
+| Barre de filtres des listes : recherche, listes, « Plus de filtres », puces (question 91, lot 3) | `components/BarreFiltres.tsx` ; lecture et compte `content/filtres.ts` ; ce que retient chaque liste `content/filtres-listes.ts` |
 | Volet de navigation (barre latérale, tiroir) | `components/Menu.tsx`, `components/Navigation.tsx` ; liens composés dans `app/layout.tsx` |
 | Repères (dispositif, barème, programme, niveaux, questions) | `app/reperes/page.tsx` |
 | Couleurs et charte HdV | `app/globals.css` |

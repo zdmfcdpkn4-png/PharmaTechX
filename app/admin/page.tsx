@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { getSession, peutGererRole } from "@/lib/auth";
+import { getSession, peutGererRole, LIBELLES_ROLE } from "@/lib/auth";
 import { listerAcces } from "@/lib/db";
 import { getReferentiel } from "@/content/referentiel-db";
 import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { ETATS_CODE, ROLES_CODE, SANS_PROGRAMME, codeRetenu, lireFiltreCodes } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,15 @@ const CONFIRMATIONS: Record<string, string> = {
 export default async function Admin({
   searchParams,
 }: {
-  searchParams: Promise<{ nouveau?: string; libelle?: string; erreur?: string; ok?: string; reinitialise?: string }>;
+  /** Question 91 (lot 3) : recherche, profil, état, filière, niveau, programme à la carte. */
+  searchParams: Promise<{
+    nouveau?: string;
+    libelle?: string;
+    erreur?: string;
+    ok?: string;
+    reinitialise?: string;
+    [cle: string]: string | string[] | undefined;
+  }>;
 }) {
   const p = await searchParams;
   const { filieres, niveaux } = await getReferentiel();
@@ -42,6 +52,14 @@ export default async function Admin({
   const estAdmin = session.role === "admin";
   const [acces, programmes] = await Promise.all([listerAcces(), listerProgrammes().catch(() => [])]);
   const programmesValides = programmes.filter((x) => x.statut === "valide");
+  // Filtres de la liste (question 91, choix a, lot 3) : la barre de la banque.
+  const filieresPostes = filieres.filter((f) => f.id !== "socle");
+  const filtre = lireFiltreCodes(p, {
+    filieres: filieresPostes.map((f) => f.id),
+    niveaux: niveaux.map((n) => String(n.code)),
+    programmes: programmes.map((x) => x.id),
+  });
+  const retenus = acces.filter((a) => codeRetenu(a, filtre));
 
   return (
     <>
@@ -160,8 +178,50 @@ export default async function Admin({
         Révoquer ou supprimer un code ferme, à la requête suivante, les sessions ouvertes avec lui ;
         réactiver ne les rouvre pas.
       </p>
+      <BarreFiltres
+        adresse="/admin"
+        recherche={{ valeur: filtre.q, placeholder: "Rechercher un libellé" }}
+        champs={[
+          {
+            nom: "profil",
+            libelle: "Profil",
+            options: ROLES_CODE.map((r) => ({ valeur: r, libelle: LIBELLES_ROLE[r] })),
+            valeur: filtre.profil,
+          },
+          { nom: "etat", libelle: "État", options: ETATS_CODE, valeur: filtre.etat, minuscule: true },
+        ]}
+        plus={[
+          {
+            nom: "filiere",
+            libelle: "Filière",
+            tous: "Toutes",
+            options: filieresPostes.map((f) => ({ valeur: f.id, libelle: f.libelle })),
+            valeur: filtre.filiere,
+          },
+          {
+            nom: "niveau",
+            libelle: "Niveau",
+            options: niveaux.map((n) => ({ valeur: String(n.code), libelle: n.libelle })),
+            valeur: filtre.niveau,
+          },
+          {
+            nom: "programme",
+            libelle: "Programme à la carte",
+            options: [
+              { valeur: SANS_PROGRAMME, libelle: "Sans programme à la carte" },
+              ...programmes.map((x) => ({ valeur: String(x.id), libelle: x.nom })),
+            ],
+            valeur: filtre.programme,
+            large: true,
+          },
+        ]}
+        retenus={retenus.length}
+        total={acces.length}
+        unite={["code", "codes"]}
+      />
       <ul className="liste-nue" style={{ marginTop: ".5rem" }}>
-        {acces.map((a) => (
+        {retenus.length === 0 && <li className="legende">Aucun code ne correspond à ces filtres.</li>}
+        {retenus.map((a) => (
           <li key={a.id} className="carte">
             <span className="etiquette">{a.role}</span> <strong>{a.libelle}</strong>{" "}
             {!a.actif && <span className="etiquette etiquette--attention">révoqué</span>}
