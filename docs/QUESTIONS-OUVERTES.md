@@ -377,6 +377,38 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+94. **Vue apprenant de l'administration : où placer l'interrupteur ?** —
+    posée le 02/10/2026, sur « Peux-tu créer pour les administrateurs la
+    possibilité d'avoir une vue apprenant avec un accès rapide en haut à
+    gauche pour basculer rapidement avec un interrupteur d'une vue à
+    l'autre ? ».
+
+    Dans les trois cas :
+    - l'interrupteur est réservé à l'administration ;
+    - il bascule dans le mode test existant, où rien n'est enregistré
+      (« Utilisateur test », bandeau en tête de page), et il en revient ;
+    - chaque vue reprend là où on l'a quittée : la page d'administration
+      d'un côté, la page de l'apprenant de l'autre, filière et niveau
+      compris ;
+    - sans profil choisi d'avance, l'apprenant test choisit sa filière et
+      son niveau à l'écran, une fois. La page « Tester en apprenant » reste
+      là pour lancer un test sur un profil précis.
+
+    L'en-tête n'a pas de place pour un interrupteur sur téléphone : 12 px
+    libres à 390 px, mesurés.
+    - **a (recommandé)** : sur poste, en haut du volet de gauche, toujours
+      visible, un clic. Sous 62 rem (tablette, téléphone), le volet
+      n'existe pas : l'interrupteur passe en tête de l'Accès rapide. Contre :
+      deux emplacements selon l'écran, et deux gestes sur tablette et
+      téléphone (Menu, puis l'interrupteur).
+    - **b** : dans l'en-tête, à droite du bouton Menu, là où il tient (vers
+      150 px avec son libellé, estimé). En dessous d'environ 1 120 px, il
+      passe en tête de l'Accès rapide. Contre : il prend la place de la
+      barre de recherche, qui redevient une loupe jusque vers 1 340 px, ou
+      disparaît.
+    - **c** : en tête de l'Accès rapide seulement, à toutes les tailles.
+      Contre : deux gestes partout ; panneau fermé, rien ne le montre.
+
 93. **Barre de recherche rapide en haut : que cherche-t-elle ?** — posée
     le 02/10/2026, sur « Ajoute une barre de recherche rapide en haut et la
     possibilité de retour à l'accueil par clic sur les logos en haut de
