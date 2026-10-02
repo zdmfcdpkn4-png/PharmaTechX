@@ -4,6 +4,7 @@ import {
   adresseFiltree,
   compteRetenu,
   correspond,
+  filtrent,
   libellePuce,
   lireChoix,
   lireJour,
@@ -17,8 +18,20 @@ import {
   DOCUMENTS_GENERAUX,
   SANS_PROGRAMME,
   codeRetenu,
+  critereProgrammeRetenu,
   documentRetenu,
+  entreeReferentielRetenue,
   etapeRapport,
+  ligneRepertoireRetenue,
+  lireFiltrePersonnel,
+  lireFiltreProgrammeComplet,
+  lireFiltreProgrammes,
+  lireFiltreRattachement,
+  lireFiltreReferentiel,
+  lireFiltreSituations,
+  moduleRegleRetenu,
+  programmeRetenu,
+  situationRetenue,
   lireFiltreCodes,
   lireFiltreDocuments,
   lireFiltreModules,
@@ -88,6 +101,13 @@ test("compte retenu : « n sur N » sous un filtre, accordé au nombre qui préc
   assert.equal(compteRetenu(0, 41, ["code", "codes"], true), "0 code sur 41");
   assert.equal(compteRetenu(41, 41, ["code", "codes"], false), "41 codes");
   assert.equal(compteRetenu(1, 1, ["code", "codes"], false), "1 code");
+  // Un tri a sa puce mais ne réduit pas la liste : le compte reste « 5 modules », pas « 5 sur 5 ».
+  const CLASSEMENT: ChampFiltre = { nom: "ordre", libelle: "Classement", options: [{ valeur: "fort", libelle: "Le meilleur d'abord" }], valeur: "fort", tri: true };
+  assert.equal(filtrent(undefined, [CLASSEMENT]), false);
+  assert.equal(filtrent(undefined, [CLASSEMENT, { ...ETAT, valeur: "" }]), false);
+  assert.equal(filtrent(undefined, [CLASSEMENT, ETAT]), true);
+  assert.equal(filtrent({ valeur: "zac", placeholder: "" }, [CLASSEMENT]), true);
+  assert.equal(pucesFiltres("/admin/statistiques", [], undefined, [CLASSEMENT]).length, 1, "le tri garde sa puce");
 });
 
 test("codes d'accès : libellé, profil, état, filière et niveau exacts, programme à la carte ou aucun", () => {
@@ -162,4 +182,44 @@ test("documents : nature, rattachement (général ou module), profil du document
   assert.ok(documentRetenu(rattache, { ...f, module: "comportement-zac", filiere: "" }, profil));
   assert.ok(documentRetenu(general, { ...f, q: "ft160 habillage" }, profil));
   assert.equal(lireFiltreDocuments({ nature: "inconnue" }, ref).nature, "");
+});
+
+test("personnel : identifiant normalisé par la page, critère, verdict", () => {
+  const f = lireFiltrePersonnel({ agent: "ag 1", critere: "B1-02", verdict: "acquis" }, ["B1-02"]);
+  const l = { agent_identifiant: "AG-001", critere: "B1-02", verdict: "acquis" };
+  assert.ok(ligneRepertoireRetenue(l, f, "AG-001"));
+  assert.ok(!ligneRepertoireRetenue({ ...l, verdict: "non_acquis" }, f, "AG-001"));
+  assert.ok(!ligneRepertoireRetenue({ ...l, agent_identifiant: "AG-002" }, f, "AG-001"));
+  assert.equal(lireFiltrePersonnel({ critere: "B9-99" }, ["B1-02"]).critere, "");
+});
+
+test("programmes à la carte, mises en situation : recherche et statut, recherche et module", () => {
+  const x = { nom: "Intérimaire test", destinataire: "préparateur intérimaire", motif: "remplacement", statut: "valide" };
+  assert.ok(programmeRetenu(x, lireFiltreProgrammes({ q: "interimaire", statut: "valide" })));
+  assert.ok(!programmeRetenu(x, lireFiltreProgrammes({ statut: "brouillon" })));
+  assert.equal(lireFiltreProgrammes({ statut: "publie" }).statut, "");
+  const s = { titre: "Le sas", contexte: "La porte et le carton", module_id: "comportement-zac" };
+  assert.ok(situationRetenue(s, lireFiltreSituations({ q: "carton", module: "comportement-zac" }, ["comportement-zac"])));
+  assert.ok(!situationRetenue(s, lireFiltreSituations({ q: "hotte" }, [])));
+});
+
+test("rattachement : code et titre, bloc, filière et niveau réglés ou de la fiche", () => {
+  const ref = { blocs: [1, 2], filieres: ["chimiotherapie", "sterile"], niveaux: ["N1a", "N2"] };
+  const m = { critere: "B1-02", titre: "Comportement en ZAC", bloc: 1, filieres: [] as string[], niveaux: ["N2"] };
+  assert.ok(moduleRegleRetenu(m, lireFiltreRattachement({ q: "b1-02", bloc: "1", filiere: "sterile", niveau: "N2" }, ref)));
+  assert.ok(!moduleRegleRetenu(m, lireFiltreRattachement({ niveau: "N1a" }, ref)));
+  assert.ok(!moduleRegleRetenu(m, lireFiltreRattachement({ bloc: "2" }, ref)));
+});
+
+test("filières, niveaux : métier et recherche ; Repères : code ou mot, bloc, obligatoires", () => {
+  const f = lireFiltreReferentiel({ q: "chimio", metier: "preparateur" }, ["preparateur", "ide"]);
+  assert.ok(entreeReferentielRetenue({ texte: "Chimiothérapie chimiotherapie", metier: "preparateur" }, f));
+  assert.ok(!entreeReferentielRetenue({ texte: "Chimiothérapie", metier: "ide" }, f));
+  assert.equal(lireFiltreReferentiel({ metier: "autre" }, ["preparateur"]).metier, "");
+  const c = { code: "B5-09", libelle: "Élimination des déchets", sousSection: null, bloc: 5, obligatoire: true };
+  const g = lireFiltreProgrammeComplet({ q: "dechets", bloc: "5", obligatoires: "1" }, [5]);
+  assert.ok(critereProgrammeRetenu(c, g));
+  assert.ok(!critereProgrammeRetenu({ ...c, obligatoire: false }, g));
+  assert.ok(critereProgrammeRetenu(c, lireFiltreProgrammeComplet({ q: "b5-09" }, [5])), "le code se cherche");
+  assert.equal(lireFiltreProgrammeComplet({ obligatoires: "oui" }, [5]).obligatoires, "");
 });

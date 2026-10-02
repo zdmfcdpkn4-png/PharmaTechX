@@ -5,20 +5,29 @@ import { getTousModulesAvecDeposes } from "@/content/store";
 import { moduleOuvrable, titreModule as titreDe } from "../commun";
 import { LienModule } from "@/components/LienModule";
 import { actionEnregistrerSituation, actionSupprimerSituation } from "../actions";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { lireFiltreSituations, situationRetenue } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
 export default async function Situations({
   searchParams,
 }: {
-  searchParams: Promise<{ module?: string; ok?: string; erreur?: string }>;
+  /** `module` : filtre la liste et préremplit la création ; question 91 (lot 3) : recherche. */
+  searchParams: Promise<{ module?: string; ok?: string; erreur?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
   const modules = await getTousModulesAvecDeposes();
   const moduleId = modules.some((m) => m.id === p.module) ? p.module : undefined;
-  const situations = await listerSituations(moduleId);
+  // Toutes les situations, pour le compte ; la barre de la banque les filtre (question 91, choix a, lot 3).
+  const toutes = await listerSituations();
   const titreModule = (id: string) => titreDe(modules, id);
+  const modulesCites = [...new Set(toutes.map((s) => s.module_id))]
+    .map((id) => ({ id, titre: titreModule(id) }))
+    .sort((a, b) => a.titre.localeCompare(b.titre, "fr"));
+  const filtre = lireFiltreSituations(p, modulesCites.map((m) => m.id));
+  const situations = toutes.filter((s) => situationRetenue(s, filtre));
 
   return (
     <>
@@ -67,8 +76,26 @@ export default async function Situations({
 
       <div className="section-titre">
         <h2>Situations existantes</h2>
-        <span className="compte">{situations.length}</span>
+        <span className="compte">{toutes.length}</span>
       </div>
+      {toutes.length > 0 && (
+        <BarreFiltres
+          adresse="/admin/questions/situations"
+          recherche={{ valeur: filtre.q, placeholder: "Titre ou vignette" }}
+          champs={[
+            {
+              nom: "module",
+              libelle: "Module",
+              options: modulesCites.map((m) => ({ valeur: m.id, libelle: m.titre.slice(0, 70) })),
+              valeur: filtre.module,
+              large: true,
+            },
+          ]}
+          retenus={situations.length}
+          total={toutes.length}
+          unite={["situation", "situations"]}
+        />
+      )}
       <ul className="liste-nue">
         {situations.map((s) => (
           <li key={s.id} className="carte">
@@ -113,7 +140,9 @@ export default async function Situations({
             </details>
           </li>
         ))}
-        {situations.length === 0 && <li className="legende">Aucune mise en situation en base.</li>}
+        {situations.length === 0 && (
+          <li className="legende">{toutes.length === 0 ? "Aucune mise en situation en base." : "Aucune situation ne correspond à ces filtres."}</li>
+        )}
       </ul>
     </>
   );

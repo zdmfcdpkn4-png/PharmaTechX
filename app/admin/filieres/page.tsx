@@ -9,6 +9,8 @@ import { codesDeLaFiliere, repartir, SOCLE } from "@/content/programme-filiere";
 import { Badge } from "@/components/Badge";
 import { FormulaireFiliere, FormulaireNouvelleFiliere, SupprimerDepotFiliere } from "../referentiel/formulaires";
 import { ERREURS, MESSAGES } from "../referentiel/messages";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { entreeReferentielRetenue, lireFiltreReferentiel } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,8 @@ export const dynamic = "force-dynamic";
 export default async function Filieres({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  /** Question 91 (lot 3) : recherche, métier. */
+  searchParams: Promise<{ ok?: string; erreur?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -40,6 +43,15 @@ export default async function Filieres({
     return id === SOCLE ? r.troncCommun.length : r.dans.length;
   };
   const erreur = p.erreur === "filiere-inconnue" ? "Filière inconnue." : p.erreur ? ERREURS[p.erreur] : undefined;
+  // Filtres (question 91, choix a, lot 3) : métier et recherche (libellé, identifiant, description).
+  const filtre = lireFiltreReferentiel(p, metiers.map((m) => m.id));
+  const filtreActif = Boolean(filtre.q || filtre.metier);
+  const retenue = (x: (typeof liste)[number]) =>
+    entreeReferentielRetenue(
+      { texte: `${x.filiere.libelle} ${x.filiere.id} ${x.filiere.description ?? ""}`, metier: metierOuDefaut(x.filiere.metier).id },
+      filtre,
+    );
+  const retenues = liste.filter(retenue);
 
   return (
     <>
@@ -58,10 +70,24 @@ export default async function Filieres({
         <p className="encart encart--attention">Consultation seule : une filière se modifie avec un code d&apos;administration.</p>
       )}
 
+      <BarreFiltres
+        adresse="/admin/filieres"
+        recherche={{ valeur: filtre.q, placeholder: "Libellé ou identifiant" }}
+        champs={[
+          { nom: "metier", libelle: "Métier", options: metiers.map((m) => ({ valeur: m.id, libelle: m.libelle })), valeur: filtre.metier },
+        ]}
+        retenus={retenues.length}
+        total={liste.length}
+        unite={["filière", "filières"]}
+      />
+
       <section className="section">
         <ul className="liste-nue">
+          {filtreActif && retenues.length === 0 && <li className="legende">Aucune filière ne correspond à ces filtres.</li>}
           {metiers.flatMap((m) => {
-            const siennes = liste.filter((x) => metierOuDefaut(x.filiere.metier).id === m.id);
+            const siennes = retenues.filter((x) => metierOuDefaut(x.filiere.metier).id === m.id);
+            // Sous un filtre, un métier sans filière retenue ne se montre pas.
+            if (filtreActif && siennes.length === 0) return [];
             return [
               <li key={`metier-${m.id}`}>
                 <h2 style={{ fontSize: "1.05rem", margin: ".75rem 0 0" }}>{m.libelle}</h2>

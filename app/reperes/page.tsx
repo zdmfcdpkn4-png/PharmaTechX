@@ -23,6 +23,8 @@ import {
 import { getReferentiel } from "@/content/referentiel-db";
 import { listeBlocs, modulesDeposesParBloc } from "@/content/blocs-db";
 import { LienModule } from "@/components/LienModule";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { critereProgrammeRetenu, lireFiltreProgrammeComplet } from "@/content/filtres-listes";
 
 // Le barème est lu à chaque requête : la page annonce les règles en vigueur,
 // jamais celles figées à la construction. Les deux questions sur les données
@@ -113,7 +115,12 @@ const questionsFrequentes = [
   },
 ];
 
-export default async function Reperes() {
+export default async function Reperes({
+  searchParams,
+}: {
+  /** Question 91 (lot 3) : recherche, bloc et obligatoires du programme complet. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   // Niveaux du référentiel servi, comme sur les autres écrans : un niveau
   // déposé ou corrigé au Référentiel doit s'y lire aussi (23/09/2026).
   // Blocs servis (question 81) : un bloc corrigé ou ajouté se lit ici aussi,
@@ -126,6 +133,16 @@ export default async function Reperes() {
     lireNomsNiveaux(),
   ]);
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
+  // Filtres du programme complet (question 91, choix a, lot 3) : un code ou un mot, un bloc, les
+  // obligatoires. Un bloc sans critère retenu disparaît ; les blocs restent repliés, comme l'arbre de la banque.
+  const filtrePrg = lireFiltreProgrammeComplet(await searchParams, blocs.map((b) => b.numero));
+  const critereRetenu = (x: (typeof criteres)[number]) =>
+    critereProgrammeRetenu({ code: x.id, libelle: x.libelle, sousSection: x.sousSection, bloc: x.bloc, obligatoire: x.obligatoire }, filtrePrg);
+  const horsFicheRetenu = (titre: string, bloc: number) =>
+    critereProgrammeRetenu({ code: "", libelle: titre, sousSection: null, bloc, obligatoire: false }, filtrePrg);
+  const horsFichePublies = blocs.flatMap((b) => (horsFiche[b.numero] ?? []).filter((m) => m.statut === "publie").map((m) => ({ m, bloc: b.numero })));
+  const totalPrg = criteres.length + horsFichePublies.length;
+  const retenusPrg = criteres.filter(critereRetenu).length + horsFichePublies.filter((x) => horsFicheRetenu(x.m.titre, x.bloc)).length;
   const deLaFiche = new Map(niveauxFiche.map((n) => [String(n.code), n]));
   // Ce qui ne se lit plus tel que dans la fiche est dit : cette section cite le chapitre III.
   const ecartFiche = (n: (typeof niveaux)[number]): string | null => {
@@ -215,9 +232,34 @@ export default async function Reperes() {
           pharmacien : {arbitrageEnAttente.marquageObligatoire}{" "}
           {arbitrageEnAttente.correspondanceBlocsNiveaux}
         </p>
+        <BarreFiltres
+          adresse="/reperes"
+          ancre="programme"
+          recherche={{ valeur: filtrePrg.q, placeholder: "Code ou mot d'un critère" }}
+          champs={[
+            {
+              nom: "bloc",
+              libelle: "Bloc",
+              options: blocs.map((b) => ({ valeur: String(b.numero), libelle: `${b.numero} — ${b.titre.slice(0, 50)}`, puce: String(b.numero) })),
+              valeur: filtrePrg.bloc,
+              large: true,
+            },
+            {
+              nom: "obligatoires",
+              libelle: "Obligatoires",
+              tous: "Tous les critères",
+              options: [{ valeur: "1", libelle: "Obligatoires seulement", puce: "seulement" }],
+              valeur: filtrePrg.obligatoires,
+            },
+          ]}
+          retenus={retenusPrg}
+          total={totalPrg}
+          unite={["critère ou module", "critères ou modules"]}
+        />
+        {retenusPrg === 0 && <p className="legende">Aucun critère ne correspond à ces filtres.</p>}
         {blocs.map((b) => {
-          const items = criteres.filter((x) => x.bloc === b.numero);
-          const publies = (horsFiche[b.numero] ?? []).filter((m) => m.statut === "publie");
+          const items = criteres.filter((x) => x.bloc === b.numero && critereRetenu(x));
+          const publies = (horsFiche[b.numero] ?? []).filter((m) => m.statut === "publie" && horsFicheRetenu(m.titre, b.numero));
           if (items.length === 0 && publies.length === 0) return null;
           return (
             <details key={b.numero} className="bloc">

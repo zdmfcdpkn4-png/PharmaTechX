@@ -45,7 +45,12 @@ export default async function Documents({
     niveaux: niveaux.map((n) => String(n.code)),
   });
   const parId = new Map(modules.map((m) => [m.id, m]));
-  const retenus = depots.filter((d) => documentRetenu(d, filtre, (id) => parId.get(id)));
+  // Le profil d'un document rattaché est celui de son module ; le socle seul y vaut tronc commun.
+  const profilDuModule = (id: string) => {
+    const m = parId.get(id);
+    return m ? { postes: m.postes.filter((f) => f !== "socle"), niveaux: m.niveaux } : undefined;
+  };
+  const retenus = depots.filter((d) => documentRetenu(d, filtre, profilDuModule));
 
   return (
     <>

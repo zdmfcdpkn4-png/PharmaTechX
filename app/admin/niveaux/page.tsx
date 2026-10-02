@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getReferentiel, listerNiveauxDeposes, niveauxOrphelins, toutesLesFilieres } from "@/content/referentiel-db";
 import { metiers, metierOuDefaut, niveaux as niveauxFiche } from "@/content/habilitation";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { entreeReferentielRetenue, lireFiltreReferentiel } from "@/content/filtres-listes";
 import { rangEffectif, rappelRangsFiche } from "@/content/ordre-niveaux";
 import { actionEnregistrerNiveau, actionSupprimerNiveau } from "../referentiel/actions";
 import { FormulaireNouveauNiveau } from "../referentiel/formulaires";
@@ -20,7 +22,8 @@ const CODES_FICHE = niveauxFiche.map((n) => String(n.code));
 export default async function Niveaux({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  /** Question 91 (lot 3) : recherche, métier. */
+  searchParams: Promise<{ ok?: string; erreur?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   const session = (await getSession())!;
@@ -48,6 +51,15 @@ export default async function Niveaux({
   // Même métier : un niveau ne change pas de métier en changeant de filière.
   const memeMetier = (a: string | undefined, b: string | undefined) =>
     metierOuDefaut(a).id === metierOuDefaut(b).id;
+  // Filtres (question 91, choix a, lot 3) : métier et recherche (code, libellé, filière).
+  const filtre = lireFiltreReferentiel(p, metiers.map((m) => m.id));
+  const filtreActif = Boolean(filtre.q || filtre.metier);
+  const niveauxRetenus = tousNiveaux.filter((n) =>
+    entreeReferentielRetenue(
+      { texte: `${n.code} ${n.libelle} ${libelleFiliere.get(n.filiere) ?? n.filiere}`, metier: metierOuDefaut(n.metier).id },
+      filtre,
+    ),
+  );
 
   return (
     <>
@@ -108,8 +120,20 @@ export default async function Niveaux({
           fiche valent {rappelRangsFiche(CODES_FICHE)} : un rang de 45 place un niveau entre N2 et N3.
           Au rang 0, un niveau ajouté vient après ceux qui ont un rang.
         </p>
+        <BarreFiltres
+          adresse="/admin/niveaux"
+          recherche={{ valeur: filtre.q, placeholder: "Code, libellé ou filière" }}
+          champs={[
+            { nom: "metier", libelle: "Métier", options: metiers.map((m) => ({ valeur: m.id, libelle: m.libelle })), valeur: filtre.metier },
+          ]}
+          retenus={niveauxRetenus.length}
+          total={tousNiveaux.length}
+          unite={["niveau", "niveaux"]}
+        />
         <ul className="liste-nue">
-          {metiers.flatMap((m) => [
+          {filtreActif && niveauxRetenus.length === 0 && <li className="legende">Aucun niveau ne correspond à ces filtres.</li>}
+          {/* Sous un filtre, un métier sans niveau retenu ne se montre pas. */}
+          {metiers.filter((m) => !filtreActif || niveauxRetenus.some((n) => memeMetier(n.metier, m.id))).flatMap((m) => [
             <li key={`metier-${m.id}`}>
               <h3 style={{ fontSize: "1rem", margin: ".75rem 0 0" }}>
                 {m.libelle}
@@ -121,7 +145,7 @@ export default async function Niveaux({
                 </p>
               )}
             </li>,
-            ...tousNiveaux.filter((n) => memeMetier(n.metier, m.id)).map((n) => {
+            ...niveauxRetenus.filter((n) => memeMetier(n.metier, m.id)).map((n) => {
             const d = depotN.get(n.code);
             const rang = rangEffectif(n.code, d?.rang, CODES_FICHE);
             return (

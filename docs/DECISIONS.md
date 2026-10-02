@@ -6557,6 +6557,105 @@ ont déjà leur barre.
     de la banque dont elle est la copie ;
   - aucune page ne déborde à 390 px, « Plus de filtres » ouvert compris.
 
+## La barre de filtres sur neuf autres écrans (02/10/2026, question 91, choix a, lot 3b)
+
+**Demande.** La suite du lot 3 : la barre de la banque sur Personnel,
+Programmes à la carte, Mises en situation, Rattachement des modules,
+Filières, Niveaux, le programme complet des Repères, Pilotage et
+Statistiques. C'est la barre du premier volet (`components/BarreFiltres.tsx`),
+sans CSS nouveau. Le point 2 de la question 90 (la même barre sur Pilotage
+et Statistiques) est fait par ce volet.
+
+**Fait — écran par écran.**
+- Personnel : recherche d'un identifiant d'agent, qui garde son paramètre
+  et sa lecture (« ag 1 » vaut AG-001) ; Critère (ceux du répertoire),
+  Verdict retenu (l'arbitrage s'il y en a un, sinon le brut). La barre
+  remplace l'ancien champ « Agent » et passe sous le titre « Répertoire ».
+- Programmes à la carte : recherche dans le nom, le destinataire et le
+  motif ; Statut.
+- Mises en situation : recherche dans le titre et la vignette ; Module
+  (ceux qui ont des situations). Le paramètre `module` préremplit toujours
+  la création.
+- Rattachement des modules (administration) : recherche dans le code et le
+  titre du critère ; Bloc, Filière, Niveau, lus tels qu'ils sont réglés —
+  le réglage s'il y en a un, sinon la fiche. La liste, repliée à l'arrivée,
+  s'ouvre sous un filtre : on a filtré pour voir ces modules. Son résumé
+  dit alors « 8 modules sur 53 · 0 réglé(s) ».
+- Filières et Niveaux : recherche (libellé, identifiant et description ;
+  code, libellé et filière) ; Métier. Sous un filtre, un métier sans entrée
+  retenue ne se montre pas.
+- Repères, programme complet : recherche d'un code ou d'un mot (libellé et
+  sous-section d'un critère, titre d'un module hors fiche) ; Bloc ;
+  « Obligatoires seulement ». Un bloc sans ligne retenue disparaît ; les
+  autres restent repliés, leur résumé comptant ce qui est retenu. Le
+  formulaire et les puces ramènent à la section (`#programme`).
+- Pilotage : Filière, Niveau, Bloc ; plus : Module, Période (« Depuis le
+  début » par défaut). Le compte dit combien de modules lit le tableau : le
+  module choisi l'emporte sur filière et niveau, et le bloc retient ceux
+  dont le critère en relève, comme la lecture des rapports. La phrase
+  « Périmètre : … » reste, sous la barre. « Appliquer » et « Tout
+  afficher » deviennent « Filtrer », les puces et « Tout effacer ».
+- Statistiques : Filière, Niveau, Bloc ; sous « Plus de filtres et tri »,
+  comme la banque : Période, Classement. Le compte dit « 1 module évalué
+  sur 2 » ; sous un filtre, un second relevé des essais, sans filtre,
+  donne le total. Le classement est un tri : il a sa puce, mais ne réduit
+  pas la liste, et le compte reste entier (« 2 modules évalués »).
+
+**Corrigé en cours de route.**
+- Le socle seul vaut tronc commun, comme le lit le programme
+  (`appliquerReglage`) : un module réglé sur le seul « Socle transversal »
+  concerne chaque filière. Le premier volet l'écartait du filtre d'une
+  filière sur Documents ; Documents, Modules et Rattachement l'y retiennent.
+- Sous le seul tri des Statistiques, la barre disait « 2 modules évalués
+  sur 2 », comme si un filtre retenait une partie. Un champ peut désormais
+  se déclarer tri (`tri` dans `content/filtres.ts`) : il garde sa puce, et
+  le compte ne passe pas à « n sur N ».
+
+**Inchangé.** Les adresses ; les formulaires de création ; les options de
+Pilotage et Statistiques, « Socle transversal » compris ; la fiche d'un
+module aux Statistiques, qui n'a qu'un champ, la période.
+
+**Limite.** Une action faite sous un filtre — régler un module, modifier
+une filière, révoquer un code — ramène à la liste entière, filtre perdu,
+sur les quatorze écrans des deux volets. Seule la banque revient à sa vue.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 464 tests, dont quatre nouveaux pour les listes de
+  ce volet (`test/filtres.test.ts`) ; celui du compte vérifie aussi qu'un
+  tri garde sa puce sans réduire la liste.
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 115 étapes, sans erreur de page
+  ni erreur serveur. Deux étapes nouvelles :
+  - Rattachement des modules, sous l'administration (étape 12g) : la
+    recherche ouvre la liste sur les modules retenus, le bloc 1 ne montre
+    que des critères B1, « Tout effacer » la replie ;
+  - les huit autres écrans, sous le tutorat (étape 14d octies) : la liste
+    compte ce que dit la barre ; chaque verdict du Personnel, chaque statut
+    des programmes, chaque métier des Filières et des Niveaux retient ses
+    lignes, et leur somme refait le total ; deux mises en situation créées
+    dans deux modules se séparent ; les Repères ramènent à la section,
+    blocs repliés ; le Pilotage compte ses deux filtres repliés ; aux
+    Statistiques, le niveau N2 écarte le module évalué en N1c, et le tri
+    seul laisse le compte entier.
+- Mesures sur la base laissée par le parcours, à 1 280 et 390 px :
+  - Personnel : 2 lignes ; « indéterminé » : 2 sur 2. Programmes : 1 ;
+    « validé » : 0 sur 1. Situations : 2 ; module ZAC : 1 sur 2.
+  - Rattachement : 53 modules ; bloc 1 et N1a : 8 sur 53. Filières : 5 ;
+    métier préparateur : 5 sur 5. Niveaux : 6 ; « N1 » : 3 sur 6.
+  - Repères : 53 critères ou modules ; bloc 2 et obligatoires : 2 sur 53.
+  - Pilotage : 58 modules ; chimiothérapie et 30 jours : 46 sur 58.
+    Statistiques : 2 modules évalués ; N1c : 1 sur 2.
+  - La barre fait 166 px de haut sur poste quand elle tient sur une ligne,
+    225 px aux Statistiques et 257 px au Pilotage, avec « Plus de filtres »
+    et, au Pilotage, la phrase du périmètre ; 46 px de plus avec des
+    puces. Sur téléphone, de 218 à 357 px, et jusqu'à 466 px au Pilotage
+    avec deux puces : plus de la moitié d'un écran de 844 px.
+  - L'ancien formulaire du Pilotage, reconstitué sous la même CSS pour
+    comparer, faisait environ 248 px sur poste et 661 à 683 px sur
+    téléphone : la barre est un peu plus haute sur poste, nettement plus
+    basse sur téléphone, le module et la période étant repliés.
+  - Aucune page ne déborde à 390 px, « Plus de filtres » ouvert compris.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

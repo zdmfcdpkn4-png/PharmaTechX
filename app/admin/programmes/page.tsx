@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { codesParProgramme, listerProgrammes } from "@/content/programmes-db";
 import { LIBELLES_STATUT_PROGRAMME, MENTION_DEGRADE } from "@/content/programmes";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { STATUTS_FILTRE_PROGRAMME, lireFiltreProgrammes, programmeRetenu } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +14,15 @@ function date(iso: string | null): string {
  * Programmes à la carte (question 50, 22/09/2026) : le parcours dégradé des
  * profils qui ne suivent pas la fiche. Tutorat et administration.
  */
-export default async function Programmes() {
-  const [programmes, codes] = await Promise.all([listerProgrammes(), codesParProgramme()]);
+export default async function Programmes({
+  searchParams,
+}: {
+  /** Question 91 (lot 3) : recherche, statut. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [programmes, codes, p] = await Promise.all([listerProgrammes(), codesParProgramme(), searchParams]);
+  const filtre = lireFiltreProgrammes(p);
+  const retenus = programmes.filter((x) => programmeRetenu(x, filtre));
   return (
     <>
       <section className="panneau-titre">
@@ -34,8 +43,27 @@ export default async function Programmes() {
       {programmes.length === 0 ? (
         <p className="encart">Aucun programme à la carte : les postes suivent la fiche.</p>
       ) : (
+        <>
+        {/* La barre de la banque (question 91, choix a, lot 3). */}
+        <BarreFiltres
+          adresse="/admin/programmes"
+          recherche={{ valeur: filtre.q, placeholder: "Nom, destinataire ou motif" }}
+          champs={[
+            {
+              nom: "statut",
+              libelle: "Statut",
+              options: STATUTS_FILTRE_PROGRAMME.map((x) => ({ valeur: x, libelle: LIBELLES_STATUT_PROGRAMME[x].split(" — ")[0] })),
+              valeur: filtre.statut,
+              minuscule: true,
+            },
+          ]}
+          retenus={retenus.length}
+          total={programmes.length}
+          unite={["programme", "programmes"]}
+        />
         <ul className="liste-nue">
-          {programmes.map((x) => (
+          {retenus.length === 0 && <li className="legende">Aucun programme ne correspond à ces filtres.</li>}
+          {retenus.map((x) => (
             <li key={x.id} className="carte programme-ligne">
               <span className="etiquette etiquette--attention">{MENTION_DEGRADE}</span>{" "}
               <strong>
@@ -54,6 +82,7 @@ export default async function Programmes() {
             </li>
           ))}
         </ul>
+        </>
       )}
     </>
   );

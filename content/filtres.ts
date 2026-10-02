@@ -35,10 +35,14 @@ export interface ChampFiltre {
   large?: boolean;
   /** La puce met l'option en minuscule initiale : « État : révoqués ». */
   minuscule?: boolean;
+  /** Un tri, pas un filtre (le classement des Statistiques) : il a sa puce, il ne réduit pas la liste. */
+  tri?: boolean;
 }
 
 export interface RechercheFiltre {
-  /** Texte lu dans l'adresse (paramètre `q`). */
+  /** Paramètre de l'adresse ; `q` par défaut (Personnel garde son `agent`). */
+  nom?: string;
+  /** Texte lu dans l'adresse. */
   valeur: string;
   placeholder: string;
 }
@@ -70,18 +74,23 @@ export function correspond(texte: string, recherche: string): boolean {
   return texteCorrespond(texte, motsRecherche(recherche));
 }
 
+/** La liste est-elle réduite ? Une recherche ou un champ actif, un tri n'y comptant pas. */
+export function filtrent(recherche: RechercheFiltre | undefined, champs: readonly ChampFiltre[]): boolean {
+  return Boolean(recherche?.valeur) || champs.some((c) => !c.tri && c.valeur !== "");
+}
+
 /** Les filtres actifs, en paramètres d'adresse : la recherche d'abord, puis les champs dans leur ordre. */
 export function parametresActifs(recherche: RechercheFiltre | undefined, champs: readonly ChampFiltre[]): [string, string][] {
   return [
-    ...(recherche?.valeur ? [["q", recherche.valeur] as [string, string]] : []),
+    ...(recherche?.valeur ? [[recherche.nom ?? "q", recherche.valeur] as [string, string]] : []),
     ...champs.filter((c) => c.valeur !== "").map((c) => [c.nom, c.valeur] as [string, string]),
   ];
 }
 
-/** Adresse d'une page sous ces paramètres ; sans paramètre, l'adresse nue. */
-export function adresseFiltree(adresse: string, params: readonly (readonly [string, string])[]): string {
+/** Adresse d'une page sous ces paramètres ; sans paramètre, l'adresse nue. `ancre` : la section où revenir. */
+export function adresseFiltree(adresse: string, params: readonly (readonly [string, string])[], ancre = ""): string {
   const s = new URLSearchParams(params.map(([k, v]) => [k, v] as [string, string])).toString();
-  return s ? `${adresse}?${s}` : adresse;
+  return `${s ? `${adresse}?${s}` : adresse}${ancre ? `#${ancre}` : ""}`;
 }
 
 function jourFrancais(jour: string): string {
@@ -110,11 +119,13 @@ export function pucesFiltres(
   gardes: readonly (readonly [string, string])[],
   recherche: RechercheFiltre | undefined,
   champs: readonly ChampFiltre[],
+  ancre = "",
 ): Puce[] {
   const actifs = parametresActifs(recherche, champs);
-  const sans = (cle: string) => adresseFiltree(adresse, [...gardes, ...actifs.filter(([k]) => k !== cle)]);
+  const sans = (cle: string) => adresseFiltree(adresse, [...gardes, ...actifs.filter(([k]) => k !== cle)], ancre);
+  const nomRecherche = recherche?.nom ?? "q";
   return [
-    ...(recherche?.valeur ? [{ cle: "q", libelle: `Recherche : « ${recherche.valeur} »`, href: sans("q") }] : []),
+    ...(recherche?.valeur ? [{ cle: nomRecherche, libelle: `Recherche : « ${recherche.valeur} »`, href: sans(nomRecherche) }] : []),
     ...champs.filter((c) => c.valeur !== "").map((c) => ({ cle: c.nom, libelle: libellePuce(c), href: sans(c.nom) })),
   ];
 }

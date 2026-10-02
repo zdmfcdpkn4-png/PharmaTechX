@@ -253,3 +253,146 @@ export function documentRetenu(
     admet(profil.niveaux, f.niveau)
   );
 }
+
+// ─────────────────────────────────────────────── personnel (lot 3b)
+
+export interface FiltrePersonnel {
+  /** Partie d'un identifiant d'agent ; le paramètre garde son nom d'avant, `agent`. */
+  agent: string;
+  critere: string;
+  verdict: string;
+}
+
+export function lireFiltrePersonnel(p: Params, criteres: readonly string[]): FiltrePersonnel {
+  return {
+    agent: lireTexte(p.agent, 40),
+    critere: lireChoix(p.critere, criteres),
+    verdict: lireChoix(p.verdict, VERDICTS_RAPPORT),
+  };
+}
+
+/**
+ * Une ligne du répertoire : le dernier rapport d'un agent sur un critère.
+ * `identifiant` : la recherche lue comme un identifiant (« ag 1 » vaut AG-001),
+ * telle que la page la normalise.
+ */
+export function ligneRepertoireRetenue(
+  l: { agent_identifiant: string; critere: string; verdict: string },
+  f: FiltrePersonnel,
+  identifiant: string,
+): boolean {
+  return (
+    (!identifiant || l.agent_identifiant.includes(identifiant)) &&
+    (!f.critere || l.critere === f.critere) &&
+    (!f.verdict || l.verdict === f.verdict)
+  );
+}
+
+// ──────────────────────────────────────────── programmes à la carte (lot 3b)
+
+export const STATUTS_FILTRE_PROGRAMME = ["brouillon", "valide", "retire"] as const;
+
+export interface FiltreProgrammes {
+  q: string;
+  statut: string;
+}
+
+export function lireFiltreProgrammes(p: Params): FiltreProgrammes {
+  return { q: lireTexte(p.q), statut: lireChoix(p.statut, STATUTS_FILTRE_PROGRAMME) };
+}
+
+/** La recherche lit le nom, le destinataire et le motif. */
+export function programmeRetenu(x: { nom: string; destinataire: string; motif: string; statut: string }, f: FiltreProgrammes): boolean {
+  return correspond(`${x.nom} ${x.destinataire} ${x.motif}`, f.q) && (!f.statut || x.statut === f.statut);
+}
+
+// ──────────────────────────────────────────── mises en situation (lot 3b)
+
+export interface FiltreSituations {
+  q: string;
+  module: string;
+}
+
+export function lireFiltreSituations(p: Params, modules: readonly string[]): FiltreSituations {
+  return { q: lireTexte(p.q), module: lireChoix(p.module, modules) };
+}
+
+/** La recherche lit le titre et la vignette. */
+export function situationRetenue(s: { titre: string; contexte: string; module_id: string }, f: FiltreSituations): boolean {
+  return correspond(`${s.titre} ${s.contexte}`, f.q) && (!f.module || s.module_id === f.module);
+}
+
+// ─────────────────────────────────────── rattachement des modules (lot 3b)
+
+export interface FiltreRattachement {
+  q: string;
+  bloc: string;
+  filiere: string;
+  niveau: string;
+}
+
+export function lireFiltreRattachement(
+  p: Params,
+  ref: { blocs: readonly number[]; filieres: readonly string[]; niveaux: readonly string[] },
+): FiltreRattachement {
+  return {
+    q: lireTexte(p.q),
+    bloc: lireChoix(p.bloc, ref.blocs.map(String)),
+    filiere: lireChoix(p.filiere, ref.filieres),
+    niveau: lireChoix(p.niveau, ref.niveaux),
+  };
+}
+
+/** Un module du code, tel qu'il est réglé (filières et niveaux : le réglage s'il y en a un, sinon la fiche). */
+export function moduleRegleRetenu(
+  m: { critere: string; titre: string; bloc: number | null; filieres: readonly string[]; niveaux: readonly string[] },
+  f: FiltreRattachement,
+): boolean {
+  return (
+    correspond(`${m.critere} ${m.titre}`, f.q) &&
+    (!f.bloc || String(m.bloc) === f.bloc) &&
+    admet(m.filieres, f.filiere) &&
+    admet(m.niveaux, f.niveau)
+  );
+}
+
+// ───────────────────────────────────────────────── filières, niveaux (lot 3b)
+
+export interface FiltreReferentiel {
+  q: string;
+  metier: string;
+}
+
+export function lireFiltreReferentiel(p: Params, metiers: readonly string[]): FiltreReferentiel {
+  return { q: lireTexte(p.q), metier: lireChoix(p.metier, metiers) };
+}
+
+/** `texte` : ce que la recherche lit (libellé, code, description) ; `metier` : celui de la filière ou du niveau. */
+export function entreeReferentielRetenue(e: { texte: string; metier: string }, f: FiltreReferentiel): boolean {
+  return correspond(e.texte, f.q) && (!f.metier || e.metier === f.metier);
+}
+
+// ──────────────────────────────────────── Repères, programme complet (lot 3b)
+
+export interface FiltreProgrammeComplet {
+  q: string;
+  bloc: string;
+  /** `1` : les critères obligatoires seulement. */
+  obligatoires: string;
+}
+
+export function lireFiltreProgrammeComplet(p: Params, blocs: readonly number[]): FiltreProgrammeComplet {
+  return { q: lireTexte(p.q), bloc: lireChoix(p.bloc, blocs.map(String)), obligatoires: lireChoix(p.obligatoires, ["1"]) };
+}
+
+/** Un critère de la fiche, ou un module hors fiche publié (sans code, jamais obligatoire). */
+export function critereProgrammeRetenu(
+  c: { code: string; libelle: string; sousSection: string | null; bloc: number; obligatoire: boolean },
+  f: FiltreProgrammeComplet,
+): boolean {
+  return (
+    correspond(`${c.code} ${c.libelle} ${c.sousSection ?? ""}`, f.q) &&
+    (!f.bloc || String(c.bloc) === f.bloc) &&
+    (!f.obligatoires || c.obligatoire)
+  );
+}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BarreFiltres } from "@/components/BarreFiltres";
 import { Cartouche } from "@/components/Graphiques";
 import { getReferentiel } from "@/content/referentiel-db";
 import { getTousModulesAvecDeposes } from "@/content/store";
@@ -34,13 +35,14 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
   const conservation = conservationActive();
   const essais = conservation ? await lireEssais(f.modules) : [];
   const bilans = classerModules(bilansModules(essais, f.depuis), ordre);
+  // Compte de la barre (question 91, lot 3) : les modules évalués du périmètre, sur ceux évalués sans filtre.
+  const evalues = conservation ? bilansModules(f.modules === null ? essais : await lireEssais(null)).length : 0;
 
   const dansPeriode = essais.filter((e) => f.depuis === null || e.le >= f.depuis);
   const agents = new Set(dansPeriode.map((e) => e.agent)).size;
   // Cinq agents distincts, pas cinq premiers essais : un agent évalué sur cinq modules ne fait pas un taux.
   const premiers = premierEssaiGlobal(essais, f.depuis);
   const aRevoir = bilans.filter((b) => b.aRevoir).length;
-  const aucunFiltre = f.parametres.length === 0;
 
   return (
     <>
@@ -52,60 +54,55 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
         </p>
       </section>
 
-      <form method="get" className="carte filtres-pilotage">
-        <div className="rangee">
-          <label className="champ">
-            <span>Filière</span>
-            <select name="filiere" defaultValue={f.filiere}>
-              <option value="">Toutes</option>
-              {filieres.map((x) => (
-                <option key={x.id} value={x.id}>{x.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Niveau</span>
-            <select name="niveau" defaultValue={f.niveau}>
-              <option value="">Tous</option>
-              {niveaux.map((n) => (
-                <option key={n.code} value={n.code}>{n.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Bloc de compétence</span>
-            <select name="bloc" defaultValue={f.bloc === null ? "" : String(f.bloc)}>
-              <option value="">Tous</option>
-              {blocs.map((b) => (
-                <option key={b.numero} value={b.numero}>{b.numero}. {b.titre}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="rangee">
-          <label className="champ">
-            <span>Période</span>
-            <select name="periode" defaultValue={f.periode.cle}>
-              {PERIODES.map((x) => (
-                <option key={x.cle} value={x.cle}>{x.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Classement</span>
-            <select name="ordre" defaultValue={ordre}>
-              <option value="faible">Le plus faible d&apos;abord</option>
-              <option value="fort">Le meilleur d&apos;abord</option>
-            </select>
-          </label>
-          <div className="actions actions--fin">
-            <button type="submit" className="bouton bouton--compact">Appliquer</button>
-            {(!aucunFiltre || ordre === "fort") && (
-              <Link href="/admin/statistiques" className="bouton bouton--compact bouton--discret">Tout afficher</Link>
-            )}
-          </div>
-        </div>
-      </form>
+      {/* La barre de la banque (question 91, choix a, lot 3), le classement sous « Plus de filtres et tri ». */}
+      <BarreFiltres
+        adresse="/admin/statistiques"
+        classe="filtres-pilotage"
+        champs={[
+          {
+            nom: "filiere",
+            libelle: "Filière",
+            tous: "Toutes",
+            options: filieres.map((x) => ({ valeur: x.id, libelle: x.libelle })),
+            valeur: f.filiere,
+          },
+          {
+            nom: "niveau",
+            libelle: "Niveau",
+            options: niveaux.map((n) => ({ valeur: n.code, libelle: n.libelle })),
+            valeur: f.niveau,
+          },
+          {
+            nom: "bloc",
+            libelle: "Bloc",
+            options: blocs.map((b) => ({ valeur: String(b.numero), libelle: `${b.numero} — ${b.titre.slice(0, 50)}`, puce: String(b.numero) })),
+            valeur: f.bloc === null ? "" : String(f.bloc),
+            large: true,
+          },
+        ]}
+        plus={[
+          {
+            nom: "periode",
+            libelle: "Période",
+            tous: "Depuis le début",
+            options: PERIODES.filter((x) => x.jours !== null).map((x) => ({ valeur: x.cle, libelle: x.libelle })),
+            valeur: f.periode.jours === null ? "" : f.periode.cle,
+          },
+          {
+            nom: "ordre",
+            libelle: "Classement",
+            tous: "Le plus faible d'abord",
+            options: [{ valeur: "fort", libelle: "Le meilleur d'abord" }],
+            valeur: ordre === "fort" ? "fort" : "",
+            minuscule: true,
+            tri: true,
+          },
+        ]}
+        plusLibelle="Plus de filtres et tri"
+        retenus={bilans.length}
+        total={evalues}
+        unite={["module évalué", "modules évalués"]}
+      />
 
       {!conservation ? (
         <p className="encart encart--attention">

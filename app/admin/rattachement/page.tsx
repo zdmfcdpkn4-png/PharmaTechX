@@ -9,6 +9,9 @@ import { parcoursIntegration, parcoursMaintien } from "@/content/parcours";
 import { ecartsDeLaFiche } from "@/content/reglages";
 import { LienModule } from "@/components/LienModule";
 import { actionReglerSeuil } from "../modules/actions";
+import { listeBlocs } from "@/content/blocs-db";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { lireFiltreRattachement, moduleRegleRetenu } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +32,41 @@ const ERREURS: Record<string, string> = {
 export default async function Rattachement({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; erreur?: string }>;
+  /** Question 91 (lot 3) : recherche, bloc, filière, niveau. */
+  searchParams: Promise<{ ok?: string; erreur?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   await sessionRequise("admin");
   const p = await searchParams;
-  const [{ filieres, niveaux }, bareme, reglages] = await Promise.all([getReferentiel(), lireBareme(), lireReglagesModules()]);
+  const [{ filieres, niveaux }, bareme, reglages, blocs] = await Promise.all([
+    getReferentiel(),
+    lireBareme(),
+    lireReglagesModules(),
+    listeBlocs(),
+  ]);
   const modulesCode = getTousModules();
+  // Filtres (question 91, choix a, lot 3). Filières et niveaux lus tels qu'ils sont réglés : le réglage
+  // s'il y en a un, sinon la fiche ; une liste vide ne limite rien, et le socle seul vaut tronc commun
+  // (`appliquerReglage`).
+  const filieresPostes = filieres.filter((f) => f.id !== "socle");
+  const filtre = lireFiltreRattachement(p, {
+    blocs: blocs.map((b) => b.numero),
+    filieres: filieresPostes.map((f) => f.id),
+    niveaux: niveaux.map((n) => String(n.code)),
+  });
+  const filtreActif = Boolean(filtre.q || filtre.bloc || filtre.filiere || filtre.niveau);
+  const retenus = modulesCode.filter((m) => {
+    const regle = reglages[m.id];
+    return moduleRegleRetenu(
+      {
+        critere: typeof m.critereId === "string" ? m.critereId : "",
+        titre: m.titre,
+        bloc: typeof m.bloc === "number" ? m.bloc : null,
+        filieres: (regle?.filieres ?? m.postes).filter((f) => f !== "socle"),
+        niveaux: regle?.niveaux ?? m.niveaux,
+      },
+      filtre,
+    );
+  });
 
   return (
     <>
@@ -80,12 +112,44 @@ export default async function Rattachement({
           vient du <Link href="/admin/bareme">barème</Link> ; un module déposé se règle dans son
           formulaire.
         </p>
-        <details className="bloc">
+        <BarreFiltres
+          adresse="/admin/rattachement"
+          recherche={{ valeur: filtre.q, placeholder: "Code ou titre du critère" }}
+          champs={[
+            {
+              nom: "bloc",
+              libelle: "Bloc",
+              options: blocs.map((b) => ({ valeur: String(b.numero), libelle: `${b.numero} — ${b.titre.slice(0, 50)}`, puce: String(b.numero) })),
+              valeur: filtre.bloc,
+              large: true,
+            },
+            {
+              nom: "filiere",
+              libelle: "Filière",
+              tous: "Toutes",
+              options: filieresPostes.map((f) => ({ valeur: f.id, libelle: f.libelle })),
+              valeur: filtre.filiere,
+            },
+            {
+              nom: "niveau",
+              libelle: "Niveau",
+              options: niveaux.map((n) => ({ valeur: String(n.code), libelle: n.libelle })),
+              valeur: filtre.niveau,
+            },
+          ]}
+          retenus={retenus.length}
+          total={modulesCode.length}
+          unite={["module", "modules"]}
+        />
+        {/* Repliée à l'arrivée ; un filtre l'ouvre, puisqu'on a filtré pour voir ces modules (question 91, lot 3). */}
+        <details className="bloc" open={filtreActif}>
           <summary>
-            {modulesCode.length} modules · {Object.keys(reglages).length} réglé(s)
+            {filtreActif ? `${retenus.length} module${retenus.length > 1 ? "s" : ""} sur ${modulesCode.length}` : `${modulesCode.length} modules`} ·{" "}
+            {Object.keys(reglages).length} réglé(s)
           </summary>
           <div className="contenu-bloc">
-            {modulesCode.map((m) => {
+            {retenus.length === 0 && <p className="legende">Aucun module ne correspond à ces filtres.</p>}
+            {retenus.map((m) => {
               const regle = reglages[m.id];
               const ecarts = ecartsDeLaFiche(m, regle, bareme.seuilDefaut);
               return (

@@ -56,7 +56,8 @@ export default async function Modules({
   const retenus = deposes.filter((m) => {
     const v = versModule(m);
     return moduleDeposeRetenu(
-      { ...m, bloc: typeof v.bloc === "number" ? v.bloc : null, filieres: v.postes, niveaux: v.niveaux },
+      // Le socle seul vaut tronc commun : il concerne chaque filière.
+      { ...m, bloc: typeof v.bloc === "number" ? v.bloc : null, filieres: v.postes.filter((f) => f !== "socle"), niveaux: v.niveaux },
       filtre,
     );
   });

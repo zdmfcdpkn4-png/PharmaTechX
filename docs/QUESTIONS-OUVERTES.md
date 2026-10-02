@@ -470,12 +470,13 @@ telle. Ordre : ce qui change le déploiement en premier.
     comptés comme « À faire ») ; « Accueil » ouvre le menu, « Équipe »
     réunit codes d'accès et personnel, le journal passe à Suivi, « Tester
     en apprenant » à Modules sur sa propre page, « Dépôt documents »
-    devient « Documents », Réglages quitte le menu du tutorat. Lot 3,
-    premier volet fait : la barre de la banque sur Codes d'accès, Rapports,
-    Signalements, Modules et Documents ; le second volet (Personnel,
-    Programmes à la carte, Mises en situation, Rattachement des modules,
-    Filières, Niveaux, Repères, Pilotage et Statistiques) suit. Détail dans
-    `DECISIONS.md`.
+    devient « Documents », Réglages quitte le menu du tutorat. Lot 3, fait
+    en deux volets : la barre de la banque sur Codes d'accès, Rapports,
+    Signalements, Modules et Documents, puis sur Personnel, Programmes à la
+    carte, Mises en situation, Rattachement des modules, Filières, Niveaux,
+    le programme complet des Repères, Pilotage et Statistiques. Une action
+    faite sous un filtre ramène encore à la liste entière, sauf dans la
+    banque. Détail dans `DECISIONS.md`.
 
 90. **Lot 3 de la refonte de la banque : lesquels faire** — posée le
     02/10/2026, après la question 89 (choix a), qui laissait le lot 3 à un
@@ -507,7 +508,9 @@ telle. Ordre : ce qui change le déploiement en premier.
     au-delà des 300 dernières. Une action ou une cible du tableau filtre
     sur elle ; chaque question de la banque mène à ses lignes, pour
     l'administration. Les points 1, 2, 3, 5 et 6 ne sont pas faits.
-    Détail dans `DECISIONS.md`.
+    Détail dans `DECISIONS.md`. Le point 2 l'est depuis, par la question 91
+    (lot 3, 02/10/2026) : Pilotage et Statistiques ont la barre de la
+    banque.
 
 89. **Reclasser plusieurs questions d'un coup : que devient une question
     validée** — posée le 01/10/2026, sur « Faire en sorte dans la gestion des

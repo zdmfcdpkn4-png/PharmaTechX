@@ -1,9 +1,10 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { RECHERCHE_MAX } from "@/content/filtres-banque";
 import {
   adresseFiltree,
   compteRetenu,
-  parametresActifs,
+  filtrent,
   pucesFiltres,
   type ChampFiltre,
   type RechercheFiltre,
@@ -54,11 +55,15 @@ export function BarreFiltres({
   recherche,
   champs,
   plus = [],
+  plusLibelle = "Plus de filtres",
   gardes = [],
   retenus,
   total,
   unite,
   plafond,
+  ancre = "",
+  classe = "",
+  children,
 }: {
   /** Page filtrée, sans paramètre. */
   adresse: string;
@@ -67,6 +72,8 @@ export function BarreFiltres({
   champs: readonly ChampFiltre[];
   /** Les autres, sous « Plus de filtres ». */
   plus?: readonly ChampFiltre[];
+  /** Intitulé du repli quand il porte aussi un tri : « Plus de filtres et tri », comme la banque. */
+  plusLibelle?: string;
   /** Paramètres qui ne sont pas des filtres, gardés par le formulaire et les puces. */
   gardes?: readonly (readonly [string, string])[];
   retenus: number;
@@ -75,13 +82,19 @@ export function BarreFiltres({
   unite: readonly [string, string];
   /** Phrase ajoutée au compte quand la liste lue est plafonnée. */
   plafond?: string;
+  /** Section où revenir après un filtre (Repères : `programme`). */
+  ancre?: string;
+  /** Classe ajoutée au formulaire. */
+  classe?: string;
+  /** Ce que la page ajoute sous la barre (le périmètre du Pilotage). */
+  children?: ReactNode;
 }) {
   const tous = [...champs, ...plus];
-  const puces = pucesFiltres(adresse, gardes, recherche, tous);
-  const filtre = parametresActifs(recherche, tous).length > 0;
+  const puces = pucesFiltres(adresse, gardes, recherche, tous, ancre);
+  const filtre = filtrent(recherche, tous);
   const replies = plus.filter((c) => c.valeur !== "").length;
   return (
-    <form method="get" action={adresse} className="carte filtres" role="search">
+    <form method="get" action={ancre ? `${adresse}#${ancre}` : adresse} className={`carte filtres${classe ? ` ${classe}` : ""}`} role="search">
       {gardes.map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
@@ -92,7 +105,7 @@ export function BarreFiltres({
             <span className="lecture-seule">Rechercher</span>
             <input
               type="search"
-              name="q"
+              name={recherche.nom ?? "q"}
               defaultValue={recherche.valeur}
               maxLength={RECHERCHE_MAX}
               placeholder={recherche.placeholder}
@@ -106,7 +119,7 @@ export function BarreFiltres({
       {plus.length > 0 && (
         <details className="filtres-plus">
           <summary>
-            Plus de filtres
+            {plusLibelle}
             {replies > 0 && <span className="filtres-nb">{replies}</span>}
           </summary>
           <div className="filtres-panneau">
@@ -136,12 +149,13 @@ export function BarreFiltres({
             </Link>
           ))}
           {puces.length > 1 && (
-            <Link href={adresseFiltree(adresse, gardes)} className="puces-effacer">
+            <Link href={adresseFiltree(adresse, gardes, ancre)} className="puces-effacer">
               Tout effacer
             </Link>
           )}
         </p>
       )}
+      {children}
     </form>
   );
 }

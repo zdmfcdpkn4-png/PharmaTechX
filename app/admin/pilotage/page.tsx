@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
+import { BarreFiltres } from "@/components/BarreFiltres";
 import { LienModule } from "@/components/LienModule";
 import { getSession } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
@@ -117,7 +118,11 @@ export default async function Pilotage({
     titreModule && moduleId ? <LienModule id={moduleId}>{titreModule}</LienModule> : null,
     periode.libelle.toLowerCase(),
   ].filter(Boolean);
-  const aucunFiltre = !filiere && !niveau && bloc === null && !moduleId && periode.cle === "tout";
+  // Modules que lit le tableau, pour le compte de la barre : le module choisi l'emporte sur filière et niveau,
+  // le bloc retient ceux dont le critère en relève, comme la lecture des rapports.
+  const dansPerimetre = (moduleId ? modules.filter((m) => m.id === moduleId) : retenus).filter(
+    (m) => filtre.criteres === null || filtre.criteres.includes(String(m.critereId)),
+  );
 
   return (
     <>
@@ -135,61 +140,51 @@ export default async function Pilotage({
         </p>
       </section>
 
-      <form method="get" className="carte filtres-pilotage">
-        <div className="rangee">
-          <label className="champ">
-            <span>Filière</span>
-            <select name="filiere" defaultValue={filiere}>
-              <option value="">Toutes</option>
-              {filieres.map((f) => (
-                <option key={f.id} value={f.id}>{f.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Niveau</span>
-            <select name="niveau" defaultValue={niveau}>
-              <option value="">Tous</option>
-              {niveaux.map((n) => (
-                <option key={n.code} value={n.code}>{n.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Bloc de compétence</span>
-            <select name="bloc" defaultValue={bloc === null ? "" : String(bloc)}>
-              <option value="">Tous</option>
-              {blocs.map((b) => (
-                <option key={b.numero} value={b.numero}>{b.numero}. {b.titre}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="rangee">
-          <label className="champ">
-            <span>Module</span>
-            <select name="module" defaultValue={moduleId}>
-              <option value="">Tous</option>
-              {modules.map((m) => (
-                <option key={m.id} value={m.id}>{m.titre}</option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
-            <span>Période</span>
-            <select name="periode" defaultValue={periode.cle}>
-              {PERIODES.map((x) => (
-                <option key={x.cle} value={x.cle}>{x.libelle}</option>
-              ))}
-            </select>
-          </label>
-          <div className="actions actions--fin">
-            <button type="submit" className="bouton bouton--compact">Appliquer</button>
-            {!aucunFiltre && (
-              <Link href="/admin/pilotage" className="bouton bouton--compact bouton--discret">Tout afficher</Link>
-            )}
-          </div>
-        </div>
+      {/* La barre de la banque (question 91, choix a, lot 3) ; le périmètre en clair dessous. */}
+      <BarreFiltres
+        adresse="/admin/pilotage"
+        classe="filtres-pilotage"
+        champs={[
+          {
+            nom: "filiere",
+            libelle: "Filière",
+            tous: "Toutes",
+            options: filieres.map((f) => ({ valeur: f.id, libelle: f.libelle })),
+            valeur: filiere,
+          },
+          {
+            nom: "niveau",
+            libelle: "Niveau",
+            options: niveaux.map((n) => ({ valeur: n.code, libelle: n.libelle })),
+            valeur: niveau,
+          },
+          {
+            nom: "bloc",
+            libelle: "Bloc",
+            options: blocs.map((b) => ({ valeur: String(b.numero), libelle: `${b.numero} — ${b.titre.slice(0, 50)}`, puce: String(b.numero) })),
+            valeur: bloc === null ? "" : String(bloc),
+            large: true,
+          },
+        ]}
+        plus={[
+          {
+            nom: "module",
+            libelle: "Module",
+            options: modules.map((m) => ({ valeur: m.id, libelle: m.titre })),
+            valeur: moduleId,
+          },
+          {
+            nom: "periode",
+            libelle: "Période",
+            tous: "Depuis le début",
+            options: PERIODES.filter((x) => x.jours !== null).map((x) => ({ valeur: x.cle, libelle: x.libelle })),
+            valeur: periode.jours === null ? "" : periode.cle,
+          },
+        ]}
+        retenus={dansPerimetre.length}
+        total={modules.length}
+        unite={["module", "modules"]}
+      >
         <p className="legende" style={{ margin: 0 }}>
           Périmètre :{" "}
           {perimetre.map((x, i) => (
@@ -198,11 +193,10 @@ export default async function Pilotage({
               {x}
             </Fragment>
           ))}
-          {filtre.modules ? ` — ${filtre.modules.length} module${filtre.modules.length > 1 ? "s" : ""}` : ""}
           {/* Venu de l'introduction (question 91) : ce que lit le tableau, sous le choix du périmètre. */}
           {conservation && ". Lu sur les rapports émis, d'ordinaire l'essai qui réussit."}
         </p>
-      </form>
+      </BarreFiltres>
 
       <div className="grille-cartouches">
         <Cartouche valeur={publies.length} libelle="Modules au programme" precision={`${modules.length} au total`} />

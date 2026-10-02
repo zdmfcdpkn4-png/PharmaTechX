@@ -10,6 +10,8 @@ import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 import { LienModule } from "@/components/LienModule";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { moduleOuvrable } from "../questions/commun";
+import { BarreFiltres } from "@/components/BarreFiltres";
+import { VERDICTS_RAPPORT, ligneRepertoireRetenue, lireFiltrePersonnel } from "@/content/filtres-listes";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,8 @@ function date(iso: string): string {
 export default async function Personnel({
   searchParams,
 }: {
-  searchParams: Promise<{ agent?: string; ok?: string; identifiant?: string }>;
+  /** `agent` : partie d'un identifiant ; question 91 (lot 3) : critère, verdict. */
+  searchParams: Promise<{ agent?: string; ok?: string; identifiant?: string; [cle: string]: string | string[] | undefined }>;
 }) {
   const p = await searchParams;
   if (!conservationActive()) {
@@ -48,9 +51,14 @@ export default async function Personnel({
     );
   }
   const [toutes, agents, modules] = await Promise.all([repertoirePersonnel(), listerAgents(), getTousModulesAvecDeposes()]);
-  const saisie = (p.agent ?? "").trim();
-  const filtre = normaliserIdentifiant(saisie) ?? saisie.toUpperCase();
-  const lignes = filtre ? toutes.filter((l) => l.agent_identifiant.includes(filtre)) : toutes;
+  // Filtres du répertoire (question 91, choix a, lot 3) : la barre de la banque. La recherche garde son
+  // paramètre (`agent`) et sa lecture : « ag 1 » vaut AG-001.
+  const criteresVus = [...new Set(toutes.map((l) => l.critere))].sort((a, b) => a.localeCompare(b, "fr", { numeric: true }));
+  const filtrePersonnel = lireFiltrePersonnel(p, criteresVus);
+  const filtre = normaliserIdentifiant(filtrePersonnel.agent) ?? filtrePersonnel.agent.toUpperCase();
+  const lignes = toutes
+    .map((l) => ({ l, ...decisionEnregistree(l) }))
+    .filter((x) => ligneRepertoireRetenue({ agent_identifiant: x.l.agent_identifiant, critere: x.l.critere, verdict: x.verdictFinal }, filtrePersonnel, filtre));
   const avecRapports = new Set(toutes.map((l) => l.agent_identifiant)).size;
   const message = p.ok && MESSAGES[p.ok] ? MESSAGES[p.ok](p.identifiant ?? "") : null;
 
@@ -132,23 +140,37 @@ export default async function Personnel({
       </section>
 
       {/* ─────────────────────────────────────────────── répertoire */}
-      <form method="get" className="carte" style={{ marginBottom: "1rem" }}>
-        <div className="rangee">
-          <label className="champ">
-            <span>Agent</span>
-            <input type="search" name="agent" defaultValue={p.agent ?? ""} placeholder="AG-001" />
-          </label>
-        </div>
-        <div className="actions">
-          <button type="submit" className="bouton bouton--compact">Filtrer</button>
-          {filtre && <Link href="/admin/personnel" className="bouton bouton--compact bouton--secondaire">Tous</Link>}
-        </div>
-      </form>
-
       <div className="section-titre">
         <h2>Répertoire</h2>
         <span className="compte">{avecRapports} agent{avecRapports > 1 ? "s" : ""} avec rapport · {toutes.length} ligne{toutes.length > 1 ? "s" : ""}</span>
       </div>
+      {toutes.length > 0 && (
+        <BarreFiltres
+          adresse="/admin/personnel"
+          recherche={{ nom: "agent", valeur: filtrePersonnel.agent, placeholder: "Identifiant d'agent : AG-001" }}
+          champs={[
+            {
+              nom: "critere",
+              libelle: "Critère",
+              options: criteresVus.map((c) => ({ valeur: c, libelle: c })),
+              valeur: filtrePersonnel.critere,
+            },
+            {
+              nom: "verdict",
+              libelle: "Verdict",
+              options: VERDICTS_RAPPORT.map((v) => ({
+                valeur: v,
+                libelle: LIBELLES_COURTS_VERDICT[v].charAt(0).toUpperCase() + LIBELLES_COURTS_VERDICT[v].slice(1),
+              })),
+              valeur: filtrePersonnel.verdict,
+              minuscule: true,
+            },
+          ]}
+          retenus={lignes.length}
+          total={toutes.length}
+          unite={["ligne", "lignes"]}
+        />
+      )}
       <table className="tableau">
         <thead>
           <tr>
@@ -161,8 +183,7 @@ export default async function Personnel({
           </tr>
         </thead>
         <tbody>
-          {lignes.map((l) => {
-            const { decision, verdictFinal } = decisionEnregistree(l);
+          {lignes.map(({ l, decision, verdictFinal }) => {
             return (
               <tr key={`${l.agent_identifiant}#${l.critere}`}>
                 <td><code>{l.agent_identifiant}</code>{l.agent_actif ? null : <span className="legende"> — clos</span>}</td>
@@ -184,7 +205,7 @@ export default async function Personnel({
             );
           })}
           {lignes.length === 0 && (
-            <tr><td colSpan={6} className="legende">Aucun rapport enregistré{filtre ? " pour ce filtre" : ""}.</td></tr>
+            <tr><td colSpan={6} className="legende">{toutes.length === 0 ? "Aucun rapport enregistré." : "Aucune ligne ne correspond à ces filtres."}</td></tr>
           )}
         </tbody>
       </table>

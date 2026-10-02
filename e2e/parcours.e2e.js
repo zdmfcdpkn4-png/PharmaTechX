@@ -1735,6 +1735,21 @@ Justification : justification deux.`;
   await page.goto(BASE + "/?parcours=integration");
   assert.ok((await page.locator(`a:has-text("${TITRE_ZAC}")`).count()) > 0, "fiche rétablie");
   ok("réglage d'un module du code : parcours restreint au maintien, écart signalé, puis fiche rétablie");
+  // La barre de la banque (question 91, choix a, lot 3) : sous un filtre, la liste repliée s'ouvre sur les
+  // modules retenus ; sans filtre, elle reste repliée.
+  await page.goto(BASE + "/admin/rattachement?q=habillage");
+  const compteRattachement = /^(\d+) modules? sur (\d+)$/.exec((await page.locator("form.filtres .filtres-compte").innerText()).trim());
+  assert.ok(compteRattachement, "rattachement : compte « n sur N » sous un filtre");
+  assert.equal(await page.locator("details.bloc[open] form.ligne-critere").count(), Number(compteRattachement[1]), "rattachement : liste ouverte sur les modules retenus");
+  assert.ok(await page.locator("form.ligne-critere", { hasText: TITRE_ZAC.slice(0, 40) }).isVisible(), "rattachement : le module cherché, visible");
+  await page.goto(BASE + "/admin/rattachement?bloc=1&niveau=N1a");
+  const lignesBloc1 = await page.locator("details.bloc[open] form.ligne-critere").allInnerTexts();
+  assert.ok(lignesBloc1.length > 0 && lignesBloc1.every((t) => /\bB1-\d\d\b/.test(t)), "rattachement : bloc 1 seulement");
+  assert.equal(await page.locator("form.filtres .puce").count(), 2, "rattachement : une puce par filtre");
+  await page.click("form.filtres a.puces-effacer");
+  await page.waitForURL((u) => new URL(u).pathname === "/admin/rattachement" && new URL(u).search === "");
+  assert.equal(await page.locator("details.bloc[open]").count(), 0, "rattachement : sans filtre, la liste reste repliée");
+  ok("rattachement des modules : recherche, bloc et niveau ; la liste s'ouvre sous un filtre, repliée sans (question 91, lot 3)");
 
   // 12g bis. rattachement des questions (question 87, choix a) : les deux schémas dans le site,
   // aux Repères (au menu Squelette jusqu'au 02/10/2026), et depuis le dépôt et la banque ; dessin large sur poste, en colonne sur
@@ -5419,7 +5434,7 @@ Source : Procédure statistiques — section 5`;
   //              dans l'adresse. Sous le tutorat, connecté à l'étape précédente.
   const compteFiltres = async () => {
     const t = (await page.locator("form.filtres .filtres-compte").innerText()).trim();
-    const m = /^(\d+) \S+ sur (\d+)/.exec(t);
+    const m = /^(\d+) \D+ sur (\d+)/.exec(t);
     assert.ok(m, "compte « n sur N » sous un filtre — " + t);
     return { retenus: Number(m[1]), total: Number(m[2]) };
   };
@@ -5496,6 +5511,119 @@ Source : Procédure statistiques — section 5`;
   await page.goto(BASE + "/admin/documents?nature=synthese");
   assert.ok((await premieresEtiquettes(page.locator("li.carte"))).every((e) => e === "Fiche de synthèse"), "documents : fiches seulement");
   ok("filtres de la banque sur Codes d'accès, Rapports, Signalements, Modules et Documents : compte retenu, puces, « Tout effacer », filtres dans l'adresse (question 91, lot 3)");
+
+  // 14d octies. la même barre sur les autres écrans (question 91, choix a, lot 3, second volet) : Personnel,
+  //             Programmes à la carte, Mises en situation, Filières, Niveaux, programme complet des Repères,
+  //             Pilotage, Statistiques. Toujours sous le tutorat ; Rattachement des modules, réservé à
+  //             l'administration, est vu à l'étape 12g. Les contrôles lisent les options à l'écran : chaque
+  //             valeur retient ses lignes, et leur somme refait le total.
+  const sommeDesOptions = async (adresse, nom, lignes, verifier) => {
+    const valeurs = await page.locator(`form.filtres select[name=${nom}] option`).evaluateAll((os) => os.map((o) => o.value).filter(Boolean));
+    let somme = 0;
+    let total = null;
+    for (const v of valeurs) {
+      await page.goto(BASE + adresse + (adresse.includes("?") ? "&" : "?") + nom + "=" + encodeURIComponent(v));
+      const c = await compteFiltres();
+      assert.equal(await lignes().count(), c.retenus, `${adresse} : « ${nom} = ${v} », la liste compte ce que dit la barre`);
+      if (verifier) await verifier(v);
+      somme += c.retenus;
+      total = c.total;
+    }
+    return { somme, total };
+  };
+  // Personnel : l'identifiant cherché en minuscules ; chaque verdict, ses lignes.
+  await page.goto(BASE + "/admin/personnel?agent=" + agentsStat[4].toLowerCase());
+  compte = await compteFiltres();
+  const lignesRepertoire = () => page.locator("table.tableau").last().locator("tbody tr:has(a[href^='/admin/rapports/'])");
+  assert.equal(compte.retenus, 1, "personnel : un rapport émis, une ligne");
+  assert.equal(await lignesRepertoire().count(), 1, "personnel : la liste compte ce que dit la barre");
+  assert.equal((await lignesRepertoire().first().locator("td code").innerText()).trim(), agentsStat[4], "personnel : l'agent cherché");
+  await page.locator("form.filtres .puce", { hasText: "Recherche : « " + agentsStat[4].toLowerCase() + " »" }).waitFor();
+  await page.goto(BASE + "/admin/personnel");
+  const parVerdict = await sommeDesOptions("/admin/personnel", "verdict", lignesRepertoire, async (v) => {
+    const libelle = { acquis: "acquis", non_acquis: "non acquis", indetermine: "indéterminé", non_concluant: "non concluant" }[v];
+    const resultats = await lignesRepertoire().locator("td:nth-child(4)").allInnerTexts();
+    assert.ok(resultats.every((t) => t.trim().endsWith("% · " + libelle)), `personnel : verdict « ${libelle} » seulement`);
+  });
+  assert.equal(parVerdict.somme, parVerdict.total, "personnel : les verdicts refont le total");
+  // Programmes à la carte : la recherche lit le nom ; les statuts refont le total.
+  await page.goto(BASE + "/admin/programmes?q=" + encodeURIComponent("intérimaire"));
+  compte = await compteFiltres();
+  assert.equal(await page.locator("li.programme-ligne").count(), compte.retenus, "programmes : la liste compte ce que dit la barre");
+  assert.ok((await page.locator("li.programme-ligne").allInnerTexts()).every((t) => /Intérimaire test/.test(t)), "programmes : le programme cherché");
+  const parStatut = await sommeDesOptions("/admin/programmes", "statut", () => page.locator("li.programme-ligne"));
+  assert.equal(parStatut.somme, parStatut.total, "programmes : les statuts refont le total");
+  // Mises en situation : deux situations, deux modules ; le filtre par module retient la sienne.
+  for (const [mod, titre] of [[idStat, "Situation filtre statistiques"], ["comportement-zac", "Situation filtre sas"]]) {
+    await page.goto(BASE + "/admin/questions/situations?module=" + encodeURIComponent(mod));
+    const creation = page.locator("section.carte", { hasText: "Nouvelle mise en situation" });
+    await creation.locator("input[name=titre]").fill(titre);
+    await creation.locator("textarea[name=contexte]").fill("Vignette de contrôle des filtres.\n\nSecond paragraphe de la vignette.");
+    await creation.locator("button:has-text('Créer')").click();
+    await page.waitForURL(/ok=1/);
+  }
+  await page.goto(BASE + "/admin/questions/situations?module=" + encodeURIComponent(idStat));
+  compte = await compteFiltres();
+  assert.ok(compte.retenus >= 1 && compte.retenus < compte.total, "situations : celles du module, une partie");
+  assert.ok((await page.locator("ul.liste-nue > li.carte").allInnerTexts()).every((t) => !t.includes("Situation filtre sas")), "situations : l'autre module écarté");
+  assert.equal(await page.locator("select[name=moduleId]").inputValue(), idStat, "situations : le module filtré préremplit la création");
+  await page.goto(BASE + "/admin/questions/situations?q=" + encodeURIComponent("filtre sas"));
+  assert.equal(await page.locator("ul.liste-nue > li.carte").count(), 1, "situations : la recherche lit le titre");
+  // Filières et Niveaux : chaque métier, ses entrées ; une recherche.
+  const cartesReferentiel = () => page.locator("ul.liste-nue > li.carte");
+  for (const adresse of ["/admin/filieres", "/admin/niveaux"]) {
+    await page.goto(BASE + adresse);
+    const parMetier = await sommeDesOptions(adresse, "metier", cartesReferentiel);
+    assert.equal(parMetier.somme, parMetier.total, `${adresse} : les métiers refont le total`);
+  }
+  await page.goto(BASE + "/admin/filieres?q=chimio");
+  compte = await compteFiltres();
+  assert.ok(compte.retenus >= 1 && compte.retenus < compte.total, "filières : la recherche retient une partie");
+  await page.locator("ul.liste-nue > li.carte", { hasText: "Parcours Chimiothérapie" }).waitFor();
+  await page.goto(BASE + "/admin/niveaux?q=N1a");
+  compte = await compteFiltres();
+  assert.equal(await cartesReferentiel().count(), compte.retenus, "niveaux : la liste compte ce que dit la barre");
+  assert.ok(compte.retenus >= 1 && compte.retenus < compte.total, "niveaux : la recherche retient une partie");
+  // Repères, programme complet : bloc 1, puis les obligatoires ; la barre ramène à la section.
+  const lignesProgramme = () => page.locator("section#programme .ligne-critere");
+  await page.goto(BASE + "/reperes?bloc=1#programme");
+  compte = await compteFiltres();
+  assert.equal(await lignesProgramme().count(), compte.retenus, "repères : le programme compte ce que dit la barre");
+  assert.deepEqual(
+    (await page.locator("section#programme details.bloc > summary").allInnerTexts()).map((t) => t.split(" —")[0].trim()),
+    ["Bloc 1"],
+    "repères : le bloc 1 seul",
+  );
+  assert.equal(await page.locator("section#programme details.bloc[open]").count(), 0, "repères : les blocs restent repliés");
+  assert.match(await page.locator("form.filtres").getAttribute("action"), /\/reperes#programme$/, "repères : le formulaire revient à la section");
+  assert.match(await page.locator("form.filtres .puce").first().getAttribute("href"), /#programme$/, "repères : la puce aussi");
+  await page.goto(BASE + "/reperes?obligatoires=1#programme");
+  compte = await compteFiltres();
+  assert.equal(await lignesProgramme().count(), compte.retenus, "repères : obligatoires, le compte");
+  assert.equal(await page.locator("section#programme .ligne-critere:has(.obligatoire)").count(), compte.retenus, "repères : obligatoires seulement");
+  // Pilotage : un module et une période, sous « Plus de filtres » ; « Tout effacer ».
+  await page.goto(BASE + "/admin/pilotage?module=" + encodeURIComponent(idStat) + "&periode=30");
+  compte = await compteFiltres();
+  assert.equal(compte.retenus, 1, "pilotage : un module au périmètre");
+  assert.equal((await page.locator("form.filtres .filtres-plus > summary .filtres-nb").innerText()).trim(), "2", "pilotage : deux filtres repliés actifs");
+  await page.locator("form.filtres .puce", { hasText: "Période : 30 derniers jours" }).waitFor();
+  await page.locator(".filtres-pilotage .legende", { hasText: "Module statistiques test" }).waitFor();
+  await page.click("form.filtres a.puces-effacer");
+  await page.waitForURL((u) => new URL(u).pathname === "/admin/pilotage" && new URL(u).search === "");
+  assert.match((await page.locator("form.filtres .filtres-compte").innerText()).trim(), /^\d+ modules?$/, "pilotage : sans filtre, le total seul");
+  // Statistiques : le niveau écarte le module évalué en N1c ; le classement est un tri, sous « Plus de filtres et tri ».
+  const lignesStats = () => page.locator(".liste-stats > li");
+  await page.goto(BASE + "/admin/statistiques?niveau=N2");
+  compte = await compteFiltres();
+  assert.equal(await lignesStats().count(), compte.retenus, "statistiques : la liste compte ce que dit la barre");
+  assert.equal(await lignesStats().filter({ hasText: "Module statistiques test" }).count(), 0, "statistiques : le module N1c écarté en N2");
+  await page.goto(BASE + "/admin/statistiques?niveau=N1c");
+  assert.equal(await lignesStats().filter({ hasText: "Module statistiques test" }).count(), 1, "statistiques : retenu en N1c");
+  await page.goto(BASE + "/admin/statistiques?ordre=fort");
+  await page.locator("form.filtres .puce", { hasText: "Classement : le meilleur d'abord" }).waitFor();
+  assert.match((await page.locator("form.filtres .filtres-plus > summary").innerText()).trim(), /^Plus de filtres et tri\s*1$/, "statistiques : le tri compté dans le repli");
+  assert.match((await page.locator("form.filtres .filtres-compte").innerText()).trim(), /^\d+ modules? évalués?$/, "statistiques : un tri ne réduit pas la liste, le compte reste entier");
+  ok("filtres de la banque sur Personnel, Programmes, Mises en situation, Filières, Niveaux, Repères, Pilotage et Statistiques : compte retenu, somme des options, puces, « Tout effacer » (question 91, lot 3)");
 
   // Quitter depuis une page sans ancre, comme `rebrancher` : l'adresse « #actions »
   // fait défiler la page après son rendu, en douceur, et ce défilement pouvait
