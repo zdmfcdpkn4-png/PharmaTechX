@@ -216,7 +216,7 @@ export default async function RootLayout({
             picto: "modules",
             liens: [
               { href: "/admin/modules", libelle: "Modules" },
-              { href: "/admin/documents", libelle: "Documents" },
+              { href: "/admin/documents", libelle: "Dépôt documents" },
             ],
           },
           // Squelette de la formation (question 81, choix a, 26/09/2026) : tout ce
@@ -237,7 +237,8 @@ export default async function RootLayout({
                   ]
                 : []),
               // Schémas du rattachement des questions (question 87, choix a) : tutorat et administration.
-              { href: "/admin/rattachement-questions", libelle: "Rattachement des questions" },
+              // Libellé en question depuis le 02/10/2026 ; espace insécable : le « ? » ne passe pas seul à la ligne.
+              { href: "/admin/rattachement-questions", libelle: "Comment sont rattachées les questions\u00a0?" },
               { href: "/admin/ordonnancement", libelle: "Ordre" },
               { href: "/admin/programmes", libelle: "Programmes à la carte" },
             ],

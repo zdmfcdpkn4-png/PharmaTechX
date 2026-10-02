@@ -231,7 +231,7 @@ export default async function Questions({
           Questions déposées par les tuteurs et administrateurs, en complément de la banque
           versionnée avec le site. Seules les questions <strong>validées</strong> entrent dans les
           tirages ; une question importée ou créée reste « à vérifier » jusqu&apos;à relecture. Qui
-          voit quelle question : <Link href="/admin/rattachement-questions">Rattachement des questions</Link>.
+          voit quelle question : <Link href="/admin/rattachement-questions">Comment sont rattachées les questions&nbsp;?</Link>
         </p>
         <div className="actions" style={{ marginTop: 0 }}>
           <Link

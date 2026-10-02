@@ -5883,6 +5883,49 @@ n'a reçu aucune réponse. La cause était dans le parcours, pas dans le site.
 - Correction : chaque envoi attend que le bouton « Entrer » ne soit plus
   occupé. Rejouée seule : aucun échec sur 150.
 
+## Deux libellés : « Comment sont rattachées les questions ? » et « Dépôt documents » (02/10/2026, demande directe)
+
+**Demande.** « Change le libellé « rattachement des questions » en
+« comment sont rattachées les questions ? ». Changer le libellé
+« documents » en « Dépôt documents ». »
+
+**Fait.**
+- « Comment sont rattachées les questions ? », avec une majuscule en tête
+  comme les autres entrées du menu, partout où le site nomme cette page :
+  - au menu Squelette : volet, tiroir et « Aller à » de l'accès rapide, qui
+    en découle ;
+  - en titre de la page ;
+  - dans les liens de la banque et du dépôt.
+- Une espace insécable tient le « ? » avec « questions » : le libellé
+  passe sur deux lignes au volet comme au tiroir, et le point
+  d'interrogation ne va pas seul à la ligne.
+- « Dépôt documents » au menu Modules, et dans le texte de l'écran Modules
+  qui renvoie à cet écran (« ses documents depuis Dépôt documents »).
+
+**Inchangé.**
+- Les adresses (`/admin/rattachement-questions`, `/admin/documents`) : les
+  favoris et les liens déjà donnés restent bons.
+- Le titre de l'écran des documents, « Documents rattachés ».
+- Le bouton « Documents » de chaque module, sur l'écran Modules et sur la
+  fiche d'un module : il ouvre les documents de ce module, il ne nomme pas
+  l'écran du menu.
+- La page à part garde son titre, « Rattachement des questions ». Son
+  renvoi au menu du site prend le nouveau libellé (version 7).
+- Les décisions passées gardent les noms de leur époque.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 428 tests.
+- `npm run build`.
+- Mesures, sans débord :
+  - le libellé tient sur deux lignes au volet (1 280 px) et au tiroir
+    (390 px) ;
+  - le titre de la page tient sur une ligne à 1 280 px et sur trois à
+    390 px.
+- Parcours de bout en bout, deux passes de 107 étapes, sans erreur de page
+  ni erreur serveur :
+  - l'étape 12g bis lit les deux libellés au menu ;
+  - les étapes 12g bis et 13 attendent le nouveau titre.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

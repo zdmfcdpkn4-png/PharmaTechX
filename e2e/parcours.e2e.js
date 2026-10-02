@@ -1716,13 +1716,19 @@ Justification : justification deux.`;
   await page.goto(BASE + "/admin/questions/import");
   await page.click(".panneau-titre a[href='/admin/rattachement-questions']");
   await page.waitForURL(/\/admin\/rattachement-questions$/);
-  await page.waitForSelector("h1:has-text('Rattachement des questions')");
-  assert.equal(await page.locator("figure.logigramme").count(), 2, "Rattachement des questions : deux schémas");
+  await page.waitForSelector("h1:has-text('Comment sont rattachées les questions')");
+  assert.equal(await page.locator("figure.logigramme").count(), 2, "Comment sont rattachées les questions : deux schémas");
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
     1,
-    "lien « Rattachement des questions » du menu Squelette",
+    "lien « Comment sont rattachées les questions ? » du menu Squelette",
   );
+  // Libellés du 02/10/2026 : une question pour les schémas, « Dépôt documents » pour les documents.
+  // textContent : le sous-menu Modules peut être replié, son texte reste lisible.
+  const libelleMenu = async (href) =>
+    (await page.locator(`#volet-principal a[href='${href}']`).first().textContent()).replace(/\s+/g, " ").trim();
+  assert.equal(await libelleMenu("/admin/rattachement-questions"), "Comment sont rattachées les questions ?", "libellé du menu Squelette");
+  assert.equal(await libelleMenu("/admin/documents"), "Dépôt documents", "libellé du menu Modules");
   const variantesSchemas = () =>
     page.evaluate(() =>
       [...document.querySelectorAll("figure.logigramme")].map((f) =>
@@ -1743,7 +1749,7 @@ Justification : justification deux.`;
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
     0,
-    "Rattachement des questions sans défilement horizontal à 390 px",
+    "Comment sont rattachées les questions : sans défilement horizontal à 390 px",
   );
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(BASE + "/admin/questions");
@@ -1757,7 +1763,7 @@ Justification : justification deux.`;
     1,
     "l'explication de l'arborescence renvoie au schéma complet",
   );
-  ok("rattachement des questions (question 87, choix a) : page du menu Squelette, ouverte depuis le dépôt et la banque ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord, le premier avec ses dix éléments ; l'arborescence de la banque y renvoie");
+  ok("comment sont rattachées les questions (question 87, choix a ; libellé du 02/10/2026) : page du menu Squelette, ouverte depuis le dépôt et la banque ; menu « Dépôt documents » ; deux schémas, en largeur sur poste, en colonne à 390 px sans débord, le premier avec ses dix éléments ; l'arborescence de la banque y renvoie");
 
   // 12h. volet de navigation (question 37, choix c) : barre latérale sur poste,
   // tiroir au hamburger sous 62 rem, explications sorties de l'accueil, grands
@@ -3461,7 +3467,7 @@ Justification : cf. procédure interne.`,
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement-questions']").count(),
     1,
-    "tutorat : lien « Rattachement des questions » du menu Squelette",
+    "tutorat : lien « Comment sont rattachées les questions ? » du menu Squelette",
   );
   assert.equal(
     await page.locator("#volet-principal a[href='/admin/rattachement']").count(),
@@ -3469,10 +3475,10 @@ Justification : cf. procédure interne.`,
     "tutorat : « Rattachement des modules » reste réservé à l'administration",
   );
   await page.goto(BASE + "/admin/rattachement-questions");
-  await page.waitForSelector("h1:has-text('Rattachement des questions')");
+  await page.waitForSelector("h1:has-text('Comment sont rattachées les questions')");
   assert.equal(await page.locator(".panneau-titre a[href='/admin/rattachement']").count(), 0, "tutorat : écran réservé sans lien");
   await page.locator(".panneau-titre", { hasText: "Rattachement des modules (administration)" }).waitFor();
-  ok("tutorat : Rattachement des questions ouvert depuis le menu ; les écrans réservés y sont nommés sans lien");
+  ok("tutorat : « Comment sont rattachées les questions ? » ouvert depuis le menu ; les écrans réservés y sont nommés sans lien");
 
   // 14. mode entraînement (sans enregistrement)
   await page.goto(BASE + "/module/comportement-zac/evaluation");

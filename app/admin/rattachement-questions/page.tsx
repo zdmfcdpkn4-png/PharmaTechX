@@ -30,7 +30,7 @@ export default async function RattachementQuestions() {
     <>
       <section className="panneau-titre">
         <p className="legende" style={{ margin: 0 }}>Squelette de la formation</p>
-        <h1>Rattachement des questions</h1>
+        <h1>Comment sont rattachées les questions&nbsp;?</h1>
         <p>
           <strong>Ce n&apos;est pas la question qui ouvre un niveau, c&apos;est son module.</strong> Une question
           appartient à un module, et le module est coché pour des filières et des niveaux. L&apos;agent entre avec
