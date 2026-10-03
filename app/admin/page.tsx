@@ -9,13 +9,16 @@ import { BoutonEnvoi } from "@/components/BoutonEnvoi";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { ETATS_CODE, ROLES_CODE, SANS_PROGRAMME, codeRetenu, lireFiltreCodes } from "@/content/filtres-listes";
 import { adresseDuFiltre } from "@/content/filtres";
-import { TYPES_CODE } from "@/lib/codes";
+import { METIER_DU_TYPE, TYPES_CODE } from "@/lib/codes";
+import { metiers, parMetier } from "@/content/habilitation";
 
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, string> = {
   "role-interdit": "Votre rôle ne permet pas de créer ce type de code.",
   "type-inconnu": "Choisissez le type de profil dans la liste. Rien n\u2019a été créé.",
+  "type-metier":
+    "Un code de poste prend la filière et le niveau du métier de son type. Rien n\u2019a été créé.",
   "type-role":
     "Un code d\u2019administration est de type Pharmacien : il porte le visa et la signature du pharmacien responsable. Rien n\u2019a été créé.",
   "role-interdit-bascule": "Votre rôle ne permet pas d\u2019agir sur ce code.",
@@ -66,6 +69,12 @@ export default async function Admin({
   const retenus = acces.filter((a) => codeRetenu(a, filtre));
   // Une action sur un code revient à cette liste, filtre compris (question 92, choix a).
   const liste = adresseDuFiltre("/admin", filtre);
+  // Question 98 (choix a) : le métier de chaque type, dit sous la filière et le niveau.
+  const typesParMetier = metiers
+    .map((m) => ({ m, types: TYPES_CODE.filter((t) => METIER_DU_TYPE[t.id] === m.id) }))
+    .filter((x) => x.types.length > 0)
+    .map(({ m, types }) => `${types.map((t) => t.libelle).join(", ")} : ${m.libelle.toLowerCase()}`)
+    .join(" ; ");
 
   return (
     <>
@@ -149,10 +158,14 @@ export default async function Admin({
               <span>Filière (profils de poste)</span>
               <select name="filiere" defaultValue="">
                 <option value="">Toutes</option>
-                {filieres.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.libelle}
-                  </option>
+                {parMetier(filieres, (f) => f.metier).map(({ metier, liste }) => (
+                  <optgroup key={metier.id} label={metier.libelle}>
+                    {liste.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.libelle}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>
@@ -160,14 +173,21 @@ export default async function Admin({
               <span>Niveau visé</span>
               <select name="niveau" defaultValue="">
                 <option value="">Tous</option>
-                {niveaux.map((n) => (
-                  <option key={n.code} value={n.code}>
-                    {n.libelle}
-                  </option>
+                {parMetier(niveaux, (n) => n.metier).map(({ metier, liste }) => (
+                  <optgroup key={metier.id} label={metier.libelle}>
+                    {liste.map((n) => (
+                      <option key={n.code} value={n.code}>
+                        {n.libelle}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>
           </div>
+          <p className="legende" style={{ margin: ".375rem 0 0" }}>
+            Un code de poste prend la filière et le niveau du métier de son type — {typesParMetier}.
+          </p>
           <div className="rangee">
             <label className="champ">
               <span>Profil dégradé : programme à la carte (codes de poste)</span>

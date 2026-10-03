@@ -80,6 +80,34 @@ export function typeAdmisPour(role: string, type: TypeCode): boolean {
   return role !== "admin" || type === "PHARMACIEN";
 }
 
+/**
+ * Métier de chaque type pour un code de poste (02/10/2026, question 98, choix a) : identifiants de
+ * `metiers` (`content/habilitation.ts`).
+ */
+export const METIER_DU_TYPE: Record<TypeCode, string> = {
+  PHARMACIEN: "pharmacien",
+  INTERNE: "pharmacien",
+  PREPARATEUR: "preparateur",
+  OPQ: "aide",
+  ASH: "agent-entretien",
+};
+
+/**
+ * Un code de poste ne prend qu'une filière et un niveau du métier de son type ; tutorat et
+ * administration restent libres. `metiers` : métier de la filière et du niveau choisis, null quand
+ * rien n'est choisi (toutes filières, tous niveaux). Un profil inconnu du référentiel arrive avec un
+ * métier qu'aucun type ne porte : il est refusé.
+ */
+export function profilAdmisPour(
+  role: string,
+  type: TypeCode,
+  metiers: { filiere: string | null; niveau: string | null },
+): boolean {
+  if (role !== "poste") return true;
+  const attendu = METIER_DU_TYPE[type];
+  return [metiers.filiere, metiers.niveau].every((m) => m === null || m === attendu);
+}
+
 /** Nom d'un code : son type et son numéro. */
 export function libelleDuCode(type: TypeCode, numero: number): string {
   return `${type}-${numero}`;

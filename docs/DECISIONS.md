@@ -7289,6 +7289,59 @@ l'administration seulement pour le type PHARMACIEN.
   page ni erreur serveur. Un code d'administration de type OPQ y est
   refusé, message affiché, aucun code créé.
 
+## Un code de poste suit le métier de son type (02/10/2026, question 98, choix a)
+
+**Question.** Filières et niveaux appartiennent au métier de leur fiche
+d'habilitation. Le type de profil (questions 95 et 96) n'y était pas
+relié : un code de poste OPQ pouvait ouvrir le programme N1a d'un
+préparateur. Choix a : pour les codes de poste, le type fixe le métier.
+
+**Fait.**
+- Chaque type a son métier (`METIER_DU_TYPE`, `lib/codes.ts`) :
+  Préparateur → préparateur en pharmacie ; Pharmacien et Interne →
+  pharmacien / interne ; OPQ → aide en pharmacie ; ASH → agent
+  d'entretien.
+- Le serveur refuse un code de poste dont la filière ou le niveau est d'un
+  autre métier, ou inconnu du référentiel (`profilAdmisPour`, appelé par
+  `actionCreerCode`). Rien n'est créé ; message « Un code de poste prend la
+  filière et le niveau du métier de son type ». « Toutes » et « Tous »
+  restent permis.
+- Le formulaire range filières et niveaux par métier, un groupe par
+  métier, et une légende dit le métier de chaque type.
+- Tutorat et administration restent libres : un pharmacien peut être
+  tuteur de préparateurs.
+
+**Écartés.**
+- Relier seulement Préparateur, Pharmacien et Interne (b) : un code de
+  poste OPQ ou ASH pouvait encore ouvrir le programme d'un autre métier.
+- Ne rien relier (c).
+
+**Limites.**
+- Le choix a vaut correspondance : OPQ ↔ aide en pharmacie, ASH ↔ agent
+  d'entretien. Si l'unité en décide autrement, `METIER_DU_TYPE` se corrige
+  en une ligne.
+- Le programme à la carte n'a pas de métier : il reste au choix de qui
+  crée le code.
+- La règle ne vaut qu'à la création : les codes déjà créés ne sont pas
+  repris.
+
+**Vérifié le 02/10/2026.**
+- `npm run verifier` : 486 tests, dont deux nouveaux (`test/codes.test.ts`) :
+  - chaque type a le métier d'une fiche ;
+  - les combinaisons de rôle, de filière et de niveau, profil inconnu
+    compris.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 118 étapes, sans erreur de
+  page ni erreur serveur. Il vérifie :
+  - un code de poste OPQ sur le niveau N1a du préparateur, refusé sans code
+    créé ;
+  - un code de poste OPQ sur la filière et le niveau AP-N1 de l'aide en
+    pharmacie, créé et nommé OPQ-0 (les refus d'avant n'ont pris aucun
+    numéro), puis révoqué ;
+  - le code témoin du niveau T9, de la filière stérilisation du
+    préparateur, nommé PREPARATEUR-2 ;
+  - les niveaux rangés sous le libellé de leur métier.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

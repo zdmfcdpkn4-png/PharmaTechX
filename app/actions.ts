@@ -24,7 +24,7 @@ import {
   peutGererRole,
   sessionRequise,
 } from "@/lib/auth";
-import { lireTypeCode, typeAdmisPour } from "@/lib/codes";
+import { lireTypeCode, profilAdmisPour, typeAdmisPour } from "@/lib/codes";
 import { journaliser } from "@/lib/journal";
 import { detacher } from "@/lib/progression";
 import { moduleExiste, modulesDuParcours } from "@/content/store";
@@ -34,6 +34,8 @@ import { lireProgramme } from "@/content/programmes-db";
 import { filtrerProfils } from "@/content/modules-db";
 import { estNatureDocument } from "@/content/types";
 import { retourListe } from "@/content/filtres";
+import { getReferentiel } from "@/content/referentiel-db";
+import { metierOuDefaut } from "@/content/habilitation";
 import {
   TAILLE_MAX_FICHIER,
   deposerFichier,
@@ -100,6 +102,18 @@ export async function actionCreerCode(formData: FormData) {
 
   const filiere = String(formData.get("filiere") ?? "") || null;
   const niveau = String(formData.get("niveau") ?? "") || null;
+  // Un code de poste prend la filière et le niveau du métier de son type (question 98, choix a) ;
+  // un profil inconnu du référentiel n'a pas de métier, il est refusé avec eux.
+  if (role === "poste" && (filiere || niveau)) {
+    const { filieres, niveaux } = await getReferentiel();
+    const metierDe = (trouve: { metier?: string } | undefined, valeur: string | null) =>
+      valeur === null ? null : trouve ? metierOuDefaut(trouve.metier).id : "inconnu";
+    const admis = profilAdmisPour(role, type, {
+      filiere: metierDe(filieres.find((f) => f.id === filiere), filiere),
+      niveau: metierDe(niveaux.find((n) => String(n.code) === niveau), niveau),
+    });
+    if (!admis) redirect("/admin?erreur=type-metier");
+  }
   // Profil dégradé (question 50) : un code de poste peut ouvrir sur un
   // programme à la carte validé — jamais sur un brouillon, jamais un code de
   // tutorat ou d'administration.

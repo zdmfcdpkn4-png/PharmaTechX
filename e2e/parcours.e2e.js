@@ -516,7 +516,21 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/erreur=type-role/);
   await page.waitForSelector("[role=alert]:has-text('est de type Pharmacien')");
   assert.equal(await page.locator("li.carte").count(), codesAvantForge, "administration d'un autre type : aucun code créé");
-  ok("code tuteur créé : " + codeTuteur + ", nommé " + libelleTuteur + " par le site ; aucun champ libre, type forgé refusé, administration réservée au type Pharmacien");
+  // Un code de poste prend la filière et le niveau du métier de son type (question 98, choix a) :
+  // OPQ, de l'aide en pharmacie, n'ouvre pas le niveau N1a du préparateur.
+  assert.equal(
+    await page.locator('select[name=niveau] optgroup[label="Préparateur en pharmacie"] option[value="N1a"]').count(),
+    1,
+    "niveaux rangés par métier",
+  );
+  await page.selectOption("select[name=role]", "poste");
+  await page.selectOption("select[name=type]", "OPQ");
+  await page.selectOption("select[name=niveau]", "N1a");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/erreur=type-metier/);
+  await page.waitForSelector("[role=alert]:has-text('du métier de son type')");
+  assert.equal(await page.locator("li.carte").count(), codesAvantForge, "code de poste d'un autre métier : aucun code créé");
+  ok("code tuteur créé : " + codeTuteur + ", nommé " + libelleTuteur + " par le site ; aucun champ libre, type forgé refusé, administration réservée au type Pharmacien, code de poste d'un autre métier refusé");
 
   // 2b. signature du pharmacien déposée (image réduite dans le navigateur)
   await page.goto(BASE + "/admin/signature");
@@ -3130,6 +3144,26 @@ Justification : cf. procédure interne.`,
   const codeNiveau = (code) => page.locator(`li.carte .etiquette--neutre:text-is("${code}")`);
   await codeNiveau("AP-N1").waitFor({ state: "attached" });
   assert.equal(await codeNiveau("AP-N1").count(), 1, "préfixe de l'aide ajouté au code saisi « n1 »");
+  // Un code de poste OPQ ouvre la filière et le niveau de l'aide en pharmacie (question 98, choix a).
+  // Révoqué aussitôt : il ne citera pas AP-N1 quand le dépôt partira, plus bas.
+  await page.goto(BASE + "/admin");
+  assert.equal(
+    await page.locator('select[name=niveau] optgroup[label="Aide en pharmacie"] option[value="AP-N1"]').count(),
+    1,
+    "le niveau de l'aide, sous son métier",
+  );
+  await page.selectOption("select[name=role]", "poste");
+  await page.selectOption("select[name=type]", "OPQ");
+  await page.selectOption("select[name=filiere]", "aide-pharmacie");
+  await page.selectOption("select[name=niveau]", "AP-N1");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=/);
+  const libelleAide = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(libelleAide, "OPQ-0", "code OPQ sur la filière et le niveau de l'aide ; les refus n'ont pris aucun numéro");
+  const carteCodeAide = page.locator("li.carte", { hasText: libelleAide });
+  await carteCodeAide.locator("button:has-text('Révoquer')").click();
+  await carteCodeAide.locator("text=révoqué").waitFor();
+  await page.goto(BASE + "/admin/niveaux");
   await ajouterNiveau("PH-N9", "aide-pharmacie");
   await page.waitForURL(/erreur=prefixe/);
   await page.locator("[role=alert]", { hasText: "préfixe d'un autre métier" }).waitFor();
@@ -3257,12 +3291,12 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/ok=tirage/);
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
-  await page.selectOption("select[name=type]", "OPQ");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
   await page.selectOption("select[name=niveau]", "T9");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=/);
   const libelleTemoin = new URL(page.url()).searchParams.get("libelle");
-  assert.equal(libelleTemoin, "OPQ-0", "chaque type compte à partir de 0");
+  assert.equal(libelleTemoin, "PREPARATEUR-2", "T9 est du préparateur : troisième code de ce type");
   await page.goto(BASE + "/admin/niveaux");
   await carteNiveau("T9").locator("summary:has-text('Modifier')").click();
   await carteNiveau("T9").locator("button:has-text('Supprimer le dépôt')").click();
@@ -4640,7 +4674,7 @@ Justification : cf. procédure interne.`,
   await page.waitForURL(/nouveau=/);
   let codeJetable = new URL(page.url()).searchParams.get("nouveau");
   const libelleJetable = new URL(page.url()).searchParams.get("libelle");
-  assert.equal(libelleJetable, "ASH-0");
+  assert.equal(libelleJetable, "ASH-0", "chaque type compte à partir de 0");
   const ctx2 = await browser.newContext();
   await ctx2.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
   surveillerTiers(ctx2);

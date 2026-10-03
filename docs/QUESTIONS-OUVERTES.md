@@ -400,6 +400,11 @@ telle. Ordre : ce qui change le déploiement en premier.
       type et le programme repose sur la seule attention de qui crée le
       code.
 
+    Tranchée le 02/10/2026 (choix a, réponse « À », valant « a »). Un code
+    de poste ne prend plus qu'une filière et un niveau du métier de son
+    type ; le formulaire les range par métier. Tutorat et administration
+    restent libres. Détail dans `DECISIONS.md`.
+
 97. **Rôle et type : l'administration réservée au type PHARMACIEN ?** —
     posée le 02/10/2026, conséquence des questions 95 et 96.
 

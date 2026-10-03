@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { metiers } from "../content/habilitation";
 import {
+  METIER_DU_TYPE,
   TYPES_CODE,
   genererCode,
   hacherCode,
@@ -8,6 +10,7 @@ import {
   lireTypeCode,
   motifLibelle,
   normaliserCode,
+  profilAdmisPour,
   typeAdmisPour,
   verifierCode,
 } from "../lib/codes";
@@ -90,5 +93,31 @@ test("l'administration est réservée au type PHARMACIEN ; tutorat et poste rest
     assert.equal(typeAdmisPour("admin", t.id), t.id === "PHARMACIEN", `admin · ${t.id}`);
     assert.equal(typeAdmisPour("tuteur", t.id), true, `tuteur · ${t.id}`);
     assert.equal(typeAdmisPour("poste", t.id), true, `poste · ${t.id}`);
+  }
+});
+
+test("chaque type a le métier d'une fiche : Pharmacien et Interne au pharmacien, OPQ à l'aide, ASH à l'agent d'entretien", () => {
+  const connus = new Set(metiers.map((m) => m.id));
+  for (const t of TYPES_CODE) assert.ok(connus.has(METIER_DU_TYPE[t.id]), `${t.id} → ${METIER_DU_TYPE[t.id]}`);
+  assert.deepEqual(METIER_DU_TYPE, {
+    PHARMACIEN: "pharmacien",
+    INTERNE: "pharmacien",
+    PREPARATEUR: "preparateur",
+    OPQ: "aide",
+    ASH: "agent-entretien",
+  });
+});
+
+test("un code de poste prend la filière et le niveau du métier de son type ; tutorat et administration libres", () => {
+  const de = (filiere: string | null, niveau: string | null) => ({ filiere, niveau });
+  assert.equal(profilAdmisPour("poste", "OPQ", de("aide", "aide")), true);
+  assert.equal(profilAdmisPour("poste", "OPQ", de(null, null)), true, "toutes filières, tous niveaux");
+  assert.equal(profilAdmisPour("poste", "OPQ", de(null, "aide")), true, "niveau seul");
+  assert.equal(profilAdmisPour("poste", "OPQ", de("preparateur", null)), false, "filière d'un autre métier");
+  assert.equal(profilAdmisPour("poste", "OPQ", de("aide", "preparateur")), false, "niveau d'un autre métier");
+  assert.equal(profilAdmisPour("poste", "INTERNE", de("pharmacien", "pharmacien")), true, "l'interne au pharmacien");
+  assert.equal(profilAdmisPour("poste", "PREPARATEUR", de("inconnu", null)), false, "profil inconnu du référentiel");
+  for (const role of ["tuteur", "admin"]) {
+    assert.equal(profilAdmisPour(role, "ASH", de("preparateur", "pharmacien")), true, `${role} : libre`);
   }
 });
