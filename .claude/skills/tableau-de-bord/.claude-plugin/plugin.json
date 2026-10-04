@@ -1,0 +1,6 @@
+{
+  "name": "tableau-de-bord",
+  "version": "0.1.0",
+  "description": "Tableau de bord de voiture : remplissage du contexte, voyants, itinéraire des tâches, conseil de modèle, d'effort et de sous-agents, avec boutons.",
+  "types": "./types/index.d.ts"
+}

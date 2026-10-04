@@ -7342,6 +7342,64 @@ préparateur. Choix a : pour les codes de poste, le type fixe le métier.
     préparateur, nommé PREPARATEUR-2 ;
   - les niveaux rangés sous le libellé de leur métier.
 
+## Le tableau de bord des sessions Claude Code, rangé dans le dépôt (04/10/2026, demande directe)
+
+**Demande.** Un tableau de bord « de voiture » dans la fenêtre de Claude
+Code : saturation du contexte, conseil de compacter ou de préparer un
+changement de conversation, plan simple des tâches, modèle et effort
+conseillés avant chaque analyse, sous-agents utiles, boutons cliquables.
+Le 04/10/2026, le garder pour les conversations suivantes : choix a, le
+ranger dans le dépôt. Écartés : b, le garder pour une seule session ; c,
+une archive à installer sur le poste.
+
+**Fait.**
+- Le mod est rangé dans `.claude/skills/tableau-de-bord/`. Claude Code
+  charge de lui-même une extension placée dans `.claude/skills/<nom>` d'un
+  projet (référence de création des mods livrée avec Claude Code 2.1.289),
+  pourvu que l'espace de travail soit de confiance.
+- Il ouvre le panneau « Tableau de bord » (commande `/tableau`) : jauge du
+  contexte, voyants, consigne, boutons Compacter et Préparer le relais, à
+  confirmer d'un second appui. Le panneau montre aussi le conseil de modèle
+  et d'effort, appliqué d'un bouton, les sous-agents à lancer, l'itinéraire
+  et un aide-mémoire. Une ligne au-dessus de la saisie reprend la jauge.
+- Le site n'en dépend pas : l'application n'importe rien de ce dossier,
+  `tsc --listFilesOnly` n'en liste aucun fichier et les tests du site ne
+  lisent que `test/`.
+- ESLint lisait le dossier et lui appliquait les règles de React : cinq
+  erreurs (clés d'itération, apostrophe). Le JSX du mod n'est pas du React :
+  `.claude/**` rejoint `docs/**` et `e2e/**` parmi les fichiers ignorés
+  (`eslint.config.mjs`).
+- Les types que Claude Code dépose à chaque chargement
+  (`.claude-plugin/types/`) restent hors du dépôt (`.gitignore`) : ils
+  suivent la version de l'outil et listent les connecteurs du compte.
+- Dépôt public : ni le code ni les tests ne portent d'identifiant de modèle
+  avec sa version ; les exemples des tests sont des gabarits. Restent les
+  noms de famille que prend la commande `/model`.
+
+**Coût.**
+- Chaque session ouverte sur ce dépôt reçoit la consigne du mod dans son
+  prompt système, et un outil de plus.
+- La poussée relance un déploiement Render sans rien changer au site.
+
+**À vérifier.** Le chargement à l'ouverture d'une nouvelle session en
+ligne : la commande `/tableau` doit y répondre. Sinon, `/reload-plugins`
+relit le dossier. Hors session, `claude plugin list` reconnaît le dossier
+mais l'écarte tant que l'espace de travail n'est pas de confiance.
+
+**Vérifié le 04/10/2026.**
+- `claude plugin validate` : réussi ; seul avertissement, le manifeste ne
+  nomme pas d'auteur.
+- `claude plugin test`, sur la copie du dépôt : 17 tests réussis, aucun
+  échec. Ils couvrent le panneau sur terminal, bureau, VS Code et
+  téléphone, le bandeau, le compactage confirmé en deux appuis, le conseil
+  appliqué par `/model` puis `/effort`, et le refus d'un conseil hors
+  cadre.
+- Types du mod, en mode strict : sans erreur.
+- `npm run verifier` : types, ESLint et 486 tests unitaires.
+- `npm run build`.
+- Parcours de bout en bout non relancé : aucun fichier du site n'a changé,
+  hors `eslint.config.mjs`.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

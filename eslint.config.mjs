@@ -10,7 +10,9 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    ignores: [".next/**", "node_modules/**", "docs/**", "next-env.d.ts", "e2e/**"],
+    // .claude/ : outils des sessions Claude Code, hors du site ; leur JSX
+    // n'est pas du React et se vérifie par claude plugin validate et test.
+    ignores: [".next/**", "node_modules/**", "docs/**", "next-env.d.ts", "e2e/**", ".claude/**"],
   },
   {
     rules: {
