@@ -23,6 +23,9 @@ import {
 import { getReferentiel } from "@/content/referentiel-db";
 import { listeBlocs, modulesDeposesParBloc } from "@/content/blocs-db";
 import { LienModule } from "@/components/LienModule";
+import { getSession } from "@/lib/auth";
+import { baseConfiguree } from "@/lib/db";
+import { profilImpose } from "@/lib/profil-impose";
 import { BarreFiltres } from "@/components/BarreFiltres";
 import { critereProgrammeRetenu, lireFiltreProgrammeComplet } from "@/content/filtres-listes";
 
@@ -125,13 +128,17 @@ export default async function Reperes({
   // déposé ou corrigé au Référentiel doit s'y lire aussi (23/09/2026).
   // Blocs servis (question 81) : un bloc corrigé ou ajouté se lit ici aussi,
   // avec ses modules hors fiche publiés.
-  const [bareme, { niveaux }, blocs, horsFiche, nomsNiveaux] = await Promise.all([
+  const [bareme, { niveaux }, blocs, horsFiche, nomsNiveaux, session] = await Promise.all([
     lireBareme(),
     getReferentiel(),
     listeBlocs(),
     modulesDeposesParBloc(),
     lireNomsNiveaux(),
+    getSession(),
   ]);
+  // Question 101 (choix b) : pour un code de poste, le programme complet reste lisible, sans liens — un
+  // module hors de son programme lui est fermé.
+  const sansLiens = Boolean(profilImpose(session, baseConfiguree()));
   const obligatoires = criteres.filter((x) => x.obligatoire).length;
   // Filtres du programme complet (question 91, choix a, lot 3) : un code ou un mot, un bloc, les
   // obligatoires. Un bloc sans critère retenu disparaît ; les blocs restent repliés, comme l'arbre de la banque.
@@ -283,7 +290,7 @@ export default async function Reperes({
                   <div key={m.id} className="ligne-critere">
                     <span className="code">—</span>
                     <span className="libelle">
-                      <LienModule id={m.id}>{m.titre}</LienModule>
+                      <LienModule id={sansLiens ? null : m.id}>{m.titre}</LienModule>
                     </span>
                     <span className="etiquette etiquette--neutre">hors fiche</span>
                   </div>
@@ -293,7 +300,7 @@ export default async function Reperes({
                     <span className="code">{x.id}</span>
                     <span className="libelle">
                       {/* Un critère rédigé ouvre son module (tâche 69) ; « À rédiger » reste du texte. */}
-                      <LienModule id={x.moduleId}>{x.libelle}</LienModule>
+                      <LienModule id={sansLiens ? null : x.moduleId}>{x.libelle}</LienModule>
                       {x.sousSection ? ` — ${x.sousSection}` : ""}
                     </span>
                     <span className="etiquette etiquette--neutre">

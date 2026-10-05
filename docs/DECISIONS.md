@@ -7528,7 +7528,7 @@ modules de formation soient reliés par le formateur ou l'administrateur.
   ne porte pas de parcours.
 - Un code de poste ouvre encore tout module publié par son lien (Repères ›
   Programme complet, adresse) et peut l'évaluer, au niveau de son code :
-  question 101.
+  question 101 — fermé depuis, choix b (section suivante).
 - Sous un code partagé, un rapport s'émet toujours sous l'identifiant saisi,
   sans preuve (questions 6 et 11) ; le visa du tuteur reste le contrôle.
 
@@ -7563,6 +7563,83 @@ demande (voir son entrée).
 - Serveur d'essai, code de poste chimiothérapie · N2 : captures de la carte
   « Mon programme » et du niveau cible, au bureau et sur téléphone à 390 px,
   sans débordement ni erreur de page.
+
+## Les modules d'un code de poste réservés à son programme (05/10/2026, question 101, choix b)
+
+**Question.** Un code de poste ne composait plus son programme, mais
+ouvrait encore tout module publié par son lien (Repères › Programme
+complet, une adresse) et pouvait l'évaluer : fallait-il le fermer ?
+
+**Choix b.** Tout est réservé au programme du code : hors de ce programme,
+la page d'un module, ses documents et son évaluation sont refusés ; le
+Programme complet des Repères reste lisible, sans liens pour un code de
+poste. Écartés : a, la lecture libre et l'évaluation réservée ; c, ne rien
+fermer de plus.
+
+**Le programme d'un code de poste** (`lib/programme-poste.ts`, lu une fois
+par requête) : son programme à la carte s'il est validé ; sinon, la fiche à
+son profil — le socle puis la filière du code, à son niveau, sur les deux
+parcours. Sans niveau, tous les niveaux ; sans filière, le socle seul. C'est
+ce que montre « Mes modules ». Règles pures dans `lib/profil-impose.ts`
+(`modulesDuCode`, `profilConnu`, `fichierOuvert`), testées.
+
+**Fait.** Hors de son programme, pour un code de poste :
+- page d'un module et page d'évaluation : « Ce module n'est pas à votre
+  programme », avec un lien vers ses modules ; rien du module n'est servi,
+  hormis son titre ;
+- correction (`/api/evaluation`), traces de progression (`/api/progression`)
+  et signalements (`/api/signalement`) : refus 403 ;
+- émission d'un rapport : refusée ;
+- document déposé (`/api/fichiers`) : refus 403, sauf pour un document validé
+  rattaché à un module ouvert, ou un document général de son profil.
+
+Liens, pour un code de poste :
+- Repères › Programme complet : plus aucun lien de module ;
+- page d'un module : précédent et suivant pris dans son programme
+  (« Parcours : Mon programme ») ;
+- accueil, programme et Accès rapide : une évaluation laissée en plan, ou une
+  lecture repérée sur l'appareil, peut-être par un autre agent, ne se
+  reprend que dans son programme ;
+- « Mes modules » ne reçoit plus les modules des autres filières ni des
+  autres niveaux.
+
+Le tutorat, l'administration et le mode test ne sont pas concernés.
+
+**Coût.**
+- Un code n'ouvre que les modules cochés à son niveau, ou sans niveau coché
+  (question 86). Un module du socle coché N1a seulement est donc fermé à un
+  code N1c ou N2R. Pour le rouvrir à ces niveaux, cochez-les aussi : dans
+  Squelette › Rattachement des modules pour un module du site, sur la fiche
+  du module pour un module déposé ; ou donnez au code un programme à la
+  carte.
+- Un agent ne lit plus d'avance les modules du niveau suivant : son tuteur
+  lui remet le code du nouveau profil (un code ne se modifie pas).
+- Le programme se recalcule à chaque page d'un code de poste : quelques
+  lectures en base de plus.
+
+**Limite.** Les images des questions restent servies à toute session
+ouverte : leur adresse, aléatoire, n'est révélée que par une évaluation, que
+le module fermé n'ouvre plus.
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 501 tests dont quatre nouveaux
+  (`test/profil-impose.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 120 étapes, sans erreur de page
+  ni erreur serveur. L'étape du profil imposé, passée au code chimiothérapie
+  · N1a dont le programme contient le socle, vérifie en plus :
+  - pour le module déposé coché N1c : page et évaluation refusées, aucun
+    document, correction 403, document refusé (l'administration l'ouvre) ;
+  - une fois l'agent rattaché, trace refusée sur ce module, acceptée dans son
+    programme ;
+  - sur un module ouvert, son document servi et tous les liens de module dans
+    son programme ;
+  - Repères sans liens de module pour le poste, avec liens pour
+    l'administration.
+- Serveur d'essai, code chimiothérapie · N1a : un module coché N1c refusé
+  (page, évaluation, correction 403), un module ouvert corrigé, « Parcours :
+  Mon programme » ; captures de la page de refus au bureau et sur téléphone à
+  390 px, sans débordement ni erreur de page.
 
 ## Non fait
 

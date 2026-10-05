@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
+import { getModuleComplet, positionDansListe, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
-import { programmeDuCode } from "@/content/programmes-db";
 import { requeteProfil } from "@/content/ordres";
 import { profilDeLaPage, profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
+import { HorsProgramme } from "@/components/HorsProgramme";
 import { getCritere } from "@/content/habilitation";
 import { listeBlocs } from "@/content/blocs-db";
 import { A_PRECISER, libelleNature } from "@/content/types";
@@ -38,6 +39,11 @@ export default async function PageModule({
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
+  // Question 101 (choix b) : hors de son programme, un code de poste n'ouvre ni la page d'un module ni ses
+  // documents ; la page le dit, sans rien servir du module.
+  const impose = profilImpose(session, baseConfiguree());
+  const duPoste = impose && session ? await programmeDuPoste(session, impose) : null;
+  if (duPoste && !duPoste.ouverts.has(mod.id)) return <HorsProgramme titre={mod.titre} />;
   const depose = mod.origine === "base";
 
   const critere = typeof mod.critereId === "string" ? getCritere(mod.critereId) : undefined;
@@ -79,12 +85,7 @@ export default async function PageModule({
   // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
   // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, le programme et le profil sont
   // ceux du code ; l'adresse ne garde que le parcours.
-  const impose = profilImpose(session, baseConfiguree());
-  const idProgramme = impose
-    ? session?.acces
-      ? await programmeDuCode(session.acces).catch(() => null)
-      : null
-    : lireIdProgramme(sp.programme);
+  const idProgramme = duPoste ? duPoste.idProgramme : lireIdProgramme(sp.programme);
   const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id) : null;
   // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa
   // chronologie — celle de l'apprenant rattaché, s'il a la sienne (question 56).
@@ -93,7 +94,13 @@ export default async function PageModule({
   const dansProfil = profil
     ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)
     : null;
-  const position = dansProgramme ?? dansProfil ?? (await positionDansParcours("integration", mod.id));
+  // Pour un code de poste, le précédent et le suivant se prennent dans son programme (question 101, choix b).
+  const position =
+    dansProgramme ??
+    dansProfil ??
+    (duPoste
+      ? positionDansListe(duPoste.parParcours[sp.parcours === "maintien" ? "maintien" : "integration"], mod.id)
+      : await positionDansParcours("integration", mod.id));
   // Le profil suit de page en page, même sans ordre propre : son niveau est le niveau cible du tirage (question 62).
   const requete = dansProgramme ? `?programme=${idProgramme}` : profil ? requeteProfil(profil) : "";
   const sommaire = mod.sections.map((s, i) => ({ id: `section-${i + 1}`, titre: s.titre }));

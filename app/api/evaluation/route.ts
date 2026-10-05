@@ -24,6 +24,7 @@ import { questionsSignalees } from "@/content/banque-db";
 import { baseConfiguree } from "@/lib/db";
 import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
 import { profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 import { journaliser } from "@/lib/journal";
 import {
   estADecouvrir,
@@ -285,6 +286,16 @@ export async function POST(request: Request) {
   if (!mod) {
     return NextResponse.json({ erreur: "Module inconnu." }, { status: 404 });
   }
+  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : un code de poste n'évalue que les modules de son
+  // programme (question 101, choix b).
+  const sessionPoste = baseConfiguree() ? await getSession() : null;
+  const impose = profilImpose(sessionPoste, baseConfiguree());
+  if (impose && sessionPoste && !(await programmeDuPoste(sessionPoste, impose)).ouverts.has(mod.id)) {
+    return NextResponse.json(
+      { erreur: "Ce module n'est pas à votre programme : son évaluation vous est fermée." },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   const banque = banqueDuModule(mod);
   if (banque.length === 0) {
@@ -308,9 +319,8 @@ export async function POST(request: Request) {
   // Noms des niveaux de question en vigueur (question 81) : message de
   // conformité, et copie dans le résultat scellé s'ils ne sont plus ceux d'origine.
   const libellesNiveaux = libellesDe(await lireNomsNiveaux());
-  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, le niveau cible et la filière
-  // du tirage sont ceux du code ; ceux qu'envoie la page ne valent que pour qui choisit son profil.
-  const impose = profilImpose(baseConfiguree() ? await getSession() : null, baseConfiguree());
+  // Profil imposé : pour un code de poste, le niveau cible et la filière du tirage sont ceux du code ; ceux
+  // qu'envoie la page ne valent que pour qui choisit son profil.
   const niveauDemande = impose
     ? (impose.niveau ?? "")
     : typeof corps.niveauCible === "string"

@@ -20,6 +20,7 @@ import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } 
 import { auNiveau as proposeAuNiveau, chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
 import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
 import { documentDuProfil, profilImpose, programmeVise } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -179,9 +180,25 @@ export default async function Accueil({
   const programmeArrivee: EtapeReprise[] = (
     aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee.ordre) : profilArrivee
   ).map(etape);
-  const catalogue: EtapeReprise[] = [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
-  // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base.
-  const enCours = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
+  // Question 101 (choix b) : un code de poste ne reçoit que les modules de son programme — sa filière à son
+  // niveau, ou son seul programme à la carte —, ni les autres filières ni les autres niveaux.
+  const troncCommunServi = !impose ? troncCommun : programmeOuvert ? [] : auNiveau(troncCommun);
+  const parPosteServi: Record<string, ModuleResume[]> = !impose
+    ? parPoste
+    : programmeOuvert || !filiereInitiale
+      ? {}
+      : { [filiereInitiale]: auNiveau(parPoste[filiereInitiale] ?? []) };
+  const catalogue: EtapeReprise[] = [...troncCommunServi, ...Object.values(parPosteServi).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
+  // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base ; celle d'un module hors de
+  // son programme ne se reprend pas d'ici (question 101, choix b).
+  const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
+  const enCours =
+    enCoursLu &&
+    impose &&
+    session &&
+    !(await programmeDuPoste(session, impose).then((p) => p.ouverts.has(enCoursLu.moduleId), () => true))
+      ? null
+      : enCoursLu;
   const evaluationEnCours = enCours
     ? {
         moduleId: enCours.moduleId,
@@ -285,8 +302,8 @@ export default async function Accueil({
         <h2>Mes modules</h2>
         <p className="section-intro">{programmeOuvert ? `Programme à la carte — ${MENTION_DEGRADE}.` : `${parcours.destinataire}.`}</p>
         <TableauDeBord
-          troncCommun={troncCommun}
-          parPoste={parPoste}
+          troncCommun={troncCommunServi}
+          parPoste={parPosteServi}
           postes={filieres
             .filter((f) => f.id !== "socle")
             .map((f) => ({

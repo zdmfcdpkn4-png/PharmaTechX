@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { baseConfiguree } from "@/lib/db";
+import { baseConfiguree, documentsDuFichier } from "@/lib/db";
 import { lireFichier } from "@/lib/stockage";
+import { fichierOuvert, profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,17 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   if (!baseConfiguree() || !/^[A-Za-z0-9_-]{8,40}$/.test(id)) return new NextResponse(null, { status: 404 });
-  if (!(await getSession())) return new NextResponse(null, { status: 401, headers: { "Cache-Control": "no-store" } });
+  const session = await getSession();
+  if (!session) return new NextResponse(null, { status: 401, headers: { "Cache-Control": "no-store" } });
+  // Question 101 (choix b) : un code de poste ne reçoit que les documents de son programme — ceux d'un module
+  // ouvert, ou les documents généraux de son profil.
+  const impose = profilImpose(session, baseConfiguree());
+  if (impose) {
+    const [documents, poste] = await Promise.all([documentsDuFichier(`/api/fichiers/${id}`), programmeDuPoste(session, impose)]);
+    if (!fichierOuvert(documents, poste.ouverts, poste.profil)) {
+      return new NextResponse(null, { status: 403, headers: { "Cache-Control": "no-store" } });
+    }
+  }
   const f = await lireFichier(id);
   if (!f) return new NextResponse(null, { status: 404 });
   return new NextResponse(new Uint8Array(f.octets), {

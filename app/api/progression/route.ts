@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { refusApiSansSession } from "@/lib/auth";
+import { getSession, refusApiSansSession } from "@/lib/auth";
+import { baseConfiguree } from "@/lib/db";
 import { moduleExiste } from "@/content/store";
+import { profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 import {
   effacerEnCours,
   enregistrerEntrainement,
@@ -32,6 +35,12 @@ export async function POST(request: Request) {
   const moduleId = typeof corps.moduleId === "string" ? corps.moduleId.slice(0, 80) : "";
   if (!moduleId || !(await moduleExiste(moduleId))) {
     return NextResponse.json({ erreur: "Module inconnu." }, { status: 404 });
+  }
+  // Question 101 (choix b) : un code de poste ne laisse de traces que sur les modules de son programme.
+  const session = await getSession();
+  const impose = profilImpose(session, baseConfiguree());
+  if (impose && session && !(await programmeDuPoste(session, impose)).ouverts.has(moduleId)) {
+    return NextResponse.json({ erreur: "Module hors de votre programme." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   const nombre = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
   let ok = false;

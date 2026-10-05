@@ -6233,7 +6233,7 @@ Source : Procédure statistiques — section 5`;
   await page.selectOption("select[name=role]", "poste");
   await page.selectOption("select[name=type]", "PREPARATEUR");
   await page.selectOption("select[name=filiere]", "chimiotherapie");
-  await page.selectOption("select[name=niveau]", "N1c");
+  await page.selectOption("select[name=niveau]", "N1a");
   await page.check("input[name=agent]");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/nouveau=.*agent=AG-/);
@@ -6245,6 +6245,18 @@ Source : Procédure statistiques — section 5`;
   await page.locator(".nav-sections a", { hasText: "Intérimaire test" }).waitFor();
   await page.goto(BASE + "/module/critere-b1-02/evaluation");
   assert.equal(await page.locator("select[name=niveauCible]").count(), 1, "administration : niveau cible au choix");
+  // Question 101 (choix b) : un document rattaché au module déposé, coché N1c seulement, donc hors du
+  // programme N1a du code ; l'administration, elle, l'ouvre.
+  await page.goto(BASE + "/admin/documents");
+  await page.setInputFiles("input[name=fichier]", PNG);
+  await page.fill("input[name=titre]", "Document hors programme");
+  await page.selectOption("select[name=moduleId]", idModule);
+  await page.click("button:has-text('Déposer')");
+  await page.waitForSelector("text=Document déposé");
+  const lienFerme = await page.locator("a:has-text('Document hors programme')").first().getAttribute("href");
+  assert.equal((await page.request.get(BASE + lienFerme)).status(), 200, "administration : document servi");
+  await page.goto(BASE + "/module/" + idModule);
+  await page.waitForSelector("a:has-text('Document hors programme')");
 
   const ctxImpose = await browser.newContext();
   await ctxImpose.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
@@ -6264,13 +6276,13 @@ Source : Procédure statistiques — section 5`;
   await pi.goto(BASE + "/");
   await pi.waitForSelector("#composer h2:has-text('Mon programme')");
   assert.equal(await pi.locator("#composer select").count(), 0, "poste : ni filière ni niveau à choisir");
-  assert.match(await profilMontre(), /Filière : Parcours Chimiothérapie · niveau visé : N1c/, "poste : filière et niveau du code");
+  assert.match(await profilMontre(), /Filière : Parcours Chimiothérapie · niveau visé : N1a/, "poste : filière et niveau du code");
   assert.equal(await pi.locator("a[href='/#composer']").count(), 0, "poste : plus d'entrée « Composer le programme »");
   assert.equal(await pi.locator(".nav-sections a", { hasText: "Intérimaire test" }).count(), 0, "poste : le programme d'un autre code n'est pas proposé");
   // L'adresse ne change rien : ni un autre niveau, ni le programme à la carte d'un autre code.
   await pi.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N2");
   await pi.waitForSelector("#composer h2:has-text('Mon programme')");
-  assert.match(await profilMontre(), /niveau visé : N1c/, "poste : le niveau de l'adresse est ignoré");
+  assert.match(await profilMontre(), /niveau visé : N1a/, "poste : le niveau de l'adresse est ignoré");
   await pi.goto(BASE + "/?programme=" + idProgramme);
   await pi.waitForSelector("#composer h2:has-text('Mon programme')");
   assert.equal(await pi.locator("text=Intérimaire test").count(), 0, "poste : le programme de l'adresse est ignoré");
@@ -6278,13 +6290,13 @@ Source : Procédure statistiques — section 5`;
   await pi.goto(BASE + "/module/critere-b1-02/evaluation?parcours=integration&filiere=chimiotherapie&niveau=N2");
   await pi.waitForSelector(".choix-niveau");
   assert.equal(await pi.locator("select[name=niveauCible]").count(), 0, "poste : niveau cible sans choix");
-  assert.match(await pi.locator(".choix-niveau .champ").innerText(), /N1c[\s\S]*celui de votre code d'accès/);
+  assert.match(await pi.locator(".choix-niveau .champ").innerText(), /N1a[\s\S]*celui de votre code d'accès/);
   // … et le serveur reprend celui du code, quoi qu'envoie la page.
   const forgee = await pi.request.post(BASE + "/api/evaluation", {
     data: { moduleId: "comportement-zac", reponses: {}, mode: "evaluation", difficulte: "complet", niveauCible: "N3", filiere: "chimiotherapie" },
   });
   assert.equal(forgee.status(), 200, "correction servie");
-  assert.equal((await forgee.json()).cible.niveau, "N1c", "poste : niveau cible du code, pas celui de la requête");
+  assert.equal((await forgee.json()).cible.niveau, "N1a", "poste : niveau cible du code, pas celui de la requête");
   // Code relié, sans rattachement : un rapport ne s'émet que sous l'identifiant du code (question 99).
   await pi.goto(BASE + "/module/comportement-zac/evaluation");
   await pi.check("input[name=difficulte] >> nth=2"); // Complet
@@ -6303,13 +6315,57 @@ Source : Procédure statistiques — section 5`;
   await pi.fill("input[name=identifiant]", agentImpose);
   await pi.click("button:has-text('Émettre et enregistrer')");
   await pi.waitForSelector("text=émis sous le n° RAP-");
+  // Question 101 (choix b) : hors de son programme, ni page, ni évaluation, ni correction, ni document.
+  const programmePoste = new Set();
+  for (const parcours of ["integration", "maintien"]) {
+    await pi.goto(BASE + "/?parcours=" + parcours);
+    await pi.waitForSelector("#composer h2:has-text('Mon programme')");
+    for (const h of await pi.locator("#modules a.carte-lien").evaluateAll((l) => l.map((a) => a.getAttribute("href")))) {
+      programmePoste.add(/\/module\/([^?#]+)/.exec(h)[1]);
+    }
+  }
+  assert.ok(programmePoste.has("comportement-zac") && !programmePoste.has(idModule), "programme N1a : le socle, pas le module N1c");
+  await pi.goto(BASE + "/module/" + idModule);
+  await pi.waitForSelector("h1:has-text(\"Ce module n'est pas à votre programme\")");
+  assert.equal(await pi.locator("a:has-text('Document hors programme')").count(), 0, "poste : aucun document du module fermé");
+  assert.equal(await pi.locator("h2:has-text('Présentation')").count(), 0, "poste : rien du module fermé");
+  await pi.goto(BASE + "/module/" + idModule + "/evaluation");
+  await pi.waitForSelector("h1:has-text(\"Ce module n'est pas à votre programme\")");
+  assert.equal(await pi.locator("button:has-text('Commencer')").count(), 0, "poste : aucune évaluation du module fermé");
+  const correctionFermee = await pi.request.post(BASE + "/api/evaluation", {
+    data: { moduleId: idModule, reponses: {}, mode: "evaluation", difficulte: "complet" },
+  });
+  assert.equal(correctionFermee.status(), 403, "poste : correction refusée hors programme");
+  assert.equal((await pi.request.get(BASE + lienFerme)).status(), 403, "poste : document du module fermé refusé");
+  assert.equal((await pi.request.get(BASE + lien)).status(), 200, "poste : document d'un module de son programme servi");
+  // Rattaché (code personnel choisi dès l'accueil), l'agent ne laisse de trace que dans son programme.
+  await pi.goto(BASE + "/accueil");
+  await pi.fill("#rattachement input[name=nouveauCode]", "2468");
+  await pi.fill("#rattachement input[name=confirmation]", "2468");
+  await pi.click("#rattachement button:has-text('Choisir ce code')");
+  await pi.waitForURL(/\/accueil\?progression=ok/);
+  const trace = (moduleId) => pi.request.post(BASE + "/api/progression", { data: { nature: "lecture", moduleId } });
+  assert.equal((await trace(idModule)).status(), 403, "poste : aucune trace sur un module fermé");
+  assert.deepEqual(await (await trace("comportement-zac")).json(), { ok: true }, "poste : trace de lecture dans son programme");
+  // Un module ouvert : précédent et suivant pris dans son programme seul.
+  await pi.goto(BASE + "/module/comportement-zac");
+  await pi.waitForSelector("a:has-text('Schéma déposé test')");
+  for (const h of await pi.locator("main a[href^='/module/'], article a[href^='/module/']").evaluateAll((l) => l.map((a) => a.getAttribute("href")))) {
+    assert.ok(programmePoste.has(/\/module\/([^/?#]+)/.exec(h)[1]), "lien de la page du module hors programme : " + h);
+  }
+  // Repères : le programme complet reste lisible, sans liens vers les modules.
+  await pi.goto(BASE + "/reperes");
+  await pi.waitForSelector("#programme h2:has-text('Programme complet')");
+  assert.equal(await pi.locator("#programme a[href^='/module/']").count(), 0, "Repères : aucun lien de module pour un poste");
   await ctxImpose.close();
+  await page.goto(BASE + "/reperes");
+  assert.ok((await page.locator("#programme a[href^='/module/']").count()) > 0, "Repères : la gestion garde les liens");
   await page.goto(BASE + "/");
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant");
+  ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant ; hors programme (question 101, b), page, évaluation, correction, document et trace refusés, liens des Repères ôtés");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)

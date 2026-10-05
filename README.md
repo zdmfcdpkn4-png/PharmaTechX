@@ -212,8 +212,10 @@ synthèse déposée par les tuteurs ; PDF et images en ligne, autres fichiers
 par un lien), les **questions ratées se retravaillent** en entraînement sur
 ces questions seulement, et le **module suivant du parcours** est proposé.
 La page d'un module situe celui-ci dans sa liste (socle ou filière) avec le
-précédent et le suivant ; un code de poste ouvre le programme sur sa filière
-et son niveau.
+précédent et le suivant. Un code de poste ouvre sur le programme de son
+code — filière et niveau, ou programme à la carte, fixés par le tuteur ou
+l'administrateur — sans pouvoir le changer, et n'ouvre que les modules de ce
+programme : page, documents et évaluation (05/10/2026, question 101).
 
 ## 7. Banque de questions, modules et documents déposés (profils tuteur et admin)
 

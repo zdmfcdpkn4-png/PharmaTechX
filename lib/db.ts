@@ -590,6 +590,21 @@ export async function depotsGeneraux(): Promise<LigneDepot[]> {
   return r.rows;
 }
 
+/**
+ * Documents qui portent un fichier servi par `/api/fichiers` (question 101,
+ * choix b) : un code de poste n'en reçoit le contenu que si l'un d'eux est à
+ * son programme (`fichierOuvert`).
+ */
+export async function documentsDuFichier(
+  url: string,
+): Promise<Pick<LigneDepot, "module_id" | "filieres" | "niveaux" | "statut">[]> {
+  const r = await requete<Pick<LigneDepot, "module_id" | "filieres" | "niveaux" | "statut">>(
+    `SELECT module_id, filieres, niveaux, statut FROM depots WHERE url = $1`,
+    [url],
+  );
+  return r.rows;
+}
+
 /** Type MIME des fichiers conservés en base, par identifiant (pour l'affichage en ligne). */
 export async function typesFichiers(ids: string[]): Promise<Record<string, string>> {
   if (ids.length === 0) return {};

@@ -35,6 +35,7 @@ import { actionDeconnexion } from "@/app/actions";
 import { actionTerminerEssai } from "@/app/actions-essai";
 import { LIBELLE_ESSAI } from "@/lib/essai";
 import { profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -173,10 +174,15 @@ export default async function RootLayout({
   // ─────────────────────────────────────────── « Reprendre » (paquet A)
   // Sans rattachement, une évaluation interrompue vit dans la page et meurt à
   // la navigation : il n'y a rien à reprendre, et rien à annoncer.
+  // Question 101 (choix b) : pour un code de poste, rien ne se reprend hors de son programme — ni l'évaluation
+  // laissée en plan, ni la lecture repérée sur l'appareil, peut-être par un autre agent.
+  // Un échec de lecture n'ôte que ce filtre : les pages et le serveur refusent d'eux-mêmes.
+  const ouvertsPoste =
+    impose && session ? await programmeDuPoste(session, impose).then((p) => [...p.ouverts], () => null) : null;
   const reprises: ReprisePossible[] = [];
   if (ratt) {
     const enCours = await dernierEnCours(ratt.agentId).catch(() => null);
-    if (enCours) {
+    if (enCours && (!ouvertsPoste || ouvertsPoste.includes(enCours.moduleId))) {
       const titre =
         getModule(enCours.moduleId)?.titre ??
         (await lireModuleDepose(enCours.moduleId).catch(() => null))?.titre ??
@@ -451,6 +457,7 @@ export default async function RootLayout({
               administration={avantConnexion ? null : administration}
               items={itemsFile}
               reprises={reprises}
+              modulesOuverts={ouvertsPoste}
               avant={avantConnexion ? <VoletConnexion /> : undefined}
               interrupteur={vueApprenant === null ? undefined : <InterrupteurVue apprenant={vueApprenant} lieu="acces-rapide" />}
             />

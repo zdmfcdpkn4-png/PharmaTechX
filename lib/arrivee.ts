@@ -14,6 +14,8 @@ import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
 import type { Module } from "@/content/types";
 import type { EtapeReprise } from "@/components/Reprendre";
 import { badgeEffectif } from "@/content/badges";
+import { profilImpose } from "./profil-impose";
+import { programmeDuPoste } from "./programme-poste";
 
 /**
  * Programme d'arrivée d'un poste, pour l'accueil (question 91, choix a) : le
@@ -47,7 +49,17 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
     badge: badgeEffectif(m.badge, m.titre, m.objectif),
   });
 
-  const enCours = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
+  const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
+  // Question 101 (choix b) : une évaluation laissée en plan sur un module hors du programme du code ne se
+  // reprend pas d'ici ; sa page le refuserait.
+  const impose = profilImpose(session, baseConfiguree());
+  const enCours =
+    enCoursLu &&
+    impose &&
+    session &&
+    !(await programmeDuPoste(session, impose).then((p) => p.ouverts.has(enCoursLu.moduleId), () => true))
+      ? null
+      : enCoursLu;
   const evaluation = enCours
     ? {
         moduleId: enCours.moduleId,

@@ -404,6 +404,14 @@ telle. Ordre : ce qui change le déploiement en premier.
       publié, comme aujourd'hui. Contre : un rapport peut être émis sur un
       critère hors du profil de l'agent ; seul le visa du tuteur le repère.
 
+    Tranchée le 05/10/2026 (choix b, réponse « B »). Hors de son programme —
+    son programme à la carte validé, sinon le socle et la filière du code à
+    son niveau, sur les deux parcours —, un code de poste n'ouvre ni la page
+    d'un module, ni ses documents, ni son évaluation, et le serveur refuse
+    correction, traces, signalements et rapport. Le Programme complet des
+    Repères reste lisible, sans liens. Détail, coût et vérifications dans
+    `DECISIONS.md`.
+
 100. **Modules de formation reliés par le formateur ou l'administrateur : à
     quoi ?** — posée le 05/10/2026, avec la réponse à la question 99, qui
     demandait aussi que les modules de formation soient reliés par le

@@ -144,11 +144,18 @@ export function AccesRapide({
   reprises,
   avant,
   interrupteur,
+  modulesOuverts = null,
 }: {
   groupes: GroupeRail[];
   administration: GroupeRail | null;
   items: ItemAttente[];
   reprises: ReprisePossible[];
+  /**
+   * Question 101 (choix b) : modules ouverts à un code de poste ; la lecture
+   * repérée sur l'appareil — peut-être par un autre agent — ne se reprend que
+   * parmi eux. null : tout module s'ouvre.
+   */
+  modulesOuverts?: string[] | null;
   /**
    * Bloc placé en tête du panneau. Avant connexion, il porte le contenu du
    * volet d'accueil : sous 62 rem, le volet permanent est masqué, et sans lui
@@ -181,8 +188,10 @@ export function AccesRapide({
   const [lecture, setLecture] = useState<ReprisePossible | null>(null);
   const titreId = useId();
 
+  const lectureOuverte =
+    lecture && (!modulesOuverts || modulesOuverts.includes(lecture.href.replace(/^\/module\//, ""))) ? lecture : null;
   const toutes: Entree[] = useMemo(() => {
-    const r: Entree[] = [...(lecture ? [lecture] : []), ...reprises].map((x) => ({
+    const r: Entree[] = [...(lectureOuverte ? [lectureOuverte] : []), ...reprises].map((x) => ({
       cle: `reprendre:${x.nature}`,
       zone: "reprendre",
       libelle: x.libelle,
@@ -197,7 +206,7 @@ export function AccesRapide({
       nombre: i.nombre,
     }));
     return [...r, ...f, ...entreesDuVolet(groupes, administration, chemin)];
-  }, [lecture, reprises, items, groupes, administration, chemin]);
+  }, [lectureOuverte, reprises, items, groupes, administration, chemin]);
 
   const recherche = filtre.trim() !== "";
   const visibles = useMemo(() => {

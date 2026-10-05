@@ -2,6 +2,8 @@
 
 import { agentRelieDeLaSession, getSession, sessionRequise } from "@/lib/auth";
 import { identifiantARattacher } from "@/lib/liaison";
+import { profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 import { baseConfiguree } from "@/lib/db";
 import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
@@ -33,7 +35,8 @@ export async function actionEmettreRapport(entree: {
   if (!baseConfiguree() || !conservationActive()) {
     return { ok: false, erreur: "La conservation des rapports n'est pas activée sur ce site." };
   }
-  const essai = Boolean((await sessionRequise("poste")).essai);
+  const sessionEmission = await sessionRequise("poste");
+  const essai = Boolean(sessionEmission.essai);
   // Apprenant rattaché à son identifiant (question 11) : l'identifiant vient du
   // rattachement, jamais du navigateur. En mode test, l'utilisateur test.
   const ratt = await rattachement();
@@ -67,6 +70,11 @@ export async function actionEmettreRapport(entree: {
     return { ok: false, erreur: "Ce résultat n'a pas été produit par le serveur : émission refusée." };
   }
   if (!(await moduleExiste(r.moduleId))) return { ok: false, erreur: "Module inconnu." };
+  // Question 101 (choix b) : un code de poste n'émet de rapport que pour un module de son programme.
+  const impose = profilImpose(sessionEmission, baseConfiguree());
+  if (impose && !(await programmeDuPoste(sessionEmission, impose)).ouverts.has(r.moduleId)) {
+    return { ok: false, erreur: "Ce module n'est pas à votre programme : aucun rapport ne s'émet pour lui." };
+  }
   const entrainement = refusEmissionEntrainement(r);
   if (entrainement) return { ok: false, erreur: entrainement };
   if (r.verdict === "non_concluant" || r.concluant === false) {

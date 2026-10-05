@@ -7,6 +7,8 @@ import { numeroDeFiche } from "@/content/fiches";
 import { lireFiche } from "@/lib/fiches-db";
 import { getModuleComplet } from "@/content/store";
 import { banqueDuModule } from "@/content/types";
+import { profilImpose } from "@/lib/profil-impose";
+import { programmeDuPoste } from "@/lib/programme-poste";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,13 @@ export async function POST(request: Request) {
     corps = await request.json();
   } catch {
     return NextResponse.json({ erreur: "Requête illisible." }, { status: 400 });
+  }
+  // Question 101 (choix b) : un code de poste ne signale que dans les modules de son programme.
+  const session = await getSession();
+  const impose = profilImpose(session, baseConfiguree());
+  const moduleVise = typeof corps.moduleId === "string" ? corps.moduleId.slice(0, 80) : "";
+  if (impose && session && !(await programmeDuPoste(session, impose)).ouverts.has(moduleVise)) {
+    return NextResponse.json({ erreur: "Module hors de votre programme." }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   if (typeof corps.ficheId === "string") return signalerFiche(corps);
   const questionId = typeof corps.questionId === "string" ? corps.questionId.slice(0, 80) : "";

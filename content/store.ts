@@ -262,6 +262,17 @@ export async function positionDansProfil(
 }
 
 /**
+ * Place d'un module dans le programme de fiche d'un code de poste (question
+ * 101, choix b) : précédent et suivant pris dans ce programme seul, jamais un
+ * module d'un autre niveau ou d'une autre filière, qui lui serait fermé.
+ * `null` si le module n'y figure pas.
+ */
+export function positionDansListe(liste: Module[], moduleId: string): PositionParcours | null {
+  const v = voisins(liste, moduleId);
+  return v ? { liste: "programme-du-code", libelle: "Mon programme", ...v } : null;
+}
+
+/**
  * Place d'un module dans un programme à la carte validé (question 50) : le
  * précédent et le suivant dans l'ordre du programme, qui ne suit pas la
  * fiche. `null` si le programme n'est pas validé ou ne contient pas ce module
