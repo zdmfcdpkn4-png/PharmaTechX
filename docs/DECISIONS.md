@@ -7400,6 +7400,85 @@ mais l'écarte tant que l'espace de travail n'est pas de confiance.
 - Parcours de bout en bout non relancé : aucun fichier du site n'a changé,
   hors `eslint.config.mjs`.
 
+## Un code de poste relié à un identifiant d'agent (05/10/2026, question 99, choix a)
+
+**Question.** Un premier code de poste de préparateur et un premier
+identifiant d'agent venaient d'être créés : faut-il les relier ? Ils étaient
+séparés (questions 6 et 11) ; le lien se faisait à chaque session, dans
+« Ma progression », par l'identifiant et le code personnel.
+
+**Choix a.** Un code de poste peut porter l'identifiant de l'agent à qui il
+est remis. Connecté par ce code, l'agent ne saisit plus que son code
+personnel, choisi par lui la première fois. Un code non relié reste partagé,
+comme avant. Écartés : b, le même lien sans code personnel (qui détient le
+code compose sous l'identité de l'agent, y compris l'administrateur qui l'a
+généré) ; c, ne rien relier.
+
+**Fait.**
+- Base : `acces.agent_id`, vide pour un code partagé. Seul un code de poste
+  se relie, et seulement à un identifiant actif : la règle est pure
+  (`lib/liaison.ts`) et redite dans la requête (`relierAcces`).
+- Codes d'accès :
+  - la case « Créer l'identifiant d'agent suivant et le relier à ce code »
+    crée l'identifiant dans la même transaction que le code ;
+  - la carte d'un code de poste dit « relié à AG-… » ; « Relier à un
+    agent… » le relie, change l'agent ou le délie (panneau bleu, pas la
+    couleur d'un acte irréversible) ;
+  - un code de tutorat ou d'administration est refusé, à la création comme à
+    la liaison, et le refus est au journal (`liaison-code-refusee`).
+- Journal : `liaison-code`, `deliaison-code` ; `agent:creation` quand
+  l'identifiant naît avec le code.
+- Connexion par un code relié :
+  - l'accueil « Mon habilitation » et « Ma progression » nomment
+    l'identifiant et ne demandent que le code personnel, ou le font choisir
+    la première fois ;
+  - le serveur déduit l'identifiant du code. Un autre, glissé dans le
+    formulaire, est refusé avant toute vérification de code, et le refus est
+    au journal (`progression:rattachement-refuse`) ;
+  - un rattachement posé pour un autre agent, ou avant la liaison, ne compte
+    plus sous ce code (`rattachement()`).
+- Personnel : colonne « Code de poste », les codes reliés à l'identifiant,
+  sinon « partagé ». Le message de création renvoie à Codes d'accès.
+- Le code personnel reste le seul secret de l'agent : l'administrateur, qui
+  a généré le code de poste, ne le connaît pas.
+- README, `RGPD.md` et la page « Vos données » citent le lien entre code et
+  identifiant, sans nom.
+
+**Coût.**
+- Le code personnel reste à saisir à chaque session.
+- Un code relié ne doit servir qu'à son agent ; sur un poste partagé, chacun
+  garde le rattachement par identifiant.
+- Au déploiement, la colonne `agent_id` s'ajoute à la table des codes, vide
+  pour les codes existants : rien n'est relié d'office. Un code existant se
+  relie depuis sa carte.
+
+**Suite.** La même réponse demandait que les modules de formation soient
+reliés par le formateur ou l'administrateur : question 100.
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 491 tests dont cinq nouveaux
+  (`test/liaison.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 119 étapes, sans erreur de page
+  ni erreur serveur. L'étape ajoutée vérifie :
+  - un code de tutorat coché « relier » refusé, sans code créé ;
+  - un code de poste créé relié à l'identifiant suivant, qu'on retrouve sur
+    sa carte et dans Personnel ;
+  - à la première connexion par ce code, l'accueil ne demande aucun
+    identifiant et fait choisir le code personnel ;
+  - dans « Ma progression », un autre identifiant glissé dans le formulaire
+    est refusé, puis le bon code personnel rattache l'agent ;
+  - au retour, seul le code personnel est demandé ;
+  - un code existant relié depuis sa carte, une requête forgée sur un code de
+    tutorat refusée, puis le code délié.
+- Serveur d'essai, profil pm · N2R :
+  - captures de l'accueil (première connexion, puis retour) ;
+  - captures de la carte du code et de Personnel ;
+  - téléphone à 390 px, sans débordement ;
+  - identifiant forgé (AG-002, puis une saisie illisible) refusé et
+    journalisé. Le même identifiant écrit autrement (« ag 4 ») est admis :
+    vérifié par le test unitaire seulement.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

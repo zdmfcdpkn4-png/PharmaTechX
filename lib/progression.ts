@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { decoderJeton, encoderJeton, getSession, hacherCode, lireActivite, nouveauSid, verifierCode } from "./auth";
+import { agentRelieDeLaSession, decoderJeton, encoderJeton, getSession, hacherCode, lireActivite, nouveauSid, verifierCode } from "./auth";
+import { rattachementAdmis } from "./liaison";
 import { inactif } from "./inactivite";
 import { baseConfiguree, requete, sql } from "./db";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
@@ -53,6 +54,11 @@ export async function rattachement(): Promise<Rattachement | null> {
   // code personnel. Un rattachement d'avant cette version, sans `vu`, est daté
   // de sa pose (échéance moins sa durée).
   if (!r || inactif({ sid: r.sid, vu: r.vu, debut: r.exp - DUREE_HEURES * 3600 }, await lireActivite())) return null;
+  // Sous un code de poste relié (question 99, choix a), seul l'agent du code est
+  // rattaché : un rattachement posé avant la liaison, ou pour un autre agent, ne
+  // compte plus.
+  const relie = await agentRelieDeLaSession();
+  if (!rattachementAdmis(relie?.id ?? null, r.agentId)) return null;
   return r;
 }
 
@@ -92,6 +98,17 @@ export async function verifierCodePersonnel(agentId: number, code: string): Prom
   const r = await sql<{ code_hash: string | null }>`SELECT code_hash FROM agents WHERE id = ${agentId}`;
   const h = r.rows[0]?.code_hash;
   return typeof h === "string" && verifierCode(code, h);
+}
+
+/**
+ * Agent du code de poste de la session, pour le formulaire de rattachement
+ * (question 99, choix a) : son identifiant, son état et si son code personnel
+ * est déjà choisi. null sous un code partagé.
+ */
+export async function relieAuRattachement(): Promise<{ identifiant: string; actif: boolean; codeDefini: boolean } | null> {
+  const a = await agentRelieDeLaSession();
+  if (!a) return null;
+  return { identifiant: a.identifiant, actif: a.actif, codeDefini: await codePersonnelDefini(a.id) };
 }
 
 export async function reinitialiserCodePersonnel(agentId: number): Promise<void> {

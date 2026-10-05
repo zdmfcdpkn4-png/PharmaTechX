@@ -10,9 +10,10 @@ import {
   lireEtatAcces,
   lireHachageAcces,
   marquerUsage,
+  type AgentRelie,
   type Role,
 } from "./db";
-import { etatDeSession, type EtatAcces } from "./session-etat";
+import { etatDeSession } from "./session-etat";
 import { inactif, type Activite } from "./inactivite";
 import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
@@ -139,7 +140,7 @@ function decoder(jeton: string): Session | null {
   return decoderJeton<Session>(jeton);
 }
 
-const etatAcces = cache((id: number): Promise<EtatAcces | null> => lireEtatAcces(id));
+const etatAcces = cache((id: number) => lireEtatAcces(id));
 
 export interface EtatSession {
   session: Session | null;
@@ -169,6 +170,19 @@ export async function etatSession(): Promise<EtatSession> {
 
 export async function getSession(): Promise<Session | null> {
   return (await etatSession()).session;
+}
+
+/**
+ * Agent relié au code de la session (question 99, choix a) : l'agent d'un code
+ * de poste personnel. null pour un code partagé, de tutorat ou
+ * d'administration, en mode test ou sans base. Lu avec l'état du code, la
+ * lecture est mémorisée le temps d'une requête.
+ */
+export async function agentRelieDeLaSession(): Promise<AgentRelie | null> {
+  if (!baseConfiguree()) return null;
+  const s = await getSession();
+  if (!s?.acces || s.essai) return null;
+  return (await etatAcces(s.acces))?.agent ?? null;
 }
 
 export async function ouvrirSession(s: Omit<Session, "exp">): Promise<void> {

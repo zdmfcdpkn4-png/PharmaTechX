@@ -2017,6 +2017,12 @@ details.suppression > .suppression-corps {
   max-width: 32rem;
 }
 details.suppression > .suppression-corps .legende { color: var(--echec); }
+/* Relier un code de poste à un agent (question 99) : même repli, sans la couleur d'un acte irréversible. */
+details.suppression.liaison-agent > .suppression-corps {
+  border-left-color: var(--marque);
+  background: var(--marque-clair);
+}
+details.suppression.liaison-agent > .suppression-corps .legende { color: var(--texte-doux); }
 
 .fil { font-size: 0.8125rem; color: var(--texte-doux); }
 .fil a { color: inherit; }

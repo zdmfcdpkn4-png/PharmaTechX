@@ -522,6 +522,11 @@ export const SCHEMA: string[] = [
      dernier INTEGER NOT NULL CHECK (dernier >= 0)
    )`,
 
+  // ── code de poste relié à un identifiant d'agent (question 99, choix a, 05/10/2026) ─
+  // Vide : code partagé, chaque agent saisit son identifiant. Rempli : l'agent du code
+  // ne saisit plus que son code personnel. Codes de poste seulement (`lib/liaison.ts`).
+  `ALTER TABLE acces ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id) ON DELETE SET NULL`,
+
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),
   `DO $$

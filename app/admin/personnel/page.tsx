@@ -17,7 +17,7 @@ import { adresseDuFiltre } from "@/content/filtres";
 export const dynamic = "force-dynamic";
 
 const MESSAGES: Record<string, (identifiant: string) => string> = {
-  cree: (i) => `Identifiant ${i} créé. Notez la correspondance avec l'agent dans la liste tenue hors du site, puis remettez-lui l'identifiant : c'est ce qu'il saisira pour émettre ses rapports.`,
+  cree: (i) => `Identifiant ${i} créé. Notez la correspondance avec l'agent dans la liste tenue hors du site, puis remettez-lui l'identifiant : c'est ce qu'il saisira pour émettre ses rapports. Relié à un code de poste (Codes d'accès), il n'aura plus que son code personnel à saisir.`,
   clos: (i) => `Identifiant ${i} clos : plus aucun rapport ne peut lui être rattaché ; son historique reste jusqu'à purge manuelle.`,
   rouvert: (i) => `Identifiant ${i} rouvert.`,
   code: (i) => `Code personnel de ${i} réinitialisé : l'agent en choisira un nouveau à son prochain rattachement.`,
@@ -101,7 +101,7 @@ export default async function Personnel({
         {agents.length > 0 && (
           <table className="tableau" style={{ marginTop: "1rem" }}>
             <thead>
-              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Rapports</th><th>Progression</th><th>Code personnel</th><th></th></tr>
+              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Code de poste</th><th>Rapports</th><th>Progression</th><th>Code personnel</th><th></th></tr>
             </thead>
             <tbody>
               {agents.map((a) => (
@@ -111,6 +111,14 @@ export default async function Personnel({
                   <td>
                     <span className={`etiquette ${a.actif ? "etiquette--ok" : "etiquette--neutre"}`}>{a.actif ? "actif" : "clos"}</span>
                     {!a.actif && a.clos_le ? <span className="legende"> le {date(a.clos_le)}</span> : null}
+                  </td>
+                  {/* Codes de poste reliés à l'identifiant (question 99, choix a) ; vide : il se rattache sous un code partagé. */}
+                  <td>
+                    {a.codes_relies.length > 0 ? (
+                      a.codes_relies.join(", ")
+                    ) : (
+                      <span className="legende">partagé</span>
+                    )}
                   </td>
                   <td>
                     {a.nb_rapports > 0 ? <Link href={`/admin/personnel?agent=${a.identifiant}`}>{a.nb_rapports}</Link> : "0"}

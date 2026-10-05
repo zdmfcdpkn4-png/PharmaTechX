@@ -377,6 +377,33 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+100. **Modules de formation reliés par le formateur ou l'administrateur : à
+    quoi ?** — posée le 05/10/2026, avec la réponse à la question 99, qui
+    demandait aussi que les modules de formation soient reliés par le
+    formateur ou l'administrateur.
+
+    Aujourd'hui, le tutorat et l'administration relient les modules à un
+    profil, filière et niveau (Squelette › Rattachement des modules,
+    question 81) : un code de poste ouvre sur les modules publiés de sa
+    filière, à son niveau. Un programme à la carte (question 50) peut le
+    remplacer, marqué « profil dégradé ». Rien ne relie un module à un
+    agent. L'accueil ne propose que le prochain module ; les autres sont
+    dans Mes modules, groupés par bloc et repliés.
+    - **a (recommandé)** : des modules confiés à l'agent. Sur sa fiche
+      (Personnel), le formateur ou l'administrateur coche les modules
+      publiés à suivre maintenant ; l'accueil de l'agent les présente en
+      tête, chacun avec son évaluation à un clic. Le programme du profil
+      reste la référence, visible ensuite. Contre : un geste par agent et
+      par étape, et l'agent peut toujours ouvrir les autres modules de son
+      profil.
+    - **b** : un programme propre à l'agent : les modules cochés remplacent
+      le programme du profil, l'agent ne voit qu'eux. Contre : un module
+      exigé par la fiche d'habilitation peut manquer sans que rien ne le
+      signale, et chaque agent se compose à la main.
+    - **c** : ne rien relier de plus ; l'étape « M'évaluer » de l'accueil
+      liste seulement les modules évaluables du profil, chacun avec son
+      bouton. Contre : le formateur ne choisit rien, agent par agent.
+
 99. **Code de poste et identifiant d'agent : faut-il les relier ?** — posée
     le 05/10/2026, après la création d'un premier code de poste de
     préparateur et d'un premier identifiant d'agent.
@@ -406,6 +433,12 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : ne rien relier ; placer seulement le rattachement en tête de
       « Mon habilitation ». Contre : deux saisies à chaque session, et aucun
       lien enregistré entre le code et l'agent.
+
+    Tranchée le 05/10/2026 (choix a, réponse « À », valant « a »). Un code
+    de poste se crée relié à l'identifiant suivant, ou se relie depuis sa
+    carte ; connecté par lui, l'agent ne saisit que son code personnel, dès
+    l'accueil, et le serveur refuse tout autre identifiant. Détail dans
+    `DECISIONS.md`.
 
 98. **Type et programme : le type d'un code de poste suit-il le métier de
     sa filière et de son niveau ?** — posée le 02/10/2026, conséquence des

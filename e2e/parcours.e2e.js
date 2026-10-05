@@ -6087,6 +6087,136 @@ Source : Procédure statistiques — section 5`;
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
 
+  // 14d undecies. code de poste relié à un identifiant d'agent (question 99, choix a) : créé relié en
+  //          un geste, l'agent n'y saisit que son code personnel — choisi à la première connexion,
+  //          dès l'accueil —, un autre identifiant y est refusé par le serveur ; un code existant se
+  //          relie puis se délie depuis sa carte ; un code de tutorat ne se relie pas.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/accueil$/);
+  await fermerVisite();
+  await page.goto(BASE + "/admin");
+  const cartesAvantLien = await page.locator("li.carte").count();
+  await page.selectOption("select[name=role]", "tuteur");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.check("input[name=agent]");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/erreur=agent-role/);
+  await page.waitForSelector("[role=alert]:has-text('Seul un code de poste se relie')");
+  assert.equal(await page.locator("li.carte").count(), cartesAvantLien, "code de tutorat relié : aucun code créé");
+  await page.selectOption("select[name=role]", "poste");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.check("input[name=agent]");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=.*agent=AG-/);
+  const urlRelie = new URL(page.url());
+  const codeRelie = urlRelie.searchParams.get("nouveau");
+  const libelleRelie = urlRelie.searchParams.get("libelle");
+  const agentRelie = urlRelie.searchParams.get("agent");
+  assert.match(agentRelie, /^AG-\d{3,}$/, "identifiant suivant, créé avec le code");
+  await page.waitForSelector(`p.encart--ok:has-text("Relié à l'identifiant ${agentRelie}")`);
+  await page.locator(`li.carte:has(strong:text-is("${libelleRelie}")) code:text-is("${agentRelie}")`).waitFor();
+  await page.goto(BASE + "/admin/personnel");
+  await page.locator(`tr:has(code:text-is("${agentRelie}")) td:text-is("${libelleRelie}")`).waitFor();
+
+  const ctxRelie = await browser.newContext();
+  await ctxRelie.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
+  surveillerTiers(ctxRelie);
+  const pr = await ctxRelie.newPage();
+  pr.on("pageerror", (e) => console.log("ERREUR PAGE:", pr.url(), e.message));
+  const entrerRelie = async () => {
+    await pr.goto(BASE + "/connexion");
+    await pr.fill("input[name=code]", codeRelie);
+    await pr.click("button:has-text('Entrer')");
+    await pr.waitForURL(/\/accueil$/);
+    // Première connexion de ce profil : sa visite guidée s'ouvre, et son voile intercepterait les clics.
+    if (await pr.waitForSelector(".visite", { timeout: 2500 }).then(() => true, () => false)) {
+      await pr.keyboard.press("Escape");
+      await pr.waitForSelector(".visite-voile", { state: "detached" });
+    }
+  };
+  await entrerRelie();
+  // L'accueil nomme l'identifiant du code et fait choisir le code personnel : rien d'autre à saisir.
+  await pr.waitForSelector(`#rattachement:has-text("Première connexion de ${agentRelie}")`);
+  assert.equal(await pr.locator("#rattachement input[name=identifiant]").count(), 0, "aucun identifiant à saisir sous un code relié");
+  await pr.fill("#rattachement input[name=nouveauCode]", "3579");
+  await pr.fill("#rattachement input[name=confirmation]", "3579");
+  await pr.click("#rattachement button:has-text('Choisir ce code')");
+  await pr.waitForURL(/\/accueil\?progression=ok/);
+  await pr.waitForSelector(`#rattachement:has-text("Progression rattachée à ${agentRelie}")`);
+  // Détaché, l'agent se rattache dans « Ma progression » par son seul code personnel ; un autre
+  // identifiant glissé dans le formulaire est refusé par le serveur, avant toute vérification de code.
+  await pr.goto(BASE + "/#progression");
+  await pr.click("#progression button:has-text('Se détacher')");
+  await pr.waitForSelector(`#progression:has-text("Ce code de poste est relié à ${agentRelie}")`);
+  assert.equal(await pr.locator("#progression input[name=identifiant]").count(), 0, "« Ma progression » : pas d'identifiant à saisir");
+  await pr.locator("#progression form").evaluate((f) => {
+    const i = document.createElement("input");
+    i.type = "hidden";
+    i.name = "identifiant";
+    i.value = "AG-002";
+    f.append(i);
+  });
+  await pr.fill("#progression input[name=code]", "1234");
+  await pr.click("#progression button:has-text('Rattacher ma progression')");
+  await pr.waitForURL(/progression=autre-agent/);
+  await pr.waitForSelector("#progression [role=status]:has-text('relié à un autre identifiant')");
+  // Le champ glissé survit à la navigation de l'action : la page est rechargée avant la bonne saisie.
+  await pr.goto(BASE + "/#progression");
+  await pr.waitForSelector(`#progression:has-text("Ce code de poste est relié à ${agentRelie}")`);
+  await pr.fill("#progression input[name=code]", "3579");
+  await pr.click("#progression button:has-text('Rattacher ma progression')");
+  await pr.waitForURL(/progression=ok/);
+  await pr.waitForSelector(`#progression code:has-text('${agentRelie}')`);
+  // Au retour, l'accueil ne demande plus que le code personnel.
+  await pr.evaluate(() => window.scrollTo(0, 0));
+  await pr.waitForTimeout(300);
+  await pr.click("button:has-text('quitter')");
+  await pr.waitForURL(/\/connexion/);
+  await entrerRelie();
+  await pr.waitForSelector(`#rattachement:has-text("Ce code de poste est relié à ${agentRelie}")`);
+  assert.equal(await pr.locator("#rattachement input[name=nouveauCode]").count(), 0, "code déjà choisi : seule la saisie est demandée");
+  await pr.fill("#rattachement input[name=code]", "3579");
+  await pr.click("#rattachement button:has-text('Rattacher ma progression')");
+  await pr.waitForURL(/\/accueil\?progression=ok/);
+  await pr.waitForSelector(`#rattachement:has-text("Progression rattachée à ${agentRelie}")`);
+  await ctxRelie.close();
+
+  // Un code existant se relie depuis sa carte, puis se délie ; un code de tutorat ne se relie pas,
+  // même par une requête forgée.
+  await page.goto(BASE + "/admin");
+  await page.selectOption("select[name=role]", "poste");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=/);
+  const libellePartage = new URL(page.url()).searchParams.get("libelle");
+  assert.equal(new URL(page.url()).searchParams.get("agent"), null, "case décochée : aucun identifiant créé");
+  const cartePartage = () => page.locator(`li.carte:has(strong:text-is("${libellePartage}"))`);
+  await cartePartage().locator("summary:has-text('Relier à un agent')").click();
+  await cartePartage().locator("select[name=agent]").selectOption(agentRelie);
+  await cartePartage().locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=relie/);
+  await page.waitForSelector(`[role=status]:has-text("Code « ${libellePartage} » relié à ${agentRelie}")`);
+  await cartePartage().locator(`code:text-is("${agentRelie}")`).waitFor();
+  const idTuteur = await page.locator(`li.carte:has(.etiquette:text-is("tuteur")) input[name=id]`).first().inputValue();
+  await cartePartage().locator("summary:has-text('Agent relié')").click();
+  await cartePartage().locator("form:has(select[name=agent]) input[name=id]").evaluate((i, v) => { i.value = v; }, idTuteur);
+  await cartePartage().locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/erreur=liaison-role/);
+  await page.waitForSelector("[role=alert]:has-text('Seul un code de poste se relie')");
+  await cartePartage().locator("summary:has-text('Agent relié')").click();
+  await cartePartage().locator("select[name=agent]").selectOption("");
+  await cartePartage().locator("button:has-text('Enregistrer')").click();
+  await page.waitForURL(/ok=delie/);
+  await page.waitForSelector(`[role=status]:has-text("Code « ${libellePartage} » délié")`);
+  assert.equal(await cartePartage().locator("code").count(), 0, "délié : plus d'identifiant sur la carte");
+  await page.goto(BASE + "/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("code de poste relié (question 99, choix a) : créé relié en un geste, code personnel choisi dès l'accueil puis seul demandé, autre identifiant refusé, code existant relié puis délié, code de tutorat refusé");
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

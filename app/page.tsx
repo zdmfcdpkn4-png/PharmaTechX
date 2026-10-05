@@ -4,7 +4,7 @@ import { miseEnService, modeConservation } from "@/lib/config";
 import { procedureEnVigueur } from "@/lib/complements-db";
 import { baseConfiguree, depotsGeneraux } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { dernierEnCours, rattachement } from "@/lib/progression";
+import { dernierEnCours, rattachement, relieAuRattachement } from "@/lib/progression";
 import { questionsRenseignees } from "@/content/en-cours";
 import { lireModuleDepose } from "@/content/modules-db";
 import { Reprendre, type EtapeReprise } from "@/components/Reprendre";
@@ -189,6 +189,9 @@ export default async function Accueil({
     : null;
   // Renseignée dans Réglages › À compléter, sinon posée dans Render : le rapport téléchargé la porte.
   const procedure = await procedureEnVigueur();
+  // Code de poste relié (question 99, choix a) : « Ma progression » ne demande que le code personnel.
+  const relie =
+    conservation === "pseudonyme" && baseConfiguree() && !ratt ? await relieAuRattachement().catch(() => null) : null;
 
   return (
     <>
@@ -315,6 +318,7 @@ export default async function Accueil({
           premiere={params.premiere}
           minutes={params.minutes}
           essai={Boolean(session?.essai)}
+          relie={relie}
         />
       )}
 

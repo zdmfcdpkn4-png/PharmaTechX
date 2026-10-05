@@ -13,6 +13,9 @@ import { aCoteDuCircuit, arretsCircuit, etatModules } from "@/content/accueil";
 import { getReferentiel } from "@/content/referentiel-db";
 import { Badge } from "@/components/Badge";
 import { CheminAgent } from "@/components/CheminAgent";
+import { rattachement, relieAuRattachement } from "@/lib/progression";
+import { texteProgression } from "@/components/Progression";
+import { RattachementRelie } from "@/components/RattachementRelie";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +27,33 @@ export const dynamic = "force-dynamic";
  * son adresse (`/`). Les médaillons sont ceux du site, toujours légendés : rien
  * ne repose sur l'image seule.
  */
-export default async function Accueil() {
+export default async function Accueil({
+  searchParams,
+}: {
+  /** Réponse au rattachement posé sur l'accueil par un code relié (question 99, choix a). */
+  searchParams: Promise<{ progression?: string; minutes?: string }>;
+}) {
   const session = await getSession();
-  if (!session || session.role === "poste") return <AccueilPoste session={session} />;
+  if (!session || session.role === "poste") return <AccueilPoste session={session} p={await searchParams} />;
   return <AccueilGestion role={session.role} />;
 }
 
-async function AccueilPoste({ session }: { session: Awaited<ReturnType<typeof getSession>> }) {
-  const [{ programme, evaluation, requete }, { filieres }] = await Promise.all([arriveeDuPoste(session), getReferentiel()]);
+async function AccueilPoste({
+  session,
+  p,
+}: {
+  session: Awaited<ReturnType<typeof getSession>>;
+  p: { progression?: string; minutes?: string };
+}) {
+  const conservation = modeConservation() === "pseudonyme" && baseConfiguree();
+  const [{ programme, evaluation, requete }, { filieres }, ratt] = await Promise.all([
+    arriveeDuPoste(session),
+    getReferentiel(),
+    conservation ? rattachement() : Promise.resolve(null),
+  ]);
+  // Code de poste relié (question 99, choix a) : l'agent ne saisit que son code personnel, dès l'arrivée.
+  const relie = conservation && !ratt ? await relieAuRattachement().catch(() => null) : null;
+  const texte = texteProgression(p.progression, p.minutes);
   const filiere = filieres.find((f) => f.id === session?.filiere)?.libelle;
   const profil = [filiere, session?.niveau].filter(Boolean).join(" · ");
   return (
@@ -44,6 +66,22 @@ async function AccueilPoste({ session }: { session: Awaited<ReturnType<typeof ge
           <strong>Valider un module à l&apos;écran ne vaut pas habilitation.</strong>
         </p>
       </section>
+      {relie && (
+        <RattachementRelie
+          identifiant={relie.identifiant}
+          actif={relie.actif}
+          codeDefini={relie.codeDefini}
+          depuis="accueil"
+          texte={texte}
+          classe={p.progression === "ok" ? "encart encart--ok" : "encart encart--attention"}
+        />
+      )}
+      {ratt && p.progression === "ok" && (
+        <p className="encart encart--ok" role="status" id="rattachement">
+          Progression rattachée à <code>{ratt.identifiant}</code> : vos évaluations, entraînements et lectures sont
+          conservés sous cet identifiant.
+        </p>
+      )}
       <section className="carte accueil-carte" aria-label="Les six étapes de l'habilitation">
         <CheminAgent programme={programme} evaluation={evaluation} requete={requete} />
       </section>

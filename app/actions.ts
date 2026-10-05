@@ -9,6 +9,7 @@ import {
   enregistrerDepot,
   lireRoleAcces,
   reinitialiserAcces,
+  relierAcces,
   supprimerAcces,
   supprimerDepot,
   type Role,
@@ -25,6 +26,9 @@ import {
   sessionRequise,
 } from "@/lib/auth";
 import { lireTypeCode, profilAdmisPour, typeAdmisPour } from "@/lib/codes";
+import { CREER_ET_RELIER, lireChoixAgent, refusLiaison } from "@/lib/liaison";
+import { agentParIdentifiant } from "@/lib/agents";
+import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
 import { detacher } from "@/lib/progression";
 import { moduleExiste, modulesDuParcours } from "@/content/store";
@@ -120,18 +124,79 @@ export async function actionCreerCode(formData: FormData) {
   const idProgramme = role === "poste" ? lireIdProgramme(formData.get("programme")) : null;
   const programme = idProgramme ? await lireProgramme(idProgramme) : null;
   if (idProgramme && programme?.statut !== "valide") redirect("/admin?erreur=programme-non-valide");
+  // Code de poste personnel (question 99, choix a) : la case crée l'identifiant d'agent suivant
+  // et le relie au code, dans la même transaction. Un code de tutorat ou d'administration ne se
+  // relie pas ; sans conservation des rapports, il n'y a pas d'identifiants d'agents.
+  const avecAgent = String(formData.get("agent") ?? "") === CREER_ET_RELIER;
+  if (avecAgent && role !== "poste") redirect("/admin?erreur=agent-role");
+  if (avecAgent && !conservationActive()) redirect("/admin?erreur=agent-indisponible");
 
   const code = genererCode();
-  const { id, libelle } = await creerAcces(hacherCode(code), role, type, filiere, niveau, programme?.id ?? null);
+  const { id, libelle, agent } = await creerAcces(
+    hacherCode(code),
+    role,
+    type,
+    filiere,
+    niveau,
+    programme?.id ?? null,
+    avecAgent,
+  );
+  if (agent) await journaliser(s, "agent:creation", `agent:${agent}`, { code: libelle });
   await journaliser(s, "creation-code", `acces:${id}`, {
     role,
     libelle,
     filiere,
     niveau,
     ...(programme ? { programme: programme.id } : {}),
+    ...(agent ? { agent } : {}),
   });
   revalidatePath("/admin");
-  redirect(`/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(libelle)}`);
+  redirect(
+    `/admin?nouveau=${encodeURIComponent(code)}&libelle=${encodeURIComponent(libelle)}` +
+      (agent ? `&agent=${encodeURIComponent(agent)}` : ""),
+  );
+}
+
+/**
+ * Relier un code de poste à un identifiant d'agent, ou le délier (question 99,
+ * choix a). Même barrière que la révocation : le rôle de la cible est revérifié
+ * ici, et un refus est journalisé. Seul un code de poste se relie, à un
+ * identifiant actif ; la requête le redit. Le lien prend effet à la requête
+ * suivante des sessions ouvertes avec ce code : sous un code relié, seul
+ * l'agent du code se rattache (`lib/progression.ts`).
+ */
+export async function actionRelierCode(formData: FormData) {
+  const s = await sessionRequise("tuteur");
+  const id = Number(formData.get("id"));
+  const liste = formData.get("liste");
+  const cible = Number.isInteger(id) && id > 0 ? await lireRoleAcces(id) : null;
+  if (!cible || !peutGererRole(s.role, cible)) {
+    await journaliser(s, "liaison-code-refusee", `acces:${id}`, { motif: "role-interdit" });
+    redirect(retourListe(liste, "/admin", { erreur: "role-interdit-bascule" }));
+  }
+  const choix = lireChoixAgent(formData.get("agent"));
+  if (!choix) redirect(retourListe(liste, "/admin", { erreur: "liaison-agent" }));
+  const agent = choix.identifiant ? await agentParIdentifiant(choix.identifiant) : null;
+  const refus = choix.identifiant ? refusLiaison(cible, agent) : cible === "poste" ? null : "role";
+  if (refus) {
+    if (refus === "role") await journaliser(s, "liaison-code-refusee", `acces:${id}`, { motif: "role" });
+    redirect(retourListe(liste, "/admin", { erreur: refus === "role" ? "liaison-role" : "liaison-agent" }));
+  }
+  const fait = await relierAcces(id, agent?.id ?? null);
+  if (!fait) redirect(retourListe(liste, "/admin", { erreur: "liaison-agent" }));
+  await journaliser(s, agent ? "liaison-code" : "deliaison-code", `acces:${id}`, {
+    libelle: fait.libelle,
+    ...(agent ? { agent: agent.identifiant } : {}),
+  });
+  revalidatePath("/admin");
+  revalidatePath("/admin/personnel");
+  redirect(
+    retourListe(liste, "/admin", {
+      ok: agent ? "relie" : "delie",
+      libelle: fait.libelle,
+      ...(agent ? { agent: agent.identifiant } : {}),
+    }),
+  );
 }
 
 /**

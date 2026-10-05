@@ -5,6 +5,7 @@ import { SCHEMA } from "./schema";
 import { fabriqueSocket, familleIp, protocoleTls } from "./reseau";
 import { conformiteInstance } from "./instance";
 import { hacherCode, libelleDuCode, motifLibelle, type TypeCode } from "./codes";
+import { formaterIdentifiant } from "./identifiant";
 
 /**
  * Accès à la base — PostgreSQL standard via `pg`.
@@ -351,6 +352,9 @@ export interface LigneAcces {
   actif: boolean;
   cree_le: string;
   dernier_usage: string | null;
+  /** Code de poste relié à un identifiant d'agent (question 99, choix a) ; null : code partagé. */
+  agent_id: number | null;
+  agent_identifiant: string | null;
 }
 
 export interface LigneDepot {
@@ -391,11 +395,11 @@ export async function initSchema(): Promise<void> {
 /** Par rôle, puis par nom ; à type égal, dans l'ordre des numéros : PHARMACIEN-2 avant PHARMACIEN-10. */
 export async function listerAcces(): Promise<LigneAcces[]> {
   const r = await sql<LigneAcces>`
-    SELECT id, role, libelle, filiere, niveau, programme_id, actif,
-           cree_le::text, dernier_usage::text
-    FROM acces
-    ORDER BY role, regexp_replace(libelle, '-[0-9]{1,9}$', ''),
-             (substring(libelle from '-([0-9]{1,9})$'))::int NULLS FIRST, libelle`;
+    SELECT a.id, a.role, a.libelle, a.filiere, a.niveau, a.programme_id, a.actif,
+           a.cree_le::text, a.dernier_usage::text, a.agent_id, g.identifiant AS agent_identifiant
+    FROM acces a LEFT JOIN agents g ON g.id = a.agent_id
+    ORDER BY a.role, regexp_replace(a.libelle, '-[0-9]{1,9}$', ''),
+             (substring(a.libelle from '-([0-9]{1,9})$'))::int NULLS FIRST, a.libelle`;
   return r.rows;
 }
 
@@ -405,6 +409,9 @@ export async function listerAcces(): Promise<LigneAcces[]> {
  * pas ; le numéro passe aussi tout libellé déjà à ce format dans `acces`, venu d'ailleurs (un code
  * renommé dans la base). La ligne du compteur reste verrouillée jusqu'à l'insertion du code : deux
  * créations simultanées ne reçoivent pas le même numéro.
+ *
+ * `avecAgent` (question 99, choix a) : l'identifiant d'agent suivant est créé dans la même
+ * transaction et relié au code ; un échec n'en laisse aucun sans code.
  */
 export async function creerAcces(
   codeHash: string,
@@ -413,7 +420,8 @@ export async function creerAcces(
   filiere: string | null,
   niveau: string | null,
   programmeId: number | null = null,
-): Promise<{ id: number; libelle: string }> {
+  avecAgent = false,
+): Promise<{ id: number; libelle: string; agent: string | null }> {
   return transaction(async (c) => {
     const q = sqlSur(c);
     const motif = motifLibelle(type);
@@ -424,11 +432,32 @@ export async function creerAcces(
       ON CONFLICT (type) DO UPDATE SET dernier = GREATEST(numeros_codes.dernier + 1, EXCLUDED.dernier)
       RETURNING dernier`;
     const libelle = libelleDuCode(type, n.rows[0].dernier);
+    let agent: { id: number; identifiant: string } | null = null;
+    if (avecAgent) {
+      const s = await q<{ n: string }>`SELECT nextval('agents_id_seq')::text AS n`;
+      const id = Number(s.rows[0].n);
+      agent = { id, identifiant: formaterIdentifiant(id) };
+      await q`INSERT INTO agents (id, identifiant) VALUES (${agent.id}, ${agent.identifiant})`;
+    }
     const r = await q<{ id: number }>`
-      INSERT INTO acces (code_hash, role, libelle, filiere, niveau, programme_id)
-      VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}, ${programmeId}) RETURNING id`;
-    return { id: r.rows[0].id, libelle };
+      INSERT INTO acces (code_hash, role, libelle, filiere, niveau, programme_id, agent_id)
+      VALUES (${codeHash}, ${role}, ${libelle}, ${filiere}, ${niveau}, ${programmeId}, ${agent?.id ?? null}) RETURNING id`;
+    return { id: r.rows[0].id, libelle, agent: agent?.identifiant ?? null };
   });
+}
+
+/**
+ * Relie un code de poste à un identifiant d'agent actif, ou le délie (`null`) — question 99,
+ * choix a. Les règles sont redites dans la requête : un code d'un autre rôle, ou un identifiant
+ * clos entre la lecture et l'écriture, ne change rien (null en retour).
+ */
+export async function relierAcces(id: number, agentId: number | null): Promise<{ libelle: string } | null> {
+  const r = await sql<{ libelle: string }>`
+    UPDATE acces SET agent_id = ${agentId}
+    WHERE id = ${id} AND role = 'poste'
+      AND (${agentId}::int IS NULL OR EXISTS (SELECT 1 FROM agents WHERE id = ${agentId}::int AND actif))
+    RETURNING libelle`;
+  return r.rows[0] ?? null;
 }
 
 /**
@@ -441,11 +470,31 @@ export async function basculerAcces(id: number, actif: boolean): Promise<void> {
   else await sql`UPDATE acces SET actif = FALSE, ferme_le = NOW() WHERE id = ${id}`;
 }
 
-/** État d'un code d'accès, pour lier une session à son code ; null si le code a été supprimé. */
-export async function lireEtatAcces(id: number): Promise<{ actif: boolean; ferme: number | null } | null> {
-  const r = await sql<{ actif: boolean; ferme: number | null }>`
-    SELECT actif, EXTRACT(EPOCH FROM ferme_le)::float8 AS ferme FROM acces WHERE id = ${id}`;
-  return r.rows[0] ?? null;
+/** Agent relié à un code de poste (question 99, choix a). */
+export interface AgentRelie {
+  id: number;
+  identifiant: string;
+  actif: boolean;
+}
+
+/**
+ * État d'un code d'accès, pour lier une session à son code ; null si le code a été supprimé.
+ * Porte aussi l'agent relié au code (question 99, choix a), lu dans la même requête.
+ */
+export async function lireEtatAcces(
+  id: number,
+): Promise<{ actif: boolean; ferme: number | null; agent: AgentRelie | null } | null> {
+  const r = await sql<{ actif: boolean; ferme: number | null; agent_id: number | null; identifiant: string | null; agent_actif: boolean | null }>`
+    SELECT a.actif, EXTRACT(EPOCH FROM a.ferme_le)::float8 AS ferme,
+           g.id AS agent_id, g.identifiant, g.actif AS agent_actif
+    FROM acces a LEFT JOIN agents g ON g.id = a.agent_id WHERE a.id = ${id}`;
+  const l = r.rows[0];
+  if (!l) return null;
+  return {
+    actif: l.actif,
+    ferme: l.ferme,
+    agent: l.agent_id !== null && l.identifiant !== null ? { id: l.agent_id, identifiant: l.identifiant, actif: l.agent_actif === true } : null,
+  };
 }
 
 /**

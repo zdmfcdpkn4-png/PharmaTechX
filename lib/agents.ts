@@ -23,6 +23,8 @@ export interface LigneAgent {
   /** Traces de progression (évaluations, entraînements, lectures) et dernière activité. */
   nb_traces: number;
   derniere_activite: string | null;
+  /** Codes de poste reliés à cet identifiant (question 99, choix a), par libellé. */
+  codes_relies: string[];
 }
 
 /** Crée un identifiant ; le numéro vient de la séquence, sans trou concurrent. */
@@ -43,8 +45,16 @@ export async function listerAgents(): Promise<LigneAgent[]> {
            (SELECT COUNT(*) FROM rapports r WHERE r.agent_id = a.id)::int AS nb_rapports,
            (a.code_hash IS NOT NULL) AS code_defini,
            (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
-           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite
+           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite,
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies
     FROM agents a ORDER BY a.id`;
+  return r.rows;
+}
+
+/** Identifiants seuls, dans l'ordre de création : la liste où choisir l'agent d'un code (question 99). */
+export async function listerIdentifiants(): Promise<{ id: number; identifiant: string; actif: boolean }[]> {
+  const r = await sql<{ id: number; identifiant: string; actif: boolean }>`
+    SELECT id, identifiant, actif FROM agents ORDER BY id`;
   return r.rows;
 }
 
@@ -84,7 +94,8 @@ export async function lireAgent(id: number): Promise<LigneAgent | null> {
            (SELECT COUNT(*) FROM rapports r WHERE r.agent_id = a.id)::int AS nb_rapports,
            (a.code_hash IS NOT NULL) AS code_defini,
            (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
-           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite
+           (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite,
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies
     FROM agents a WHERE a.id = ${id}`;
   return r.rows[0] ?? null;
 }

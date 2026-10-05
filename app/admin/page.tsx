@@ -2,7 +2,10 @@ import Link from "next/link";
 import { getSession, peutGererRole, LIBELLES_ROLE } from "@/lib/auth";
 import { listerAcces } from "@/lib/db";
 import { getReferentiel } from "@/content/referentiel-db";
-import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionSupprimerCode } from "@/app/actions";
+import { actionBasculerCode, actionCreerCode, actionReinitialiserCode, actionRelierCode, actionSupprimerCode } from "@/app/actions";
+import { listerIdentifiants } from "@/lib/agents";
+import { conservationActive } from "@/lib/config";
+import { CREER_ET_RELIER } from "@/lib/liaison";
 import { listerProgrammes } from "@/content/programmes-db";
 import { MENTION_DEGRADE } from "@/content/programmes";
 import { BoutonEnvoi } from "@/components/BoutonEnvoi";
@@ -34,6 +37,12 @@ const MESSAGES: Record<string, string> = {
     "Ce programme à la carte n\u2019est pas validé : un code de poste ne s\u2019ouvre que sur un programme validé. Rien n\u2019a été créé.",
   "confirmation-indisponible":
     "La confirmation n\u2019a pas pu être vérifiée : votre session n\u2019est plus rattachée à un code en cours de validité. Reconnectez-vous.",
+  "agent-role":
+    "Seul un code de poste se relie à un identifiant d\u2019agent : un code de tutorat ou d\u2019administration n\u2019ouvre pas de progression. Rien n\u2019a été créé.",
+  "agent-indisponible":
+    "Les identifiants d\u2019agents ne servent pas sur ce site : la conservation des rapports n\u2019est pas activée. Rien n\u2019a été créé.",
+  "liaison-role": "Seul un code de poste se relie à un identifiant d\u2019agent. Rien n\u2019a changé.",
+  "liaison-agent": "Identifiant inconnu ou clos : le code n\u2019a pas été relié.",
 };
 
 const CONFIRMATIONS: Record<string, string> = {
@@ -50,6 +59,8 @@ export default async function Admin({
     erreur?: string;
     ok?: string;
     reinitialise?: string;
+    /** Identifiant d'agent relié à la création ou par « Relier » (question 99, choix a). */
+    agent?: string;
     [cle: string]: string | string[] | undefined;
   }>;
 }) {
@@ -57,7 +68,14 @@ export default async function Admin({
   const { filieres, niveaux } = await getReferentiel();
   const session = (await getSession())!;
   const estAdmin = session.role === "admin";
-  const [acces, programmes] = await Promise.all([listerAcces(), listerProgrammes().catch(() => [])]);
+  // Identifiants d'agents, pour relier un code de poste (question 99, choix a) : sans conservation des
+  // rapports, il n'y en a pas, et la case comme la liste disparaissent.
+  const conservation = conservationActive();
+  const [acces, programmes, agents] = await Promise.all([
+    listerAcces(),
+    listerProgrammes().catch(() => []),
+    conservation ? listerIdentifiants().catch(() => []) : Promise.resolve([]),
+  ]);
   const programmesValides = programmes.filter((x) => x.statut === "valide");
   // Filtres de la liste (question 91, choix a, lot 3) : la barre de la banque.
   const filieresPostes = filieres.filter((f) => f.id !== "socle");
@@ -94,6 +112,26 @@ export default async function Admin({
           <br />
           Transmettez-le à l&apos;intéressé maintenant : il n&apos;est affiché qu&apos;une fois.
           {p.reinitialise ? " L'ancien code ne vaut plus, et les sessions ouvertes avec lui se ferment." : ""}
+          {p.agent && !p.reinitialise && (
+            <>
+              <br />
+              Relié à l&apos;identifiant <code>{p.agent}</code> : connecté par ce code, l&apos;agent ne saisit que son
+              code personnel, qu&apos;il choisit à sa première connexion. Notez la correspondance avec l&apos;agent dans
+              la liste tenue hors du site.
+            </>
+          )}
+        </p>
+      )}
+      {(p.ok === "relie" || p.ok === "delie") && p.libelle && (
+        <p className="encart encart--ok" role="status">
+          {p.ok === "relie" && p.agent ? (
+            <>
+              Code « {p.libelle} » relié à <code>{p.agent}</code> : connecté par ce code, l&apos;agent ne saisit plus que
+              son code personnel.
+            </>
+          ) : (
+            <>Code « {p.libelle} » délié : il redevient partagé, chaque agent y saisit son identifiant.</>
+          )}
         </p>
       )}
 
@@ -205,6 +243,19 @@ export default async function Admin({
               <Link href="/admin/programmes">Composer ou valider un programme</Link>.
             </p>
           </div>
+          {/* Question 99 (choix a) : un code de poste personnel, relié à l'identifiant suivant. */}
+          {conservation && (
+            <div className="cases" style={{ marginTop: ".75rem" }}>
+              <label>
+                <input type="checkbox" name="agent" value={CREER_ET_RELIER} />
+                Créer l&apos;identifiant d&apos;agent suivant et le relier à ce code (codes de poste)
+              </label>
+              <small className="legende" style={{ display: "block" }}>
+                L&apos;agent ne saisira que son code personnel. Un code relié ne doit servir qu&apos;à cette personne ;
+                laissé vide, le code reste partagé.
+              </small>
+            </div>
+          )}
           <div className="actions">
             <BoutonEnvoi>Générer le code</BoutonEnvoi>
           </div>
@@ -267,7 +318,13 @@ export default async function Admin({
               {a.programme_id
                 ? `programme à la carte « ${programmes.find((x) => x.id === a.programme_id)?.nom ?? a.programme_id} » — ${MENTION_DEGRADE}${programmes.find((x) => x.id === a.programme_id)?.statut === "valide" ? "" : " (non validé : le poste suit la fiche)"} · `
                 : ""}
-              {a.filiere ?? "toutes filières"} · {a.niveau ?? "tous niveaux"} · créé le{" "}
+              {a.filiere ?? "toutes filières"} · {a.niveau ?? "tous niveaux"}
+              {a.agent_identifiant ? (
+                <>
+                  {" "}· relié à <code>{a.agent_identifiant}</code>
+                </>
+              ) : null}{" "}
+              · créé le{" "}
               {new Date(a.cree_le).toLocaleDateString("fr-FR")} ·{" "}
               {a.dernier_usage
                 ? `dernier usage le ${new Date(a.dernier_usage).toLocaleDateString("fr-FR")}`
@@ -344,6 +401,42 @@ export default async function Admin({
                       <div className="actions">
                         <button type="submit" className="bouton bouton--compact">
                           Réinitialiser le code
+                        </button>
+                      </div>
+                    </form>
+                  </details>
+                )}
+                {/* Question 99 (choix a) : un code de poste se relie à un identifiant actif, ou se délie. */}
+                {a.role === "poste" && conservation && (
+                  <details className="suppression liaison-agent">
+                    <summary className="bouton bouton--compact bouton--secondaire">
+                      {a.agent_identifiant ? "Agent relié…" : "Relier à un agent…"}
+                    </summary>
+                    <form action={actionRelierCode} className="suppression-corps">
+                      <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="liste" value={liste} />
+                      <label className="champ">
+                        <span>Identifiant d&apos;agent relié à « {a.libelle} »</span>
+                        <select name="agent" defaultValue={a.agent_identifiant ?? ""}>
+                          <option value="">Aucun — code partagé</option>
+                          {agents
+                            .filter((g) => g.actif || g.identifiant === a.agent_identifiant)
+                            .map((g) => (
+                              <option key={g.id} value={g.identifiant} disabled={!g.actif}>
+                                {g.identifiant}
+                                {g.actif ? "" : " (clos)"}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <span className="legende">
+                        Relié, ce code ne doit servir qu&apos;à cet agent : il n&apos;y saisit que son code personnel, et
+                        aucun autre identifiant ne s&apos;y rattache. Créer un identifiant :{" "}
+                        <Link href="/admin/personnel">Personnel</Link>.
+                      </span>
+                      <div className="actions">
+                        <button type="submit" className="bouton bouton--compact">
+                          Enregistrer
                         </button>
                       </div>
                     </form>

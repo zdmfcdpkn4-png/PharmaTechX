@@ -98,7 +98,10 @@ personnel de 4 à 8 chiffres choisi par l'agent, conservé haché) : les
 évaluations complètes, la fin des entraînements, les modules lus et
 l'évaluation en cours sont conservés sous l'identifiant, relus à chaque
 ouverture, et l'émission se fait sous cet identifiant. Un tuteur réinitialise
-un code oublié ; l'administrateur purge une progression, journalisé.
+un code oublié ; l'administrateur purge une progression, journalisé. Un code
+de poste peut être relié à un identifiant (question 99, choix a) : connecté
+par ce code, l'agent ne saisit plus que son code personnel, dès l'accueil, et
+aucun autre identifiant ne s'y rattache.
 
 **Sur décision seulement** (`CONSERVATION_RAPPORTS=pseudonyme`) : les
 rapports que l'apprenant choisit d'**émettre** sont enregistrés sous son

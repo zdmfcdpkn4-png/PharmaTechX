@@ -5,6 +5,7 @@ import { historique, statistiquesAgent, type LigneProgression, type Rattachement
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { BoutonEnvoi } from "./BoutonEnvoi";
 import { LienModule } from "./LienModule";
+import { RattachementRelie } from "./RattachementRelie";
 
 /**
  * « Ma progression » (décision du 18/09/2026, question 11, choix c) :
@@ -14,6 +15,9 @@ import { LienModule } from "./LienModule";
  */
 
 const MESSAGES: Record<string, string> = {
+  // Sous un code de poste relié (question 99, choix a).
+  "autre-agent": "Ce code de poste est relié à un autre identifiant : seule la progression de son agent s'y rattache.",
+  "a-definir": "Première connexion : choisissez votre code personnel.",
   ok: "Progression rattachée : vos évaluations, entraînements et lectures sont conservés sous votre identifiant.",
   inconnu: "Identifiant inconnu : vérifiez-le auprès de votre tuteur.",
   clos: "Cet identifiant est clos : aucune progression ne peut plus s'y rattacher.",
@@ -35,12 +39,19 @@ function date(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
 }
 
+/** Message d'une réponse au rattachement, lu dans l'adresse ; aussi pour l'accueil (question 99). */
+export function texteProgression(message?: string, minutes?: string): string | null {
+  if (!message) return null;
+  return message === "bloque" ? `Trop de tentatives : réessayez dans ${minutes ?? "quelques"} minutes.` : (MESSAGES[message] ?? null);
+}
+
 export async function Progression({
   rattache,
   message,
   premiere,
   minutes,
   essai = false,
+  relie = null,
 }: {
   rattache: Rattachement | null;
   message?: string;
@@ -48,8 +59,10 @@ export async function Progression({
   minutes?: string;
   /** Mode test (23/09/2026) : ni rattachement ni trace, le formulaire n'est pas proposé. */
   essai?: boolean;
+  /** Code de poste relié à un identifiant (question 99, choix a) : seul le code personnel est demandé. */
+  relie?: { identifiant: string; actif: boolean; codeDefini: boolean } | null;
 }) {
-  const texte = message ? (message === "bloque" ? `Trop de tentatives : réessayez dans ${minutes ?? "quelques"} minutes.` : MESSAGES[message]) : null;
+  const texte = texteProgression(message, minutes);
   const classe = message === "ok" ? "encart encart--ok" : "encart encart--attention";
 
   if (essai) {
@@ -126,6 +139,22 @@ export async function Progression({
             <span className="legende">Sur un poste partagé, détachez-vous en partant : « Quitter » le fait aussi. Sinon, le rattachement tombe seul après quatre heures sans activité, douze heures au plus.</span>
           </form>
         </section>
+      </section>
+    );
+  }
+
+  if (relie) {
+    return (
+      <section id="progression" className="section">
+        <h2>Ma progression</h2>
+        <RattachementRelie
+          identifiant={relie.identifiant}
+          actif={relie.actif}
+          codeDefini={relie.codeDefini}
+          depuis="programme"
+          texte={texte}
+          classe={classe}
+        />
       </section>
     );
   }
