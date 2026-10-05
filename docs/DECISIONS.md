@@ -7656,8 +7656,8 @@ question à vérifier ne compte pas : aucun tirage ne la pose. La règle vaut
 pour l'apprenant : code de poste, mode test, visiteur du site sans base. Le
 tutorat et l'administration, qui gèrent les modules, ouvrent tout. Le mode
 test s'y plie, pour montrer ce que verra l'apprenant. Une lecture plus stricte
-(les seules questions que l'agent peut recevoir) fait l'objet de la question
-102.
+(les seules questions que l'agent peut recevoir) a été écartée : question
+102, choix a, le 05/10/2026.
 
 **Fait.** Pour l'apprenant, un module sans question :
 - reste visible dans « Mes modules », grisé, sans lien, marqué « Pas encore
@@ -7696,7 +7696,10 @@ validée »). Règles pures dans `lib/profil-impose.ts` (`accesLibre`,
 **Limites.**
 - Une question validée ouvre le module même si elle vise d'autres profils
   (étiquettes de filière ou de niveau, plafond du niveau cible) : l'évaluation
-  peut alors n'avoir rien à poser à cet agent (question 102).
+  peut alors n'avoir rien à poser à cet agent. Limite acceptée (question 102,
+  choix a) : l'écran de réglage de l'évaluation compte, pour l'agent, les
+  questions admises à son niveau cible et celles étiquetées pour d'autres
+  profils.
 - Une question au signalement ouvert compte encore : un module dont toutes
   les questions sont signalées reste ouvert, sans question à tirer jusqu'à la
   clôture des signalements.

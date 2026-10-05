@@ -400,6 +400,13 @@ telle. Ordre : ce qui change le déploiement en premier.
       ou rouvre des modules sans que l'écran de gestion le montre, et chaque
       page d'apprenant calcule davantage.
 
+    Tranchée le 05/10/2026 (choix a, réponse « À »). La règle reste : une
+    question validée suffit à ouvrir un module à l'apprenant, quel que soit
+    le profil qu'elle vise. Rien ne change dans le code. Le cas décrit est
+    accepté : l'écran de réglage de l'évaluation l'annonce à l'agent, en
+    comptant les questions admises à son niveau cible et celles étiquetées
+    pour d'autres profils.
+
 101. **Un code de poste peut-il encore ouvrir et évaluer un module hors de
     son programme ?** — posée le 05/10/2026, après la demande « un
     utilisateur non tuteur et non administrateur ne doit avoir accès qu'à sa
