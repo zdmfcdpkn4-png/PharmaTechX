@@ -4139,3 +4139,32 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
 .apercu-parcours li.est-ferme .apercu-rang { background: var(--texte-doux); }
 /* Carte d'un module que le tutorat tient fermé : même gris que « pas encore ouvert », bord plus marqué. */
 .etat-module--verrouille { background: var(--surface-douce); color: var(--texte); border-color: var(--bord-fort); }
+
+/* ── Vignette d'un module acquis : la coche de validation (06/10/2026) ──── */
+/* La vignette prend la taille de son illustration ; la coche se pose sur son
+   coin, verte sur fond blanc, et l'illustration ronde gagne un liseré vert.
+   Décorative : l'état se lit à côté (pastille « Acquis », nom du badge). */
+.vignette-module { position: relative; display: inline-grid; place-items: center; flex: none; line-height: 0; }
+.vignette-module--acquise .badge:not(.badge--libre) { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--succes); }
+.vignette-coche {
+  position: absolute;
+  right: -5%;
+  bottom: -5%;
+  width: 38%;
+  height: 38%;
+  min-width: 16px;
+  min-height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--succes);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.vignette-coche svg { width: 72%; height: 72%; }
+/* Sur la barre de badges, l'anneau est déjà celui de la cible de 44 px. */
+.barre-badge-visuel .vignette-module--acquise .badge { box-shadow: none; }
+/* Sur téléphone, la vignette du titre suit son illustration ramenée à 72 px. */
+@media (max-width: 34rem) {
+  .titre-vignette .vignette-module .badge--illustration { width: 72px; height: 72px; }
+}

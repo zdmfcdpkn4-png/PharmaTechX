@@ -1199,7 +1199,8 @@ Justification : cf. procédure interne.`,
   await page.fill("input[name=identifiant]", "AG-999");
   await page.click("button:has-text('Émettre et enregistrer')");
   await page.waitForSelector("[role=alert]:has-text('AG-999 inconnu')");
-  await capture("02-emission-identifiant", page.locator("section.carte:has(input[name=identifiant])"));
+  // Depuis « Ma progression », deux sections portent un champ identifiant : celle du rapport est la bonne.
+  await capture("02-emission-identifiant", page.locator("#modules section.carte:has(input[name=identifiant])"));
   await page.fill("input[name=identifiant]", "ag 1");
   await page.click("button:has-text('Émettre et enregistrer')");
   await page.waitForSelector("text=émis sous le n° RAP-");
@@ -2589,6 +2590,8 @@ Justification : justification deux.`;
   await page.check("input[name=filieres][value=chimiotherapie]");
   await page.check("input[name=niveaux][value=N1c]");
   await page.fill("input[name=seuil]", "60");
+  // Une illustration choisie : la coche de validation (06/10/2026) se vérifie ensuite sur sa vignette.
+  await page.locator('input[name=badge][value="habillage-sterile"]').first().check();
   await page.click("button:has-text('Créer le module')");
   await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
   const idFormats = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
@@ -3040,6 +3043,9 @@ Justification : cf. procédure interne.`,
   await badgeFormats.waitFor();
   assert.equal(await badgeFormats.getAttribute("class"), "est-acquis", "le critère acquis prend sa couleur");
   assert.ok((await page.locator(".barre-badges li.est-grise").count()) > 0, "les autres restent grisés");
+  // Coche de validation sur la vignette d'un module acquis (06/10/2026) : sur le badge acquis, jamais sur un grisé.
+  assert.equal(await badgeFormats.locator(".vignette-coche").count(), 1, "le badge acquis porte la coche de validation");
+  assert.equal(await page.locator(".barre-badges li.est-grise .vignette-coche").count(), 0, "aucune coche sur un badge grisé");
   assert.match(await page.locator(".barre-badges-titre").innerText(), /^1 \/ \d+ critères? acquis/);
   await capture("barre-badges");
   // Tableau de bord (22/09/2026), sur la même mémoire de session : la
@@ -3051,6 +3057,8 @@ Justification : cf. procédure interne.`,
   const carteTrouvee = page.locator(`#modules .grille a.carte-lien[href='/module/${idFormats}']`);
   await carteTrouvee.waitFor();
   assert.equal((await carteTrouvee.locator(".etat-module").innerText()).trim(), "Acquis", "la carte dit l'état acquis");
+  assert.equal(await carteTrouvee.locator(".carte-module-vignette .vignette-coche").count(), 1, "la vignette de la carte acquise porte la coche");
+  await capture("carte-acquise", carteTrouvee);
   assert.equal(await page.locator("#modules .grille a.carte-lien").count(), 1, "un seul module répond à « formats test »");
   assert.equal(await page.locator(".groupe-modules").count(), 0, "pendant la recherche, les grands modules s'effacent au profit des résultats");
   await recherche.fill("");
@@ -3077,7 +3085,12 @@ Justification : cf. procédure interne.`,
     (await page.locator(`.consultes a.consulte[href='/module/${idFormats}']`).count()) === 1,
     "le module ouvert juste avant figure parmi les modules consultés",
   );
-  ok("tableau de bord : état des cartes, avancement par bloc, recherche et filtres, Reprendre et modules consultés");
+  // La page du module acquis, ouverte sans recharger : sa vignette de titre porte la coche aussi.
+  await page.click(`.consultes a.consulte[href='/module/${idFormats}']`);
+  await page.waitForSelector(".titre-vignette .vignette-coche");
+  assert.equal(await page.locator(".titre-vignette .vignette-module--acquise").count(), 1, "vignette du titre marquée acquise");
+  await capture("titre-module-acquis", page.locator(".titre-vignette"));
+  ok("tableau de bord : état des cartes, avancement par bloc, recherche et filtres, Reprendre et modules consultés ; coche de validation sur le badge, la carte et le titre du module acquis");
   await page.goto(BASE + "/admin/bareme");
   await page.click("button:has-text('Rétablir les valeurs par défaut')");
   await page.waitForURL(/ok=defaut/);

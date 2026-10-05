@@ -15,7 +15,7 @@ import { MENTION_DEGRADE, libelleProgramme } from "@/content/programmes";
 import { auNiveau, chronologie, cleProfil, ordreApplicable, requeteProfil } from "@/content/ordres";
 import type { TypeParcours } from "@/content/types";
 import { BarreBadges } from "./BarreBadges";
-import { Badge } from "./Badge";
+import { VignetteModule } from "./VignetteModule";
 import {
   AUCUN_FILTRE,
   LIBELLES_AVANCEMENT,
@@ -146,8 +146,14 @@ function CarteModule({
       className={`carte carte--module carte--${avancementDe(etat)}${m.redige ? "" : " est-vide"}${ouvre ? "" : " est-ferme"}`}
     >
       <div className="carte-module-tete">
+        {/* Module acquis à l'écran : la vignette porte une coche de validation (06/10/2026). */}
         <span className="carte-module-vignette" aria-hidden="true">
-          {m.badge ? <Badge nom={m.badge} taille={72} /> : <span className="vignette-vide">{m.critereId === A_PRECISER ? "·" : m.critereId}</span>}
+          <VignetteModule
+            badge={m.badge}
+            taille={72}
+            acquis={resultat?.reussi === true}
+            secours={<span className="vignette-vide">{m.critereId === A_PRECISER ? "·" : m.critereId}</span>}
+          />
         </span>
         <span className={`etat-module etat-module--${etat}`}>{LIBELLES_ETAT[etat]}</span>
       </div>

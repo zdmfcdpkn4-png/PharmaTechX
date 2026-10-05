@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "./Badge";
+import { VignetteModule } from "./VignetteModule";
 import { useSessionFormation } from "./SessionFormation";
 import { ouvrable } from "@/content/tableau";
 
@@ -19,7 +19,8 @@ import { ouvrable } from "@/content/tableau";
  *
  * Les illustrations ne se lisent pas à cette taille (`content/badges.ts`) :
  * elles servent ici de repère de couleur, et le titre du module est dans le
- * nom accessible et l'infobulle de chaque badge.
+ * nom accessible et l'infobulle de chaque badge. Un badge acquis porte aussi
+ * la coche de validation (06/10/2026, `VignetteModule`).
  */
 
 export interface EtapeBadge {
@@ -75,7 +76,7 @@ export function BarreBadges({
                 aria-hidden="true"
                 className={e.badge ? "barre-badge-visuel" : "barre-badge-visuel barre-badge-visuel--numero"}
               >
-                {e.badge ? <Badge nom={e.badge} taille={40} /> : <span className="barre-badge-vide">{i + 1}</span>}
+                <VignetteModule badge={e.badge} taille={40} acquis={ok} secours={<span className="barre-badge-vide">{i + 1}</span>} />
               </span>
               <span className="visually-hidden">{nom}</span>
             </>
@@ -96,7 +97,7 @@ export function BarreBadges({
         })}
       </ol>
       <p className="legende" style={{ margin: 0 }}>
-        En couleur : critère acquis à l&apos;écran. Grisé : à valider. Ce n&apos;est pas un avancement
+        En couleur, avec la coche : critère acquis à l&apos;écran. Grisé : à valider. Ce n&apos;est pas un avancement
         d&apos;habilitation.
       </p>
     </section>

@@ -7914,6 +7914,53 @@ mécanismes à la fois (c).
   modules » au bureau et à 390 px, sans débordement horizontal ni erreur de
   page ; page du module fermé à 390 px.
 
+## La coche de validation sur la vignette des modules acquis (06/10/2026, demande directe)
+
+**Demande.** « L'apprenant peut voir la progression, les modules validés
+avec une icône modifiée avec une validation dessus. »
+
+**Lecture retenue.** « Validé » a le sens que la barre de badges donne déjà
+à « acquis » : la dernière évaluation du module, dans la mémoire de session —
+celle de l'onglet, ou l'historique conservé d'un agent rattaché —, a le
+verdict brut « acquis ». Ce n'est pas un avancement d'habilitation, et la
+légende le redit. La vignette d'un tel module porte une coche verte sur son
+coin et, pour une illustration ronde, un liseré vert ; une vignette sans
+illustration (numéro de critère, rang) porte la coche aussi.
+
+**Ce qui est fait.**
+- `components/VignetteModule.tsx` : la vignette d'un module (illustration,
+  pictogramme ou secours) avec, s'il est acquis, la coche de validation —
+  décorative, l'état se lisant à côté (pastille « Acquis », nom accessible du
+  badge). Partout où l'apprenant voit ses modules : les cartes de « Mes
+  modules » (72 px, toutes les présentations : parcours fixé, programme à la
+  carte, ordre du profil, blocs, résultats de recherche), la barre de badges
+  (40 px, dont la légende dit désormais « En couleur, avec la coche »), et
+  le titre de la page du module (96 px, `VignetteTitre`, lue dans le
+  navigateur comme les cartes : la page est rendue au serveur, qui ignore la
+  mémoire de session).
+- Un module fermé par le tutorat (question 103) mais acquis avant garde sa
+  coche : elle dit ce qui a été validé, la pastille dit ce qui s'ouvre.
+- Un module sans illustration ni secours — le titre d'un module déposé dont
+  le badge a été retiré — ne reçoit rien : pas de coche orpheline (une
+  première capture l'a montrée hors de son cadre).
+
+**Inchangé.** « Reprendre » n'a pas de coche : il ne propose jamais un
+module acquis. Les médaillons du chemin de l'accueil sont des étapes, pas des
+modules. La fiche de l'agent, côté tutorat, ne marque pas les modules acquis
+dans le composeur du parcours.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 522 tests.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur. Le module d'essai « formats » reçoit désormais une
+  illustration à sa création ; l'étape du tableau de bord vérifie la coche
+  sur le badge du critère acquis et son absence sur les badges grisés, sur la
+  carte « Acquis » et sur la vignette du titre de sa page, ouverte sans
+  recharger. Les captures du parcours (`CAPTURES=`) montrent la coche aux
+  trois tailles ; une capture d'avant, mal ciblée depuis « Ma progression »,
+  est recadrée sur la section du rapport.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

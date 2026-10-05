@@ -23,7 +23,7 @@ import { getSession } from "@/lib/auth";
 import { rattachement } from "@/lib/progression";
 import { STATUTS_MODULE } from "@/content/modules-db";
 import { Corps } from "@/components/Corps";
-import { Badge } from "@/components/Badge";
+import { VignetteTitre } from "@/components/VignetteTitre";
 import { badgeEffectif } from "@/content/badges";
 import { LectureModule } from "@/components/LectureModule";
 import { NoterConsultation } from "@/components/NoterConsultation";
@@ -304,7 +304,8 @@ export default async function PageModule({
           {critere?.obligatoire && <li className="etiquette etiquette--obligatoire">Obligatoire</li>}
         </ul>
         <div className="titre-vignette">
-          <Badge nom={badgeEffectif(mod.badge, mod.titre, mod.objectif)} taille={96} />
+          {/* Acquis à l'écran : la vignette porte la coche de validation (06/10/2026). */}
+          <VignetteTitre moduleId={mod.id} badge={badgeEffectif(mod.badge, mod.titre, mod.objectif)} />
           <div>
             <h1>{mod.titre}</h1>
             <p style={{ fontSize: "1.0625rem", maxWidth: "58ch" }}>{mod.objectif}</p>
