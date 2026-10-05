@@ -377,6 +377,36 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+99. **Code de poste et identifiant d'agent : faut-il les relier ?** — posée
+    le 05/10/2026, après la création d'un premier code de poste de
+    préparateur et d'un premier identifiant d'agent.
+
+    Les deux sont séparés depuis les questions 6 et 11. Le code de poste,
+    créé dans Codes d'accès, ouvre le site sur une filière et un niveau.
+    L'identifiant d'agent (`AG-001`, `AG-002`…), créé dans Personnel, suit
+    une personne et n'a pas de code de connexion. Créer l'un ne crée pas
+    l'autre. Le lien se fait à chaque session : connecté par le code de
+    poste, l'agent saisit son identifiant et son code personnel dans
+    Formation › Ma progression ; la première fois, il choisit ce code, que
+    lui seul connaît. L'accueil « Mon habilitation » ne montre pas ce
+    formulaire.
+    - **a (recommandé)** : à la création d'un code de poste, une case crée
+      l'identifiant d'agent suivant et le relie au code ; un code existant
+      peut aussi être relié à un identifiant existant. Connecté par un code
+      relié, l'agent ne saisit plus que son code personnel, choisi la
+      première fois, et sa progression est rattachée. Un code non relié
+      reste partagé, comme aujourd'hui. Contre : le code personnel reste à
+      saisir à chaque session, et un code relié ne doit servir qu'à cette
+      personne.
+    - **b** : le même lien, sans code personnel : le code de poste suffit et
+      la session est rattachée d'office. Contre : qui détient le code, y
+      compris l'administrateur qui l'a généré, compose sous l'identité de
+      l'agent ; la preuve que l'agent a lui-même passé l'évaluation
+      s'affaiblit, alors que le rapport est opposable en audit.
+    - **c** : ne rien relier ; placer seulement le rattachement en tête de
+      « Mon habilitation ». Contre : deux saisies à chaque session, et aucun
+      lien enregistré entre le code et l'agent.
+
 98. **Type et programme : le type d'un code de poste suit-il le métier de
     sa filière et de son niveau ?** — posée le 02/10/2026, conséquence des
     questions 95 à 97.
