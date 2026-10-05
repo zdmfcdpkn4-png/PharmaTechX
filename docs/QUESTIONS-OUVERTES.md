@@ -377,6 +377,42 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+103. **Parcours d'un agent : que règle « accessible ou inaccessible » ?** —
+    posée le 05/10/2026, après la demande « Faire en sorte que depuis la vue
+    équipe en sélection de l'agent on puisse sélectionner une sélection de
+    module réalisable par l'agent et autorisé par sa cible pour décrire un
+    parcours par défaut de réalisation sur cette vue organisation du
+    parcours sur le même en utilisant les icônes de module. Possibilité pour
+    l'agent de les faire dans un ordre différent mais le rendre accessible
+    ou inaccessible par le tuteur ou l'admin et organiser une séquence
+    préférentiel ».
+
+    Lecture retenue pour le reste. Sur la fiche de l'agent (Équipe ›
+    Personnel), le tutorat ou l'administration cochent, parmi les modules
+    que son code de poste lui ouvre (sa filière à son niveau, ou son
+    programme à la carte — question 101), ceux de son parcours, et les
+    rangent, la vignette du module en tête de ligne. Rattaché, l'agent voit
+    ce parcours dans cet ordre, qui reste un ordre conseillé : il peut faire
+    les modules autrement. Un module de son profil que le tutorat n'a pas
+    choisi ne lui est plus proposé. Ce parcours passe avant l'ordre propre
+    de l'écran Ordre (question 56) ; sans parcours fixé, rien ne change.
+    Reste à dire ce que « le rendre accessible ou inaccessible » gouverne.
+    - **a (recommandé)** : chaque module du parcours, un à un : le tutorat
+      l'ouvre ou le ferme. Fermé, le module se voit, grisé « fermé par le
+      tutorat », et ne s'ouvre pas tant qu'il n'est pas rouvert ; la
+      séquence reste un conseil. Contre : rien n'enchaîne les modules — pour
+      une progression pas à pas, le tutorat revient ouvrir le suivant à la
+      main.
+    - **b** : la liberté d'ordre, par un interrupteur sur le parcours :
+      « ordre libre » ou « ordre imposé », où un module ne s'ouvre qu'une
+      fois le précédent acquis. Pas de verrou par module. Contre :
+      impossible de retenir un seul module (en attendant une démonstration
+      au poste, par exemple) sans toucher à tout l'ordre ; et « acquis »
+      suppose une évaluation réussie sous l'identifiant.
+    - **c** : les deux, verrou par module et interrupteur d'ordre imposé.
+      Contre : deux mécanismes à expliquer à l'agent sur sa page comme au
+      tutorat, deux fois plus de cas à vérifier.
+
 102. **Un module s'ouvre-t-il dès une question validée, ou seulement si
     l'agent peut en recevoir une ?** — posée le 05/10/2026, après la demande
     « Ne donne accès au module proposé que si il existe des questions pour ce
