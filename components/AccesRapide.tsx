@@ -151,9 +151,10 @@ export function AccesRapide({
   items: ItemAttente[];
   reprises: ReprisePossible[];
   /**
-   * Question 101 (choix b) : modules ouverts à un code de poste ; la lecture
-   * repérée sur l'appareil — peut-être par un autre agent — ne se reprend que
-   * parmi eux. null : tout module s'ouvre.
+   * Modules ouverts à l'apprenant : ceux de son programme pour un code de
+   * poste (question 101, choix b), et qui ont des questions (05/10/2026). La
+   * lecture repérée sur l'appareil — peut-être par un autre agent — ne se
+   * reprend que parmi eux. null : tout module s'ouvre.
    */
   modulesOuverts?: string[] | null;
   /**

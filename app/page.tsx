@@ -19,7 +19,7 @@ import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
 import { auNiveau as proposeAuNiveau, chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
 import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
-import { documentDuProfil, profilImpose, programmeVise } from "@/lib/profil-impose";
+import { accesLibre, documentDuProfil, profilImpose, programmeVise } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
@@ -81,6 +81,9 @@ export default async function Accueil({
   // Profil imposé (05/10/2026, demande directe) : un code de poste ne compose pas son programme ; filière,
   // niveau et programme à la carte sont ceux de son code, et l'adresse ne les change pas (`lib/profil-impose.ts`).
   const impose = profilImpose(session, baseConfiguree());
+  // Un apprenant — code de poste, mode test, site sans base — n'ouvre qu'un module qui a des questions
+  // (05/10/2026, demande directe) : les autres se voient, grisés, sans lien, et ne lui sont jamais proposés.
+  const questionsRequises = !accesLibre(session);
   // Programme à la carte (question 50) : demandé dans l'adresse, ou porté par
   // le code de poste de la session quand aucun parcours n'est demandé. Seul un
   // programme validé s'ouvre ; sinon le poste suit la fiche, et l'écran le dit.
@@ -188,7 +191,10 @@ export default async function Accueil({
     : programmeOuvert || !filiereInitiale
       ? {}
       : { [filiereInitiale]: auNiveau(parPoste[filiereInitiale] ?? []) };
-  const catalogue: EtapeReprise[] = [...troncCommunServi, ...Object.values(parPosteServi).flat(), ...(aLaCarte?.modules ?? [])].map(etape);
+  // Pour un apprenant, la lecture et les consultations à reprendre ne visent qu'un module qui a des questions.
+  const catalogue: EtapeReprise[] = [...troncCommunServi, ...Object.values(parPosteServi).flat(), ...(aLaCarte?.modules ?? [])]
+    .map(etape)
+    .filter((e) => !questionsRequises || e.evaluable);
   // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base ; celle d'un module hors de
   // son programme ne se reprend pas d'ici (question 101, choix b).
   const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
@@ -239,6 +245,7 @@ export default async function Accueil({
           evaluation={evaluationEnCours}
           programme={programmeArrivee}
           catalogue={catalogue}
+          questionsRequises={questionsRequises}
           requete={
             aLaCarte
               ? `?programme=${aLaCarte.id}`
@@ -335,6 +342,7 @@ export default async function Accueil({
           documentsReserves={documentsReserves}
           essai={Boolean(session?.essai)}
           profilImpose={Boolean(impose)}
+          questionsRequises={questionsRequises}
         />
       </section>
 

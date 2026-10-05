@@ -215,7 +215,11 @@ La page d'un module situe celui-ci dans sa liste (socle ou filière) avec le
 précédent et le suivant. Un code de poste ouvre sur le programme de son
 code — filière et niveau, ou programme à la carte, fixés par le tuteur ou
 l'administrateur — sans pouvoir le changer, et n'ouvre que les modules de ce
-programme : page, documents et évaluation (05/10/2026, question 101).
+programme : page, documents et évaluation (05/10/2026, question 101). Un
+apprenant — code de poste, mode test, site sans base — n'ouvre qu'un module
+qui compte au moins une question validée : les autres restent visibles dans
+« Mes modules », grisés, et ne lui sont jamais proposés, ni en reprise ni en
+module suivant (05/10/2026). Le tutorat et l'administration ouvrent tout.
 
 ## 7. Banque de questions, modules et documents déposés (profils tuteur et admin)
 

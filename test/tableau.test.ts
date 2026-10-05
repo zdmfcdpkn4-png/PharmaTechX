@@ -12,6 +12,7 @@ import {
   filtresActifs,
   lireConsultations,
   normaliser,
+  ouvrable,
   type EtatModule,
 } from "../content/tableau";
 
@@ -34,6 +35,23 @@ test("sans évaluation : lecture entamée, à faire, à rédiger, lecture seule"
   assert.equal(etatModule({ redige: true, nbQuestions: 0 }, undefined, false), "lecture-seule");
 });
 
+test("apprenant : un module sans question n'est pas encore ouvert, même entamé", () => {
+  assert.equal(etatModule({ redige: true, nbQuestions: 0 }, undefined, false, true), "ferme");
+  assert.equal(etatModule({ redige: false, nbQuestions: 0 }, undefined, false, true), "ferme");
+  assert.equal(etatModule({ redige: true, nbQuestions: 0 }, undefined, true, true), "ferme", "lecture entamée avant");
+  assert.equal(etatModule(evaluable, undefined, false, true), "a-faire");
+  // Un verdict reste : le résultat a été obtenu quand le module avait ses questions.
+  assert.equal(etatModule({ redige: true, nbQuestions: 0 }, { verdict: "acquis" }, false, true), "acquis");
+  assert.equal(avancementDe("ferme"), "a-venir");
+});
+
+test("ouvrable : la gestion ouvre ce qui se lit ou s'évalue, l'apprenant ce qui a des questions", () => {
+  assert.equal(ouvrable({ evaluable: true, redige: false }, true), true);
+  assert.equal(ouvrable({ evaluable: false, redige: true }, true), false, "texte seul : fermé à l'apprenant");
+  assert.equal(ouvrable({ evaluable: false, redige: true }, false), true, "texte seul : ouvert au tutorat");
+  assert.equal(ouvrable({ evaluable: false, redige: false }, false), false);
+});
+
 test("terminé, en cours, à venir : seul l'acquis est terminé", () => {
   const attendu: Record<EtatModule, string> = {
     acquis: "termine",
@@ -44,6 +62,7 @@ test("terminé, en cours, à venir : seul l'acquis est terminé", () => {
     "a-faire": "a-venir",
     "a-rediger": "a-venir",
     "lecture-seule": "a-venir",
+    ferme: "a-venir",
   };
   for (const [etat, avancement] of Object.entries(attendu)) {
     assert.equal(avancementDe(etat as EtatModule), avancement, etat);
@@ -119,6 +138,13 @@ test("Reprendre : sinon le premier module ouvrable non acquis, dans l'ordre du p
   assert.match(r?.detail ?? "", /lecture/);
   assert.equal(choisirReprise({ programme, acquis: (id) => id !== "m3" }), null, "tout est acquis : rien à reprendre");
   assert.equal(choisirReprise({ programme: [], acquis: () => false }), null);
+});
+
+test("Reprendre, pour un apprenant : seul un module qui a des questions est proposé", () => {
+  const r = choisirReprise({ programme, acquis: (id) => id === "m1", questionsRequises: true });
+  assert.equal(r?.moduleId, "m2");
+  // m4 se lit mais n'a pas de question : il n'est plus proposé.
+  assert.equal(choisirReprise({ programme, acquis: (id) => id === "m1" || id === "m2", questionsRequises: true }), null);
 });
 
 test("modules consultés : les plus récents d'abord, sans doublon, bornés", () => {

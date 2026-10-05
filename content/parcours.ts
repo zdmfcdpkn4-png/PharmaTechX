@@ -104,13 +104,20 @@ export interface Voisins<T> {
   total: number;
 }
 
-/** Précédent et suivant d'un module dans une liste ordonnée ; `null` s'il n'y figure pas. */
-export function voisins<T extends { id: string }>(liste: T[], id: string): Voisins<T> | null {
+/**
+ * Précédent et suivant d'un module dans une liste ordonnée ; `null` s'il n'y
+ * figure pas. Avec `ouvert`, le précédent et le suivant sont les plus proches
+ * modules qui s'ouvrent : un apprenant n'est pas envoyé vers un module sans
+ * question (05/10/2026). Le rang et le total restent ceux de la liste entière,
+ * comme les numéros des cartes.
+ */
+export function voisins<T extends { id: string }>(liste: T[], id: string, ouvert?: (m: T) => boolean): Voisins<T> | null {
   const i = liste.findIndex((m) => m.id === id);
   if (i < 0) return null;
+  const garde = ouvert ?? (() => true);
   return {
-    precedent: i > 0 ? liste[i - 1] : null,
-    suivant: i + 1 < liste.length ? liste[i + 1] : null,
+    precedent: liste.slice(0, i).findLast(garde) ?? null,
+    suivant: liste.slice(i + 1).find(garde) ?? null,
     rang: i + 1,
     total: liste.length,
   };

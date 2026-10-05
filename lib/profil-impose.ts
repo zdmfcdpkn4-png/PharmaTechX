@@ -32,6 +32,53 @@ export interface ProfilDuCode {
   niveau: string | null;
 }
 
+/**
+ * Ouvre aussi les modules sans question : le tutorat et l'administration, qui
+ * les gèrent. L'apprenant — code de poste, mode test, visiteur du site sans
+ * base — n'ouvre qu'un module qui a des questions (05/10/2026, demande
+ * directe) ; le mode test s'y plie, pour montrer ce que verra l'apprenant.
+ */
+export function accesLibre(session: Pick<SessionProfil, "role"> | null): boolean {
+  return session?.role === "tuteur" || session?.role === "admin";
+}
+
+/**
+ * Le module a des questions : celles du code, mises en situation comprises, et
+ * celles validées en banque (`validees`, par module, rattachements compris).
+ * Une question à vérifier ne compte pas : aucun tirage ne la pose.
+ */
+export function aDesQuestions(
+  m: { id: string; questions: readonly unknown[]; misesEnSituation: readonly { questions: readonly unknown[] }[] },
+  validees: Readonly<Record<string, number>>,
+): boolean {
+  return m.questions.length + m.misesEnSituation.reduce((n, s) => n + s.questions.length, 0) + (validees[m.id] ?? 0) > 0;
+}
+
+/** Pourquoi un module est fermé à la session ; null : il s'ouvre. */
+export type MotifFermeture = "hors-programme" | "sans-question";
+
+/**
+ * Fermeture d'un module pour la session. Le tutorat et l'administration ouvrent
+ * tout. Un code de poste n'ouvre rien hors de son programme (question 101,
+ * choix b) ; tout apprenant — code de poste, mode test, site sans base —
+ * n'ouvre qu'un module qui a des questions (05/10/2026). `auProgramme` vaut
+ * vrai pour qui n'a pas de programme imposé.
+ */
+export function motifFermeture(o: { libre: boolean; auProgramme: boolean; nbQuestions: number }): MotifFermeture | null {
+  if (o.libre) return null;
+  if (!o.auProgramme) return "hors-programme";
+  return o.nbQuestions > 0 ? null : "sans-question";
+}
+
+/** Même règle, pour une route : le programme d'un code de poste et ses modules ouverts. */
+export function refusDuPoste(
+  p: { auProgramme: ReadonlySet<string>; ouverts: ReadonlySet<string> },
+  moduleId: string,
+): MotifFermeture | null {
+  if (!p.auProgramme.has(moduleId)) return "hors-programme";
+  return p.ouverts.has(moduleId) ? null : "sans-question";
+}
+
 /** null : la session choisit son profil. Sinon, le profil que porte son code. */
 export function profilImpose(session: SessionProfil | null, base: boolean): ProfilDuCode | null {
   if (!base || !session || session.role !== "poste" || session.essai) return null;

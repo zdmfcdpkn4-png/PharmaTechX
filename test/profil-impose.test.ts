@@ -1,8 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  aDesQuestions,
+  accesLibre,
   documentDuProfil,
   fichierOuvert,
+  motifFermeture,
+  refusDuPoste,
   modulesDuCode,
   profilConnu,
   profilDeLaPage,
@@ -130,4 +134,41 @@ test("fichier servi à un code de poste : un document validé de son programme",
   assert.equal(fichierOuvert([], ouverts, profil), false, "fichier qu'aucun document ne porte");
   // Un fichier porté par deux documents est servi si l'un des deux est ouvert.
   assert.equal(fichierOuvert([doc({ module_id: "chimio-n2" }), doc({ module_id: "chimio-n1c" })], ouverts, profil), true);
+});
+
+test("accès libre aux modules sans question : le tutorat et l'administration seuls", () => {
+  assert.equal(accesLibre({ role: "tuteur" }), true);
+  assert.equal(accesLibre({ role: "admin" }), true);
+  assert.equal(accesLibre({ role: "poste" }), false, "code de poste, et mode test (session de rôle poste)");
+  assert.equal(accesLibre(null), false, "site sans base : le visiteur est un apprenant");
+});
+
+test("un module a des questions : celles du code, des mises en situation, ou validées en banque", () => {
+  const m = (o: Partial<{ id: string; questions: unknown[]; misesEnSituation: { questions: unknown[] }[] }>) => ({
+    id: "mod",
+    questions: [],
+    misesEnSituation: [],
+    ...o,
+  });
+  assert.equal(aDesQuestions(m({}), {}), false);
+  assert.equal(aDesQuestions(m({ questions: [1] }), {}), true, "question du code");
+  assert.equal(aDesQuestions(m({ misesEnSituation: [{ questions: [1] }] }), {}), true, "mise en situation");
+  assert.equal(aDesQuestions(m({ misesEnSituation: [{ questions: [] }] }), {}), false, "mise en situation vide");
+  assert.equal(aDesQuestions(m({}), { mod: 2 }), true, "questions validées en banque");
+  assert.equal(aDesQuestions(m({}), { autre: 2, mod: 0 }), false, "celles d'un autre module ne comptent pas");
+});
+
+test("motif de fermeture : programme d'abord, puis questions ; rien pour la gestion", () => {
+  assert.equal(motifFermeture({ libre: false, auProgramme: true, nbQuestions: 3 }), null);
+  assert.equal(motifFermeture({ libre: false, auProgramme: true, nbQuestions: 0 }), "sans-question");
+  assert.equal(motifFermeture({ libre: false, auProgramme: false, nbQuestions: 0 }), "hors-programme", "le programme d'abord");
+  assert.equal(motifFermeture({ libre: false, auProgramme: false, nbQuestions: 5 }), "hors-programme");
+  assert.equal(motifFermeture({ libre: true, auProgramme: true, nbQuestions: 0 }), null, "tutorat et administration");
+});
+
+test("refus d'une route pour un code de poste : hors programme, ou sans question", () => {
+  const p = { auProgramme: new Set(["a", "b"]), ouverts: new Set(["a"]) };
+  assert.equal(refusDuPoste(p, "a"), null);
+  assert.equal(refusDuPoste(p, "b"), "sans-question");
+  assert.equal(refusDuPoste(p, "z"), "hors-programme");
 });

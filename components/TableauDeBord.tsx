@@ -24,6 +24,7 @@ import {
   etatModule,
   filtrerModules,
   filtresActifs,
+  ouvrable,
   type Avancement,
   type EtatModule,
   type FiltresModules,
@@ -108,18 +109,24 @@ function CarteModule({
   etat,
   rang,
   requete = "",
+  questionsRequises = false,
 }: {
   m: ModuleResume;
   etat: EtatModule;
   rang?: number;
   requete?: string;
+  /** Apprenant : un module sans question reste fermé (05/10/2026, `ouvrable`). */
+  questionsRequises?: boolean;
 }) {
   const { dernierPourModule } = useSessionFormation();
   const resultat = dernierPourModule(m.id);
   const evaluable = m.nbQuestions > 0;
+  const ouvre = ouvrable({ evaluable, redige: m.redige }, questionsRequises);
 
   const corps = (
-    <article className={`carte carte--module carte--${avancementDe(etat)}${m.redige ? "" : " est-vide"}`}>
+    <article
+      className={`carte carte--module carte--${avancementDe(etat)}${m.redige ? "" : " est-vide"}${ouvre ? "" : " est-ferme"}`}
+    >
       <div className="carte-module-tete">
         <span className="carte-module-vignette" aria-hidden="true">
           {m.badge ? <Badge nom={m.badge} taille={72} /> : <span className="vignette-vide">{m.critereId === A_PRECISER ? "·" : m.critereId}</span>}
@@ -165,11 +172,12 @@ function CarteModule({
         Niveaux&nbsp;: <Marqueur valeur={m.niveaux.join(", ")} /> · Revalidation tous les{" "}
         <Marqueur valeur={m.periodiciteMois} /> mois
         {!m.redige && evaluable ? " · évaluation disponible sans le texte du module" : ""}
+        {questionsRequises && !evaluable ? " · s'ouvrira quand ses questions seront validées" : ""}
       </p>
     </article>
   );
 
-  return m.redige || evaluable ? (
+  return ouvre ? (
     <Link href={`/module/${m.id}${requete}`} className="carte-lien">
       {corps}
     </Link>
@@ -224,11 +232,13 @@ function GroupesModules({
   estOuvert,
   basculer,
   etatDe,
+  questionsRequises,
 }: {
   groupes: GroupeModules[];
   estOuvert: (cle: string, parDefaut: boolean) => boolean;
   basculer: (cle: string, ouvert: boolean) => void;
   etatDe: (m: ModuleResume) => EtatModule;
+  questionsRequises: boolean;
 }) {
   return (
     <div className="groupes-modules">
@@ -259,7 +269,7 @@ function GroupesModules({
             <div className="contenu-bloc">
               <div className="grille">
                 {g.modules.map((m) => (
-                  <CarteModule key={m.id} m={m} etat={etatDe(m)} />
+                  <CarteModule key={m.id} m={m} etat={etatDe(m)} questionsRequises={questionsRequises} />
                 ))}
               </div>
             </div>
@@ -305,6 +315,7 @@ export function TableauDeBord({
   ordresProfil = {},
   ordresApprenant = {},
   profilImpose = false,
+  questionsRequises = false,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -353,6 +364,11 @@ export function TableauDeBord({
    * être modifiables (`lib/profil-impose.ts`).
    */
   profilImpose?: boolean;
+  /**
+   * Apprenant — code de poste, mode test, site sans base (05/10/2026, demande
+   * directe) : un module sans question se voit, grisé, sans s'ouvrir.
+   */
+  questionsRequises?: boolean;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -408,7 +424,8 @@ export function TableauDeBord({
       /* stockage refusé : l'état se lit sur les seules évaluations */
     }
   }, []);
-  const etatDe = (m: ModuleResume): EtatModule => etatModule(m, dernierPourModule(m.id), lectures.has(m.id));
+  const etatDe = (m: ModuleResume): EtatModule =>
+    etatModule(m, dernierPourModule(m.id), lectures.has(m.id), questionsRequises);
 
   // Recherche et filtres (22/09/2026) : dans le programme affiché.
   const [filtres, setFiltres] = useState<FiltresModules>(AUCUN_FILTRE);
@@ -479,10 +496,15 @@ export function TableauDeBord({
       : "";
 
   // Un résultat s'ouvre sur son module s'il est encore proposé à ce poste (tâche 69) :
-  // retiré ou dépublié depuis, il mènerait à une page introuvable.
+  // retiré ou dépublié depuis, il mènerait à une page introuvable ; sans question, à une page fermée.
   const proposes = useMemo(
-    () => new Set([...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])].map((m) => m.id)),
-    [troncCommun, parPoste, aLaCarte],
+    () =>
+      new Set(
+        [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])]
+          .filter((m) => !questionsRequises || m.nbQuestions > 0)
+          .map((m) => m.id),
+      ),
+    [troncCommun, parPoste, aLaCarte, questionsRequises],
   );
 
   const evaluables = programme.filter((m) => m.nbQuestions > 0);
@@ -642,6 +664,7 @@ export function TableauDeBord({
           redige: m.redige,
         }))}
         requete={requeteCarte}
+        questionsRequises={questionsRequises}
       />
 
       {/* Recherche et filtres (22/09/2026) : texte, bloc, avancement, dans le
@@ -704,7 +727,7 @@ export function TableauDeBord({
           {trouves.length > 0 ? (
             <div className="grille">
               {trouves.map((m) => (
-                <CarteModule key={m.id} m={m} etat={etatDe(m)} requete={requeteCarte} />
+                <CarteModule key={m.id} m={m} etat={etatDe(m)} requete={requeteCarte} questionsRequises={questionsRequises} />
               ))}
             </div>
           ) : (
@@ -730,7 +753,14 @@ export function TableauDeBord({
           )}
           <div className="grille">
             {aLaCarte.modules.map((m, i) => (
-              <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={`?programme=${aLaCarte.id}`} />
+              <CarteModule
+                key={m.id}
+                m={m}
+                etat={etatDe(m)}
+                rang={i + 1}
+                requete={`?programme=${aLaCarte.id}`}
+                questionsRequises={questionsRequises}
+              />
             ))}
           </div>
         </>
@@ -749,7 +779,7 @@ export function TableauDeBord({
           </div>
           <div className="grille">
             {programme.map((m, i) => (
-              <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={requeteCarte} />
+              <CarteModule key={m.id} m={m} etat={etatDe(m)} rang={i + 1} requete={requeteCarte} questionsRequises={questionsRequises} />
             ))}
           </div>
         </>
@@ -763,7 +793,13 @@ export function TableauDeBord({
         </span>
         <BoutonReplis groupes={groupesSocle} />
       </div>
-      <GroupesModules groupes={groupesSocle} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
+      <GroupesModules
+        groupes={groupesSocle}
+        estOuvert={estOuvert}
+        basculer={basculer}
+        etatDe={etatDe}
+        questionsRequises={questionsRequises}
+      />
 
       <div className="section-titre">
         <h2>Critères de la filière</h2>
@@ -773,7 +809,13 @@ export function TableauDeBord({
         {posteId ? <BoutonReplis groupes={groupesPoste} /> : null}
       </div>
       {posteId ? (
-        <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
+        <GroupesModules
+          groupes={groupesPoste}
+          estOuvert={estOuvert}
+          basculer={basculer}
+          etatDe={etatDe}
+          questionsRequises={questionsRequises}
+        />
       ) : profilImpose ? (
         <p className="encart">
           Votre code d&apos;accès ne porte pas de filière : seul le socle transversal est à votre programme. Si une

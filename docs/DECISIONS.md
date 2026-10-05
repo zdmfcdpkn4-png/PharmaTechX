@@ -1987,7 +1987,8 @@ partout, cibles tactiles, contrastes mesurés, mode zone.
   illustré du badge du module : l'évaluation laissée en plan (agent
   rattaché), sinon la lecture en cours sur ce poste si son module n'est pas
   acquis, sinon le premier module du programme, dans l'ordre de la fiche,
-  qui se lit ou s'évalue et n'est pas acquis. Le programme de référence est
+  qui se lit ou s'évalue et n'est pas acquis — pour un apprenant, depuis le
+  05/10/2026, qui a des questions. Le programme de référence est
   celui qui s'affiche à l'arrivée (programme à la carte, ou socle et filière
   du code de poste). « Commencer ma formation » tant que rien n'est fait.
 - **Modules consultés récemment** : trois au plus, sous le bouton. Trace
@@ -1995,7 +1996,8 @@ partout, cibles tactiles, contrastes mesurés, mode zone.
   jamais transmise, effacée avec les données du navigateur.
 - **État de chaque module** sur sa carte — Acquis, Arbitrage en attente, À
   revoir, Non concluant, Lecture en cours, À faire, À rédiger, Lecture seule
-  (texte sans questions) — et filet de couleur : vert terminé, jaune en cours. « Acquis » est le verdict brut,
+  (texte sans questions ; pour un apprenant, « Pas encore ouvert » depuis le
+  05/10/2026) — et filet de couleur : vert terminé, jaune en cours. « Acquis » est le verdict brut,
   comme sur la barre de badges.
 - **Badges en vignette** de 72 px sur chaque carte et sur « Reprendre », sur
   tous les écrans, téléphone compris : la taille à partir de laquelle les
@@ -7640,6 +7642,91 @@ le module fermé n'ouvre plus.
   (page, évaluation, correction 403), un module ouvert corrigé, « Parcours :
   Mon programme » ; captures de la page de refus au bureau et sur téléphone à
   390 px, sans débordement ni erreur de page.
+
+## Un module ne s'ouvre à l'apprenant qu'avec des questions (05/10/2026, demande directe)
+
+**Demande.** « Ne donne accès au module proposé que si il existe des
+questions pour ce module. »
+
+**Lecture retenue, à la lettre.** Un module a des questions s'il en compte au
+moins une validée : du site (`content/modules/`), d'une mise en situation ou
+de la banque, rattachements « aussi posée dans » compris (question 74). Une
+question à vérifier ne compte pas : aucun tirage ne la pose. La règle vaut
+pour l'apprenant : code de poste, mode test, visiteur du site sans base. Le
+tutorat et l'administration, qui gèrent les modules, ouvrent tout. Le mode
+test s'y plie, pour montrer ce que verra l'apprenant. Une lecture plus stricte
+(les seules questions que l'agent peut recevoir) fait l'objet de la question
+102.
+
+**Fait.** Pour l'apprenant, un module sans question :
+- reste visible dans « Mes modules », grisé, sans lien, marqué « Pas encore
+  ouvert » ; son badge, dans la barre du parcours, ne s'ouvre pas ;
+- a sa page et sa page d'évaluation fermées : « Ce module n'est pas encore
+  ouvert », avec un lien vers ses modules ; rien du module n'est servi,
+  hormis son titre ;
+- n'est jamais proposé : ni par « Reprendre ma formation » ou le chemin de
+  l'accueil, ni comme précédent ou suivant sur la page d'un module, ni comme
+  module suivant en fin de test. Une lecture repérée sur l'appareil ne s'y
+  reprend pas.
+
+Pour un code de poste, le serveur refuse aussi le document du module, la
+correction, les traces et les signalements (403, motif « sans question
+validée »). Règles pures dans `lib/profil-impose.ts` (`accesLibre`,
+`aDesQuestions`, `motifFermeture`, `refusDuPoste`), `content/tableau.ts`
+(`ouvrable`) et `content/parcours.ts` (`voisins`), testées.
+
+**Inchangé.**
+- Le tutorat et l'administration ouvrent tout module. Sur la page d'un
+  module sans question, une ligne leur dit qu'il est fermé aux apprenants tant
+  qu'aucune question n'est validée.
+- Un rapport s'émet encore pour un module qui a perdu ses questions depuis
+  l'évaluation : la règle ferme l'accès au module, pas la preuve scellée d'une
+  évaluation passée.
+- Le programme d'un code de poste (question 101) : un module sans question y
+  figure toujours, visible.
+
+**Coût.**
+- Un module rédigé sans question, ouvert jusqu'ici en « Lecture seule », ne se
+  lit plus : son texte attend ses questions. Il s'ouvre dès qu'une question
+  est validée.
+- Une lecture de plus en base par page d'apprenant, faite une fois par
+  requête : le compte des questions validées par module.
+
+**Limites.**
+- Une question validée ouvre le module même si elle vise d'autres profils
+  (étiquettes de filière ou de niveau, plafond du niveau cible) : l'évaluation
+  peut alors n'avoir rien à poser à cet agent (question 102).
+- Une question au signalement ouvert compte encore : un module dont toutes
+  les questions sont signalées reste ouvert, sans question à tirer jusqu'à la
+  clôture des signalements.
+- En mode test, la page et l'évaluation se ferment, pas le document du
+  module : le testeur, du tutorat ou de l'administration, y a accès de toute
+  façon.
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 509 tests dont huit nouveaux
+  (`test/profil-impose.test.ts`, `test/tableau.test.ts`,
+  `test/parcours.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 120 étapes, sans erreur de page
+  ni erreur serveur. L'étape du profil imposé publie un module rédigé sans
+  question, coché N1a, avec un document, et vérifie :
+  - administration : page ouverte, mention « Fermé aux apprenants », carte
+    ouverte, document servi ;
+  - mode test au même profil : carte visible sans lien, page fermée ;
+  - code chimiothérapie · N1a : carte visible, « Pas encore ouvert », sans
+    lien ; page et évaluation fermées ; document refusé (403) ; trace refusée
+    (403, motif « sans question validée ») ;
+  - sur chaque module ouvert de ce code, aucun lien vers un module fermé.
+- Un premier lancement avait échoué sur deux étapes étrangères au
+  changement (retrait d'une question après la décision ; introduction au
+  toucher) : deux courses du test, sans erreur de l'application. Les deux
+  lancements suivants, dont le dernier sur le code livré, sont passés en
+  entier.
+- Serveur d'essai, code chimiothérapie · N1a : « Reprendre » et le chemin de
+  l'accueil proposent un module qui a des questions ; captures de la carte et
+  de la page fermée au bureau et sur téléphone à 390 px, sans débordement ni
+  erreur de page.
 
 ## Non fait
 

@@ -7,7 +7,7 @@ import { DERNIER, type DernierModule } from "./LectureModule";
 import { useSessionFormation } from "./SessionFormation";
 import type { EtapeReprise } from "./Reprendre";
 import { CHEMIN, etapeCourante } from "@/content/accueil";
-import { choisirReprise } from "@/content/tableau";
+import { choisirReprise, ouvrable } from "@/content/tableau";
 
 /**
  * Accueil de l'agent (question 91, choix a, 02/10/2026) : les six étapes de
@@ -24,12 +24,15 @@ export function CheminAgent({
   programme,
   evaluation,
   requete = "",
+  questionsRequises = false,
 }: {
   /** Programme affiché à l'arrivée sur le programme, dans son ordre. */
   programme: EtapeReprise[];
   /** Évaluation laissée en plan, connue du serveur pour un agent rattaché. */
   evaluation: { moduleId: string; titre: string; detail: string } | null;
   requete?: string;
+  /** Apprenant : seuls comptent et se proposent les modules qui ont des questions (05/10/2026, `ouvrable`). */
+  questionsRequises?: boolean;
 }) {
   const { resultats, dernierPourModule } = useSessionFormation();
   const [lecture, setLecture] = useState<DernierModule | null>(null);
@@ -44,10 +47,10 @@ export function CheminAgent({
   }, []);
 
   const acquis = (id: string) => dernierPourModule(id)?.reussi === true;
-  const ouvrables = programme.filter((m) => m.evaluable || m.redige);
+  const ouvrables = programme.filter((m) => ouvrable(m, questionsRequises));
   const nbAcquis = ouvrables.filter((m) => acquis(m.id)).length;
-  const lectureDuProgramme = lecture && programme.some((m) => m.id === lecture.module) ? lecture : null;
-  const reprise = choisirReprise({ evaluation, lecture: lectureDuProgramme, programme, acquis, requete });
+  const lectureDuProgramme = lecture && ouvrables.some((m) => m.id === lecture.module) ? lecture : null;
+  const reprise = choisirReprise({ evaluation, lecture: lectureDuProgramme, programme, acquis, requete, questionsRequises });
   const ici = etapeCourante({ evaluationEnCours: Boolean(evaluation), resteAAcquerir: reprise !== null });
   const reussies = resultats.filter((r) => r.reussi).length;
   const jamaisEvalue = !programme.some((m) => dernierPourModule(m.id));

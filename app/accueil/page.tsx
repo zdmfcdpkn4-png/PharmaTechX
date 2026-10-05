@@ -46,7 +46,7 @@ async function AccueilPoste({
   p: { progression?: string; minutes?: string };
 }) {
   const conservation = modeConservation() === "pseudonyme" && baseConfiguree();
-  const [{ programme, evaluation, requete }, { filieres }, ratt] = await Promise.all([
+  const [{ programme, evaluation, requete, questionsRequises }, { filieres }, ratt] = await Promise.all([
     arriveeDuPoste(session),
     getReferentiel(),
     conservation ? rattachement() : Promise.resolve(null),
@@ -83,7 +83,7 @@ async function AccueilPoste({
         </p>
       )}
       <section className="carte accueil-carte" aria-label="Les six étapes de l'habilitation">
-        <CheminAgent programme={programme} evaluation={evaluation} requete={requete} />
+        <CheminAgent programme={programme} evaluation={evaluation} requete={requete} questionsRequises={questionsRequises} />
       </section>
       <p className="accueil-liens">
         <Link href={`/${requete}`}>Mon programme</Link>

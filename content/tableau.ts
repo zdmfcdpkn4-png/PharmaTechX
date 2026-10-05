@@ -24,7 +24,8 @@ export type EtatModule =
   | "en-lecture"
   | "a-faire"
   | "a-rediger"
-  | "lecture-seule";
+  | "lecture-seule"
+  | "ferme";
 
 export const LIBELLES_ETAT: Record<EtatModule, string> = {
   acquis: "Acquis",
@@ -35,6 +36,7 @@ export const LIBELLES_ETAT: Record<EtatModule, string> = {
   "a-faire": "À faire",
   "a-rediger": "À rédiger",
   "lecture-seule": "Lecture seule",
+  ferme: "Pas encore ouvert",
 };
 
 /** Les trois temps que demande l'accueil : terminé, en cours, à venir. */
@@ -56,11 +58,16 @@ export interface ModulePourEtat {
  * sans évaluation, un repère de lecture posé sur ce poste dit « en cours ».
  * « Acquis » est le verdict brut, comme sur la barre de badges : un arbitrage
  * favorable porté au visa ne se voit pas d'ici.
+ *
+ * Pour un apprenant (`questionsRequises`), un module sans question n'est pas
+ * encore ouvert (05/10/2026, demande directe) : une lecture entamée avant ne
+ * s'y reprend pas.
  */
 export function etatModule(
   m: ModulePourEtat,
   dernier: { verdict: Verdict } | undefined,
   lectureEntamee: boolean,
+  questionsRequises = false,
 ): EtatModule {
   if (dernier) {
     if (dernier.verdict === "acquis") return "acquis";
@@ -68,6 +75,7 @@ export function etatModule(
     if (dernier.verdict === "non_concluant") return "non-concluant";
     return "non-acquis";
   }
+  if (questionsRequises && m.nbQuestions === 0) return "ferme";
   if (lectureEntamee) return "en-lecture";
   if (m.nbQuestions > 0) return "a-faire";
   if (!m.redige) return "a-rediger";
@@ -141,6 +149,16 @@ export interface EtapeProgramme {
   redige: boolean;
 }
 
+/**
+ * Le module s'ouvre-t-il ? Pour le tutorat et l'administration, dès qu'il se
+ * lit ou s'évalue (tâche 69) ; pour un apprenant (`questionsRequises`), seulement
+ * s'il a des questions (05/10/2026, demande directe). La lecture repérée sur le
+ * poste se filtre de même, avant `choisirReprise`.
+ */
+export function ouvrable(m: Pick<EtapeProgramme, "evaluable" | "redige">, questionsRequises: boolean): boolean {
+  return m.evaluable || (!questionsRequises && m.redige);
+}
+
 export interface Reprise {
   nature: "evaluation" | "lecture" | "suivant";
   moduleId: string;
@@ -154,8 +172,8 @@ export interface Reprise {
  *
  *   1. une évaluation laissée en plan (agent rattaché : le serveur la garde) ;
  *   2. la lecture en cours sur ce poste, si son module n'est pas déjà acquis ;
- *   3. le premier module du programme, dans l'ordre de la fiche, qui se lit ou
- *      s'évalue et n'est pas acquis.
+ *   3. le premier module du programme, dans l'ordre de la fiche, qui s'ouvre
+ *      (`ouvrable`) et n'est pas acquis.
  *
  * `null` quand il n'y a rien : tous les modules ouvrables sont acquis.
  */
@@ -166,6 +184,8 @@ export function choisirReprise(o: {
   acquis: (moduleId: string) => boolean;
   /** Paramètres de l'adresse à garder (programme à la carte). */
   requete?: string;
+  /** Apprenant : seul un module qui a des questions lui est proposé (`ouvrable`). */
+  questionsRequises?: boolean;
 }): Reprise | null {
   const requete = o.requete ?? "";
   if (o.evaluation) {
@@ -186,7 +206,7 @@ export function choisirReprise(o: {
       href: `/module/${o.lecture.module}`,
     };
   }
-  const suivant = o.programme.find((m) => (m.evaluable || m.redige) && !o.acquis(m.id));
+  const suivant = o.programme.find((m) => ouvrable(m, o.questionsRequises ?? false) && !o.acquis(m.id));
   if (!suivant) return null;
   return {
     nature: "suivant",

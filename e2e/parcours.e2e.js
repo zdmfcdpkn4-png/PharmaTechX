@@ -6257,6 +6257,57 @@ Source : Procédure statistiques — section 5`;
   assert.equal((await page.request.get(BASE + lienFerme)).status(), 200, "administration : document servi");
   await page.goto(BASE + "/module/" + idModule);
   await page.waitForSelector("a:has-text('Document hors programme')");
+  // Module publié sans question (05/10/2026, demande directe) : au programme N1a du code, rédigé, un document
+  // rattaché, mais fermé à l'apprenant tant qu'aucune question n'est validée. L'administration l'ouvre ; le mode
+  // test, qui montre ce que verra l'apprenant, non.
+  await page.goto(BASE + "/admin/modules");
+  await page.fill("input[name=titre]", "Module sans question test");
+  await page.fill("input[name=objectif]", "Objectif du module sans question.");
+  await page.fill("textarea[name=presentation]", "Présentation du module sans question.");
+  await page.check("input[name=filieres][value=chimiotherapie]");
+  await page.check("input[name=niveaux][value=N1a]");
+  await page.click("button:has-text('Créer le module')");
+  await page.waitForURL(/\/admin\/modules\/mod-[A-Za-z0-9_-]+\?ok=cree/);
+  const idSansQuestion = page.url().match(/\/admin\/modules\/(mod-[A-Za-z0-9_-]+)/)[1];
+  await page.click("button:has-text('Publier')");
+  await page.waitForURL(/ok=publie/);
+  await page.goto(BASE + "/admin/documents");
+  await page.setInputFiles("input[name=fichier]", PNG);
+  await page.fill("input[name=titre]", "Document sans question");
+  await page.selectOption("select[name=moduleId]", idSansQuestion);
+  await page.click("button:has-text('Déposer')");
+  await page.waitForSelector("text=Document déposé");
+  const lienSansQuestion = await page.locator("a:has-text('Document sans question')").first().getAttribute("href");
+  assert.equal((await page.request.get(BASE + lienSansQuestion)).status(), 200, "administration : document du module sans question servi");
+  await page.goto(BASE + "/module/" + idSansQuestion);
+  await page.waitForSelector("h1:has-text('Module sans question test')");
+  await page.waitForSelector("text=Fermé aux apprenants tant qu'aucune question n'est validée");
+  await page.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N1a");
+  assert.equal(
+    await page.locator("#modules a.carte-lien:has(h3:has-text('Module sans question test'))").count(),
+    1,
+    "administration : la carte du module sans question s'ouvre",
+  );
+  await page.goto(BASE + "/admin/essai");
+  const sectionTest = page.locator("section[aria-labelledby='t-essai']");
+  await sectionTest.locator("select[name=essaiFiliere]").selectOption("chimiotherapie");
+  await sectionTest.locator("select[name=essaiNiveau]").selectOption("N1a");
+  await page.click("button:has-text('Démarrer un test')");
+  await page.waitForURL((u) => u.pathname === "/");
+  await fermerVisite();
+  await page.waitForSelector(".bandeau-essai:has-text('Mode test')");
+  assert.equal(await page.locator("#modules article.carte--module:has(h3:has-text('Module sans question test'))").count(), 1, "mode test : la carte se voit");
+  assert.equal(
+    await page.locator("#modules a.carte-lien:has(h3:has-text('Module sans question test'))").count(),
+    0,
+    "mode test : la carte du module sans question ne s'ouvre pas",
+  );
+  await page.goto(BASE + "/module/" + idSansQuestion);
+  await page.waitForSelector("h1:has-text(\"Ce module n'est pas encore ouvert\")");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click(".bandeau-essai button:has-text('Terminer le test')");
+  await page.waitForURL(/\/admin\/essai$/);
 
   const ctxImpose = await browser.newContext();
   await ctxImpose.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
@@ -6347,12 +6398,36 @@ Source : Procédure statistiques — section 5`;
   const trace = (moduleId) => pi.request.post(BASE + "/api/progression", { data: { nature: "lecture", moduleId } });
   assert.equal((await trace(idModule)).status(), 403, "poste : aucune trace sur un module fermé");
   assert.deepEqual(await (await trace("comportement-zac")).json(), { ok: true }, "poste : trace de lecture dans son programme");
-  // Un module ouvert : précédent et suivant pris dans son programme seul.
+  // Module sans question (05/10/2026) : à son programme, visible dans « Mes modules », grisé et sans lien ; page,
+  // évaluation, document et trace fermés, avec leur motif.
+  await pi.goto(BASE + "/?parcours=integration");
+  await pi.waitForSelector("#composer h2:has-text('Mon programme')");
+  const carteSansQuestion = pi.locator("#modules article.carte--module:has(h3:has-text('Module sans question test'))");
+  assert.equal(await carteSansQuestion.count(), 1, "poste : le module sans question reste visible");
+  assert.equal((await carteSansQuestion.locator(".etat-module").textContent()).trim(), "Pas encore ouvert");
+  assert.equal(await pi.locator("#modules a.carte-lien:has(h3:has-text('Module sans question test'))").count(), 0, "poste : sa carte ne s'ouvre pas");
+  assert.ok(!programmePoste.has(idSansQuestion), "poste : le module sans question n'est pas parmi ses modules ouverts");
+  await pi.goto(BASE + "/module/" + idSansQuestion);
+  await pi.waitForSelector("h1:has-text(\"Ce module n'est pas encore ouvert\")");
+  assert.equal(await pi.locator("a:has-text('Document sans question')").count(), 0, "poste : aucun document du module sans question");
+  assert.equal(await pi.locator("h2:has-text('Présentation')").count(), 0, "poste : rien du module sans question");
+  await pi.goto(BASE + "/module/" + idSansQuestion + "/evaluation");
+  await pi.waitForSelector("h1:has-text(\"Ce module n'est pas encore ouvert\")");
+  assert.equal((await pi.request.get(BASE + lienSansQuestion)).status(), 403, "poste : document du module sans question refusé");
+  const traceSansQuestion = await trace(idSansQuestion);
+  assert.equal(traceSansQuestion.status(), 403, "poste : aucune trace sur un module sans question");
+  assert.match((await traceSansQuestion.json()).erreur, /sans question validée/);
+  // Chaque module ouvert : précédent, suivant et liens pris parmi ses seuls modules ouverts — jamais un module
+  // hors de son programme (question 101), ni un module sans question (05/10/2026).
+  for (const id of programmePoste) {
+    await pi.goto(BASE + "/module/" + id);
+    assert.doesNotMatch(await pi.locator(".panneau-titre h1").first().innerText(), /^Ce module n'est pas/, "module ouvert : " + id);
+    for (const h of await pi.locator("main a[href^='/module/'], article a[href^='/module/']").evaluateAll((l) => l.map((a) => a.getAttribute("href")))) {
+      assert.ok(programmePoste.has(/\/module\/([^/?#]+)/.exec(h)[1]), `lien de la page de ${id} vers un module fermé : ${h}`);
+    }
+  }
   await pi.goto(BASE + "/module/comportement-zac");
   await pi.waitForSelector("a:has-text('Schéma déposé test')");
-  for (const h of await pi.locator("main a[href^='/module/'], article a[href^='/module/']").evaluateAll((l) => l.map((a) => a.getAttribute("href")))) {
-    assert.ok(programmePoste.has(/\/module\/([^/?#]+)/.exec(h)[1]), "lien de la page du module hors programme : " + h);
-  }
   // Repères : le programme complet reste lisible, sans liens vers les modules.
   await pi.goto(BASE + "/reperes");
   await pi.waitForSelector("#programme h2:has-text('Programme complet')");
@@ -6365,7 +6440,7 @@ Source : Procédure statistiques — section 5`;
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant ; hors programme (question 101, b), page, évaluation, correction, document et trace refusés, liens des Repères ôtés");
+  ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant ; hors programme (question 101, b), page, évaluation, correction, document et trace refusés, liens des Repères ôtés ; module sans question (05/10/2026) visible, grisé et fermé à l'apprenant comme au mode test, ouvert à l'administration, jamais proposé en précédent ni en suivant");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)

@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getModuleComplet, positionDansListe, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
+import {
+  getModuleComplet,
+  modulesAvecQuestions,
+  positionDansListe,
+  positionDansParcours,
+  positionDansProfil,
+  positionDansProgramme,
+  type Ouvert,
+} from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
 import { requeteProfil } from "@/content/ordres";
-import { profilDeLaPage, profilImpose } from "@/lib/profil-impose";
+import { accesLibre, motifFermeture, profilDeLaPage, profilImpose } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import { HorsProgramme } from "@/components/HorsProgramme";
 import { syntheseDuModule } from "@/lib/synthese";
@@ -35,23 +43,32 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, programme à la carte, filière et
   // niveau cible sont ceux du code ; l'adresse ne garde que le parcours. Hors de son programme, il n'évalue pas
-  // le module (question 101, choix b).
+  // le module (question 101, choix b) ; un apprenant n'évalue qu'un module qui a des questions (05/10/2026).
   const impose = profilImpose(session, baseConfiguree());
   const duPoste = impose && session ? await programmeDuPoste(session, impose) : null;
-  if (duPoste && !duPoste.ouverts.has(mod.id)) return <HorsProgramme titre={mod.titre} />;
+  // Les bonnes réponses et les justifications sont retirées ici : elles ne
+  // quittent le serveur qu'après soumission, via la route de correction.
+  const banque = banquePublique(mod);
+  const libre = accesLibre(session);
+  const ferme = motifFermeture({ libre, auProgramme: duPoste ? duPoste.auProgramme.has(mod.id) : true, nbQuestions: banque.length });
+  if (ferme) return <HorsProgramme titre={mod.titre} motif={ferme} />;
+  if (banque.length === 0) notFound();
   const idProgramme = duPoste ? duPoste.idProgramme : lireIdProgramme(sp.programme);
+  // Le module suivant d'un apprenant saute ceux qui ne lui sont pas ouverts.
+  const ouvrir = (ids: Set<string>): Ouvert => (m) => ids.has(m.id);
+  const ouvert = libre ? undefined : ouvrir(duPoste ? duPoste.ouverts : await modulesAvecQuestions());
   const profil = idProgramme ? null : profilDeLaPage(impose, sp);
   const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }, nomsNiveaux] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
-    idProgramme ? positionDansProgramme(idProgramme, mod.id) : Promise.resolve(null),
+    idProgramme ? positionDansProgramme(idProgramme, mod.id, ouvert) : Promise.resolve(null),
     rattachement(),
     getReferentiel(),
     lireNomsNiveaux(),
   ]);
   // L'apprenant rattaché suit son ordre propre sur ce profil, s'il en a un (question 56).
   const dansProfil = profil
-    ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)
+    ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null, ouvert)
     : null;
   // Programme à la carte (question 50) ou profil qui a son ordre (question 55) :
   // le module suivant est celui de leur ordre.
@@ -60,18 +77,14 @@ export default async function PageEvaluation({
     dansProgramme ??
     dansProfil ??
     (duPoste
-      ? positionDansListe(duPoste.parParcours[sp.parcours === "maintien" ? "maintien" : "integration"], mod.id)
-      : await positionDansParcours("integration", mod.id));
+      ? positionDansListe(duPoste.parParcours[sp.parcours === "maintien" ? "maintien" : "integration"], mod.id, ouvert)
+      : await positionDansParcours("integration", mod.id, ouvert));
   // Le profil suit de page en page, même sans ordre propre : son niveau est le niveau cible du tirage (question 62).
   const requete = dansProgramme ? `?programme=${idProgramme}` : profil ? requeteProfil(profil) : "";
   const enCours = ratt ? await lireEnCours(ratt.agentId, mod.id).catch(() => null) : null;
   // Un document de synthèse déposé est réservé aux sessions ouvertes par un code (question 13, choix b).
   const synthesesVisibles = session ? syntheses : syntheses.filter((d) => !d.url.startsWith("/api/fichiers/"));
 
-  // Les bonnes réponses et les justifications sont retirées ici : elles ne
-  // quittent le serveur qu'après soumission, via la route de correction.
-  const banque = banquePublique(mod);
-  if (banque.length === 0) notFound();
   // Tirage selon le niveau cible (questions 62 et 63) : celui du profil de la page, sinon celui du code de
   // session ; les questions au signalement ouvert sont écartées de tout tirage jusqu'à la clôture.
   const codes = niveaux.map((n) => String(n.code));

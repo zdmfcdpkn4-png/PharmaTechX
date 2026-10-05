@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Badge } from "./Badge";
 import { useSessionFormation } from "./SessionFormation";
+import { ouvrable } from "@/content/tableau";
 
 /**
  * Barre de progression du parcours (demande du 22/09/2026) : « utiliser les
@@ -36,7 +37,16 @@ export interface EtapeBadge {
   redige?: boolean;
 }
 
-export function BarreBadges({ etapes, requete = "" }: { etapes: EtapeBadge[]; requete?: string }) {
+export function BarreBadges({
+  etapes,
+  requete = "",
+  questionsRequises = false,
+}: {
+  etapes: EtapeBadge[];
+  requete?: string;
+  /** Apprenant : seul le badge d'un module qui a des questions s'ouvre (05/10/2026, `ouvrable`). */
+  questionsRequises?: boolean;
+}) {
   const { dernierPourModule } = useSessionFormation();
   if (etapes.length === 0) return null;
   const acquis = (id: string) => dernierPourModule(id)?.reussi === true;
@@ -69,7 +79,7 @@ export function BarreBadges({ etapes, requete = "" }: { etapes: EtapeBadge[]; re
           );
           return (
             <li key={e.id} className={ok ? "est-acquis" : "est-grise"}>
-              {e.evaluable || e.redige ? (
+              {ouvrable({ evaluable: e.evaluable, redige: e.redige ?? false }, questionsRequises) ? (
                 <Link href={`/module/${e.id}${requete}`} title={nom} className="barre-badge">
                   {contenu}
                 </Link>

@@ -377,6 +377,29 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+102. **Un module s'ouvre-t-il dès une question validée, ou seulement si
+    l'agent peut en recevoir une ?** — posée le 05/10/2026, après la demande
+    « Ne donne accès au module proposé que si il existe des questions pour ce
+    module ».
+
+    Fait le même jour, à la lettre (`DECISIONS.md`) : un apprenant n'ouvre un
+    module que s'il compte au moins une question validée, du site, d'une mise
+    en situation ou de la banque. Or une question peut viser d'autres
+    profils : étiquetée pour d'autres filières ou d'autres niveaux (question
+    74), ou au-dessus du plafond du niveau cible (questions 62 et 63). Un
+    module dont toutes les questions visent d'autres profils s'ouvre donc, et
+    son évaluation n'a rien à poser à cet agent.
+    - **a (recommandé)** : garder la règle : une question validée suffit,
+      quel que soit le profil qu'elle vise. Simple à expliquer, et stable
+      quand le tutorat règle le barème ou les étiquettes. Contre : le module
+      décrit ci-dessus reste ouvert, avec une évaluation vide pour cet
+      agent.
+    - **b** : n'ouvrir un module qu'avec au moins une question que
+      l'évaluation peut poser à l'agent, étiquettes et plafond de son niveau
+      cible compris. Contre : un réglage du barème ou d'une étiquette ferme
+      ou rouvre des modules sans que l'écran de gestion le montre, et chaque
+      page d'apprenant calcule davantage.
+
 101. **Un code de poste peut-il encore ouvrir et évaluer un module hors de
     son programme ?** — posée le 05/10/2026, après la demande « un
     utilisateur non tuteur et non administrateur ne doit avoir accès qu'à sa

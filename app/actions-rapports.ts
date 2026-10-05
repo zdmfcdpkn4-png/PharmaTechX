@@ -70,9 +70,11 @@ export async function actionEmettreRapport(entree: {
     return { ok: false, erreur: "Ce résultat n'a pas été produit par le serveur : émission refusée." };
   }
   if (!(await moduleExiste(r.moduleId))) return { ok: false, erreur: "Module inconnu." };
-  // Question 101 (choix b) : un code de poste n'émet de rapport que pour un module de son programme.
+  // Question 101 (choix b) : un code de poste n'émet de rapport que pour un module de son programme. Un
+  // module qui a perdu ses questions depuis l'évaluation reste émissible : la règle du 05/10/2026 ferme
+  // l'accès au module, pas la preuve scellée d'une évaluation passée.
   const impose = profilImpose(sessionEmission, baseConfiguree());
-  if (impose && !(await programmeDuPoste(sessionEmission, impose)).ouverts.has(r.moduleId)) {
+  if (impose && !(await programmeDuPoste(sessionEmission, impose)).auProgramme.has(r.moduleId)) {
     return { ok: false, erreur: "Ce module n'est pas à votre programme : aucun rapport ne s'émet pour lui." };
   }
   const entrainement = refusEmissionEntrainement(r);

@@ -14,7 +14,7 @@ import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
 import type { Module } from "@/content/types";
 import type { EtapeReprise } from "@/components/Reprendre";
 import { badgeEffectif } from "@/content/badges";
-import { profilImpose } from "./profil-impose";
+import { accesLibre, profilImpose } from "./profil-impose";
 import { programmeDuPoste } from "./programme-poste";
 
 /**
@@ -30,6 +30,8 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
   programme: EtapeReprise[];
   evaluation: { moduleId: string; titre: string; detail: string } | null;
   requete: string;
+  /** Apprenant : seul un module qui a des questions s'ouvre et se propose (05/10/2026, demande directe). */
+  questionsRequises: boolean;
 }> {
   const parcours = "integration";
   const conservation = modeConservation();
@@ -49,6 +51,7 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
     badge: badgeEffectif(m.badge, m.titre, m.objectif),
   });
 
+  const questionsRequises = !accesLibre(session);
   const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
   // Question 101 (choix b) : une évaluation laissée en plan sur un module hors du programme du code ne se
   // reprend pas d'ici ; sa page le refuserait.
@@ -76,7 +79,12 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
   const ouvert = idDuCode ? (valides.find((x) => x.id === idDuCode) ?? null) : null;
   if (ouvert) {
     const catalogue = await getTousModulesAvecDeposes({ publiesSeulement: true });
-    return { programme: modulesDuProgramme(ouvert, catalogue).presents.map(etape), evaluation, requete: `?programme=${ouvert.id}` };
+    return {
+      programme: modulesDuProgramme(ouvert, catalogue).presents.map(etape),
+      evaluation,
+      requete: `?programme=${ouvert.id}`,
+      questionsRequises,
+    };
   }
 
   // Socle et filière du code, au niveau du code.
@@ -97,5 +105,6 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
     programme: (ordre ? chronologie(profil, ordre.ordre) : profil).map(etape),
     evaluation,
     requete: ordre ? requeteProfil({ parcours, filiere, niveau }) : "",
+    questionsRequises,
   };
 }

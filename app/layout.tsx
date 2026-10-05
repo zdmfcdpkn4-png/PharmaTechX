@@ -21,7 +21,7 @@ import { etapesTutoriel } from "@/content/tutoriel";
 import { fileNonVide, itemsAFaire, AUCUN_COMPTE } from "@/content/acces-rapide";
 import { etapes as etapesHabilitation } from "@/content/habilitation";
 import { questionsRenseignees } from "@/content/en-cours";
-import { getModule } from "@/content/store";
+import { getModule, modulesAvecQuestions } from "@/content/store";
 import { lireModuleDepose } from "@/content/modules-db";
 import { comptesAttente } from "@/lib/attente";
 import { etatSession } from "@/lib/auth";
@@ -34,7 +34,7 @@ import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import { actionTerminerEssai } from "@/app/actions-essai";
 import { LIBELLE_ESSAI } from "@/lib/essai";
-import { profilImpose } from "@/lib/profil-impose";
+import { accesLibre, profilImpose } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import "./globals.css";
 
@@ -175,10 +175,15 @@ export default async function RootLayout({
   // Sans rattachement, une évaluation interrompue vit dans la page et meurt à
   // la navigation : il n'y a rien à reprendre, et rien à annoncer.
   // Question 101 (choix b) : pour un code de poste, rien ne se reprend hors de son programme — ni l'évaluation
-  // laissée en plan, ni la lecture repérée sur l'appareil, peut-être par un autre agent.
+  // laissée en plan, ni la lecture repérée sur l'appareil, peut-être par un autre agent. Pour tout apprenant,
+  // rien ne se reprend sur un module sans question (05/10/2026).
   // Un échec de lecture n'ôte que ce filtre : les pages et le serveur refusent d'eux-mêmes.
   const ouvertsPoste =
-    impose && session ? await programmeDuPoste(session, impose).then((p) => [...p.ouverts], () => null) : null;
+    impose && session
+      ? await programmeDuPoste(session, impose).then((p) => [...p.ouverts], () => null)
+      : !accesLibre(session) && !avantConnexion
+        ? await modulesAvecQuestions().then((s) => [...s], () => null)
+        : null;
   const reprises: ReprisePossible[] = [];
   if (ratt) {
     const enCours = await dernierEnCours(ratt.agentId).catch(() => null);

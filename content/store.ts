@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { Module, Parcours, TypeParcours } from "./types";
 import { protectionOperateur } from "./modules/protection-operateur";
 import { comportementZac } from "./modules/comportement-zac";
@@ -14,6 +15,7 @@ import { lireProgramme } from "./programmes-db";
 import { libelleProgramme, modulesDuProgramme } from "./programmes";
 import { lireOrdreAgent, lireOrdreProfil } from "./ordres-db";
 import { chronologie, modulesDuProfil, ordreApplicable } from "./ordres";
+import { aDesQuestions } from "@/lib/profil-impose";
 
 /**
  * Accès au contenu — serveur uniquement.
@@ -119,6 +121,20 @@ export async function comptesQuestionsBase(): Promise<Record<string, number>> {
   }
 }
 
+/**
+ * Modules qui ont des questions (05/10/2026, demande directe) : ceux du code
+ * qui en portent, et ceux qui en ont de validées en banque. Hors tutorat et
+ * administration, seuls ceux-là s'ouvrent ; un code de poste a les siens dans
+ * `lib/programme-poste.ts`. Lu une fois par requête ; sans base, le code seul.
+ */
+export const modulesAvecQuestions = cache(async (): Promise<Set<string>> => {
+  const validees = await comptesQuestionsBase();
+  return new Set([
+    ...tousModules.filter((m) => aDesQuestions(m, {})).map((m) => m.id),
+    ...Object.keys(validees).filter((id) => validees[id] > 0),
+  ]);
+});
+
 export function getModulesRediges(parcoursId?: TypeParcours): Module[] {
   return parcoursId
     ? modulesRediges.filter((m) => m.parcours.includes(parcoursId))
@@ -214,11 +230,22 @@ export interface PositionParcours {
 }
 
 /**
+ * Ce qui s'ouvre à la session, pour enchaîner : `undefined`, tout module ; pour
+ * un apprenant, un module qui a des questions (05/10/2026). Le précédent et le
+ * suivant sautent les autres (`voisins`).
+ */
+export type Ouvert = (m: Module) => boolean;
+
+/**
  * Place d'un module dans le parcours : sa liste (socle, puis chaque filière),
  * le précédent et le suivant — pour enchaîner les modules comme un parcours
  * de formation (transposé de l'enchaînement des sessions du Lecteur QIM · QCM).
  */
-export async function positionDansParcours(parcoursId: TypeParcours, moduleId: string): Promise<PositionParcours | null> {
+export async function positionDansParcours(
+  parcoursId: TypeParcours,
+  moduleId: string,
+  ouvert?: Ouvert,
+): Promise<PositionParcours | null> {
   const p = await composerProgramme(parcoursId);
   const listes: { liste: string; libelle: string; modules: Module[] }[] = [
     { liste: "tronc-commun", libelle: "Socle transversal", modules: p.troncCommun },
@@ -227,7 +254,7 @@ export async function positionDansParcours(parcoursId: TypeParcours, moduleId: s
       .map((f) => ({ liste: f.id, libelle: f.libelle, modules: p.parFiliere[f.id] ?? [] })),
   ];
   for (const { liste, libelle, modules } of listes) {
-    const v = voisins(modules, moduleId);
+    const v = voisins(modules, moduleId, ouvert);
     if (v) return { liste, libelle, ...v };
   }
   return null;
@@ -246,6 +273,7 @@ export async function positionDansProfil(
   niveau: string,
   moduleId: string,
   agentId: number | null = null,
+  ouvert?: Ouvert,
 ): Promise<PositionParcours | null> {
   if (!baseConfiguree()) return null;
   const [propre, duProfil] = await Promise.all([
@@ -255,7 +283,7 @@ export async function positionDansProfil(
   const ordre = ordreApplicable(propre?.modules, duProfil?.modules);
   if (!ordre) return null;
   const liste = chronologie(await modulesDuProfilDeParcours(parcoursId, filiere, niveau), ordre.ordre);
-  const v = voisins(liste, moduleId);
+  const v = voisins(liste, moduleId, ouvert);
   if (!v) return null;
   const libelleFiliere = (await listeFilieres()).find((f) => f.id === filiere)?.libelle ?? filiere;
   return { liste: `profil-${filiere}-${niveau}`, libelle: `${libelleFiliere} · ${niveau}`, ...v };
@@ -267,8 +295,8 @@ export async function positionDansProfil(
  * module d'un autre niveau ou d'une autre filière, qui lui serait fermé.
  * `null` si le module n'y figure pas.
  */
-export function positionDansListe(liste: Module[], moduleId: string): PositionParcours | null {
-  const v = voisins(liste, moduleId);
+export function positionDansListe(liste: Module[], moduleId: string, ouvert?: Ouvert): PositionParcours | null {
+  const v = voisins(liste, moduleId, ouvert);
   return v ? { liste: "programme-du-code", libelle: "Mon programme", ...v } : null;
 }
 
@@ -278,11 +306,15 @@ export function positionDansListe(liste: Module[], moduleId: string): PositionPa
  * fiche. `null` si le programme n'est pas validé ou ne contient pas ce module
  * — la page retombe alors sur le parcours d'intégration.
  */
-export async function positionDansProgramme(programmeId: number, moduleId: string): Promise<PositionParcours | null> {
+export async function positionDansProgramme(
+  programmeId: number,
+  moduleId: string,
+  ouvert?: Ouvert,
+): Promise<PositionParcours | null> {
   if (!baseConfiguree()) return null;
   const p = await lireProgramme(programmeId).catch(() => null);
   if (!p || p.statut !== "valide") return null;
   const { presents } = modulesDuProgramme(p, await getTousModulesAvecDeposes({ publiesSeulement: true }));
-  const v = voisins(presents, moduleId);
+  const v = voisins(presents, moduleId, ouvert);
   return v ? { liste: `programme-${p.id}`, libelle: libelleProgramme(p), ...v } : null;
 }

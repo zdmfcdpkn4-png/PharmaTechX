@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession, refusApiSansSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { moduleExiste } from "@/content/store";
-import { profilImpose } from "@/lib/profil-impose";
+import { profilImpose, refusDuPoste } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import {
   effacerEnCours,
@@ -36,11 +36,16 @@ export async function POST(request: Request) {
   if (!moduleId || !(await moduleExiste(moduleId))) {
     return NextResponse.json({ erreur: "Module inconnu." }, { status: 404 });
   }
-  // Question 101 (choix b) : un code de poste ne laisse de traces que sur les modules de son programme.
+  // Question 101 (choix b) : un code de poste ne laisse de traces que sur les modules de son programme qui
+  // lui sont ouverts — ceux qui ont des questions (05/10/2026).
   const session = await getSession();
   const impose = profilImpose(session, baseConfiguree());
-  if (impose && session && !(await programmeDuPoste(session, impose)).ouverts.has(moduleId)) {
-    return NextResponse.json({ erreur: "Module hors de votre programme." }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  const fermeture = impose && session ? refusDuPoste(await programmeDuPoste(session, impose), moduleId) : null;
+  if (fermeture) {
+    return NextResponse.json(
+      { erreur: fermeture === "hors-programme" ? "Module hors de votre programme." : "Module sans question validée : il n'est pas ouvert." },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
   }
   const nombre = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
   let ok = false;

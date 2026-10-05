@@ -23,7 +23,7 @@ import type { CibleScellee } from "@/content/cible";
 import { questionsSignalees } from "@/content/banque-db";
 import { baseConfiguree } from "@/lib/db";
 import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
-import { profilImpose } from "@/lib/profil-impose";
+import { profilImpose, refusDuPoste } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import { journaliser } from "@/lib/journal";
 import {
@@ -287,12 +287,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ erreur: "Module inconnu." }, { status: 404 });
   }
   // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : un code de poste n'évalue que les modules de son
-  // programme (question 101, choix b).
+  // programme (question 101, choix b) qui ont des questions (05/10/2026, demande directe).
   const sessionPoste = baseConfiguree() ? await getSession() : null;
   const impose = profilImpose(sessionPoste, baseConfiguree());
-  if (impose && sessionPoste && !(await programmeDuPoste(sessionPoste, impose)).ouverts.has(mod.id)) {
+  const fermeture = impose && sessionPoste ? refusDuPoste(await programmeDuPoste(sessionPoste, impose), mod.id) : null;
+  if (fermeture) {
     return NextResponse.json(
-      { erreur: "Ce module n'est pas à votre programme : son évaluation vous est fermée." },
+      {
+        erreur:
+          fermeture === "hors-programme"
+            ? "Ce module n'est pas à votre programme : son évaluation vous est fermée."
+            : "Ce module n'a pas de question validée : son évaluation est fermée.",
+      },
       { status: 403, headers: { "Cache-Control": "no-store" } },
     );
   }

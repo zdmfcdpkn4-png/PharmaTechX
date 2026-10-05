@@ -2057,7 +2057,8 @@ details.bloc .contenu-bloc { padding: 0 1rem 1rem; display: grid; gap: 0.375rem;
    plus par la transparence, qui portait titre, objectif et étiquettes entre
    2,7 et 3,5:1 (contrôle axe du 22/09/2026) ; la pastille « À rédiger » le
    dit en toutes lettres. */
-.carte--module.est-vide { border-left-color: var(--bord-fort); border-style: dashed; border-left-style: solid; }
+.carte--module.est-vide,
+.carte--module.est-ferme { border-left-color: var(--bord-fort); border-style: dashed; border-left-style: solid; }
 .carte--module .objectif { color: var(--texte-doux); font-size: 0.9375rem; margin-bottom: 0.375rem; }
 
 .resultat-ligne {
@@ -3401,7 +3402,8 @@ fieldset { min-width: 0; }
 .etat-module--en-lecture { background: var(--marque-clair); color: var(--marque); border-color: rgba(0, 85, 134, 0.3); }
 .etat-module--a-faire { background: #ffffff; color: var(--marque); border-color: var(--marque); }
 .etat-module--a-rediger,
-.etat-module--lecture-seule { background: var(--surface-douce); color: var(--texte-doux); border-color: var(--bord); }
+.etat-module--lecture-seule,
+.etat-module--ferme { background: var(--surface-douce); color: var(--texte-doux); border-color: var(--bord); }
 /* Le filet gauche de la carte suit l'avancement ; le texte de l'état le dit aussi. */
 .carte--module.carte--termine { border-left-color: var(--succes); }
 .carte--module.carte--en-cours { border-left-color: var(--hdv-jaune); }

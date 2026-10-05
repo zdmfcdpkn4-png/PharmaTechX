@@ -21,7 +21,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const session = await getSession();
   if (!session) return new NextResponse(null, { status: 401, headers: { "Cache-Control": "no-store" } });
   // Question 101 (choix b) : un code de poste ne reçoit que les documents de son programme — ceux d'un module
-  // ouvert, ou les documents généraux de son profil.
+  // ouvert, ou les documents généraux de son profil. Un module sans question ne lui est pas ouvert (05/10/2026).
   const impose = profilImpose(session, baseConfiguree());
   if (impose) {
     const [documents, poste] = await Promise.all([documentsDuFichier(`/api/fichiers/${id}`), programmeDuPoste(session, impose)]);

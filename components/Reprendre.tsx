@@ -33,14 +33,21 @@ export function Reprendre({
   programme,
   catalogue,
   requete = "",
+  questionsRequises = false,
 }: {
   /** Évaluation laissée en plan, connue du serveur pour un agent rattaché. */
   evaluation: { moduleId: string; titre: string; detail: string } | null;
   /** Programme affiché à l'arrivée, dans son ordre. */
   programme: EtapeReprise[];
-  /** Tous les modules publiés : badges, et tri des consultations encore valables. */
+  /**
+   * Tous les modules publiés : badges, et tri des consultations encore
+   * valables. Pour un apprenant, ceux qui s'ouvrent : une lecture ou une
+   * consultation d'un module sans question ne se reprend pas.
+   */
   catalogue: EtapeReprise[];
   requete?: string;
+  /** Apprenant : seul un module qui a des questions est proposé (05/10/2026, `ouvrable`). */
+  questionsRequises?: boolean;
 }) {
   const { dernierPourModule } = useSessionFormation();
   const [lecture, setLecture] = useState<DernierModule | null>(null);
@@ -62,7 +69,7 @@ export function Reprendre({
   // Une lecture ne se reprend d'ici que si son module est de ce parcours : un
   // module réglé hors du parcours affiché n'y reparaît pas par ce biais.
   const lectureDuParcours = lecture && badges.has(lecture.module) ? lecture : null;
-  const reprise = choisirReprise({ evaluation, lecture: lectureDuParcours, programme, acquis, requete });
+  const reprise = choisirReprise({ evaluation, lecture: lectureDuParcours, programme, acquis, requete, questionsRequises });
   // Un module retiré depuis sa consultation n'est plus proposé.
   const autres = consultes
     .filter((c) => c.module !== reprise?.moduleId && badges.has(c.module))
