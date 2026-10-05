@@ -6503,6 +6503,171 @@ Source : Procédure statistiques — section 5`;
   await page.waitForURL(/\/connexion/);
   ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant ; hors programme (question 101, b), page, évaluation, correction, document et trace refusés, liens des Repères ôtés ; module sans question (05/10/2026) visible, grisé et fermé à l'apprenant comme au mode test, ouvert à l'administration, jamais proposé en précédent ni en suivant");
 
+  // 14d terdecies. parcours d'un agent (question 103, choix a, 05/10/2026) : composé sur sa fiche parmi les
+  //          modules que son code de poste relié lui ouvre — cochés, rangés, le dernier fermé —, l'aperçu les
+  //          montre dans l'ordre ; l'agent, identifié par son code relié avant tout rattachement, ne voit
+  //          que ces modules, dans cet ordre, le module fermé grisé et refusé partout (page, évaluation,
+  //          correction, trace), un module de son programme hors du parcours refusé aussi ; le module suivant
+  //          saute le fermé ; rouvert, il s'ouvre ; parcours retiré, le programme entier revient ; purgé avec
+  //          la progression ; journalisé.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/accueil$/);
+  await page.goto(BASE + "/admin/personnel");
+  await page.locator(`tr:has(code:has-text('${agentImpose}')) a[href^='/admin/personnel/']`).click();
+  await page.waitForSelector("h2:has-text(\"Parcours de l'agent\")");
+  const urlFiche = page.url().replace(/[?#].*$/, "");
+  await page.waitForSelector("text=Pas de parcours fixé");
+  await page.waitForLoadState("networkidle");
+  const idsParcours = () => page.locator(".liste-ordonnable li input[type=hidden][name=modules]").evaluateAll((es) => es.map((e) => e.value));
+  const candidats = await idsParcours();
+  assert.ok(candidats.includes("comportement-zac"), "candidats : le socle N1a du code");
+  assert.ok(candidats.includes(idSansQuestion), "candidats : le module sans question, marqué");
+  assert.ok(!candidats.includes(idModule), "candidats : pas le module N1c, hors du programme du code");
+  const ligneParcours = (id) => page.locator(`.liste-ordonnable li:has(input[name=modules][value='${id}'])`);
+  assert.equal(await ligneParcours(idSansQuestion).locator(".etiquette:has-text('sans question')").count(), 1, "module sans question marqué");
+  assert.ok((await ligneParcours("comportement-zac").locator(".ordonnable-vignette .badge").count()) === 1, "la vignette du module en tête de ligne");
+  const avecQuestions = [];
+  for (const id of candidats) {
+    if ((await ligneParcours(id).locator(".etiquette:has-text('sans question')").count()) === 0) avecQuestions.push(id);
+  }
+  const choisis = ["comportement-zac", ...avecQuestions.filter((id) => id !== "comportement-zac").slice(0, 2)];
+  assert.ok(choisis.length >= 2, "au moins deux candidats avec questions : " + avecQuestions.join(", "));
+  const verrou = choisis[choisis.length - 1];
+  // Une case cochée avant l'hydratation serait reprise par React : on vérifie, et on recommence au besoin.
+  const cocher = async (loc, valeur) => {
+    for (let i = 0; i < 5; i++) {
+      if (valeur) await loc.check();
+      else await loc.uncheck();
+      await page.waitForTimeout(250);
+      if ((await loc.isChecked()) === valeur) return;
+    }
+    throw new Error("case du parcours récalcitrante");
+  };
+  for (const id of choisis) await cocher(page.locator(`input[name=parcours][value='${id}']`), true);
+  await cocher(page.locator(`input[name=fermes][value='${verrou}']`), true);
+  assert.equal(await page.locator(`input[name=fermes][value='${candidats.find((id) => !choisis.includes(id))}']`).isDisabled(), true, "fermer suppose d'être au parcours");
+  // Le socle passe en tête du parcours, par le numéro saisi.
+  await ligneParcours("comportement-zac").locator("input.ordonnable-rang").fill("1");
+  await ligneParcours("comportement-zac").locator("input.ordonnable-rang").press("Enter");
+  assert.equal((await idsParcours())[0], "comportement-zac", "numéro saisi : le socle en tête");
+  await page.waitForSelector(`.apercu-parcours-tete [role=status]:has-text('${choisis.length} modules au parcours, dont 1 fermé')`);
+  const apercuParcours = page.locator("ol.apercu-parcours li");
+  assert.equal(await apercuParcours.count(), choisis.length, "aperçu : les modules cochés, dans l'ordre");
+  assert.match(await apercuParcours.first().getAttribute("title"), /^1\. /);
+  assert.equal(await apercuParcours.last().getAttribute("class"), "est-ferme", "aperçu : le module fermé grisé");
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${choisis.length} modules, dont 1 fermé")`);
+  await page.waitForSelector("text=Parcours fixé le");
+  assert.deepEqual((await idsParcours()).slice(0, choisis.length), choisis, "parcours relu : ses modules d'abord, dans son ordre");
+  assert.equal(await page.locator(`input[name=fermes][value='${verrou}']`).isChecked(), true, "module fermé relu");
+  await page.waitForSelector("button:has-text('le parcours')");
+
+  // L'agent, sous son code relié et sans rattachement : le parcours s'applique.
+  const ctxParcours = await browser.newContext();
+  await ctxParcours.addCookies([{ name: "fp_intro", value: "1", url: BASE }]);
+  surveillerTiers(ctxParcours);
+  const pp = await ctxParcours.newPage();
+  pp.on("pageerror", (e) => console.log("ERREUR PAGE:", pp.url(), e.message));
+  await pp.goto(BASE + "/connexion");
+  await pp.fill("input[name=code]", codeImpose);
+  await pp.click("button:has-text('Entrer')");
+  await pp.waitForURL(/\/accueil$/);
+  if (await pp.waitForSelector(".visite", { timeout: 2500 }).then(() => true, () => false)) {
+    await pp.keyboard.press("Escape");
+    await pp.waitForSelector(".visite-voile", { state: "detached" });
+  }
+  await pp.goto(BASE + "/");
+  await pp.waitForSelector("#modules h2:has-text('Mon parcours')");
+  await pp.waitForSelector("[role=status]:has-text('Votre tuteur a composé votre parcours')");
+  const cartesParcours = pp.locator("#modules .grille article.carte--module");
+  assert.equal(await cartesParcours.count(), choisis.length, "parcours : ses seuls modules");
+  const titresParcours = await cartesParcours.locator("h3").allInnerTexts();
+  const liensParcours = await pp.locator("#modules .grille a.carte-lien").evaluateAll((l) => l.map((a) => a.getAttribute("href")));
+  assert.deepEqual(liensParcours.map((h) => /\/module\/([^?#]+)/.exec(h)[1]), choisis.slice(0, -1), "cartes ouvertes dans l'ordre du parcours, le module fermé sans lien");
+  const carteVerrou = cartesParcours.filter({ has: pp.locator(`.etiquette:text-is("n° ${choisis.length}")`) });
+  assert.equal((await carteVerrou.locator(".etat-module").textContent()).trim(), "Fermé par le tutorat");
+  assert.equal(await pp.locator(".nav-sections").count(), 0, "parcours : plus de choix Intégration / Maintien");
+  // Le module fermé : page, évaluation et correction refusées, avec le motif.
+  await pp.goto(BASE + "/module/" + verrou);
+  await pp.waitForSelector("h1:has-text('Ce module est fermé pour le moment')");
+  await pp.goto(BASE + "/module/" + verrou + "/evaluation");
+  await pp.waitForSelector("h1:has-text('Ce module est fermé pour le moment')");
+  const correctionVerrou = await pp.request.post(BASE + "/api/evaluation", {
+    data: { moduleId: verrou, reponses: {}, mode: "evaluation", difficulte: "complet" },
+  });
+  assert.equal(correctionVerrou.status(), 403, "parcours : correction refusée sur le module fermé");
+  assert.match((await correctionVerrou.json()).erreur, /tient ce module fermé/);
+  // Un module du programme du code que le parcours ne nomme pas : hors parcours.
+  const horsParcours = candidats.find((id) => !choisis.includes(id));
+  await pp.goto(BASE + "/module/" + horsParcours);
+  await pp.waitForSelector("h1:has-text(\"Ce module n'est pas à votre parcours\")");
+  // Le premier module : sa page enchaîne dans l'ordre du parcours, en sautant le module fermé.
+  await pp.goto(BASE + "/module/comportement-zac");
+  const positionParcours = await pp.locator("p.legende:has-text('Parcours :')").innerText();
+  assert.ok(positionParcours.includes(`Mon parcours, module 1 sur ${choisis.length}`), "rang dans le parcours : " + positionParcours);
+  if (choisis.length >= 3) {
+    assert.ok(positionParcours.includes(`suivant : ${titresParcours[1]}`), "suivant dans le parcours : " + positionParcours);
+  } else {
+    assert.ok(positionParcours.includes("dernier de la liste"), "le module fermé n'est jamais le suivant : " + positionParcours);
+  }
+  await pp.goto(BASE + "/accueil");
+  await pp.waitForSelector(`.chemin-detail:has-text("sur ${choisis.length - 1} acquis")`);
+  // Rattaché par son code personnel : les traces ne se posent que sur les modules ouverts du parcours.
+  await pp.fill("#rattachement input[name=code]", "2468");
+  await pp.click("#rattachement button:has-text('Rattacher ma progression')");
+  await pp.waitForURL(/\/accueil\?progression=ok/);
+  const traceParcours = (moduleId) => pp.request.post(BASE + "/api/progression", { data: { nature: "lecture", moduleId } });
+  const traceVerrou = await traceParcours(verrou);
+  assert.equal(traceVerrou.status(), 403, "parcours : aucune trace sur le module fermé");
+  assert.match((await traceVerrou.json()).erreur, /fermé par votre tuteur/);
+  const traceHors = await traceParcours(horsParcours);
+  assert.equal(traceHors.status(), 403, "parcours : aucune trace hors du parcours");
+  assert.match((await traceHors.json()).erreur, /hors de votre parcours/);
+  assert.deepEqual(await (await traceParcours("comportement-zac")).json(), { ok: true }, "parcours : trace sur un module ouvert");
+
+  // Le tutorat rouvre le module : il s'ouvre à l'agent.
+  await page.goto(urlFiche);
+  await page.waitForLoadState("networkidle");
+  await cocher(page.locator(`input[name=fermes][value='${verrou}']`), false);
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${choisis.length} modules.")`);
+  await pp.goto(BASE + "/module/" + verrou);
+  assert.doesNotMatch(await pp.locator(".panneau-titre h1").first().innerText(), /^Ce module/, "module rouvert");
+  await pp.goto(BASE + "/");
+  await pp.waitForSelector("#modules h2:has-text('Mon parcours')");
+  assert.equal(await pp.locator("#modules .grille a.carte-lien").count(), choisis.length, "rouvert : toutes les cartes du parcours s'ouvrent");
+  // Parcours retiré : le programme entier du code revient.
+  await page.click("button:has-text('Retirer le parcours')");
+  await page.waitForURL(/ok=parcours-retire/);
+  await page.waitForSelector("text=Pas de parcours fixé");
+  await pp.goto(BASE + "/");
+  await pp.waitForSelector("#composer h2:has-text('Mon programme')");
+  await pp.waitForSelector("h2:has-text('Socle transversal')");
+  assert.equal(await pp.locator("#modules h2:has-text('Mon parcours')").count(), 0, "retiré : plus de parcours");
+  await ctxParcours.close();
+  // Fixé de nouveau, le parcours part avec la purge de la progression.
+  await page.waitForLoadState("networkidle");
+  await cocher(page.locator("input[name=parcours][value='comportement-zac']"), true);
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=1/);
+  await page.waitForSelector("button:has-text('le parcours')");
+  await page.fill("input[name=confirmation]", agentImpose);
+  await page.click("button:has-text('Purger')");
+  await page.waitForURL(/ok=purge/);
+  await page.waitForSelector("text=Pas de parcours fixé");
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:text-is('parcours:agent')");
+  await page.waitForSelector("code:text-is('parcours:agent-retire')");
+  await page.goto(BASE + "/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("parcours d'un agent (question 103, choix a) : composé sur sa fiche parmi les modules de son code relié, rangé, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; retiré, le programme revient ; purgé avec la progression ; journalisé");
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

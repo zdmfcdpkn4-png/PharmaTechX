@@ -1,9 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  LIBELLES_FERMETURE,
   aDesQuestions,
   accesLibre,
   documentDuProfil,
+  fermetureDeLaPage,
   fichierOuvert,
   motifFermeture,
   refusDuPoste,
@@ -171,4 +173,53 @@ test("refus d'une route pour un code de poste : hors programme, ou sans question
   assert.equal(refusDuPoste(p, "a"), null);
   assert.equal(refusDuPoste(p, "b"), "sans-question");
   assert.equal(refusDuPoste(p, "z"), "hors-programme");
+});
+
+// Question 103 (choix a) : le parcours fixé par le tutorat passe après le programme, avant les questions.
+test("motif de fermeture avec un parcours : hors parcours, puis fermé par le tutorat, puis questions", () => {
+  const base = { libre: false, auProgramme: true, nbQuestions: 3 };
+  assert.equal(motifFermeture({ ...base, auParcours: false }), "hors-parcours");
+  assert.equal(motifFermeture({ ...base, auParcours: false, auProgramme: false }), "hors-programme", "le programme d'abord");
+  assert.equal(motifFermeture({ ...base, auParcours: true, fermeParLeTutorat: true }), "ferme-tutorat");
+  assert.equal(motifFermeture({ ...base, auParcours: true, fermeParLeTutorat: true, nbQuestions: 0 }), "ferme-tutorat", "le verrou avant les questions");
+  assert.equal(motifFermeture({ ...base, auParcours: true, nbQuestions: 0 }), "sans-question");
+  assert.equal(motifFermeture({ ...base, auParcours: true }), null);
+  assert.equal(motifFermeture({ ...base, libre: true, auParcours: false, fermeParLeTutorat: true }), null, "la gestion ouvre tout");
+});
+
+test("refus d'une route avec un parcours : ses seuls modules, les fermés refusés", () => {
+  const p = {
+    auProgramme: new Set(["a", "b", "c", "d"]),
+    // `ouverts` est déjà le résultat du parcours (`appliquerAuProgramme`) : a et d seulement.
+    ouverts: new Set(["a"]),
+    parcours: { ids: new Set(["a", "b", "c"]), fermes: new Set(["c"]) },
+  };
+  assert.equal(refusDuPoste(p, "a"), null);
+  assert.equal(refusDuPoste(p, "b"), "sans-question", "au parcours, ouvert par le tutorat, mais sans question");
+  assert.equal(refusDuPoste(p, "c"), "ferme-tutorat");
+  assert.equal(refusDuPoste(p, "d"), "hors-parcours", "au programme du code, pas au parcours");
+  assert.equal(refusDuPoste(p, "z"), "hors-programme");
+  assert.equal(refusDuPoste({ ...p, parcours: null }, "d"), "sans-question", "sans parcours : la règle d'avant");
+});
+
+test("fermeture d'une page : le programme du code quand il y en a un, sinon les seules questions", () => {
+  const poste = { auProgramme: new Set(["a", "b", "c"]), parcours: { ids: new Set(["a", "b"]), fermes: new Set(["b"]) } };
+  assert.equal(fermetureDeLaPage(poste, { libre: false, moduleId: "a", nbQuestions: 2 }), null);
+  assert.equal(fermetureDeLaPage(poste, { libre: false, moduleId: "a", nbQuestions: 0 }), "sans-question");
+  assert.equal(fermetureDeLaPage(poste, { libre: false, moduleId: "b", nbQuestions: 2 }), "ferme-tutorat");
+  assert.equal(fermetureDeLaPage(poste, { libre: false, moduleId: "c", nbQuestions: 2 }), "hors-parcours");
+  assert.equal(fermetureDeLaPage(poste, { libre: false, moduleId: "z", nbQuestions: 2 }), "hors-programme");
+  assert.equal(fermetureDeLaPage(poste, { libre: true, moduleId: "z", nbQuestions: 0 }), null, "tutorat et administration");
+  // Mode test, site sans base : pas de programme imposé, les questions seules décident.
+  assert.equal(fermetureDeLaPage(null, { libre: false, moduleId: "z", nbQuestions: 0 }), "sans-question");
+  assert.equal(fermetureDeLaPage(null, { libre: false, moduleId: "z", nbQuestions: 1 }), null);
+  assert.equal(fermetureDeLaPage({ ...poste, parcours: null }, { libre: false, moduleId: "c", nbQuestions: 2 }), null, "sans parcours");
+});
+
+test("chaque motif de fermeture a sa phrase pour les routes", () => {
+  for (const motif of ["hors-programme", "hors-parcours", "ferme-tutorat", "sans-question"] as const) {
+    assert.match(LIBELLES_FERMETURE[motif], /\S/, motif);
+  }
+  assert.match(LIBELLES_FERMETURE["ferme-tutorat"], /tuteur/);
+  assert.match(LIBELLES_FERMETURE["hors-parcours"], /parcours/);
 });

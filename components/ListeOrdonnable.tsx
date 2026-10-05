@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { deplacer } from "@/content/ordres";
+import { Badge } from "./Badge";
 
 export interface ElementOrdonnable {
   id: string;
@@ -10,6 +11,8 @@ export interface ElementOrdonnable {
   code?: string;
   /** Mention courte : « socle », « nouveau, pas encore rangé »… */
   mention?: string;
+  /** Vignette du module (illustration ou pictogramme, `content/badges.ts`), en tête de ligne. */
+  badge?: string;
 }
 
 /**
@@ -26,17 +29,27 @@ export interface ElementOrdonnable {
  * L'ordre part avec le formulaire qui englobe la liste : un champ caché par
  * élément, dans l'ordre affiché. Chaque déplacement est annoncé aux lecteurs
  * d'écran.
+ *
+ * Chaque ligne peut porter la vignette de son module (`badge`) et des
+ * commandes propres (`complement`, p. ex. les cases du parcours d'un agent,
+ * question 103) ; `onChange` reçoit l'ordre après chaque déplacement.
  */
 export function ListeOrdonnable({
   nom,
   elements,
   libelle,
+  complement,
+  onChange,
 }: {
   /** Nom des champs cachés : `formData.getAll(nom)` rend l'ordre. */
   nom: string;
   elements: ElementOrdonnable[];
   /** Nom accessible de la liste. */
   libelle: string;
+  /** Rendu à droite du titre de chaque ligne : cases, boutons… */
+  complement?: (el: ElementOrdonnable) => ReactNode;
+  /** Appelé avec les identifiants dans leur nouvel ordre, après chaque déplacement. */
+  onChange?: (ordre: string[]) => void;
 }) {
   const [liste, setListe] = useState(elements);
   const [saisies, setSaisies] = useState<Record<string, string>>({});
@@ -52,6 +65,7 @@ export function ListeOrdonnable({
     const place = suite.findIndex((x) => x.id === id) + 1;
     if (place === de + 1) return;
     setListe(suite);
+    onChange?.(suite.map((x) => x.id));
     setAnnonce(`« ${suite[place - 1].titre} » en position ${place} sur ${suite.length}.`);
   };
 
@@ -161,10 +175,16 @@ export function ListeOrdonnable({
               onBlur={() => valider(el.id)}
               onKeyDown={(e) => clavierRang(e, el.id)}
             />
+            {el.badge ? (
+              <span className="ordonnable-vignette" aria-hidden="true">
+                <Badge nom={el.badge} taille={44} />
+              </span>
+            ) : null}
             <span className="ordonnable-texte">
               {el.code ? <code>{el.code}</code> : null} {el.titre}
               {el.mention ? <span className="etiquette etiquette--neutre">{el.mention}</span> : null}
             </span>
+            {complement ? <span className="ordonnable-choix">{complement(el)}</span> : null}
             <span className="ordonnable-fleches">
               <button
                 type="button"

@@ -85,7 +85,9 @@ l'administration), `reglages_modules` (seuil réglé d'un module du code),
 rattachée à un identifiant d'agent, décision du 18/09/2026, question 11 :
 évaluations scellées, entraînements, lectures, évaluation interrompue),
 `ordres_agent` (ordre des modules fixé par le tutorat pour un apprenant,
-question 56, purgé avec sa progression), `signalements` (sans identité), `journal` (rôle et libellé de profil),
+question 56, purgé avec sa progression), `parcours_agent` (parcours fixé par
+le tutorat à un agent : modules choisis dans l'ordre conseillé et modules
+fermés, question 103, purgé avec sa progression), `signalements` (sans identité), `journal` (rôle et libellé de profil),
 `tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
 au niveau des lignes sans politique et les rôles de l'API de données de
 Supabase n'y ont aucun droit : la base n'est lisible que par le service.
@@ -454,6 +456,7 @@ les mêmes écrans.
 | Analyseur d'import | `lib/import-questions.ts` (+ `lib/docx.ts`) |
 | Rapport A4 | `lib/rapport.ts` ; enregistrement, décision et visas `lib/rapports.ts` |
 | Identifiants d'agents | `lib/identifiant.ts` (format, saisie), `lib/agents.ts` (base), `app/admin/personnel` |
+| Parcours d'un agent (question 103) : modules choisis, ordre conseillé, modules fermés | règles `content/parcours-agent.ts` ; base `content/parcours-agent-db.ts` ; application au programme du code `lib/programme-poste.ts` ; composeur `app/admin/personnel/[id]/parcours.tsx`, actions `app/admin/personnel/actions.ts` |
 | Table de correspondance identifiant ↔ agent, tenue hors du site (modèle vierge) | `scripts/modele-correspondance.py` → `docs/modeles/table-correspondance-agents.xlsx` |
 | Cadrage RGPD | `docs/RGPD.md`, `app/donnees-personnelles` |
 | Règle de décision (bande de garde, non concluant) | `lib/decision.ts` |
@@ -481,7 +484,8 @@ exclusions, arbitrage, bande de garde réglable), barème réglable
 (normalisation, QIM et schéma paramétrés, libellés), état d'une évaluation
 en cours (contrôle de forme), identifiants d'agents,
 famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
-table), voisins du parcours, constructeur de rapport (identifiant, nom hors
+table), voisins du parcours, parcours d'un agent (composition, application
+au programme du code, motifs de fermeture), constructeur de rapport (identifiant, nom hors
 sceau, barème porté), registre CSV et JSON, archive zip, modèle vierge de
 la table de correspondance.
 `npm run verifier` enchaîne typecheck, lint et tests.
@@ -507,7 +511,10 @@ questions importées, seuil propre), barème
 réglé puis rétabli, document général par profil, fin de test (document de
 synthèse, question ratée rejouée, module suivant), progression rattachée
 (code personnel, évaluation conservée et relue, évaluation interrompue
-reprise, traces vues du tutorat, purge, code réinitialisé), connexion
+reprise, traces vues du tutorat, purge, code réinitialisé), parcours d'un
+agent composé sur sa fiche (modules choisis parmi ceux de son code relié,
+ordre conseillé, module fermé grisé et refusé, hors-parcours refusé, module
+rouvert, parcours retiré, purgé avec la progression), connexion
 tuteur, mode entraînement, limiteur de connexion. Voir l'en-tête de
 `e2e/parcours.e2e.js`.
 

@@ -7793,6 +7793,127 @@ question, le marquage est alors abandonné, comme avant.
 - Serveur d'essai : captures au bureau et sur téléphone à 390 px, sans
   débordement ni erreur de page ; les deux pastilles font 104 px de large.
 
+## Le parcours d'un agent, composé sur sa fiche (05/10/2026, question 103, choix a)
+
+**Demande.** « Faire en sorte que depuis la vue équipe en sélection de
+l'agent on puisse sélectionner une sélection de module réalisable par l'agent
+et autorisé par sa cible pour décrire un parcours par défaut de réalisation
+sur cette vue organisation du parcours sur le même en utilisant les icônes de
+module. Possibilité pour l'agent de les faire dans un ordre différent mais le
+rendre accessible ou inaccessible par le tuteur ou l'admin et organiser une
+séquence préférentiel », deux captures de téléphone à l'appui : l'Accès
+rapide (Équipe › Codes d'accès, Personnel) et l'accueil « Le circuit » avec
+ses médaillons.
+
+**Lecture retenue.** Sur la fiche de l'agent (Équipe › Personnel), le tutorat
+ou l'administration cochent, parmi les modules que son code de poste lui
+ouvre (sa filière à son niveau, ou son programme à la carte — question 101),
+ceux de son parcours, et les rangent ; l'ordre est conseillé à l'agent, qui
+peut faire les modules autrement. « Le rendre accessible ou inaccessible »
+est un verrou par module (question 103, choix a) : le tutorat ferme ou
+rouvre chaque module du parcours ; fermé, il se voit, grisé, et ne s'ouvre
+pas tant qu'il n'est pas rouvert. Un module du programme du code que le
+parcours ne nomme pas ne lui est plus proposé. Le parcours passe avant le
+programme à la carte du code et avant les ordres de profil (questions 55 et
+56) ; sans parcours fixé, rien ne change. Écartés : l'interrupteur « ordre
+libre / ordre imposé » (b), qui ne permettait pas de retenir un seul module
+et supposait une évaluation réussie pour ouvrir le suivant ; les deux
+mécanismes à la fois (c).
+
+**Ce qui est fait.**
+- Table `parcours_agent` : un parcours par identifiant — identifiants des
+  modules dans l'ordre conseillé, modules tenus fermés, qui l'a fixé et
+  quand ; supprimé avec l'identifiant, purgé avec la progression
+  (`purgerProgression`, et le bouton de la fiche le dit).
+- Fiche de l'agent, section « Parcours de l'agent » : les codes de poste
+  reliés à l'identifiant (question 99) et les modules qu'ils lui ouvrent
+  (`candidatsDuParcours`, `lib/programme-poste.ts`), chacun sur une ligne à
+  ranger — glisser, flèches, numéro (`ListeOrdonnable`, qui porte désormais
+  la vignette du module en tête de ligne et des commandes par ligne) — avec
+  deux cases, « au parcours » et « fermé » (la seconde suppose la première) ;
+  un module sans question est marqué « sans question : fermé à l'agent ».
+  Un aperçu montre le parcours tel que l'agent le verra : les vignettes
+  numérotées dans l'ordre, les fermés grisés. « Enregistrer le parcours de
+  AG-… » ; « Retirer le parcours » rend le programme entier. Sans code de
+  poste actif relié, la fiche le dit et ne propose rien : le parcours se
+  compose parmi les modules d'un code. Un parcours vide ne s'enregistre pas.
+  Les modules d'un parcours que le programme du code ne contient plus sont
+  comptés sur la fiche et sortent au prochain enregistrement.
+- Règles pures `content/parcours-agent.ts`, testées : composition depuis le
+  formulaire (rien d'étranger aux candidats, sans doublon, fermés pris parmi
+  les cochés), relecture tolérante, application au programme du code
+  (présents dans l'ordre du parcours, absents comptés, ouverts = présents qui
+  s'ouvraient déjà moins les fermés).
+- L'agent que la session identifie : celui du code de poste relié (question
+  99), sinon celui du rattachement ; rien sous un code partagé sans
+  rattachement, rien en mode test. `programmeDuPoste` applique son parcours
+  par-dessus le programme du code : `ouverts` se réduit aux modules du
+  parcours ouverts, le précédent et le suivant se prennent dans son ordre
+  (`parParcours`), le programme à la carte du code s'efface derrière lui.
+- « Mes modules » : une section « Mon parcours », les cartes numérotées dans
+  l'ordre conseillé, un encart « Votre tuteur a composé votre parcours le …
+  : N modules, dans un ordre conseillé — vous pouvez les faire autrement »
+  avec le compte des fermés ; une carte fermée porte l'état « Fermé par le
+  tutorat » et n'a pas de lien ; plus de choix Intégration / Maintien ni de
+  requête dans l'adresse des modules. Tuiles, barre de badges, « Reprendre »,
+  chemin de l'accueil et évaluation en plan suivent le parcours et sautent
+  les fermés (`ouvrable`, `etatModule`, `lib/arrivee.ts`).
+- Pages du module et de l'évaluation : deux refus de plus, « Ce module n'est
+  pas à votre parcours » et « Ce module est fermé pour le moment », sans rien
+  servir du module ; le précédent et le suivant se prennent dans l'ordre du
+  parcours (« Parcours : Mon parcours, module n sur N »), en sautant les
+  fermés.
+- Serveur : `refusDuPoste` rend `hors-parcours` et `ferme-tutorat` ; la
+  correction, les traces et les signalements répondent 403 avec le motif,
+  les documents d'un module fermé ou hors parcours ne sont plus servis
+  (`ouverts`). L'émission d'un rapport reste permise sur tout module du
+  programme du code : la preuve scellée d'une évaluation passée ne se ferme
+  pas (règle du 05/10/2026).
+- Journal : `parcours:agent` (nombre de modules, nombre de fermés),
+  `parcours:agent-retire`.
+- RGPD : le parcours entre dans les données de la progression
+  (`docs/RGPD.md`, page « Vos données »), purgé avec elle ; il peut exister
+  sans que l'agent se soit jamais rattaché, comme l'ordre propre.
+
+**Limites.**
+- Le parcours ne vaut que pour un agent identifié ; sous un code partagé,
+  l'agent le retrouve en se rattachant.
+- Un parcours dont tous les modules ont quitté le programme du code laisse
+  l'agent sans module ouvert : « Mes modules » et la fiche le disent, plutôt
+  que de rouvrir ce que le tutorat n'a pas choisi.
+- Un module fermé compte « à venir » : il sort du compte des modules
+  ouvrables du chemin de l'accueil tant qu'il est fermé ; son dernier
+  résultat reste lisible sur sa carte.
+- Rien n'enchaîne les modules (choix a) : pour une progression pas à pas,
+  le tutorat revient rouvrir le suivant sur la fiche.
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 522 tests dont 6 nouveaux
+  (`test/parcours-agent.test.ts` : relecture, composition, application au
+  programme du code) et 6 étendus (motifs de fermeture et refus d'une route
+  avec un parcours, fermeture d'une page ; état « verrouillé », `ouvrable`,
+  « Reprendre » qui saute un module fermé).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur. L'étape ajoutée compose le parcours de l'agent du code
+  relié de l'étape précédente — candidats au programme de son code (le socle
+  N1a, le module sans question marqué, pas le module N1c), trois modules
+  cochés, le socle passé en tête par le numéro saisi, le dernier fermé,
+  aperçu dans l'ordre —, le relit ; l'agent, sous son code et sans
+  rattachement, voit ses trois seuls modules numérotés, le fermé grisé sans
+  lien, plus de choix de parcours ; page, évaluation et correction du module
+  fermé refusées avec leur motif, un module hors parcours refusé, le suivant
+  du premier module pris dans le parcours ; rattaché, aucune trace sur le
+  fermé ni hors parcours, une trace sur un module ouvert ; rouvert, le module
+  s'ouvre ; retiré, « Mon programme » et les blocs reviennent ; fixé de
+  nouveau, le parcours part avec la purge ; le journal porte les deux
+  actions. Une première passe avait révélé que le composeur gardait en
+  mémoire les cases cochées après « Retirer le parcours » : il repart
+  désormais de ce que la base contient à chaque enregistrement ou retrait.
+- Serveur d'essai : captures de la fiche (composeur et aperçu) et de « Mes
+  modules » au bureau et à 390 px, sans débordement horizontal ni erreur de
+  page ; page du module fermé à 390 px.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

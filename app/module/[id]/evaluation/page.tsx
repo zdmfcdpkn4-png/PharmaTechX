@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  PARCOURS_DE_L_AGENT,
   getModuleComplet,
   modulesAvecQuestions,
   positionDansListe,
@@ -11,7 +12,7 @@ import {
 } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
 import { requeteProfil } from "@/content/ordres";
-import { accesLibre, motifFermeture, profilDeLaPage, profilImpose } from "@/lib/profil-impose";
+import { accesLibre, fermetureDeLaPage, profilDeLaPage, profilImpose } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import { HorsProgramme } from "@/components/HorsProgramme";
 import { syntheseDuModule } from "@/lib/synthese";
@@ -43,25 +44,28 @@ export default async function PageEvaluation({
   if (!mod) notFound();
   // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, programme à la carte, filière et
   // niveau cible sont ceux du code ; l'adresse ne garde que le parcours. Hors de son programme, il n'évalue pas
-  // le module (question 101, choix b) ; un apprenant n'évalue qu'un module qui a des questions (05/10/2026).
+  // le module (question 101, choix b), ni hors du parcours que le tutorat lui a fixé, ni un module qu'il tient
+  // fermé (question 103, choix a) ; un apprenant n'évalue qu'un module qui a des questions (05/10/2026).
   const impose = profilImpose(session, baseConfiguree());
   const duPoste = impose && session ? await programmeDuPoste(session, impose) : null;
   // Les bonnes réponses et les justifications sont retirées ici : elles ne
   // quittent le serveur qu'après soumission, via la route de correction.
   const banque = banquePublique(mod);
   const libre = accesLibre(session);
-  const ferme = motifFermeture({ libre, auProgramme: duPoste ? duPoste.auProgramme.has(mod.id) : true, nbQuestions: banque.length });
+  const ferme = fermetureDeLaPage(duPoste, { libre, moduleId: mod.id, nbQuestions: banque.length });
   if (ferme) return <HorsProgramme titre={mod.titre} motif={ferme} />;
   if (banque.length === 0) notFound();
   const idProgramme = duPoste ? duPoste.idProgramme : lireIdProgramme(sp.programme);
   // Le module suivant d'un apprenant saute ceux qui ne lui sont pas ouverts.
   const ouvrir = (ids: Set<string>): Ouvert => (m) => ids.has(m.id);
   const ouvert = libre ? undefined : ouvrir(duPoste ? duPoste.ouverts : await modulesAvecQuestions());
-  const profil = idProgramme ? null : profilDeLaPage(impose, sp);
+  // Parcours fixé à l'agent par le tutorat (question 103, choix a) : le module suivant est celui de son ordre.
+  const dansParcours = duPoste?.parcours ? positionDansListe(duPoste.parcours.modules, mod.id, ouvert, PARCOURS_DE_L_AGENT) : null;
+  const profil = idProgramme || dansParcours ? null : profilDeLaPage(impose, sp);
   const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }, nomsNiveaux] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
-    idProgramme ? positionDansProgramme(idProgramme, mod.id, ouvert) : Promise.resolve(null),
+    idProgramme && !dansParcours ? positionDansProgramme(idProgramme, mod.id, ouvert) : Promise.resolve(null),
     rattachement(),
     getReferentiel(),
     lireNomsNiveaux(),
@@ -74,6 +78,7 @@ export default async function PageEvaluation({
   // le module suivant est celui de leur ordre.
   // Pour un code de poste, le module suivant se prend dans son programme (question 101, choix b).
   const position =
+    dansParcours ??
     dansProgramme ??
     dansProfil ??
     (duPoste

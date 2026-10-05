@@ -51,7 +51,8 @@ export default async function DonneesPersonnelles() {
           <dt>Enregistré</dt>
           <dd>
             Les rapports que vous émettez et leurs visas ; votre progression si vous la rattachez (code personnel
-            haché), et l&apos;ordre de modules que le tutorat vous fixe ; le lien entre votre code de poste et votre
+            haché), l&apos;ordre de modules et le parcours (modules choisis, ordre conseillé, modules fermés) que le
+            tutorat vous fixe ; le lien entre votre code de poste et votre
             identifiant, s&apos;il vous a été remis relié ; le journal d&apos;administration ; une empreinte de l&apos;adresse de connexion, pour limiter les
             tentatives. Jamais votre nom — la correspondance est tenue hors du site.
           </dd>

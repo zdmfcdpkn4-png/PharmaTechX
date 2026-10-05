@@ -259,7 +259,9 @@ export async function purgerProgression(agentId: number): Promise<number> {
   const a = await sql`DELETE FROM progression WHERE agent_id = ${agentId}`;
   const b = await sql`DELETE FROM en_cours WHERE agent_id = ${agentId}`;
   const c = await sql`DELETE FROM ordres_agent WHERE agent_id = ${agentId}`;
-  return a.rowCount + b.rowCount + c.rowCount;
+  // Le parcours fixé par le tutorat (question 103) part avec la progression, comme l'ordre propre.
+  const d = await sql`DELETE FROM parcours_agent WHERE agent_id = ${agentId}`;
+  return a.rowCount + b.rowCount + c.rowCount + d.rowCount;
 }
 
 // ─────────────────────────────────────────────────────── session en cours

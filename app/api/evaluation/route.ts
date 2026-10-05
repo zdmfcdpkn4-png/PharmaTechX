@@ -23,7 +23,7 @@ import type { CibleScellee } from "@/content/cible";
 import { questionsSignalees } from "@/content/banque-db";
 import { baseConfiguree } from "@/lib/db";
 import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
-import { profilImpose, refusDuPoste } from "@/lib/profil-impose";
+import { profilImpose, refusDuPoste, type MotifFermeture } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import { journaliser } from "@/lib/journal";
 import {
@@ -41,6 +41,14 @@ import { syntheseDuModule } from "@/lib/synthese";
 import type { SyntheseDocument } from "@/content/types";
 
 export const dynamic = "force-dynamic";
+
+/** Ce que répond la correction d'un module fermé à un code de poste (questions 101 et 103, 05/10/2026). */
+const REFUS_EVALUATION: Record<MotifFermeture, string> = {
+  "hors-programme": "Ce module n'est pas à votre programme : son évaluation vous est fermée.",
+  "hors-parcours": "Ce module n'est pas à votre parcours : son évaluation vous est fermée.",
+  "ferme-tutorat": "Votre tuteur tient ce module fermé : son évaluation vous est fermée.",
+  "sans-question": "Ce module n'a pas de question validée : son évaluation est fermée.",
+};
 
 /**
  * Correction d'une évaluation.
@@ -292,15 +300,7 @@ export async function POST(request: Request) {
   const impose = profilImpose(sessionPoste, baseConfiguree());
   const fermeture = impose && sessionPoste ? refusDuPoste(await programmeDuPoste(sessionPoste, impose), mod.id) : null;
   if (fermeture) {
-    return NextResponse.json(
-      {
-        erreur:
-          fermeture === "hors-programme"
-            ? "Ce module n'est pas à votre programme : son évaluation vous est fermée."
-            : "Ce module n'a pas de question validée : son évaluation est fermée.",
-      },
-      { status: 403, headers: { "Cache-Control": "no-store" } },
-    );
+    return NextResponse.json({ erreur: REFUS_EVALUATION[fermeture] }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
 
   const banque = banqueDuModule(mod);

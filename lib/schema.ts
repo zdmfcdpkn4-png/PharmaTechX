@@ -52,6 +52,7 @@ export const TABLES = [
   "actions_formation",
   "blocs_deposes",
   "numeros_codes",
+  "parcours_agent",
 ] as const;
 
 export const SCHEMA: string[] = [
@@ -526,6 +527,18 @@ export const SCHEMA: string[] = [
   // Vide : code partagé, chaque agent saisit son identifiant. Rempli : l'agent du code
   // ne saisit plus que son code personnel. Codes de poste seulement (`lib/liaison.ts`).
   `ALTER TABLE acces ADD COLUMN IF NOT EXISTS agent_id INTEGER REFERENCES agents(id) ON DELETE SET NULL`,
+
+  // ── parcours d'un agent (question 103, choix a, 05/10/2026) ───────────────
+  // Composé sur la fiche de l'agent par le tutorat, parmi les modules que son
+  // code de poste lui ouvre : identifiants dans l'ordre conseillé, et ceux
+  // tenus fermés. Purgé avec sa progression ; supprimé avec l'identifiant.
+  `CREATE TABLE IF NOT EXISTS parcours_agent (
+     agent_id    INTEGER PRIMARY KEY REFERENCES agents(id) ON DELETE CASCADE,
+     modules     JSONB NOT NULL DEFAULT '[]'::jsonb,
+     fermes      JSONB NOT NULL DEFAULT '[]'::jsonb,
+     modifie_par TEXT NOT NULL,
+     modifie_le  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   )`,
 
   // ── Supabase : API de données (voir l'en-tête) ─────────────────────────────
   ...TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`),

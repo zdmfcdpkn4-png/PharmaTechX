@@ -63,10 +63,24 @@ test("terminé, en cours, à venir : seul l'acquis est terminé", () => {
     "a-rediger": "a-venir",
     "lecture-seule": "a-venir",
     ferme: "a-venir",
+    verrouille: "a-venir",
   };
   for (const [etat, avancement] of Object.entries(attendu)) {
     assert.equal(avancementDe(etat as EtatModule), avancement, etat);
   }
+});
+
+// Question 103 (choix a) : un module que le tutorat tient fermé dans le parcours de l'agent.
+test("module fermé par le tutorat : « verrouillé » avant tout, et il ne s'ouvre pas", () => {
+  const evaluable = { redige: true, nbQuestions: 5 };
+  assert.equal(etatModule(evaluable, undefined, false, true, true), "verrouille");
+  assert.equal(etatModule(evaluable, { verdict: "acquis" }, false, true, true), "verrouille", "le verrou avant le verdict : c'est ce que l'agent peut faire");
+  assert.equal(etatModule({ redige: true, nbQuestions: 0 }, undefined, false, true, true), "verrouille", "avant « pas encore ouvert »");
+  assert.equal(etatModule(evaluable, { verdict: "acquis" }, false, true, false), "acquis", "rouvert : le verdict reprend");
+  assert.equal(ouvrable({ evaluable: true, redige: true, ferme: true }, true), false);
+  assert.equal(ouvrable({ evaluable: true, redige: true, ferme: true }, false), false, "même pour qui ouvre tout : le verrou est celui du parcours de l'agent");
+  assert.equal(ouvrable({ evaluable: true, redige: true, ferme: false }, true), true);
+  assert.equal(ouvrable({ evaluable: true, redige: true }, true), true, "sans la mention : comme avant");
 });
 
 const modules = [
@@ -145,6 +159,14 @@ test("Reprendre, pour un apprenant : seul un module qui a des questions est prop
   assert.equal(r?.moduleId, "m2");
   // m4 se lit mais n'a pas de question : il n'est plus proposé.
   assert.equal(choisirReprise({ programme, acquis: (id) => id === "m1" || id === "m2", questionsRequises: true }), null);
+});
+
+test("Reprendre saute un module que le tutorat tient fermé (question 103)", () => {
+  const parcours = programme.map((m) => (m.id === "m2" ? { ...m, ferme: true } : m));
+  const r = choisirReprise({ programme: parcours, acquis: (id) => id === "m1", questionsRequises: true });
+  assert.equal(r, null, "m2 fermé, m3 sans question, m4 sans question : rien à proposer");
+  const rouvert = choisirReprise({ programme, acquis: (id) => id === "m1", questionsRequises: true });
+  assert.equal(rouvert?.moduleId, "m2");
 });
 
 test("modules consultés : les plus récents d'abord, sans doublon, bornés", () => {

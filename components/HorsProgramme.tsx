@@ -7,7 +7,9 @@ import type { MotifFermeture } from "@/lib/profil-impose";
  *  - hors du programme d'un code de poste (question 101, choix b,
  *    05/10/2026) : sa page, ses documents et son évaluation lui sont fermés ;
  *  - sans question (05/10/2026, demande directe) : un module ne s'ouvre à
- *    l'apprenant qu'avec au moins une question validée.
+ *    l'apprenant qu'avec au moins une question validée ;
+ *  - hors du parcours que le tutorat a fixé à l'agent, ou tenu fermé par lui
+ *    (question 103, choix a, 05/10/2026).
  */
 export function HorsProgramme({ titre, motif = "hors-programme" }: { titre: string; motif?: MotifFermeture }) {
   return (
@@ -20,6 +22,23 @@ export function HorsProgramme({ titre, motif = "hors-programme" }: { titre: stri
             <p>
               Il n&apos;a pas encore de question validée. Il s&apos;ouvrira dès que ses questions le seront&nbsp;: sa
               page, ses documents et son évaluation vous seront alors accessibles.
+            </p>
+          </>
+        ) : motif === "hors-parcours" ? (
+          <>
+            <h1>Ce module n&apos;est pas à votre parcours</h1>
+            <p>
+              Votre tuteur ou l&apos;administrateur a composé votre parcours parmi les modules de votre programme, et ce
+              module n&apos;en fait pas partie. Sa page, ses documents et son évaluation vous sont fermés&nbsp;; voyez votre
+              tuteur s&apos;il doit vous revenir.
+            </p>
+          </>
+        ) : motif === "ferme-tutorat" ? (
+          <>
+            <h1>Ce module est fermé pour le moment</h1>
+            <p>
+              Il est à votre parcours, mais votre tuteur le tient fermé&nbsp;: il le rouvrira le moment venu. Jusque-là,
+              sa page, ses documents et son évaluation vous sont fermés.
             </p>
           </>
         ) : (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  PARCOURS_DE_L_AGENT,
   getModuleComplet,
   modulesAvecQuestions,
   positionDansListe,
@@ -11,7 +12,7 @@ import {
 } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
 import { requeteProfil } from "@/content/ordres";
-import { accesLibre, motifFermeture, profilDeLaPage, profilImpose } from "@/lib/profil-impose";
+import { accesLibre, fermetureDeLaPage, profilDeLaPage, profilImpose } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import { HorsProgramme } from "@/components/HorsProgramme";
 import { getCritere } from "@/content/habilitation";
@@ -48,13 +49,14 @@ export default async function PageModule({
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
   // Question 101 (choix b) : hors de son programme, un code de poste n'ouvre ni la page d'un module ni ses
-  // documents. Un apprenant — code de poste, mode test, site sans base — n'ouvre qu'un module qui a des
-  // questions (05/10/2026, demande directe). La page dit pourquoi, sans rien servir du module.
+  // documents ; hors du parcours que le tutorat lui a fixé, ou sur un module qu'il tient fermé, pas davantage
+  // (question 103, choix a). Un apprenant — code de poste, mode test, site sans base — n'ouvre qu'un module
+  // qui a des questions (05/10/2026, demande directe). La page dit pourquoi, sans rien servir du module.
   const impose = profilImpose(session, baseConfiguree());
   const duPoste = impose && session ? await programmeDuPoste(session, impose) : null;
   const libre = accesLibre(session);
   const nbQuestions = mod.questions.length + mod.misesEnSituation.reduce((s, x) => s + x.questions.length, 0);
-  const ferme = motifFermeture({ libre, auProgramme: duPoste ? duPoste.auProgramme.has(mod.id) : true, nbQuestions });
+  const ferme = fermetureDeLaPage(duPoste, { libre, moduleId: mod.id, nbQuestions });
   if (ferme) return <HorsProgramme titre={mod.titre} motif={ferme} />;
   const depose = mod.origine === "base";
 
@@ -100,16 +102,20 @@ export default async function PageModule({
   // Le précédent et le suivant d'un apprenant sautent les modules qui ne lui sont pas ouverts.
   const ouvrir = (ids: Set<string>): Ouvert => (m) => ids.has(m.id);
   const ouvert = libre ? undefined : ouvrir(duPoste ? duPoste.ouverts : await modulesAvecQuestions());
-  const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id, ouvert) : null;
+  // Parcours fixé à l'agent par le tutorat (question 103, choix a) : le précédent et le suivant se prennent
+  // dans son ordre, avant tout autre ; l'adresse n'a rien à garder.
+  const dansParcours = duPoste?.parcours ? positionDansListe(duPoste.parcours.modules, mod.id, ouvert, PARCOURS_DE_L_AGENT) : null;
+  const dansProgramme = idProgramme && !dansParcours ? await positionDansProgramme(idProgramme, mod.id, ouvert) : null;
   // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa
   // chronologie — celle de l'apprenant rattaché, s'il a la sienne (question 56).
-  const profil = dansProgramme ? null : profilDeLaPage(impose, sp);
+  const profil = dansParcours || dansProgramme ? null : profilDeLaPage(impose, sp);
   const ratt = profil ? await rattachement() : null;
   const dansProfil = profil
     ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null, ouvert)
     : null;
   // Pour un code de poste, le précédent et le suivant se prennent dans son programme (question 101, choix b).
   const position =
+    dansParcours ??
     dansProgramme ??
     dansProfil ??
     (duPoste

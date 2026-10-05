@@ -100,6 +100,21 @@ export interface ProgrammeALaCarte {
 }
 
 /**
+ * Parcours fixé à l'agent par le tutorat (question 103, choix a, 05/10/2026) :
+ * ses seuls modules, dans l'ordre conseillé, et ceux tenus fermés. Il passe
+ * avant le programme à la carte et les ordres de profil.
+ */
+export interface ParcoursAffiche {
+  modules: ModuleResume[];
+  /** Identifiants des modules que le tutorat tient fermés : grisés, sans lien. */
+  fermes: string[];
+  /** Modules du parcours que le programme du code ne contient plus : comptés, pas devinés. */
+  absents: number;
+  /** Date du dernier enregistrement, déjà lisible. */
+  fixeLe: string;
+}
+
+/**
  * Carte d'un module (22/09/2026) : son illustration en vignette, là où elle
  * se lit (72 px, `content/badges.ts`), et son état en tête — terminé, en
  * cours, à venir — pour qu'un coup d'œil sur la grille suffise.
@@ -110,6 +125,7 @@ function CarteModule({
   rang,
   requete = "",
   questionsRequises = false,
+  ferme = false,
 }: {
   m: ModuleResume;
   etat: EtatModule;
@@ -117,11 +133,13 @@ function CarteModule({
   requete?: string;
   /** Apprenant : un module sans question reste fermé (05/10/2026, `ouvrable`). */
   questionsRequises?: boolean;
+  /** Tenu fermé par le tutorat dans le parcours de l'agent (question 103, choix a) : sans lien. */
+  ferme?: boolean;
 }) {
   const { dernierPourModule } = useSessionFormation();
   const resultat = dernierPourModule(m.id);
   const evaluable = m.nbQuestions > 0;
-  const ouvre = ouvrable({ evaluable, redige: m.redige }, questionsRequises);
+  const ouvre = ouvrable({ evaluable, redige: m.redige, ferme }, questionsRequises);
 
   const corps = (
     <article
@@ -172,7 +190,11 @@ function CarteModule({
         Niveaux&nbsp;: <Marqueur valeur={m.niveaux.join(", ")} /> · Revalidation tous les{" "}
         <Marqueur valeur={m.periodiciteMois} /> mois
         {!m.redige && evaluable ? " · évaluation disponible sans le texte du module" : ""}
-        {questionsRequises && !evaluable ? " · s'ouvrira quand ses questions seront validées" : ""}
+        {ferme
+          ? " · fermé par votre tuteur, qui le rouvrira le moment venu"
+          : questionsRequises && !evaluable
+            ? " · s'ouvrira quand ses questions seront validées"
+            : ""}
       </p>
     </article>
   );
@@ -316,6 +338,7 @@ export function TableauDeBord({
   ordresApprenant = {},
   profilImpose = false,
   questionsRequises = false,
+  parcoursAgent = null,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -369,6 +392,12 @@ export function TableauDeBord({
    * directe) : un module sans question se voit, grisé, sans s'ouvrir.
    */
   questionsRequises?: boolean;
+  /**
+   * Parcours fixé à l'agent par le tutorat (question 103, choix a) : ses seuls
+   * modules, numérotés dans l'ordre conseillé, les fermés grisés ; il passe
+   * avant le programme à la carte et les ordres de profil.
+   */
+  parcoursAgent?: ParcoursAffiche | null;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -424,8 +453,10 @@ export function TableauDeBord({
       /* stockage refusé : l'état se lit sur les seules évaluations */
     }
   }, []);
+  // Modules que le tutorat tient fermés dans le parcours de l'agent (question 103, choix a).
+  const fermes = useMemo(() => new Set(parcoursAgent?.fermes ?? []), [parcoursAgent]);
   const etatDe = (m: ModuleResume): EtatModule =>
-    etatModule(m, dernierPourModule(m.id), lectures.has(m.id), questionsRequises);
+    etatModule(m, dernierPourModule(m.id), lectures.has(m.id), questionsRequises, fermes.has(m.id));
 
   // Recherche et filtres (22/09/2026) : dans le programme affiché.
   const [filtres, setFiltres] = useState<FiltresModules>(AUCUN_FILTRE);
@@ -463,14 +494,17 @@ export function TableauDeBord({
   const cleChoisie = !aLaCarte && posteId && niveauCode ? cleProfil(posteId, niveauCode) : "";
   const ordreChoisi = cleChoisie ? ordreApplicable(ordresApprenant[cleChoisie], ordresProfil[cleChoisie]) : null;
   const ordreProfil = ordreChoisi?.ordre;
+  // Le parcours fixé par le tutorat (question 103) passe avant tout : programme à la carte, ordre du profil, blocs.
   const programme = useMemo(
     () =>
-      aLaCarte
-        ? aLaCarte.modules
-        : ordreProfil
-          ? chronologie([...socle, ...modulesPoste], ordreProfil)
-          : [...socle, ...modulesPoste],
-    [aLaCarte, socle, modulesPoste, ordreProfil],
+      parcoursAgent
+        ? parcoursAgent.modules
+        : aLaCarte
+          ? aLaCarte.modules
+          : ordreProfil
+            ? chronologie([...socle, ...modulesPoste], ordreProfil)
+            : [...socle, ...modulesPoste],
+    [parcoursAgent, aLaCarte, socle, modulesPoste, ordreProfil],
   );
   const groupesSocle = useMemo(() => grouperParBloc(socle, blocs, "socle"), [socle, blocs]);
   const groupesPoste = useMemo(
@@ -489,25 +523,30 @@ export function TableauDeBord({
   const trouves = actifs ? filtrerModules(programme, filtres, etatDe, titreBloc) : [];
   // Le profil choisi suit dans l'adresse des modules, qu'il ait ou non son ordre : son niveau est le
   // niveau cible du tirage (question 62, choix a).
-  const requeteCarte = aLaCarte
-    ? `?programme=${aLaCarte.id}`
-    : posteId && niveauCode
-      ? requeteProfil({ parcours, filiere: posteId, niveau: niveauCode })
-      : "";
+  // Avec un parcours, la page du module n'a rien à lire dans l'adresse : le serveur connaît l'agent.
+  const requeteCarte = parcoursAgent
+    ? ""
+    : aLaCarte
+      ? `?programme=${aLaCarte.id}`
+      : posteId && niveauCode
+        ? requeteProfil({ parcours, filiere: posteId, niveau: niveauCode })
+        : "";
 
   // Un résultat s'ouvre sur son module s'il est encore proposé à ce poste (tâche 69) :
-  // retiré ou dépublié depuis, il mènerait à une page introuvable ; sans question, à une page fermée.
+  // retiré ou dépublié depuis, il mènerait à une page introuvable ; sans question, à une page fermée ;
+  // hors du parcours ou fermé par le tutorat (question 103), à une page fermée aussi.
   const proposes = useMemo(
     () =>
       new Set(
-        [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])]
-          .filter((m) => !questionsRequises || m.nbQuestions > 0)
+        (parcoursAgent ? parcoursAgent.modules : [...troncCommun, ...Object.values(parPoste).flat(), ...(aLaCarte?.modules ?? [])])
+          .filter((m) => (!questionsRequises || m.nbQuestions > 0) && !fermes.has(m.id))
           .map((m) => m.id),
       ),
-    [troncCommun, parPoste, aLaCarte, questionsRequises],
+    [troncCommun, parPoste, aLaCarte, parcoursAgent, fermes, questionsRequises],
   );
 
-  const evaluables = programme.filter((m) => m.nbQuestions > 0);
+  // Un module que le tutorat tient fermé n'est pas une évaluation disponible (question 103).
+  const evaluables = programme.filter((m) => m.nbQuestions > 0 && !fermes.has(m.id));
   const acquis = resultats.filter((r) => r.reussi).length;
 
   // Porté sur le rapport téléchargé : un programme à la carte y paraît avec
@@ -633,6 +672,17 @@ export function TableauDeBord({
       </section>
       )}
 
+      {/* Parcours fixé par le tutorat (question 103, choix a) : dit à l'agent ce qu'il voit et pourquoi. */}
+      {parcoursAgent && (
+        <p className="encart" role="status">
+          Votre tuteur a composé votre parcours le {parcoursAgent.fixeLe} : {parcoursAgent.modules.length} module
+          {parcoursAgent.modules.length > 1 ? "s" : ""}, dans un ordre conseillé — vous pouvez les faire autrement.
+          {parcoursAgent.fermes.length > 0
+            ? ` ${parcoursAgent.fermes.length} module${parcoursAgent.fermes.length > 1 ? "s" : ""} fermé${parcoursAgent.fermes.length > 1 ? "s" : ""} pour le moment : il ${parcoursAgent.fermes.length > 1 ? "les" : "le"} rouvrira.`
+            : ""}
+        </p>
+      )}
+
       <div className="tuiles">
         <div className="tuile">
           <span className="valeur">{programme.length}</span>
@@ -662,6 +712,7 @@ export function TableauDeBord({
           badge: m.badge,
           evaluable: m.nbQuestions > 0,
           redige: m.redige,
+          ferme: fermes.has(m.id),
         }))}
         requete={requeteCarte}
         questionsRequises={questionsRequises}
@@ -727,7 +778,14 @@ export function TableauDeBord({
           {trouves.length > 0 ? (
             <div className="grille">
               {trouves.map((m) => (
-                <CarteModule key={m.id} m={m} etat={etatDe(m)} requete={requeteCarte} questionsRequises={questionsRequises} />
+                <CarteModule
+                  key={m.id}
+                  m={m}
+                  etat={etatDe(m)}
+                  requete={requeteCarte}
+                  questionsRequises={questionsRequises}
+                  ferme={fermes.has(m.id)}
+                />
               ))}
             </div>
           ) : (
@@ -736,6 +794,39 @@ export function TableauDeBord({
               {aLaCarte || profilImpose ? "" : " Changez la filière ou le niveau ci-dessus pour chercher ailleurs."}
             </p>
           )}
+        </>
+      ) : parcoursAgent ? (
+        <>
+          {/* Parcours fixé par le tutorat (question 103, choix a) : ses seuls modules, numérotés dans
+              l'ordre conseillé ; un module fermé se voit, grisé, sans lien. */}
+          <div className="section-titre">
+            <h2>Mon parcours</h2>
+            <span className="compte">
+              {parcoursAgent.modules.length} module{parcoursAgent.modules.length > 1 ? "s" : ""}, dans l&apos;ordre conseillé par le
+              tutorat
+            </span>
+          </div>
+          {parcoursAgent.absents > 0 && (
+            <p className="encart">
+              {parcoursAgent.absents} module{parcoursAgent.absents > 1 ? "s" : ""} de votre parcours{" "}
+              {parcoursAgent.absents > 1 ? "ne sont" : "n'est"} plus à votre programme : signalez-le à votre tuteur.
+            </p>
+          )}
+          {parcoursAgent.modules.length === 0 && (
+            <p className="encart">Aucun module de votre parcours n&apos;est à votre programme : voyez votre tuteur.</p>
+          )}
+          <div className="grille">
+            {parcoursAgent.modules.map((m, i) => (
+              <CarteModule
+                key={m.id}
+                m={m}
+                etat={etatDe(m)}
+                rang={i + 1}
+                questionsRequises={questionsRequises}
+                ferme={fermes.has(m.id)}
+              />
+            ))}
+          </div>
         </>
       ) : aLaCarte ? (
         <>

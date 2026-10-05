@@ -35,6 +35,8 @@ export interface EtapeBadge {
    * la règle des cartes de l'accueil (tâche 69).
    */
   redige?: boolean;
+  /** Tenu fermé par le tutorat dans le parcours de l'agent (question 103, choix a) : grisé, sans lien. */
+  ferme?: boolean;
 }
 
 export function BarreBadges({
@@ -51,7 +53,8 @@ export function BarreBadges({
   if (etapes.length === 0) return null;
   const acquis = (id: string) => dernierPourModule(id)?.reussi === true;
   const nbAcquis = etapes.filter((e) => acquis(e.id)).length;
-  const nbEvaluables = etapes.filter((e) => e.evaluable).length;
+  // Un module que le tutorat tient fermé (question 103) ne s'évalue pas aujourd'hui.
+  const nbEvaluables = etapes.filter((e) => e.evaluable && !e.ferme).length;
 
   return (
     <section className="barre-badges" aria-labelledby="t-barre-badges">
@@ -64,7 +67,7 @@ export function BarreBadges({
       <ol className="barre-badges-liste">
         {etapes.map((e, i) => {
           const ok = acquis(e.id);
-          const etat = ok ? "acquis" : e.evaluable ? "à valider" : "pas encore d'évaluation";
+          const etat = ok ? "acquis" : e.ferme ? "fermé par le tutorat" : e.evaluable ? "à valider" : "pas encore d'évaluation";
           const nom = `${i + 1}. ${e.critereId && e.critereId !== "[à préciser]" ? `${e.critereId} — ` : ""}${e.titre} : ${etat}`;
           const contenu = (
             <>
@@ -79,7 +82,7 @@ export function BarreBadges({
           );
           return (
             <li key={e.id} className={ok ? "est-acquis" : "est-grise"}>
-              {ouvrable({ evaluable: e.evaluable, redige: e.redige ?? false }, questionsRequises) ? (
+              {ouvrable({ evaluable: e.evaluable, redige: e.redige ?? false, ferme: e.ferme }, questionsRequises) ? (
                 <Link href={`/module/${e.id}${requete}`} title={nom} className="barre-badge">
                   {contenu}
                 </Link>

@@ -14,7 +14,13 @@ import { listeBlocs } from "@/content/blocs-db";
 import { getReferentiel } from "@/content/referentiel-db";
 import { badgeEffectif } from "@/content/badges";
 import type { Module, TypeParcours } from "@/content/types";
-import { TableauDeBord, type DocumentResume, type ModuleResume, type ProgrammeALaCarte } from "@/components/TableauDeBord";
+import {
+  TableauDeBord,
+  type DocumentResume,
+  type ModuleResume,
+  type ParcoursAffiche,
+  type ProgrammeALaCarte,
+} from "@/components/TableauDeBord";
 import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
 import { auNiveau as proposeAuNiveau, chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
@@ -81,6 +87,9 @@ export default async function Accueil({
   // Profil imposé (05/10/2026, demande directe) : un code de poste ne compose pas son programme ; filière,
   // niveau et programme à la carte sont ceux de son code, et l'adresse ne les change pas (`lib/profil-impose.ts`).
   const impose = profilImpose(session, baseConfiguree());
+  // Programme du code, parcours de l'agent compris (questions 101 et 103) : lu une fois, pour l'évaluation
+  // laissée en plan et pour le parcours affiché.
+  const duPoste = impose && session ? await programmeDuPoste(session, impose).catch(() => null) : null;
   // Un apprenant — code de poste, mode test, site sans base — n'ouvre qu'un module qui a des questions
   // (05/10/2026, demande directe) : les autres se voient, grisés, sans lien, et ne lui sont jamais proposés.
   const questionsRequises = !accesLibre(session);
@@ -112,6 +121,19 @@ export default async function Accueil({
       absents: absents.length,
     };
   }
+  // Parcours fixé à l'agent par le tutorat (question 103, choix a) : ses seuls modules, dans son ordre, les
+  // fermés grisés ; il passe avant le programme à la carte et les ordres de profil. L'agent est celui du
+  // code relié (question 99), sinon celui du rattachement (`lib/programme-poste.ts`).
+  const parcoursPoste = duPoste?.parcours ?? null;
+  const parcoursAgent: ParcoursAffiche | null = parcoursPoste
+    ? {
+        modules: parcoursPoste.modules.map((m) => resumer(m, enBase)),
+        fermes: [...parcoursPoste.fermes],
+        absents: parcoursPoste.absents,
+        fixeLe: new Date(parcoursPoste.modifieLe).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }),
+      }
+    : null;
+  const fermesParcours = new Set(parcoursAgent?.fermes ?? []);
   // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
   // Au retour d'une page de module entrée par un profil (question 55), c'est ce
   // profil qui se rouvre.
@@ -180,9 +202,9 @@ export default async function Accueil({
   const profilArrivee = [...auNiveau(troncCommun), ...auNiveau(filiereInitiale ? (parPoste[filiereInitiale] ?? []) : [])];
   const cleArrivee = filiereInitiale && niveauInitial ? cleProfil(filiereInitiale, niveauInitial) : "";
   const ordreArrivee = cleArrivee ? ordreApplicable(ordresApprenant[cleArrivee], ordresProfil[cleArrivee]) : null;
-  const programmeArrivee: EtapeReprise[] = (
-    aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee.ordre) : profilArrivee
-  ).map(etape);
+  const programmeArrivee: EtapeReprise[] = parcoursAgent
+    ? parcoursAgent.modules.map((m) => ({ ...etape(m), ferme: fermesParcours.has(m.id) }))
+    : (aLaCarte ? aLaCarte.modules : ordreArrivee ? chronologie(profilArrivee, ordreArrivee.ordre) : profilArrivee).map(etape);
   // Question 101 (choix b) : un code de poste ne reçoit que les modules de son programme — sa filière à son
   // niveau, ou son seul programme à la carte —, ni les autres filières ni les autres niveaux.
   const troncCommunServi = !impose ? troncCommun : programmeOuvert ? [] : auNiveau(troncCommun);
@@ -191,20 +213,17 @@ export default async function Accueil({
     : programmeOuvert || !filiereInitiale
       ? {}
       : { [filiereInitiale]: auNiveau(parPoste[filiereInitiale] ?? []) };
-  // Pour un apprenant, la lecture et les consultations à reprendre ne visent qu'un module qui a des questions.
-  const catalogue: EtapeReprise[] = [...troncCommunServi, ...Object.values(parPosteServi).flat(), ...(aLaCarte?.modules ?? [])]
-    .map(etape)
-    .filter((e) => !questionsRequises || e.evaluable);
+  // Pour un apprenant, la lecture et les consultations à reprendre ne visent qu'un module qui a des questions,
+  // ni un module fermé par le tutorat ; avec un parcours, ses seuls modules.
+  const catalogue: EtapeReprise[] = (
+    parcoursAgent
+      ? programmeArrivee
+      : [...troncCommunServi, ...Object.values(parPosteServi).flat(), ...(aLaCarte?.modules ?? [])].map(etape)
+  ).filter((e) => !e.ferme && (!questionsRequises || e.evaluable));
   // Évaluation laissée en plan : seul un agent rattaché en a une, gardée en base ; celle d'un module hors de
-  // son programme ne se reprend pas d'ici (question 101, choix b).
+  // son programme (question 101, choix b) ou de son parcours (question 103) ne se reprend pas d'ici.
   const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
-  const enCours =
-    enCoursLu &&
-    impose &&
-    session &&
-    !(await programmeDuPoste(session, impose).then((p) => p.ouverts.has(enCoursLu.moduleId), () => true))
-      ? null
-      : enCoursLu;
+  const enCours = enCoursLu && duPoste && !duPoste.ouverts.has(enCoursLu.moduleId) ? null : enCoursLu;
   const evaluationEnCours = enCours
     ? {
         moduleId: enCours.moduleId,
@@ -247,11 +266,13 @@ export default async function Accueil({
           catalogue={catalogue}
           questionsRequises={questionsRequises}
           requete={
-            aLaCarte
-              ? `?programme=${aLaCarte.id}`
-              : ordreArrivee
-                ? requeteProfil({ parcours: parcoursId, filiere: filiereInitiale, niveau: niveauInitial })
-                : ""
+            parcoursAgent
+              ? ""
+              : aLaCarte
+                ? `?programme=${aLaCarte.id}`
+                : ordreArrivee
+                  ? requeteProfil({ parcours: parcoursId, filiere: filiereInitiale, niveau: niveauInitial })
+                  : ""
           }
         />
         <div className="actions" style={{ marginTop: 0 }}>
@@ -269,8 +290,9 @@ export default async function Accueil({
       </section>
 
       {/* Profil imposé (05/10/2026) : un poste ne voit pas les programmes à la carte des autres codes, et le
-          sien, quand son code en porte un, ne se quitte pas pour un parcours de la fiche. */}
-      {impose && programmeOuvert ? null : (
+          sien, quand son code en porte un, ne se quitte pas pour un parcours de la fiche. Un parcours fixé par
+          le tutorat (question 103) couvre les deux parcours de la fiche : rien à choisir non plus. */}
+      {impose && (programmeOuvert || parcoursAgent) ? null : (
       <nav className="nav-sections" aria-label="Choix du parcours">
         <Link
           href="/?parcours=integration"
@@ -343,6 +365,7 @@ export default async function Accueil({
           essai={Boolean(session?.essai)}
           profilImpose={Boolean(impose)}
           questionsRequises={questionsRequises}
+          parcoursAgent={parcoursAgent}
         />
       </section>
 

@@ -25,7 +25,8 @@ export type EtatModule =
   | "a-faire"
   | "a-rediger"
   | "lecture-seule"
-  | "ferme";
+  | "ferme"
+  | "verrouille";
 
 export const LIBELLES_ETAT: Record<EtatModule, string> = {
   acquis: "Acquis",
@@ -37,6 +38,7 @@ export const LIBELLES_ETAT: Record<EtatModule, string> = {
   "a-rediger": "À rédiger",
   "lecture-seule": "Lecture seule",
   ferme: "Pas encore ouvert",
+  verrouille: "Fermé par le tutorat",
 };
 
 /** Les trois temps que demande l'accueil : terminé, en cours, à venir. */
@@ -62,13 +64,20 @@ export interface ModulePourEtat {
  * Pour un apprenant (`questionsRequises`), un module sans question n'est pas
  * encore ouvert (05/10/2026, demande directe) : une lecture entamée avant ne
  * s'y reprend pas.
+ *
+ * Un module que le tutorat tient fermé dans le parcours de l'agent (question
+ * 103, choix a) est « Fermé par le tutorat » avant tout : c'est ce qui dit à
+ * l'agent ce qu'il peut faire ; son dernier résultat reste lisible sur la
+ * carte.
  */
 export function etatModule(
   m: ModulePourEtat,
   dernier: { verdict: Verdict } | undefined,
   lectureEntamee: boolean,
   questionsRequises = false,
+  fermeParLeTutorat = false,
 ): EtatModule {
+  if (fermeParLeTutorat) return "verrouille";
   if (dernier) {
     if (dernier.verdict === "acquis") return "acquis";
     if (dernier.verdict === "indetermine") return "arbitrage";
@@ -147,15 +156,19 @@ export interface EtapeProgramme {
   titre: string;
   evaluable: boolean;
   redige: boolean;
+  /** Tenu fermé par le tutorat dans le parcours de l'agent (question 103, choix a) : il ne s'ouvre pas. */
+  ferme?: boolean;
 }
 
 /**
  * Le module s'ouvre-t-il ? Pour le tutorat et l'administration, dès qu'il se
  * lit ou s'évalue (tâche 69) ; pour un apprenant (`questionsRequises`), seulement
- * s'il a des questions (05/10/2026, demande directe). La lecture repérée sur le
- * poste se filtre de même, avant `choisirReprise`.
+ * s'il a des questions (05/10/2026, demande directe). Jamais quand le tutorat
+ * le tient fermé (`ferme`, question 103). La lecture repérée sur le poste se
+ * filtre de même, avant `choisirReprise`.
  */
-export function ouvrable(m: Pick<EtapeProgramme, "evaluable" | "redige">, questionsRequises: boolean): boolean {
+export function ouvrable(m: Pick<EtapeProgramme, "evaluable" | "redige" | "ferme">, questionsRequises: boolean): boolean {
+  if (m.ferme) return false;
   return m.evaluable || (!questionsRequises && m.redige);
 }
 

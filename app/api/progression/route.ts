@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession, refusApiSansSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { moduleExiste } from "@/content/store";
-import { profilImpose, refusDuPoste } from "@/lib/profil-impose";
+import { LIBELLES_FERMETURE, profilImpose, refusDuPoste } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 import {
   effacerEnCours,
@@ -37,15 +37,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ erreur: "Module inconnu." }, { status: 404 });
   }
   // Question 101 (choix b) : un code de poste ne laisse de traces que sur les modules de son programme qui
-  // lui sont ouverts — ceux qui ont des questions (05/10/2026).
+  // lui sont ouverts — ceux qui ont des questions (05/10/2026) —, dans le parcours que le tutorat lui a
+  // fixé et hors des modules qu'il tient fermés (question 103, choix a).
   const session = await getSession();
   const impose = profilImpose(session, baseConfiguree());
   const fermeture = impose && session ? refusDuPoste(await programmeDuPoste(session, impose), moduleId) : null;
   if (fermeture) {
-    return NextResponse.json(
-      { erreur: fermeture === "hors-programme" ? "Module hors de votre programme." : "Module sans question validée : il n'est pas ouvert." },
-      { status: 403, headers: { "Cache-Control": "no-store" } },
-    );
+    return NextResponse.json({ erreur: LIBELLES_FERMETURE[fermeture] }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   const nombre = (v: unknown, max: number) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(0, v)) : 0);
   let ok = false;

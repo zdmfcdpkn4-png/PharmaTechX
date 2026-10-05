@@ -295,10 +295,19 @@ export async function positionDansProfil(
  * module d'un autre niveau ou d'une autre filière, qui lui serait fermé.
  * `null` si le module n'y figure pas.
  */
-export function positionDansListe(liste: Module[], moduleId: string, ouvert?: Ouvert): PositionParcours | null {
+export function positionDansListe(
+  liste: Module[],
+  moduleId: string,
+  ouvert?: Ouvert,
+  nom: { liste: string; libelle: string } = PROGRAMME_DU_CODE,
+): PositionParcours | null {
   const v = voisins(liste, moduleId, ouvert);
-  return v ? { liste: "programme-du-code", libelle: "Mon programme", ...v } : null;
+  return v ? { ...nom, ...v } : null;
 }
+
+export const PROGRAMME_DU_CODE = { liste: "programme-du-code", libelle: "Mon programme" };
+/** Parcours fixé à l'agent par le tutorat (question 103, choix a) : le précédent et le suivant dans son ordre. */
+export const PARCOURS_DE_L_AGENT = { liste: "parcours-agent", libelle: "Mon parcours" };
 
 /**
  * Place d'un module dans un programme à la carte validé (question 50) : le

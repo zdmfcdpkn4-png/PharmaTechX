@@ -54,30 +54,80 @@ export function aDesQuestions(
   return m.questions.length + m.misesEnSituation.reduce((n, s) => n + s.questions.length, 0) + (validees[m.id] ?? 0) > 0;
 }
 
-/** Pourquoi un module est fermé à la session ; null : il s'ouvre. */
-export type MotifFermeture = "hors-programme" | "sans-question";
+/**
+ * Pourquoi un module est fermé à la session ; null : il s'ouvre.
+ *  - `hors-programme` : hors du programme du code de poste (question 101) ;
+ *  - `hors-parcours` : au programme, mais le parcours que le tutorat a fixé à
+ *    l'agent ne le nomme pas (question 103, choix a) ;
+ *  - `ferme-tutorat` : au parcours, mais le tutorat le tient fermé ;
+ *  - `sans-question` : aucune question validée (05/10/2026).
+ */
+export type MotifFermeture = "hors-programme" | "hors-parcours" | "ferme-tutorat" | "sans-question";
+
+/** Parcours fixé à l'agent par le tutorat (question 103, choix a) : ses modules, et ceux tenus fermés. */
+export interface ParcoursDuPoste {
+  ids: ReadonlySet<string>;
+  fermes: ReadonlySet<string>;
+}
 
 /**
  * Fermeture d'un module pour la session. Le tutorat et l'administration ouvrent
  * tout. Un code de poste n'ouvre rien hors de son programme (question 101,
- * choix b) ; tout apprenant — code de poste, mode test, site sans base —
- * n'ouvre qu'un module qui a des questions (05/10/2026). `auProgramme` vaut
- * vrai pour qui n'a pas de programme imposé.
+ * choix b), ni hors du parcours que le tutorat a fixé à l'agent, ni un module
+ * que le tutorat tient fermé (question 103, choix a) ; tout apprenant — code
+ * de poste, mode test, site sans base — n'ouvre qu'un module qui a des
+ * questions (05/10/2026). `auProgramme` et `auParcours` valent vrai pour qui
+ * n'a ni programme imposé ni parcours.
  */
-export function motifFermeture(o: { libre: boolean; auProgramme: boolean; nbQuestions: number }): MotifFermeture | null {
+export function motifFermeture(o: {
+  libre: boolean;
+  auProgramme: boolean;
+  nbQuestions: number;
+  auParcours?: boolean;
+  fermeParLeTutorat?: boolean;
+}): MotifFermeture | null {
   if (o.libre) return null;
   if (!o.auProgramme) return "hors-programme";
+  if (o.auParcours === false) return "hors-parcours";
+  if (o.fermeParLeTutorat) return "ferme-tutorat";
   return o.nbQuestions > 0 ? null : "sans-question";
 }
 
-/** Même règle, pour une route : le programme d'un code de poste et ses modules ouverts. */
+/** Même règle, pour une route : le programme d'un code de poste, le parcours de l'agent et les modules ouverts. */
 export function refusDuPoste(
-  p: { auProgramme: ReadonlySet<string>; ouverts: ReadonlySet<string> },
+  p: { auProgramme: ReadonlySet<string>; ouverts: ReadonlySet<string>; parcours?: ParcoursDuPoste | null },
   moduleId: string,
 ): MotifFermeture | null {
   if (!p.auProgramme.has(moduleId)) return "hors-programme";
+  if (p.parcours && !p.parcours.ids.has(moduleId)) return "hors-parcours";
+  if (p.parcours?.fermes.has(moduleId)) return "ferme-tutorat";
   return p.ouverts.has(moduleId) ? null : "sans-question";
 }
+
+/**
+ * Même règle, pour une page : le programme du code quand la session en a un
+ * (`p`), sinon les seules questions du module — mode test, site sans base.
+ */
+export function fermetureDeLaPage(
+  p: { auProgramme: ReadonlySet<string>; parcours?: ParcoursDuPoste | null } | null,
+  o: { libre: boolean; moduleId: string; nbQuestions: number },
+): MotifFermeture | null {
+  return motifFermeture({
+    libre: o.libre,
+    auProgramme: p ? p.auProgramme.has(o.moduleId) : true,
+    auParcours: p?.parcours ? p.parcours.ids.has(o.moduleId) : true,
+    fermeParLeTutorat: p?.parcours?.fermes.has(o.moduleId) ?? false,
+    nbQuestions: o.nbQuestions,
+  });
+}
+
+/** Ce qu'une route répond à un module fermé, en une phrase. */
+export const LIBELLES_FERMETURE: Record<MotifFermeture, string> = {
+  "hors-programme": "Module hors de votre programme.",
+  "hors-parcours": "Module hors de votre parcours.",
+  "ferme-tutorat": "Module fermé par votre tuteur.",
+  "sans-question": "Module sans question validée : il n'est pas ouvert.",
+};
 
 /** null : la session choisit son profil. Sinon, le profil que porte son code. */
 export function profilImpose(session: SessionProfil | null, base: boolean): ProfilDuCode | null {

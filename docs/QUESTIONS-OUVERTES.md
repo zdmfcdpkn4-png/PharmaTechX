@@ -413,6 +413,20 @@ telle. Ordre : ce qui change le déploiement en premier.
       Contre : deux mécanismes à expliquer à l'agent sur sa page comme au
       tutorat, deux fois plus de cas à vérifier.
 
+    Tranchée le 05/10/2026 (choix a, réponse « À »). Sur la fiche de l'agent,
+    le tutorat ou l'administration cochent, parmi les modules que son code de
+    poste relié lui ouvre, ceux du parcours, les rangent — la vignette du
+    module en tête de ligne, un aperçu des vignettes dans l'ordre — et
+    ferment ceux qu'il ne doit pas encore ouvrir. L'agent que la session
+    identifie (code relié, sinon rattachement) voit ses seuls modules, dans
+    cet ordre conseillé ; un module fermé se voit, grisé « Fermé par le
+    tutorat », et sa page, ses documents, son évaluation, sa correction et
+    ses traces lui sont refusés jusqu'à réouverture ; un module de son
+    programme hors du parcours l'est aussi. Le parcours passe avant le
+    programme à la carte et les ordres de profil ; il est purgé avec la
+    progression. Table `parcours_agent`, règles `content/parcours-agent.ts`.
+    Détail dans `DECISIONS.md`.
+
 102. **Un module s'ouvre-t-il dès une question validée, ou seulement si
     l'agent peut en recevoir une ?** — posée le 05/10/2026, après la demande
     « Ne donne accès au module proposé que si il existe des questions pour ce

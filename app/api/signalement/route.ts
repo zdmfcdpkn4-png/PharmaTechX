@@ -7,7 +7,7 @@ import { numeroDeFiche } from "@/content/fiches";
 import { lireFiche } from "@/lib/fiches-db";
 import { getModuleComplet } from "@/content/store";
 import { banqueDuModule } from "@/content/types";
-import { profilImpose, refusDuPoste } from "@/lib/profil-impose";
+import { LIBELLES_FERMETURE, profilImpose, refusDuPoste } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
 
 export const dynamic = "force-dynamic";
@@ -35,16 +35,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ erreur: "Requête illisible." }, { status: 400 });
   }
   // Question 101 (choix b) : un code de poste ne signale que dans les modules de son programme qui lui sont
-  // ouverts — ceux qui ont des questions (05/10/2026).
+  // ouverts — ceux qui ont des questions (05/10/2026) —, dans son parcours et hors des modules que le tutorat
+  // tient fermés (question 103, choix a).
   const session = await getSession();
   const impose = profilImpose(session, baseConfiguree());
   const moduleVise = typeof corps.moduleId === "string" ? corps.moduleId.slice(0, 80) : "";
   const fermeture = impose && session ? refusDuPoste(await programmeDuPoste(session, impose), moduleVise) : null;
   if (fermeture) {
-    return NextResponse.json(
-      { erreur: fermeture === "hors-programme" ? "Module hors de votre programme." : "Module sans question validée : il n'est pas ouvert." },
-      { status: 403, headers: { "Cache-Control": "no-store" } },
-    );
+    return NextResponse.json({ erreur: LIBELLES_FERMETURE[fermeture] }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   if (typeof corps.ficheId === "string") return signalerFiche(corps);
   const questionId = typeof corps.questionId === "string" ? corps.questionId.slice(0, 80) : "";

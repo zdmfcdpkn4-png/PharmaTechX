@@ -54,15 +54,10 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
   const questionsRequises = !accesLibre(session);
   const enCoursLu = ratt ? await dernierEnCours(ratt.agentId).catch(() => null) : null;
   // Question 101 (choix b) : une évaluation laissée en plan sur un module hors du programme du code ne se
-  // reprend pas d'ici ; sa page le refuserait.
+  // reprend pas d'ici ; sa page le refuserait. Même chose hors du parcours de l'agent (question 103).
   const impose = profilImpose(session, baseConfiguree());
-  const enCours =
-    enCoursLu &&
-    impose &&
-    session &&
-    !(await programmeDuPoste(session, impose).then((p) => p.ouverts.has(enCoursLu.moduleId), () => true))
-      ? null
-      : enCoursLu;
+  const duPoste = impose && session ? await programmeDuPoste(session, impose).catch(() => null) : null;
+  const enCours = enCoursLu && duPoste && !duPoste.ouverts.has(enCoursLu.moduleId) ? null : enCoursLu;
   const evaluation = enCours
     ? {
         moduleId: enCours.moduleId,
@@ -73,6 +68,18 @@ export async function arriveeDuPoste(session: Session | null): Promise<{
         detail: `${questionsRenseignees(enCours.etat)} sur ${enCours.etat.questionIds.length} questions`,
       }
     : null;
+
+  // Parcours fixé à l'agent par le tutorat (question 103, choix a) : il passe avant tout — programme à la
+  // carte, ordre du profil, ordre propre —, dans son ordre, les modules fermés grisés.
+  if (duPoste?.parcours) {
+    const { modules, fermes } = duPoste.parcours;
+    return {
+      programme: modules.map((m) => ({ ...etape(m), ferme: fermes.has(m.id) })),
+      evaluation,
+      requete: "",
+      questionsRequises,
+    };
+  }
 
   // Programme à la carte du code de poste, s'il est validé.
   const idDuCode = session?.acces && baseConfiguree() ? await programmeDuCode(session.acces).catch(() => null) : null;
