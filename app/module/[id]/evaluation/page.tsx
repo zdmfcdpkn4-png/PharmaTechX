@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
-import { lireProfilDemande, requeteProfil } from "@/content/ordres";
+import { programmeDuCode } from "@/content/programmes-db";
+import { requeteProfil } from "@/content/ordres";
+import { profilDeLaPage, profilImpose } from "@/lib/profil-impose";
 import { syntheseDuModule } from "@/lib/synthese";
 import { lireEnCours, rattachement, reserveesDejaVues } from "@/lib/progression";
 import { A_PRECISER, banquePublique } from "@/content/types";
@@ -30,8 +32,15 @@ export default async function PageEvaluation({
   const session = await getSession();
   const mod = await getModuleComplet(id, { inclureBrouillons: session?.role === "tuteur" || session?.role === "admin" });
   if (!mod) notFound();
-  const idProgramme = lireIdProgramme(sp.programme);
-  const profil = idProgramme ? null : lireProfilDemande(sp);
+  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, programme à la carte, filière et
+  // niveau cible sont ceux du code ; l'adresse ne garde que le parcours.
+  const impose = profilImpose(session, baseConfiguree());
+  const idProgramme = impose
+    ? session?.acces
+      ? await programmeDuCode(session.acces).catch(() => null)
+      : null
+    : lireIdProgramme(sp.programme);
+  const profil = idProgramme ? null : profilDeLaPage(impose, sp);
   const [bareme, syntheses, dansProgramme, ratt, { filieres, niveaux }, nomsNiveaux] = await Promise.all([
     lireBareme(),
     syntheseDuModule(mod),
@@ -107,6 +116,7 @@ export default async function PageEvaluation({
         signalees={signalees}
         dejaVues={dejaVues}
         libellesNiveaux={libellesDe(nomsNiveaux)}
+        niveauImpose={Boolean(impose)}
       />
     </article>
   );

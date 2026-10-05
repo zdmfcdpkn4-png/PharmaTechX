@@ -6217,6 +6217,100 @@ Source : Procédure statistiques — section 5`;
   await page.waitForURL(/\/connexion/);
   ok("code de poste relié (question 99, choix a) : créé relié en un geste, code personnel choisi dès l'accueil puis seul demandé, autre identifiant refusé, code existant relié puis délié, code de tutorat refusé");
 
+  // 14d duodecies. profil imposé au code de poste (05/10/2026, demande directe) : un code de poste ne
+  //          compose plus son programme — ni filière ni niveau à choisir, ni au programme ni à
+  //          l'évaluation ; l'adresse et la requête forgées sont ignorées par le serveur ; le
+  //          programme à la carte d'un autre code ne lui est plus montré. La gestion compose encore.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/accueil$/);
+  await fermerVisite();
+  // Un programme à la carte validé, que le code de poste ne porte pas.
+  await page.goto(BASE + "/admin/programmes/" + idProgramme);
+  await page.click("button:has-text('Valider le programme')");
+  await page.waitForURL(/ok=valide/);
+  await page.goto(BASE + "/admin");
+  await page.selectOption("select[name=role]", "poste");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.selectOption("select[name=filiere]", "chimiotherapie");
+  await page.selectOption("select[name=niveau]", "N1c");
+  await page.check("input[name=agent]");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=.*agent=AG-/);
+  const codeImpose = new URL(page.url()).searchParams.get("nouveau");
+  const agentImpose = new URL(page.url()).searchParams.get("agent");
+  // La gestion compose encore : filière et niveau de l'adresse, choisis à l'écran ; le programme validé est proposé.
+  await page.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N2");
+  assert.equal(await page.locator("#composer select").nth(1).inputValue(), "N2", "administration : le niveau de l'adresse");
+  await page.locator(".nav-sections a", { hasText: "Intérimaire test" }).waitFor();
+  await page.goto(BASE + "/module/critere-b1-02/evaluation");
+  assert.equal(await page.locator("select[name=niveauCible]").count(), 1, "administration : niveau cible au choix");
+
+  const ctxImpose = await browser.newContext();
+  await ctxImpose.addCookies([{ name: "fp_intro", value: "1", url: BASE }]); // introduction vue (étape 0 bis)
+  surveillerTiers(ctxImpose);
+  const pi = await ctxImpose.newPage();
+  pi.on("pageerror", (e) => console.log("ERREUR PAGE:", pi.url(), e.message));
+  await pi.goto(BASE + "/connexion");
+  await pi.fill("input[name=code]", codeImpose);
+  await pi.click("button:has-text('Entrer')");
+  await pi.waitForURL(/\/accueil$/);
+  if (await pi.waitForSelector(".visite", { timeout: 2500 }).then(() => true, () => false)) {
+    await pi.keyboard.press("Escape");
+    await pi.waitForSelector(".visite-voile", { state: "detached" });
+  }
+  // Le programme : la composition du code, montrée, rien à choisir ; le menu ne propose plus de composer.
+  const profilMontre = async () => (await pi.locator("#composer").innerText()).replace(/\s+/g, " ");
+  await pi.goto(BASE + "/");
+  await pi.waitForSelector("#composer h2:has-text('Mon programme')");
+  assert.equal(await pi.locator("#composer select").count(), 0, "poste : ni filière ni niveau à choisir");
+  assert.match(await profilMontre(), /Filière : Parcours Chimiothérapie · niveau visé : N1c/, "poste : filière et niveau du code");
+  assert.equal(await pi.locator("a[href='/#composer']").count(), 0, "poste : plus d'entrée « Composer le programme »");
+  assert.equal(await pi.locator(".nav-sections a", { hasText: "Intérimaire test" }).count(), 0, "poste : le programme d'un autre code n'est pas proposé");
+  // L'adresse ne change rien : ni un autre niveau, ni le programme à la carte d'un autre code.
+  await pi.goto(BASE + "/?parcours=integration&filiere=chimiotherapie&niveau=N2");
+  await pi.waitForSelector("#composer h2:has-text('Mon programme')");
+  assert.match(await profilMontre(), /niveau visé : N1c/, "poste : le niveau de l'adresse est ignoré");
+  await pi.goto(BASE + "/?programme=" + idProgramme);
+  await pi.waitForSelector("#composer h2:has-text('Mon programme')");
+  assert.equal(await pi.locator("text=Intérimaire test").count(), 0, "poste : le programme de l'adresse est ignoré");
+  // L'évaluation : le niveau cible du code, montré sans choix, même sous une adresse forgée…
+  await pi.goto(BASE + "/module/critere-b1-02/evaluation?parcours=integration&filiere=chimiotherapie&niveau=N2");
+  await pi.waitForSelector(".choix-niveau");
+  assert.equal(await pi.locator("select[name=niveauCible]").count(), 0, "poste : niveau cible sans choix");
+  assert.match(await pi.locator(".choix-niveau .champ").innerText(), /N1c[\s\S]*celui de votre code d'accès/);
+  // … et le serveur reprend celui du code, quoi qu'envoie la page.
+  const forgee = await pi.request.post(BASE + "/api/evaluation", {
+    data: { moduleId: "comportement-zac", reponses: {}, mode: "evaluation", difficulte: "complet", niveauCible: "N3", filiere: "chimiotherapie" },
+  });
+  assert.equal(forgee.status(), 200, "correction servie");
+  assert.equal((await forgee.json()).cible.niveau, "N1c", "poste : niveau cible du code, pas celui de la requête");
+  // Code relié, sans rattachement : un rapport ne s'émet que sous l'identifiant du code (question 99).
+  await pi.goto(BASE + "/module/comportement-zac/evaluation");
+  await pi.check("input[name=difficulte] >> nth=2"); // Complet
+  await pi.click("button:has-text('Commencer')");
+  await pi.waitForSelector("fieldset.question");
+  await pi.locator("fieldset.question label.option input").first().check();
+  await pi.click("button:has-text(\"Valider l'évaluation\")");
+  await pi.waitForSelector(".recap");
+  await pi.click(".recap button:has-text('Valider définitivement')");
+  await pi.waitForSelector(".resultat-entete");
+  await pi.click("a:has-text('Rapport de session')");
+  await pi.waitForSelector("#rapport");
+  await pi.fill("input[name=identifiant]", "AG-001");
+  await pi.click("button:has-text('Émettre et enregistrer')");
+  await pi.waitForSelector(`[role=alert]:has-text("Ce code de poste est relié à ${agentImpose}")`);
+  await pi.fill("input[name=identifiant]", agentImpose);
+  await pi.click("button:has-text('Émettre et enregistrer')");
+  await pi.waitForSelector("text=émis sous le n° RAP-");
+  await ctxImpose.close();
+  await page.goto(BASE + "/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("profil imposé au code de poste : programme montré sans choix, menu sans « Composer le programme », adresse et requête forgées ignorées, programme d'un autre code caché ; la gestion compose encore ; sous un code relié, rapport émis sous son seul identifiant");
+
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)
   for (const u of ["/connexion", "/api/sante"]) {

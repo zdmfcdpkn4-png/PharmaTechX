@@ -377,6 +377,33 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+101. **Un code de poste peut-il encore ouvrir et évaluer un module hors de
+    son programme ?** — posée le 05/10/2026, après la demande « un
+    utilisateur non tuteur et non administrateur ne doit avoir accès qu'à sa
+    progression et ses données, pas d'accès à la gestion des modules ».
+
+    Depuis ce jour, un code de poste ne compose plus son programme : filière,
+    niveau et programme à la carte sont ceux de son code, et le niveau cible
+    de ses évaluations aussi (`DECISIONS.md`). Mais il ouvre encore tout
+    module publié par son lien — Repères › Programme complet, une adresse
+    tapée ou transmise —, en lit les documents et peut l'évaluer, au niveau
+    de son code ; le rapport part au visa comme un autre.
+    - **a (recommandé)** : lecture libre, évaluation réservée au programme
+      du code. Tout module publié reste lisible (préparer le niveau suivant,
+      relire une procédure d'un autre secteur) ; l'évaluation d'un module
+      hors programme est refusée par le serveur, à la page comme à la
+      correction. Le tutorat, l'administration et le mode test ne sont pas
+      concernés. Contre : un agent qui change de niveau attend, pour
+      s'évaluer, le code de son nouveau profil.
+    - **b** : tout est réservé au programme du code : page du module,
+      documents et évaluation hors programme refusés ; le Programme complet
+      des Repères reste lisible, sans liens pour un code de poste. Contre :
+      plus de lecture anticipée du niveau suivant, et une procédure d'un
+      autre secteur ne se relit plus sur le site.
+    - **c** : ne rien fermer de plus : lecture et évaluation de tout module
+      publié, comme aujourd'hui. Contre : un rapport peut être émis sur un
+      critère hors du profil de l'agent ; seul le visa du tuteur le repère.
+
 100. **Modules de formation reliés par le formateur ou l'administrateur : à
     quoi ?** — posée le 05/10/2026, avec la réponse à la question 99, qui
     demandait aussi que les modules de formation soient reliés par le
@@ -403,6 +430,16 @@ telle. Ordre : ce qui change le déploiement en premier.
     - **c** : ne rien relier de plus ; l'étape « M'évaluer » de l'accueil
       liste seulement les modules évaluables du profil, chacun avec son
       bouton. Contre : le formateur ne choisit rien, agent par agent.
+
+    Précisée le 05/10/2026 par l'utilisateur, sans choix entre a, b et c :
+    « Un utilisateur non tuteur et non administrateur ne doit avoir accès
+    qu'à sa progression et ses données, pas d'accès à la gestion des
+    modules. » Lue comme le sens de la demande : les modules d'un code de
+    poste sont ceux que le tutorat ou l'administration lui donnent — le
+    profil et le programme à la carte du code —, et le poste ne les compose
+    plus. Fait le même jour (`DECISIONS.md`, « Le profil d'un code de poste,
+    fixé par son code »). Confier des modules agent par agent (a ou b) n'est
+    pas fait : à rouvrir si l'utilisateur le demande. Suite : question 101.
 
 99. **Code de poste et identifiant d'agent : faut-il les relier ?** — posée
     le 05/10/2026, après la création d'un premier code de poste de

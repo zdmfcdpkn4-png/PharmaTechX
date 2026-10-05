@@ -1,6 +1,7 @@
 "use server";
 
-import { getSession, sessionRequise } from "@/lib/auth";
+import { agentRelieDeLaSession, getSession, sessionRequise } from "@/lib/auth";
+import { identifiantARattacher } from "@/lib/liaison";
 import { baseConfiguree } from "@/lib/db";
 import { conservationActive } from "@/lib/config";
 import { journaliser } from "@/lib/journal";
@@ -36,11 +37,23 @@ export async function actionEmettreRapport(entree: {
   // Apprenant rattaché à son identifiant (question 11) : l'identifiant vient du
   // rattachement, jamais du navigateur. En mode test, l'utilisateur test.
   const ratt = await rattachement();
+  // Code de poste relié (question 99, choix a) : même sans rattachement, un rapport ne s'émet que sous
+  // l'identifiant du code — un autre, saisi ou forgé, est refusé (05/10/2026 : l'agent n'a accès qu'à ses données).
+  const relie = !essai && !ratt ? await agentRelieDeLaSession() : null;
+  const choixRelie = relie ? identifiantARattacher(relie.identifiant, String(entree.identifiant ?? "").slice(0, 20)) : null;
+  if (relie && choixRelie && "refus" in choixRelie) {
+    return {
+      ok: false,
+      erreur: `Ce code de poste est relié à ${relie.identifiant} : un rapport ne s'émet que sous cet identifiant.`,
+    };
+  }
   const identifiant = essai
     ? IDENTIFIANT_ESSAI
     : ratt
       ? ratt.identifiant
-      : normaliserIdentifiant(String(entree.identifiant ?? "").slice(0, 20));
+      : choixRelie && "identifiant" in choixRelie
+        ? choixRelie.identifiant
+        : normaliserIdentifiant(String(entree.identifiant ?? "").slice(0, 20));
   if (!identifiant) {
     return { ok: false, erreur: "Saisissez votre identifiant d'agent (AG-001, AG-002…), remis par votre tuteur." };
   }

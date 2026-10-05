@@ -7479,6 +7479,91 @@ reliés par le formateur ou l'administrateur : question 100.
     journalisé. Le même identifiant écrit autrement (« ag 4 ») est admis :
     vérifié par le test unitaire seulement.
 
+## Le profil d'un code de poste, fixé par son code (05/10/2026, demande directe)
+
+**Demande.** « Un utilisateur non tuteur et non administrateur ne doit avoir
+accès qu'à sa progression et ses données, pas d'accès à la gestion des
+modules. » Elle précise la demande d'où vient la question 100 : que les
+modules de formation soient reliés par le formateur ou l'administrateur.
+
+**Constat.**
+- Les écrans et les actions d'administration refusaient déjà un code de
+  poste : la coque `/admin` le renvoie à la connexion, chaque action serveur
+  revérifie le rôle, les exports répondent 403. Recensé action par action.
+- En revanche, un code de poste composait lui-même son programme :
+  - « Composer le programme » lui faisait choisir filière et niveau ;
+  - l'adresse d'une page (`?filiere=…&niveau=…`, `?programme=…`) en
+    faisait autant ;
+  - l'écran d'évaluation lui laissait choisir le niveau cible du tirage, et
+    le serveur prenait celui qu'envoyait la page ;
+  - le choix des parcours lui montrait les programmes à la carte des autres
+    codes, avec leur destinataire et le motif de l'écart à la fiche.
+- Sous un code relié à un agent (question 99) mais pas encore rattaché, un
+  rapport s'émettait sous n'importe quel identifiant actif saisi.
+
+**Fait.**
+- Règle pure `lib/profil-impose.ts` : un code de poste reçoit le profil de
+  son code ; le tutorat, l'administration, le mode test et le site sans base
+  choisissent encore le leur.
+- Programme (`/`), pour un code de poste :
+  - la carte « Mon programme » montre la filière et le niveau du code, sans
+    sélecteur ; l'adresse ne les change pas ;
+  - le programme à la carte est celui du code, et lui seul ; ceux des autres
+    codes ne sont plus proposés ;
+  - les documents généraux envoyés à la page sont ceux du profil.
+- Page d'un module et page d'évaluation : profil et programme du code ;
+  l'adresse ne garde que le parcours.
+- Évaluation : le niveau cible est montré, « celui de votre code d'accès »,
+  sans choix ; `/api/evaluation` reprend le niveau et la filière du code,
+  quoi qu'envoie la page.
+- Menu : plus d'entrée « Composer le programme » pour un code de poste. Sa
+  visite guidée dit « Votre programme ».
+- Rapport émis sous un code relié, sans rattachement : seul l'identifiant du
+  code est accepté (`identifiantARattacher`, question 99).
+
+**Inchangé.**
+- Le tutorat et l'administration composent encore n'importe quel profil,
+  pour voir ce que voit un agent ; le mode test aussi.
+- Le choix Intégration / Maintien d'habilitation reste à l'agent : le code
+  ne porte pas de parcours.
+- Un code de poste ouvre encore tout module publié par son lien (Repères ›
+  Programme complet, adresse) et peut l'évaluer, au niveau de son code :
+  question 101.
+- Sous un code partagé, un rapport s'émet toujours sous l'identifiant saisi,
+  sans preuve (questions 6 et 11) ; le visa du tuteur reste le contrôle.
+
+**Coût.**
+- Un code ne se modifie pas : changer la filière ou le niveau d'un agent
+  demande un nouveau code de poste au nouveau profil, relié au même
+  identifiant. Sa progression, attachée à l'identifiant, suit.
+- Une évaluation commencée avant ce changement, à un autre niveau que celui
+  du code, peut être refusée à la correction (tirage non conforme) : elle se
+  recommence.
+- Un code sans filière n'ouvre que le socle ; un code sans niveau, tous les
+  niveaux.
+
+**Suite.** Question 101 : un code de poste peut-il encore ouvrir et évaluer
+un module hors de son programme ? La question 100 est précisée par cette
+demande (voir son entrée).
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 497 tests dont six nouveaux
+  (`test/profil-impose.test.ts`, `test/tutoriel.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 120 étapes, sans erreur de page
+  ni erreur serveur. L'étape ajoutée vérifie :
+  - pour l'administration, les sélecteurs, le niveau de l'adresse et le
+    programme à la carte validé, proposé ;
+  - pour un code de poste chimiothérapie · N1c : aucune sélection, ni au
+    programme ni à l'évaluation, et plus d'entrée « Composer le programme » ;
+  - une adresse forgée (niveau N2, programme d'un autre code) ignorée ;
+  - une correction demandée au niveau N3 scellée au niveau N1c du code ;
+  - sous ce code relié, non rattaché, un rapport refusé sous un autre
+    identifiant, puis émis sous celui du code.
+- Serveur d'essai, code de poste chimiothérapie · N2 : captures de la carte
+  « Mon programme » et du niveau cible, au bureau et sur téléphone à 390 px,
+  sans débordement ni erreur de page.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

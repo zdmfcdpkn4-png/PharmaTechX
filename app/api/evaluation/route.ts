@@ -23,6 +23,7 @@ import type { CibleScellee } from "@/content/cible";
 import { questionsSignalees } from "@/content/banque-db";
 import { baseConfiguree } from "@/lib/db";
 import { LIBELLES_ROLE, confirmerCodeDeTutorat, getSession, refusApiSansSession } from "@/lib/auth";
+import { profilImpose } from "@/lib/profil-impose";
 import { journaliser } from "@/lib/journal";
 import {
   estADecouvrir,
@@ -307,8 +308,19 @@ export async function POST(request: Request) {
   // Noms des niveaux de question en vigueur (question 81) : message de
   // conformité, et copie dans le résultat scellé s'ils ne sont plus ceux d'origine.
   const libellesNiveaux = libellesDe(await lireNomsNiveaux());
-  const niveauDemande = typeof corps.niveauCible === "string" ? corps.niveauCible.slice(0, 12) : "";
-  const filiereDemandee = typeof corps.filiere === "string" ? corps.filiere.slice(0, 40) : "";
+  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, le niveau cible et la filière
+  // du tirage sont ceux du code ; ceux qu'envoie la page ne valent que pour qui choisit son profil.
+  const impose = profilImpose(baseConfiguree() ? await getSession() : null, baseConfiguree());
+  const niveauDemande = impose
+    ? (impose.niveau ?? "")
+    : typeof corps.niveauCible === "string"
+      ? corps.niveauCible.slice(0, 12)
+      : "";
+  const filiereDemandee = impose
+    ? (impose.filiere ?? "")
+    : typeof corps.filiere === "string"
+      ? corps.filiere.slice(0, 40)
+      : "";
   const connus = niveauDemande || filiereDemandee ? await identifiantsConnus() : { niveaux: [], filieres: [] };
   const niveauCible = connus.niveaux.find((c) => c.toUpperCase() === niveauDemande.toUpperCase()) ?? null;
   // Profil de tirage (question 74) : une filière inconnue vaut « non précisée », comme un niveau inconnu.

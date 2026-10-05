@@ -304,6 +304,7 @@ export function TableauDeBord({
   parcours = "integration",
   ordresProfil = {},
   ordresApprenant = {},
+  profilImpose = false,
 }: {
   troncCommun: ModuleResume[];
   parPoste: Record<string, ModuleResume[]>;
@@ -346,6 +347,12 @@ export function TableauDeBord({
    * clé : ils passent avant ceux des profils.
    */
   ordresApprenant?: Record<string, string[]>;
+  /**
+   * Profil imposé (05/10/2026, demande directe) : un code de poste ne compose
+   * pas son programme ; filière et niveau sont ceux de son code, montrés sans
+   * être modifiables (`lib/profil-impose.ts`).
+   */
+  profilImpose?: boolean;
 }) {
   const [posteId, setPosteId] = useState<string>(filiereInitiale);
   const [niveauCode, setNiveauCode] = useState<string>(niveauInitial);
@@ -552,6 +559,21 @@ export function TableauDeBord({
             dossier d&apos;habilitation.
           </p>
         </section>
+      ) : profilImpose ? (
+      // Profil imposé (05/10/2026) : la composition du code, montrée, jamais choisie ici.
+      <section className="carte" id="composer" aria-labelledby="t-profil">
+        <h2 id="t-profil">Mon programme</h2>
+        <p className="legende">
+          Le socle transversal (blocs 1 et 3), exigé de tous, puis les critères de votre filière et de votre
+          niveau. Ils viennent de votre code d&apos;accès : votre tuteur ou l&apos;administrateur les fixe.
+        </p>
+        <p style={{ margin: 0 }}>
+          Filière&nbsp;:{" "}
+          <strong>{posteId ? (postes.find((p) => p.id === posteId)?.libelle ?? posteId) : "aucune — socle transversal seul"}</strong>
+          {" · "}niveau visé&nbsp;:{" "}
+          <strong>{niveauCode ? (niveaux.find((n) => n.code === niveauCode)?.libelle ?? niveauCode) : "non précisé — tous niveaux"}</strong>
+        </p>
+      </section>
       ) : (
       <section className="carte" id="composer" aria-labelledby="t-filtres">
         <h2 id="t-filtres">Composer le programme</h2>
@@ -688,7 +710,7 @@ export function TableauDeBord({
           ) : (
             <p className="encart">
               Aucun module du programme affiché ne correspond.
-              {aLaCarte ? "" : " Changez la filière ou le niveau ci-dessus pour chercher ailleurs."}
+              {aLaCarte || profilImpose ? "" : " Changez la filière ou le niveau ci-dessus pour chercher ailleurs."}
             </p>
           )}
         </>
@@ -746,12 +768,17 @@ export function TableauDeBord({
       <div className="section-titre">
         <h2>Critères de la filière</h2>
         <span className="compte">
-          {posteId ? `${modulesPoste.length} critère(s)` : "aucune filière choisie"}
+          {posteId ? `${modulesPoste.length} critère(s)` : profilImpose ? "aucune filière à votre code" : "aucune filière choisie"}
         </span>
         {posteId ? <BoutonReplis groupes={groupesPoste} /> : null}
       </div>
       {posteId ? (
         <GroupesModules groupes={groupesPoste} estOuvert={estOuvert} basculer={basculer} etatDe={etatDe} />
+      ) : profilImpose ? (
+        <p className="encart">
+          Votre code d&apos;accès ne porte pas de filière : seul le socle transversal est à votre programme. Si une
+          filière vous revient, voyez votre tuteur.
+        </p>
       ) : (
         <p className="encart">
           {/* Liste lue au référentiel : une filière déposée y figure aussi. */}

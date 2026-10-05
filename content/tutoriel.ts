@@ -62,12 +62,13 @@ const POSTE: EtapeTutoriel[] = [
     href: "/#modules",
     lien: "Voir mes modules",
   },
+  // Profil imposé (05/10/2026) : le poste ne compose plus son programme, il le reçoit de son code.
   {
-    titre: "Composer le programme",
+    titre: "Votre programme",
     texte:
-      "Filière, niveau et parcours ajustent la liste. Découverte sert à lire et à s'entraîner ; Habilitation ajoute les questions réservées à l'évaluation.",
+      "Votre filière et votre niveau viennent de votre code d'accès : c'est votre tuteur qui les fixe. Découverte sert à lire et à s'entraîner ; Habilitation ajoute les questions réservées à l'évaluation.",
     href: "/#composer",
-    lien: "Composer le programme",
+    lien: "Mon programme",
   },
   {
     titre: "L'évaluation et son rapport",

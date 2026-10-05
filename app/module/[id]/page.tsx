@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getModuleComplet, positionDansParcours, positionDansProfil, positionDansProgramme } from "@/content/store";
 import { lireIdProgramme } from "@/content/programmes";
-import { lireProfilDemande, requeteProfil } from "@/content/ordres";
+import { programmeDuCode } from "@/content/programmes-db";
+import { requeteProfil } from "@/content/ordres";
+import { profilDeLaPage, profilImpose } from "@/lib/profil-impose";
 import { getCritere } from "@/content/habilitation";
 import { listeBlocs } from "@/content/blocs-db";
 import { A_PRECISER, libelleNature } from "@/content/types";
@@ -75,11 +77,18 @@ export default async function PageModule({
   const aRattacher = mod.ressources.filter((r) => !etatRessource(r).fait).length;
   // Entré par un programme à la carte (question 50) : on enchaîne dans son
   // ordre, et chaque lien garde le programme ; sinon, le parcours d'intégration.
-  const idProgramme = lireIdProgramme(sp.programme);
+  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : pour un code de poste, le programme et le profil sont
+  // ceux du code ; l'adresse ne garde que le parcours.
+  const impose = profilImpose(session, baseConfiguree());
+  const idProgramme = impose
+    ? session?.acces
+      ? await programmeDuCode(session.acces).catch(() => null)
+      : null
+    : lireIdProgramme(sp.programme);
   const dansProgramme = idProgramme ? await positionDansProgramme(idProgramme, mod.id) : null;
   // Entré par un profil qui a son ordre (question 55) : on enchaîne dans sa
   // chronologie — celle de l'apprenant rattaché, s'il a la sienne (question 56).
-  const profil = dansProgramme ? null : lireProfilDemande(sp);
+  const profil = dansProgramme ? null : profilDeLaPage(impose, sp);
   const ratt = profil ? await rattachement() : null;
   const dansProfil = profil
     ? await positionDansProfil(profil.parcours, profil.filiere, profil.niveau, mod.id, ratt?.agentId ?? null)

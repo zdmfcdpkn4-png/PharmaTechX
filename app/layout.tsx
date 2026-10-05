@@ -34,6 +34,7 @@ import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import { actionTerminerEssai } from "@/app/actions-essai";
 import { LIBELLE_ESSAI } from "@/lib/essai";
+import { profilImpose } from "@/lib/profil-impose";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -104,6 +105,8 @@ export default async function RootLayout({
   // Volet de navigation (question 37, choix c) : les liens sont composés ici,
   // seul endroit qui connaisse la session, la conservation et la base.
   const progressionVisible = conservation && baseConfiguree();
+  // Profil imposé (05/10/2026, `lib/profil-impose.ts`) : un code de poste ne compose pas son programme.
+  const impose = profilImpose(session, baseConfiguree());
   const groupes: GroupeRail[] = [
     // Accueil en tête du menu (question 91, choix a) : le chemin de l'agent, le circuit de la gestion.
     {
@@ -117,7 +120,7 @@ export default async function RootLayout({
       titre: "Formation",
       liens: [
         { href: "/#modules", libelle: "Mes modules" },
-        { href: "/#composer", libelle: "Composer le programme" },
+        ...(impose ? [] : [{ href: "/#composer", libelle: "Composer le programme" }]),
         ...(progressionVisible
           ? [{ href: "/#progression", libelle: "Ma progression", indice: ratt?.identifiant }]
           : []),

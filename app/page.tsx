@@ -19,6 +19,7 @@ import { listerProgrammes, programmeDuCode } from "@/content/programmes-db";
 import { MENTION_DEGRADE, lireIdProgramme, modulesDuProgramme, type Programme } from "@/content/programmes";
 import { auNiveau as proposeAuNiveau, chronologie, cleProfil, lireProfilDemande, ordreApplicable, requeteProfil } from "@/content/ordres";
 import { ordresDeLAgent, ordresDuParcours } from "@/content/ordres-db";
+import { documentDuProfil, profilImpose, programmeVise } from "@/lib/profil-impose";
 
 function resumer(m: Module, enBase: Record<string, number>): ModuleResume {
   return {
@@ -76,15 +77,18 @@ export default async function Accueil({
     listeBlocs(),
   ]);
 
+  // Profil imposé (05/10/2026, demande directe) : un code de poste ne compose pas son programme ; filière,
+  // niveau et programme à la carte sont ceux de son code, et l'adresse ne les change pas (`lib/profil-impose.ts`).
+  const impose = profilImpose(session, baseConfiguree());
   // Programme à la carte (question 50) : demandé dans l'adresse, ou porté par
   // le code de poste de la session quand aucun parcours n'est demandé. Seul un
   // programme validé s'ouvre ; sinon le poste suit la fiche, et l'écran le dit.
-  const idDemande = lireIdProgramme(params.programme);
+  const idDemande = impose ? null : lireIdProgramme(params.programme);
   const idDuCode =
-    !idDemande && !params.parcours && session?.acces && baseConfiguree()
+    (impose || (!idDemande && !params.parcours)) && session?.acces && baseConfiguree()
       ? await programmeDuCode(session.acces).catch(() => null)
       : null;
-  const idVise = idDemande ?? idDuCode;
+  const idVise = programmeVise(Boolean(impose), idDemande, idDuCode, Boolean(params.parcours));
   const programmeOuvert = idVise ? (programmesValides.find((x) => x.id === idVise) ?? null) : null;
   const programmeIndisponible = Boolean(idVise && !programmeOuvert);
   let aLaCarte: ProgrammeALaCarte | null = null;
@@ -107,7 +111,7 @@ export default async function Accueil({
   // Un code de poste porte sa filière et son niveau : le programme s'ouvre dessus.
   // Au retour d'une page de module entrée par un profil (question 55), c'est ce
   // profil qui se rouvre.
-  const demande = lireProfilDemande(params);
+  const demande = impose ? null : lireProfilDemande(params);
   const profilDemande =
     demande && filieres.some((f) => f.id !== "socle" && f.id === demande.filiere) && niveaux.some((n) => n.code === demande.niveau)
       ? demande
@@ -136,8 +140,9 @@ export default async function Accueil({
   // Documents généraux, proposés par profil (filières, niveaux) — question 10 ;
   // réservés aux sessions ouvertes par un code — question 13, choix b.
   const generaux = baseConfiguree() ? await depotsGeneraux().catch(() => []) : [];
+  // Un poste ne reçoit que les documents de son profil, même hors de l'écran.
   const documents: DocumentResume[] = session
-    ? generaux.map((d) => ({
+    ? generaux.filter((d) => !impose || documentDuProfil(d, filiereInitiale, niveauInitial)).map((d) => ({
         id: d.id,
         titre: d.titre,
         nature: d.nature,
@@ -239,6 +244,9 @@ export default async function Accueil({
         </p>
       </section>
 
+      {/* Profil imposé (05/10/2026) : un poste ne voit pas les programmes à la carte des autres codes, et le
+          sien, quand son code en porte un, ne se quitte pas pour un parcours de la fiche. */}
+      {impose && programmeOuvert ? null : (
       <nav className="nav-sections" aria-label="Choix du parcours">
         <Link
           href="/?parcours=integration"
@@ -252,7 +260,7 @@ export default async function Accueil({
         >
           Maintien d&apos;habilitation
         </Link>
-        {programmesValides.map((x) => (
+        {(impose ? [] : programmesValides).map((x) => (
           <Link
             key={x.id}
             href={`/?programme=${x.id}`}
@@ -263,6 +271,7 @@ export default async function Accueil({
           </Link>
         ))}
       </nav>
+      )}
       {programmeIndisponible && (
         <p className="encart encart--attention" role="status">
           {idDemande
@@ -308,6 +317,7 @@ export default async function Accueil({
           identifiantRattache={ratt?.identifiant ?? null}
           documentsReserves={documentsReserves}
           essai={Boolean(session?.essai)}
+          profilImpose={Boolean(impose)}
         />
       </section>
 

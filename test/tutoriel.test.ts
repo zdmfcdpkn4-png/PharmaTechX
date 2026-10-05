@@ -61,6 +61,12 @@ test("un profil de poste ne voit aucun écran d'administration", () => {
   }
 });
 
+test("un profil de poste ne compose pas son programme : il le reçoit de son code (05/10/2026)", () => {
+  for (const e of TUTORIEL.poste) {
+    assert.ok(!/compose/i.test(`${e.titre} ${e.texte} ${e.lien ?? ""}`), `poste : « ${e.titre} » invite à composer`);
+  }
+});
+
 test("le tutorat ne voit pas les écrans réservés à l'administration", () => {
   // Barème, référentiel, signature, journal et gestion des accès sont sous
   // `session?.role === "admin"` dans le gabarit racine.

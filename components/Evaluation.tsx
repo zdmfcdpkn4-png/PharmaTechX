@@ -468,6 +468,7 @@ export function Evaluation({
   signalees = [],
   dejaVues = [],
   libellesNiveaux = LIBELLES_NIVEAU_QUESTION,
+  niveauImpose = false,
 }: {
   moduleId: string;
   moduleTitre: string;
@@ -509,6 +510,12 @@ export function Evaluation({
   dejaVues?: string[];
   /** Noms des niveaux de question en vigueur (question 81). */
   libellesNiveaux?: LibellesNiveaux;
+  /**
+   * Profil imposé (05/10/2026, demande directe) : le niveau cible d'un code de
+   * poste est celui de son code, montré sans être choisi ; le serveur le
+   * reprend quoi qu'envoie la page (`lib/profil-impose.ts`).
+   */
+  niveauImpose?: boolean;
 }) {
   const DIFFICULTES = difficultes(bareme);
   const MIN_QUESTIONS_HABILITATION = bareme.minQuestions;
@@ -735,8 +742,9 @@ export function Evaluation({
   const reprendre = (e: EtatEnCours) => {
     setMode(e.mode);
     setDifficulte(e.difficulte);
-    // Le serveur juge la reprise sous le plafond de son tirage : le niveau cible est celui de la sauvegarde.
-    setNiveauCible(e.niveauCible ?? "");
+    // Le serveur juge la reprise sous le plafond de son tirage : le niveau cible est celui de la sauvegarde —
+    // sauf pour un code de poste, dont le serveur reprend toujours le niveau du code (05/10/2026).
+    if (!niveauImpose) setNiveauCible(e.niveauCible ?? "");
     setReponses(e.reponses);
     setQim(e.qim);
     setLegendes(e.legendes);
@@ -1039,6 +1047,20 @@ export function Evaluation({
           </div>
         )}
         <div className="choix-niveau">
+          {niveauImpose ? (
+            // Profil imposé (05/10/2026) : le niveau du code, montré ; aucun choix ici.
+            <div className="champ">
+              <span className="champ-titre">Niveau cible</span>
+              <p style={{ margin: 0 }}>
+                <strong>
+                  {niveauCible
+                    ? (niveaux.find((n) => n.code === niveauCible)?.libelle ?? niveauCible)
+                    : "Non précisé — questions de tous niveaux"}
+                </strong>{" "}
+                <span className="legende">— celui de votre code d&apos;accès</span>
+              </p>
+            </div>
+          ) : (
           <label className="champ">
             <span className="champ-titre">Niveau cible</span>
             <select
@@ -1058,6 +1080,7 @@ export function Evaluation({
               ))}
             </select>
           </label>
+          )}
           <p className="legende" style={{ margin: ".25rem 0 0" }}>
             {majuscule(plafondEnPhrase(plafond, libellesNiveaux))}, selon le barème ; tirage
             Habilitation :{" "}
