@@ -16,7 +16,7 @@ import {
 } from "@/content/niveaux-questions";
 import { MOTIFS_SIGNALEMENT, MOTIFS_SIGNALEMENT_FICHE } from "@/content/signalements";
 import { estADecouvrir, type Jugement } from "@/content/jugement";
-import { marquesOptions, marquesQim } from "@/content/marques";
+import { marquesOptions, marquesQim, pastille, type Pastille } from "@/content/marques";
 import { justificationsParOption } from "@/content/justifications";
 import { actionDetacher } from "@/app/actions-progression";
 import type { DetailQuestion, ResultatEvaluation } from "@/app/api/evaluation/route";
@@ -138,6 +138,19 @@ function classeCorrection(d: DetailQuestion): string {
   if (d.correct) return "correction--exacte";
   if (d.note > 0) return "correction--partielle";
   return "correction--erronee";
+}
+
+/**
+ * Pastille de couleur du corrigé (05/10/2026, demande directe) : le mot porte
+ * le sens, la couleur et la coche le doublent.
+ */
+function PastilleCorrection({ valeur }: { valeur: Pastille }) {
+  return (
+    <span className={`etiquette etiquette--${valeur}`}>
+      <span aria-hidden="true">{valeur === "correct" ? "✓ " : "✗ "}</span>
+      {valeur}
+    </span>
+  );
 }
 
 /**
@@ -1239,19 +1252,17 @@ export function Evaluation({
           Attendu&nbsp;: {d.reponsesAttendues.join(" · ")}
         </p>
       )}
-      {!reportee && d.propositions && d.justificationsPropositions && (
-        <ul className="justifs-propositions">
-          {d.propositions.map((texte, k) =>
-            d.justificationsPropositions?.[k] ? (
-              <li key={k}>
-                {texte}{" "}
-                <span className="legende">
-                  ({d.reponsesAttendues.includes(texte) ? (d.type === "QIM" ? "vraie" : "attendue") : d.type === "QIM" ? "fausse" : "non attendue"})
-                </span>
+      {/* Chaque proposition QCM ou QIM, sa pastille en tête (05/10/2026), sa justification sous elle s'il y en a une. */}
+      {!reportee && d.propositions && (
+        <ul className="propositions-corrigees">
+          {d.propositions.map((texte, k) => (
+            <li key={k}>
+              <PastilleCorrection valeur={pastille(texte, d.reponsesAttendues)} /> {texte}
+              {d.justificationsPropositions?.[k] && (
                 <span className="justif-proposition">{d.justificationsPropositions[k]}</span>
-              </li>
-            ) : null,
-          )}
+              )}
+            </li>
+          ))}
         </ul>
       )}
       {d.justification && <p style={{ maxWidth: "66ch" }}>{d.justification}</p>}
@@ -1393,6 +1404,9 @@ export function Evaluation({
         ) : (
           q.options.map((o) => {
             const m = marques?.options?.[o.id] ?? null;
+            // Chaque proposition porte sa pastille, cochée ou non (05/10/2026) ;
+            // le fond de la ligne garde le verdict de la case.
+            const p = marques?.options && corrigee ? pastille(o.texte, corrigee.reponsesAttendues) : null;
             return (
               <Fragment key={o.id}>
                 <label className={`option${m ? ` option--${m}` : ""}`}>
@@ -1403,10 +1417,9 @@ export function Evaluation({
                     onChange={() => basculer(q, o.id)}
                   />
                   <span>{o.texte}</span>
-                  {m && (
+                  {p && (
                     <span className="marque">
-                      <span aria-hidden="true">{m === "attendue" ? "✓ " : "✗ "}</span>
-                      {m === "attendue" ? "attendue" : "non attendue"}
+                      <PastilleCorrection valeur={p} />
                     </span>
                   )}
                 </label>

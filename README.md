@@ -205,6 +205,9 @@ chaque rapport : une évaluation déjà passée se relit avec le barème de son
 Deux modes de passation : **évaluation** (correction à la fin, résultat porté
 au rapport) et **entraînement** (une question à la fois, correction
 immédiate avec justification et source, jamais enregistré ni comptabilisé).
+Au corrigé, chaque proposition d'un QCM ou d'une QIM porte une pastille
+verte « correct » (attendue ou vraie) ou rouge « incorrect » ; la QIM jugée
+en Vrai/Faux garde, sous la question, « Vous : … · Attendu : … » par ligne.
 
 **En fin de test** (transposé du Lecteur QIM · QCM, 18/09/2026) : le
 **document de synthèse** du module s'affiche après la correction (fiche de
@@ -491,6 +494,7 @@ filière et niveau déposés au référentiel avec leur badge, arborescence de l
 création et import de dix questions avec image, images collées d'un fichier Word
 et image ajoutée ou retirée dans l'aperçu du dépôt, justification sous chaque proposition
 (dépôt, banque, correction, absente de la page avant la réponse, répartie dans l'éditeur),
+pastilles « correct » / « incorrect » au corrigé,
 éditeur de schéma, évaluation
 à 80 % (verdict indéterminé), signalement qui verrouille les visas, émission
 d'un rapport sous identifiant (identifiant inconnu refusé), arbitrage, visas

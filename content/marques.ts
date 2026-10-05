@@ -44,6 +44,18 @@ export function marquesOptions(
 }
 
 /**
+ * Pastille du corrigé (05/10/2026, demande directe) : « correct » sur une
+ * proposition attendue (QCM, QIM en cases) ou vraie (QIM), « incorrect » sur
+ * les autres. Elle dit ce qu'est la proposition, non ce qu'en a fait
+ * l'apprenant : sa réponse se lit à sa case cochée, ou à « Votre réponse ».
+ */
+export type Pastille = "correct" | "incorrect";
+
+export function pastille(texte: string, attendues: readonly string[]): Pastille {
+  return attendues.includes(texte) ? "correct" : "incorrect";
+}
+
+/**
  * QIM jugée proposition par proposition : ce que l'apprenant a répondu, ce
  * qui était attendu, et le verdict de la ligne. « Je ne sais pas », ou une
  * proposition laissée de côté (`null`), n'est ni juste ni faux : le barème

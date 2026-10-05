@@ -925,6 +925,37 @@ Justification : cf. procédure interne.`,
     /^Extrait : « phrase que la seconde contredit »\s*Piège : inversion\.$/,
     "sous la proposition jugée à tort, son extrait et son piège",
   );
+  // Pastilles du corrigé (05/10/2026) : sous la question, la QIM jugée en Vrai/Faux garde son verdict
+  // par ligne, sans pastille ; au corrigé de fin d'entraînement, chaque proposition porte la sienne en tête.
+  assert.equal(
+    await page.locator("fieldset.question .etiquette--correct, fieldset.question .etiquette--incorrect").count(),
+    0,
+    "QIM en Vrai/Faux : pas de pastille sous la question",
+  );
+  await page.click("button:has-text('Terminer')");
+  await page.waitForSelector("h2:has-text('Entraînement terminé')");
+  const lignesCorrigees = page.locator(".propositions-corrigees li");
+  assert.equal(await lignesCorrigees.count(), 2, "fin d'entraînement : les deux propositions au corrigé");
+  const pastilleDe = async (k) =>
+    lignesCorrigees.nth(k).evaluate((li) => {
+      const p = li.firstElementChild;
+      return { classe: p?.className, texte: p?.textContent, fond: p ? getComputedStyle(p).backgroundColor : null };
+    });
+  assert.deepEqual(
+    await pastilleDe(0),
+    { classe: "etiquette etiquette--correct", texte: "✓ correct", fond: "rgb(31, 107, 69)" },
+    "proposition vraie : pastille verte « correct » en tête de ligne",
+  );
+  assert.deepEqual(
+    await pastilleDe(1),
+    { classe: "etiquette etiquette--incorrect", texte: "✗ incorrect", fond: "rgb(153, 39, 31)" },
+    "proposition fausse : pastille rouge « incorrect » en tête de ligne",
+  );
+  assert.match(
+    await lignesCorrigees.nth(1).locator(".justif-proposition").innerText(),
+    /^Extrait : « phrase que la seconde contredit »\s*Piège : inversion\.$/,
+    "au corrigé, sa justification sous la proposition",
+  );
   // Une question au texte unique, comme celles déposées avant : « Répartir sous les propositions ».
   await page.goto(BASE + "/admin/questions/nouvelle?module=critere-b3-10");
   await page.fill("textarea[name=enonce]", "Texte unique à répartir ?");
@@ -953,7 +984,7 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector("textarea[name=enonce]");
   assert.equal(await page.locator(".champ--justif-proposition textarea").nth(1).inputValue(), "Extrait : « deux »\nPiège : inversion.", "enregistrée");
   assert.equal(await page.locator(".proposition--editeur input[type=checkbox]").nth(0).isChecked(), true, "corrigé enregistré");
-  ok("justification par proposition : extrait et piège sous leur proposition au dépôt, en banque et à la correction, gardés au serveur avant la réponse ; texte unique réparti dans l'éditeur");
+  ok("justification par proposition : extrait et piège sous leur proposition au dépôt, en banque et à la correction, gardés au serveur avant la réponse ; texte unique réparti dans l'éditeur ; pastilles « correct » / « incorrect » au corrigé");
 
   /** Change de code d'accès : quitter la session, se connecter avec un autre code. */
   const rebrancher = async (code) => {
@@ -1122,6 +1153,28 @@ Justification : cf. procédure interne.`,
   await page.waitForSelector(".resultat-entete--indetermine");
   await page.waitForSelector("h2:has-text('Verdict indéterminé')");
   ok("évaluation complète corrigée : 80 %, verdict indéterminé (bande de garde 70 à 89 %)");
+  // Pastilles du corrigé (05/10/2026) : chaque QCM et la QIM listent toutes leurs propositions, même sans
+  // justification comme ici, chacune ouverte par sa pastille : « correct » si attendue ou vraie, « incorrect » sinon.
+  const corriges = await page.locator(".correction").evaluateAll((cs) =>
+    cs.map((c) => ({
+      enonce: c.querySelector(":scope > p > strong")?.textContent ?? "",
+      lignes: [...c.querySelectorAll(".propositions-corrigees li")].map((li) => {
+        const p = li.firstElementChild;
+        return [li.textContent.slice((p?.textContent ?? "").length).trim(), p?.textContent ?? ""];
+      }),
+    })),
+  );
+  const parTexte = (lignes) => [...lignes].sort((a, b) => a[0].localeCompare(b[0]));
+  for (const q of [...QCMS.map((x) => ({ enonce: x.enonce, props: x.options })), { enonce: QIM.enonce, props: QIM.propositions }]) {
+    const c = corriges.find((x) => x.enonce === q.enonce);
+    assert.ok(c, "question corrigée : " + q.enonce);
+    assert.deepEqual(
+      parTexte(c.lignes),
+      parTexte(q.props.map(([texte, vrai]) => [texte, vrai ? "✓ correct" : "✗ incorrect"])),
+      "pastilles du corrigé : " + q.enonce,
+    );
+  }
+  ok("corrigé de l'évaluation : chaque proposition QCM et QIM listée, pastille « correct » ou « incorrect » en tête");
   assert.equal(await page.locator(".schema-legendes--revele").count(), 1);
   assert.equal(await page.locator(".schema-legendes--revele .legende-juste").count(), 4);
 
@@ -3731,6 +3784,14 @@ Justification : cf. procédure interne.`,
   });
   assert.ok(vueCorrection.aLEcran, "correction à l'écran, au-dessus de la barre de passation");
   assert.ok(vueCorrection.marques > 0, "verdict porté sur les propositions");
+  // Pastilles (05/10/2026) : en QCM, chaque option porte la sienne, cochée ou non ; au moins une est « correct ».
+  if (await f0.locator("label.option").count()) {
+    const pastilles = await f0
+      .locator("label.option")
+      .evaluateAll((ls) => ls.map((l) => l.querySelector(".etiquette--correct, .etiquette--incorrect")?.textContent ?? null));
+    assert.ok(pastilles.every((t) => t === "✓ correct" || t === "✗ incorrect"), `une pastille par option : ${pastilles.join(" | ")}`);
+    assert.ok(pastilles.includes("✓ correct"), "au moins une option « correct »");
+  }
   assert.equal(vueCorrection.enonceRepete, 0, "énoncé non répété sous la question");
   ok("entraînement : correction immédiate après la première question, à l'écran, lue sur les propositions");
 

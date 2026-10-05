@@ -3794,7 +3794,8 @@ décision est fait. Deux points appellent chacun une question, posée à part :
   400 ms si le navigateur recale la page, sauf geste de l'apprenant.
 - **Correction lue sur les propositions (E1).**
   - QCM, et QIM en cases : « ✓ attendue » sur chaque bonne réponse, cochée ou
-    non, et « ✗ non attendue » sur un choix erroné.
+    non, et « ✗ non attendue » sur un choix erroné — depuis le 05/10/2026,
+    une pastille « correct » ou « incorrect » sur chaque proposition.
   - QIM : « Vous : Vrai · Attendu : Faux » sur chaque ligne.
   - Schéma : légendes révélées sur la question même.
   - Le verdict est écrit ; la couleur ne fait que le doubler.
@@ -7727,6 +7728,67 @@ validée »). Règles pures dans `lib/profil-impose.ts` (`accesLibre`,
   l'accueil proposent un module qui a des questions ; captures de la carte et
   de la page fermée au bureau et sur téléphone à 390 px, sans débordement ni
   erreur de page.
+
+## Pastilles « correct » / « incorrect » au corrigé (05/10/2026, demande directe)
+
+**Demande.** « Lors de la correction mettre mieux en évidence les éléments
+corrects et incorrects avec des pastilles de couleur « correct »
+« incorrect » », capture du corrigé sur téléphone à l'appui : chaque
+proposition y était suivie de « (attendue) » en petit gris.
+
+**Lecture retenue.** La pastille dit ce qu'est la proposition : « correct »
+sur une proposition attendue (QCM, QIM en cases) ou vraie (QIM),
+« incorrect » sur les autres. Elle ne juge pas la réponse de l'apprenant, qui
+se lit à sa case cochée ou à « Votre réponse ».
+
+**Fait.**
+- Corrigé complet (résultat d'évaluation, fin d'entraînement) : chaque
+  proposition d'un QCM ou d'une QIM est listée, ouverte par sa pastille —
+  verte « ✓ correct », rouge « ✗ incorrect » — puis suivie de sa
+  justification quand elle en a une. Jusqu'ici, seules les propositions
+  justifiées étaient listées, suivies de « (attendue) », « (non attendue) »,
+  « (vraie) » ou « (fausse) » en petit gris.
+- Entraînement, sous la question (QCM, QIM en cases) : la pastille remplace
+  « ✓ attendue » et « ✗ non attendue », et s'ajoute aux propositions laissées
+  de côté, qui n'avaient pas de marque. Le fond de la ligne garde le verdict
+  de la case : vert pour une attendue, rouge pour un choix erroné.
+- Fond plein, texte blanc (6,5:1 sur le vert, 7,9:1 sur le rouge), même
+  largeur pour les deux pastilles. Le mot porte le sens ; la couleur et la
+  coche le doublent. Règle pure `pastille` dans `content/marques.ts`, testée.
+
+**Inchangé.**
+- QIM jugée en Vrai/Faux, sous la question : chaque ligne garde « Vous : … ·
+  Attendu : … » sur le fond de son verdict. Une pastille « incorrect » sur
+  une proposition fausse, que l'apprenant a justement jugée fausse, se lirait
+  comme une erreur de sa part.
+- « Votre réponse / Attendu » en tête du corrigé ; les schémas, séquences et
+  textes à trous.
+- Le rapport garde « (attendue) », « (non attendue) », « (vraie) » ou
+  « (fausse) » après chaque proposition justifiée.
+
+**Coût.** Le corrigé d'un QCM ou d'une QIM sans justification par
+proposition s'allonge de la liste de ses propositions, que la ligne
+« Attendu » redit en partie.
+
+**Limite.** Au corrigé complet, deux propositions de même texte prennent la
+même pastille : le navigateur ne reçoit que le texte des attendues. Sous la
+question, le marquage est alors abandonné, comme avant.
+
+**Vérifié le 05/10/2026.**
+- `npm run verifier` : types, ESLint, 510 tests dont un nouveau
+  (`test/marques.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 121 étapes, sans erreur de page
+  ni erreur serveur. Contrôlés :
+  - QIM jugée en Vrai/Faux à l'entraînement : aucune pastille sous la
+    question ; au corrigé de fin d'entraînement, pastille verte « correct »
+    puis rouge « incorrect » en tête de ligne, justification dessous ;
+  - QCM à l'entraînement : une pastille sur chaque option, cochée ou non ;
+  - résultat d'une évaluation de huit QCM et une QIM sans justification par
+    proposition : toutes les propositions listées, chacune avec la pastille
+    de son corrigé.
+- Serveur d'essai : captures au bureau et sur téléphone à 390 px, sans
+  débordement ni erreur de page ; les deux pastilles font 104 px de large.
 
 ## Non fait
 

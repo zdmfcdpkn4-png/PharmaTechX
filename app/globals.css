@@ -473,6 +473,14 @@ a.carte-lien:hover .carte {
 .etiquette--pharmacien { background: var(--marque-accent-texte); color: #ffffff; }
 .etiquette--neutre { background: var(--surface-douce); color: var(--texte-doux); border-color: var(--bord); }
 .etiquette--attention { background: var(--alerte-fond); color: var(--alerte); }
+/* Pastilles du corrigé (05/10/2026, demande directe) : « correct » sur une
+   proposition attendue ou vraie, « incorrect » sur les autres. Fond plein,
+   texte blanc : 6,5:1 sur --succes, 7,9:1 sur --echec. Même largeur pour
+   les deux : les textes qu'elles ouvrent s'alignent. */
+.etiquette--correct,
+.etiquette--incorrect { color: #ffffff; white-space: nowrap; min-width: 6.5rem; text-align: center; }
+.etiquette--correct { background: var(--succes); }
+.etiquette--incorrect { background: var(--echec); }
 
 .a-preciser {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -817,8 +825,9 @@ fieldset.question legend { padding: 0; display: flex; flex-direction: column; ga
   overflow-wrap: anywhere;
 }
 .justif-proposition--option { margin: -0.5rem 0 0 1.25rem; }
-.justifs-propositions { list-style: none; margin: 0.25rem 0; padding: 0; display: grid; gap: 0.5rem; max-width: 66ch; }
-.justifs-propositions .justif-proposition { margin-top: 0.25rem; }
+.propositions-corrigees { list-style: none; margin: 0.25rem 0; padding: 0; display: grid; gap: 0.625rem; max-width: 66ch; line-height: 1.5; }
+.propositions-corrigees .etiquette { vertical-align: 0.0625rem; }
+.propositions-corrigees .justif-proposition { margin-top: 0.25rem; }
 .apercu-options li:has(.justif-proposition) { flex-wrap: wrap; }
 .apercu-options .justif-proposition { font-size: 0.8125rem; }
 /* Éditeur : la justification sous sa proposition. */
