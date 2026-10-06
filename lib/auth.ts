@@ -19,6 +19,7 @@ import { effacerEchecs, enregistrerEchec, minutesDeBlocage } from "./limiteur";
 import { SECRET_DEVELOPPEMENT } from "./jeton-web";
 import { genererCode, hacherCode, normaliserCode, verifierCode } from "./codes";
 import type { IdentiteTesteur, MemoireVues } from "./essai";
+import type { IdentiteFormateur } from "./formation";
 
 /**
  * Contrôle d'accès par rôle.
@@ -75,6 +76,12 @@ export interface Session {
    * de chaque côté et profil de l'apprenant test, repris d'un clic à l'autre.
    */
   vues?: MemoireVues;
+  /**
+   * Tuteur en formation (06/10/2026, question 104, choix b) : identité du
+   * formateur, mise de côté tant que la session est celle de l'agent relié à
+   * son code de tutorat, rétablie à la bascule (`lib/formation.ts`).
+   */
+  formation?: IdentiteFormateur;
 }
 
 const COOKIE = "fp_session";
@@ -174,11 +181,25 @@ export async function getSession(): Promise<Session | null> {
 
 /**
  * Agent relié au code de la session (question 99, choix a) : l'agent d'un code
- * de poste personnel. null pour un code partagé, de tutorat ou
- * d'administration, en mode test ou sans base. Lu avec l'état du code, la
- * lecture est mémorisée le temps d'une requête.
+ * de poste personnel — ou d'un code de tutorat relié, dans la seule session
+ * « en formation » du tuteur (question 104, choix b) ; en mode formateur, le
+ * tuteur n'est l'agent de rien. null pour un code partagé ou d'administration,
+ * en mode test ou sans base. Lu avec l'état du code, la lecture est mémorisée
+ * le temps d'une requête.
  */
 export async function agentRelieDeLaSession(): Promise<AgentRelie | null> {
+  if (!baseConfiguree()) return null;
+  const s = await getSession();
+  if (!s?.acces || s.essai || s.role !== "poste") return null;
+  return (await etatAcces(s.acces))?.agent ?? null;
+}
+
+/**
+ * Agent relié au code de la session, quel que soit son mode : dit à un tuteur
+ * que sa bascule « En formation » existe (question 104). null sans base, sans
+ * code, en mode test.
+ */
+export async function agentDuCodeDeLaSession(): Promise<AgentRelie | null> {
   if (!baseConfiguree()) return null;
   const s = await getSession();
   if (!s?.acces || s.essai) return null;

@@ -2,14 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { identifiantARattacher, lireChoixAgent, rattachementAdmis, refusLiaison } from "../lib/liaison";
 
-test("liaison : seul un code de poste se relie, à un identifiant actif", () => {
+test("liaison : un code de poste ou de tutorat se relie, à un identifiant actif ; jamais un code d'administration", () => {
   assert.equal(refusLiaison("poste", { actif: true }), null);
-  assert.equal(refusLiaison("tuteur", { actif: true }), "role");
+  // Question 104, choix b (06/10/2026) : un code de tutorat relié, pour le tuteur en formation.
+  assert.equal(refusLiaison("tuteur", { actif: true }), null);
   assert.equal(refusLiaison("admin", { actif: true }), "role");
   assert.equal(refusLiaison("poste", null), "agent-inconnu");
+  assert.equal(refusLiaison("tuteur", null), "agent-inconnu");
   assert.equal(refusLiaison("poste", { actif: false }), "agent-clos");
-  // Le rôle passe avant l'agent : un code de tutorat est refusé, quel que soit l'agent.
-  assert.equal(refusLiaison("tuteur", null), "role");
+  // Le rôle passe avant l'agent : un code d'administration est refusé, quel que soit l'agent.
+  assert.equal(refusLiaison("admin", null), "role");
 });
 
 test("liaison : le choix d'agent se lit comme une saisie d'identifiant, vide pour délier", () => {

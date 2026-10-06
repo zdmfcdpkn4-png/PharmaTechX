@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sessionRequise } from "@/lib/auth";
+import { codesDeLAgent } from "@/lib/agents";
+import { refusVisa } from "@/lib/formation";
 import { journaliser } from "@/lib/journal";
 import { purgerSignaturesInutilisees, signatureCourante } from "@/lib/signatures";
 import {
@@ -26,6 +28,12 @@ import {
  *   est, dans cette version, le détenteur d'un code d'administration
  *   ([à préciser] : un rôle « pharmacien » distinct ?). Sa signature déposée
  *   est incrustée dans le rapport à cet instant.
+ *
+ * Supervision des tuteurs par les pharmaciens (06/10/2026, question 104,
+ * choix b) : nul ne vise ni n'arbitre le rapport de son propre identifiant, et
+ * le rapport d'un tuteur — identifiant relié à un code de tutorat — ne se
+ * vise et ne s'arbitre que par un code d'administration (`refusVisa`,
+ * `lib/formation.ts`) ; le refus est au journal.
  *
  * Un visa enregistre le rôle et le libellé du code de session, la date et
  * l'empreinte du rapport à cet instant — jamais un nom saisi (décision du
@@ -60,6 +68,11 @@ export async function actionViserRapport(formData: FormData) {
   const commentaire = String(formData.get("commentaire") ?? "").trim().slice(0, 500);
   const r = await lireRapport(id);
   if (!r || r.statut === "annule") redirect(`/admin/rapports/${id}?erreur=indisponible`);
+  const refus = refusVisa({ role: s.role, acces: s.acces ?? null }, await codesDeLAgent(r.agent_id));
+  if (refus) {
+    await journaliser(s, "visa-refuse", `rapport:${r.numero}`, { qualite, motif: refus, agent: r.agent_identifiant });
+    redirect(`/admin/rapports/${id}?erreur=${refus}`);
+  }
 
   const signature = qualite === "pharmacien" ? await signatureCourante(s.acces) : null;
   try {
@@ -91,6 +104,11 @@ export async function actionArbitrerRapport(formData: FormData) {
   if (motif.length < 10) redirect(`/admin/rapports/${id}?erreur=motif-court`);
   const r = await lireRapport(id);
   if (!r) redirect("/admin/rapports");
+  const refus = refusVisa({ role: s.role, acces: s.acces ?? null }, await codesDeLAgent(r.agent_id));
+  if (refus) {
+    await journaliser(s, "arbitrage-refuse", `rapport:${r.numero}`, { motif: refus, agent: r.agent_identifiant });
+    redirect(`/admin/rapports/${id}?erreur=${refus}`);
+  }
   try {
     await arbitrer(id, { verdict, motif, roleSession: s.role, libelleSession: s.libelle });
   } catch (e) {

@@ -7,8 +7,10 @@ import { normaliserIdentifiant } from "./identifiant";
  * connecté par ce code, l'agent ne saisit plus que son code personnel, choisi
  * par lui la première fois et connu de lui seul. Un code sans agent reste
  * partagé : chaque agent y saisit son identifiant, comme avant (question 11,
- * choix c). Règles pures, sans base ni Next, testées à part ; les actions et
- * `lib/progression.ts` les appliquent.
+ * choix c). Depuis le 06/10/2026 (question 104, choix b), un code de tutorat
+ * se relie aussi : le tuteur y suit sa propre formation par la bascule « En
+ * formation » (`lib/formation.ts`). Règles pures, sans base ni Next, testées
+ * à part ; les actions et `lib/progression.ts` les appliquent.
  */
 
 /** Valeur de la case du formulaire de création : créer l'identifiant suivant et le relier au code. */
@@ -17,15 +19,15 @@ export const CREER_ET_RELIER = "nouveau";
 export type RefusLiaison = "role" | "agent-inconnu" | "agent-clos";
 
 /**
- * Seul un code de poste se relie, et seulement à un identifiant actif : un
- * code de tutorat ou d'administration n'ouvre pas de progression, et un
+ * Un code de poste ou de tutorat se relie, et seulement à un identifiant
+ * actif : un code d'administration n'ouvre pas de progression, et un
  * identifiant clos n'en reçoit plus. `null` : la liaison est admise.
  */
 export function refusLiaison(
   role: "admin" | "tuteur" | "poste",
   agent: { actif: boolean } | null,
 ): RefusLiaison | null {
-  if (role !== "poste") return "role";
+  if (role === "admin") return "role";
   if (!agent) return "agent-inconnu";
   if (!agent.actif) return "agent-clos";
   return null;

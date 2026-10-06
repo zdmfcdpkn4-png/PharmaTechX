@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { actionBasculerVue } from "@/app/actions-essai";
+import { actionBasculerFormation } from "@/app/actions-formation";
 
 /**
  * Interrupteur de la vue apprenant (02/10/2026, question 94, choix a), réservé
@@ -12,6 +13,11 @@ import { actionBasculerVue } from "@/app/actions-essai";
  * `lib/essai.ts`). Au clic, il envoie la page affichée et, quand le programme
  * de l'apprenant est à l'écran, le profil qu'il montre : choisi là, ce profil
  * n'est pas dans l'adresse.
+ *
+ * Variante « formation » (06/10/2026, question 104, choix b) : le même
+ * interrupteur, au même endroit, bascule un tuteur dont le code est relié à un
+ * identifiant entre sa session de tutorat et sa formation
+ * (`actionBasculerFormation`) ; là, tout s'enregistre sous son identifiant.
  */
 
 /** Profil montré par « Composer le programme » en mode test ; null hors de l'écran. */
@@ -35,7 +41,16 @@ export function useProfilAffiche(actif: boolean, filiere: string, niveau: string
   }, [actif, filiere, niveau]);
 }
 
-export function InterrupteurVue({ apprenant, lieu }: { apprenant: boolean; lieu: "volet" | "acces-rapide" }) {
+export function InterrupteurVue({
+  apprenant,
+  lieu,
+  variante = "essai",
+}: {
+  apprenant: boolean;
+  lieu: "volet" | "acces-rapide";
+  /** « essai » : la vue apprenant de l'administration (mode test) ; « formation » : le tuteur en formation. */
+  variante?: "essai" | "formation";
+}) {
   // Un second clic pendant l'envoi partirait de la vue d'arrivée et la refermerait : il est ignoré.
   const envoye = useRef(false);
   const formulaire = useRef<HTMLFormElement>(null);
@@ -80,7 +95,7 @@ export function InterrupteurVue({ apprenant, lieu }: { apprenant: boolean; lieu:
     <form
       key={apprenant ? "apprenant" : "administration"}
       ref={formulaire}
-      action={actionBasculerVue}
+      action={variante === "formation" ? actionBasculerFormation : actionBasculerVue}
       onSubmit={remplir}
       className={`interrupteur-vue interrupteur-vue--${lieu}`}
     >
@@ -88,12 +103,12 @@ export function InterrupteurVue({ apprenant, lieu }: { apprenant: boolean; lieu:
       <input type="hidden" name="ecran" />
       <input type="hidden" name="filiere" />
       <input type="hidden" name="niveau" />
-      <Bouton apprenant={apprenant} rearmer={rearmer} />
+      <Bouton apprenant={apprenant} rearmer={rearmer} libelle={variante === "formation" ? "En formation" : "Vue apprenant"} />
     </form>
   );
 }
 
-function Bouton({ apprenant, rearmer }: { apprenant: boolean; rearmer: () => void }) {
+function Bouton({ apprenant, rearmer, libelle }: { apprenant: boolean; rearmer: () => void; libelle: string }) {
   // Pendant l'envoi, l'interrupteur montre déjà la vue demandée ; l'envoi fini, il se réarme.
   const { pending } = useFormStatus();
   const enCours = useRef(false);
@@ -110,7 +125,7 @@ function Bouton({ apprenant, rearmer }: { apprenant: boolean; rearmer: () => voi
       aria-disabled={pending || undefined}
       className="interrupteur-vue-bouton"
     >
-      <span className="interrupteur-vue-libelle">Vue apprenant</span>
+      <span className="interrupteur-vue-libelle">{libelle}</span>
       <span className="interrupteur-vue-piste" aria-hidden="true">
         <span className="interrupteur-vue-curseur" />
       </span>

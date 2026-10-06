@@ -24,7 +24,7 @@ import { questionsRenseignees } from "@/content/en-cours";
 import { getModule, modulesAvecQuestions } from "@/content/store";
 import { lireModuleDepose } from "@/content/modules-db";
 import { comptesAttente } from "@/lib/attente";
-import { etatSession } from "@/lib/auth";
+import { agentDuCodeDeLaSession, etatSession } from "@/lib/auth";
 import { baseConfiguree } from "@/lib/db";
 import { dernierEnCours, emissionsDeLAgent, evaluationsDeLAgent, rattachement } from "@/lib/progression";
 import { conservationActive, miseEnService } from "@/lib/config";
@@ -33,6 +33,8 @@ import { ACompleter } from "@/components/ACompleter";
 import { STATUT_DISPOSITIF, dateMiseEnServiceLisible } from "@/lib/statut";
 import { actionDeconnexion } from "@/app/actions";
 import { actionTerminerEssai } from "@/app/actions-essai";
+import { actionBasculerFormation } from "@/app/actions-formation";
+import { etatBascule } from "@/lib/formation";
 import { LIBELLE_ESSAI } from "@/lib/essai";
 import { accesLibre, profilImpose } from "@/lib/profil-impose";
 import { programmeDuPoste } from "@/lib/programme-poste";
@@ -97,6 +99,17 @@ export default async function RootLayout({
   // vue, allumé dans le test qu'il a ouvert. Le tutorat teste par la page « Tester en apprenant ».
   const vueApprenant: boolean | null =
     session?.essai?.role === "admin" ? true : session?.role === "admin" && !session.essai ? false : null;
+  // Bascule d'un tuteur en formation (06/10/2026, question 104, choix b) : son code de tutorat est relié à un
+  // identifiant ; le même interrupteur, libellé « En formation », le fait passer d'une session à l'autre.
+  const agentDuCode =
+    session && session.role !== "admin" && !session.essai && baseConfiguree() ? await agentDuCodeDeLaSession().catch(() => null) : null;
+  const bascule = etatBascule(session, agentDuCode !== null);
+  const interrupteur = (lieu: "volet" | "acces-rapide") =>
+    vueApprenant !== null ? (
+      <InterrupteurVue apprenant={vueApprenant} lieu={lieu} />
+    ) : bascule ? (
+      <InterrupteurVue apprenant={bascule === "formation"} lieu={lieu} variante="formation" />
+    ) : undefined;
 
   // Volet d'avant-connexion : le filtre d'entrée garde tout le site, donc
   // chaque raccourci ramènerait ici. Sans base, le site reste ouvert et les
@@ -369,6 +382,24 @@ export default async function RootLayout({
                       </form>
                     </div>
                   </div>
+                ) : session?.formation ? (
+                  // Tuteur en formation (question 104, choix b) : sur chaque page, avec le retour au tutorat.
+                  <div className="bandeau-essai bandeau-formation">
+                    <div className="bandeau-essai-interne">
+                      <p>
+                        <strong>En formation</strong>
+                        <span className="bandeau-essai-detail">
+                          {" "}— vous êtes {agentDuCode ? <code>{agentDuCode.identifiant}</code> : "l'agent relié à votre code"}
+                        </span>
+                        &nbsp;: lectures, entraînements et évaluations se conservent sous cet identifiant.
+                      </p>
+                      <form action={actionBasculerFormation}>
+                        <button type="submit" className="bouton bouton--compact">
+                          Revenir au tutorat
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 ) : null
               }
             >
@@ -464,7 +495,7 @@ export default async function RootLayout({
               reprises={reprises}
               modulesOuverts={ouvertsPoste}
               avant={avantConnexion ? <VoletConnexion /> : undefined}
-              interrupteur={vueApprenant === null ? undefined : <InterrupteurVue apprenant={vueApprenant} lieu="acces-rapide" />}
+              interrupteur={interrupteur("acces-rapide")}
             />
 
             <div className="cadre">
@@ -473,7 +504,7 @@ export default async function RootLayout({
                   <VoletConnexion />
                 ) : (
                   <>
-                    {vueApprenant === null ? null : <InterrupteurVue apprenant={vueApprenant} lieu="volet" />}
+                    {interrupteur("volet") ?? null}
                     <Navigation groupes={groupes} administration={administration} />
                   </>
                 )}

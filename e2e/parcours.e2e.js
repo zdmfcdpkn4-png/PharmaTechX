@@ -6164,20 +6164,22 @@ Source : Procédure statistiques — section 5`;
   // 14d undecies. code de poste relié à un identifiant d'agent (question 99, choix a) : créé relié en
   //          un geste, l'agent n'y saisit que son code personnel — choisi à la première connexion,
   //          dès l'accueil —, un autre identifiant y est refusé par le serveur ; un code existant se
-  //          relie puis se délie depuis sa carte ; un code de tutorat ne se relie pas.
+  //          relie puis se délie depuis sa carte ; un code d'administration ne se relie pas (un code de
+  //          tutorat le peut depuis la question 104 : étape 14d quaterdecies).
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/accueil$/);
   await fermerVisite();
   await page.goto(BASE + "/admin");
   const cartesAvantLien = await page.locator("li.carte").count();
-  await page.selectOption("select[name=role]", "tuteur");
-  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.selectOption("select[name=role]", "admin");
+  await page.selectOption("select[name=type]", "PHARMACIEN");
   await page.check("input[name=agent]");
   await page.click("button:has-text(\"Générer le code\")");
   await page.waitForURL(/erreur=agent-role/);
-  await page.waitForSelector("[role=alert]:has-text('Seul un code de poste se relie')");
-  assert.equal(await page.locator("li.carte").count(), cartesAvantLien, "code de tutorat relié : aucun code créé");
+  // L'apostrophe du message est typographique : le sélecteur vise la suite du texte.
+  await page.waitForSelector("[role=alert]:has-text('ne se relie pas à un identifiant')");
+  assert.equal(await page.locator("li.carte").count(), cartesAvantLien, "code d'administration relié : aucun code créé");
   await page.selectOption("select[name=role]", "poste");
   await page.selectOption("select[name=type]", "PREPARATEUR");
   await page.check("input[name=agent]");
@@ -6256,7 +6258,7 @@ Source : Procédure statistiques — section 5`;
   await pr.waitForSelector(`#rattachement:has-text("Progression rattachée à ${agentRelie}")`);
   await ctxRelie.close();
 
-  // Un code existant se relie depuis sa carte, puis se délie ; un code de tutorat ne se relie pas,
+  // Un code existant se relie depuis sa carte, puis se délie ; un code d'administration ne se relie pas,
   // même par une requête forgée.
   await page.goto(BASE + "/admin");
   await page.selectOption("select[name=role]", "poste");
@@ -6272,12 +6274,12 @@ Source : Procédure statistiques — section 5`;
   await page.waitForURL(/ok=relie/);
   await page.waitForSelector(`[role=status]:has-text("Code « ${libellePartage} » relié à ${agentRelie}")`);
   await cartePartage().locator(`code:text-is("${agentRelie}")`).waitFor();
-  const idTuteur = await page.locator(`li.carte:has(.etiquette:text-is("tuteur")) input[name=id]`).first().inputValue();
+  const idAdminCarte = await page.locator(`li.carte:has(.etiquette:text-is("admin")) input[name=id]`).first().inputValue();
   await cartePartage().locator("summary:has-text('Agent relié')").click();
-  await cartePartage().locator("form:has(select[name=agent]) input[name=id]").evaluate((i, v) => { i.value = v; }, idTuteur);
+  await cartePartage().locator("form:has(select[name=agent]) input[name=id]").evaluate((i, v) => { i.value = v; }, idAdminCarte);
   await cartePartage().locator("button:has-text('Enregistrer')").click();
   await page.waitForURL(/erreur=liaison-role/);
-  await page.waitForSelector("[role=alert]:has-text('Seul un code de poste se relie')");
+  await page.waitForSelector("[role=alert]:has-text('ne se relie pas à un identifiant')");
   await cartePartage().locator("summary:has-text('Agent relié')").click();
   await cartePartage().locator("select[name=agent]").selectOption("");
   await cartePartage().locator("button:has-text('Enregistrer')").click();
@@ -6289,7 +6291,7 @@ Source : Procédure statistiques — section 5`;
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("code de poste relié (question 99, choix a) : créé relié en un geste, code personnel choisi dès l'accueil puis seul demandé, autre identifiant refusé, code existant relié puis délié, code de tutorat refusé");
+  ok("code de poste relié (question 99, choix a) : créé relié en un geste, code personnel choisi dès l'accueil puis seul demandé, autre identifiant refusé, code existant relié puis délié, code d'administration refusé");
 
   // 14d duodecies. profil imposé au code de poste (05/10/2026, demande directe) : un code de poste ne
   //          compose plus son programme — ni filière ni niveau à choisir, ni au programme ni à
@@ -6809,6 +6811,146 @@ Source : Procédure statistiques — section 5`;
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
   ok("parcours d'un agent (question 103, choix a) : tout le programme du code coché au départ, l'ordre seul enregistré et relu, le glisser suivi jusqu'au bout ; resserré sur sa fiche à trois modules de son code relié, rangés, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; avancement par module sur la fiche (lecture, verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) ; module hors périmètre ajouté en tête (carte, page, document, évaluation, correction, trace) puis retiré, refusé hors programme ; retiré, le programme revient ; purgé avec la progression ; journalisé");
+
+  // 14d quaterdecies. tuteur en formation (06/10/2026, question 104, choix b) : un code de tutorat se relie à un
+  //          identifiant depuis l'administration ; le tuteur garde sa session de tutorat et bascule « En formation »
+  //          vers une session de poste de son identifiant — code personnel demandé, traces et rapport conservés
+  //          sous l'identifiant, administration fermée —, puis revient ; Personnel marque l'identifiant « tutorat » ;
+  //          son parcours relève des pharmaciens (un tuteur lit la fiche sans composer) ; ses rapports ne se visent
+  //          ni ne s'arbitrent par un tuteur, et nul ne vise son propre rapport.
+  await page.fill("input[name=code]", codeAdmin);
+  await page.click("button:has-text('Entrer')");
+  await page.waitForURL(/\/accueil$/);
+  await fermerVisite();
+  await page.goto(BASE + "/admin");
+  await page.selectOption("select[name=role]", "tuteur");
+  await page.selectOption("select[name=type]", "PREPARATEUR");
+  await page.selectOption("select[name=filiere]", "chimiotherapie");
+  await page.selectOption("select[name=niveau]", "N1a");
+  await page.check("input[name=agent]");
+  await page.click("button:has-text(\"Générer le code\")");
+  await page.waitForURL(/nouveau=.*agent=AG-/);
+  const urlTuteurRelie = new URL(page.url());
+  const codeTuteurRelie = urlTuteurRelie.searchParams.get("nouveau");
+  const libelleTuteurRelie = urlTuteurRelie.searchParams.get("libelle");
+  const agentTuteur = urlTuteurRelie.searchParams.get("agent");
+  await page.locator(`li.carte:has(strong:text-is("${libelleTuteurRelie}")) code:text-is("${agentTuteur}")`).waitFor();
+  // Personnel : l'identifiant porte le code et l'étiquette « tutorat » ; pour un pharmacien, la fiche compose.
+  await page.goto(BASE + "/admin/personnel");
+  const ligneTuteur = page.locator(`tr:has(code:text-is("${agentTuteur}"))`);
+  await ligneTuteur.locator(".etiquette:text-is('tutorat')").waitFor();
+  await ligneTuteur.locator("a[href$='#t-parcours-agent']:has-text('à composer')").click();
+  await page.waitForSelector("h2:has-text(\"Parcours de l'agent\")");
+  const urlFicheTuteur = page.url().replace(/[?#].*$/, "");
+  await page.waitForSelector("text=Identifiant d'un tuteur");
+  assert.equal(await page.locator("button:has-text('Enregistrer le parcours de')").count(), 1, "pharmacien : le composeur du parcours d'un tuteur");
+
+  // Le tuteur relié : session de tutorat, bascule « En formation » éteinte, aucun code personnel demandé.
+  const ctxTuteur = await browser.newContext();
+  await ctxTuteur.addCookies([{ name: "fp_intro", value: "1", url: BASE }]);
+  surveillerTiers(ctxTuteur);
+  const pt = await ctxTuteur.newPage();
+  pt.on("pageerror", (e) => console.log("ERREUR PAGE:", pt.url(), e.message));
+  await pt.goto(BASE + "/connexion");
+  await pt.fill("input[name=code]", codeTuteurRelie);
+  await pt.click("button:has-text('Entrer')");
+  await pt.waitForURL(/\/accueil$/);
+  if (await pt.waitForSelector(".visite", { timeout: 2500 }).then(() => true, () => false)) {
+    await pt.keyboard.press("Escape");
+    await pt.waitForSelector(".visite-voile", { state: "detached" });
+  }
+  const basculeFormation = () => pt.locator(".interrupteur-vue--volet button[role=switch]");
+  await basculeFormation().waitFor();
+  assert.equal((await basculeFormation().innerText()).trim(), "En formation", "le tuteur relié a sa bascule");
+  assert.equal(await basculeFormation().getAttribute("aria-checked"), "false", "éteinte : session de tutorat");
+  assert.equal(await pt.locator("#rattachement").count(), 0, "formateur : l'accueil ne demande aucun code personnel");
+  await pt.goto(BASE + "/admin/personnel");
+  await pt.waitForSelector("h1:has-text('Personnel')");
+  // En formation : « Mon habilitation » nomme l'identifiant et fait choisir le code personnel ; le bandeau le dit.
+  await pt.goto(BASE + "/accueil");
+  await basculeFormation().click();
+  await pt.waitForSelector(".bandeau-formation:has-text('En formation')");
+  // Première page de ce profil (poste) : sa visite guidée s'ouvre, et son voile animé gênerait les clics.
+  if (await pt.waitForSelector(".visite", { timeout: 2500 }).then(() => true, () => false)) {
+    await pt.keyboard.press("Escape");
+    await pt.waitForSelector(".visite-voile", { state: "detached" });
+  }
+  await pt.waitForSelector(`#rattachement:has-text("Première connexion de ${agentTuteur}")`);
+  assert.equal(await basculeFormation().getAttribute("aria-checked"), "true", "allumée : en formation");
+  await pt.fill("#rattachement input[name=nouveauCode]", "4680");
+  await pt.fill("#rattachement input[name=confirmation]", "4680");
+  await pt.click("#rattachement button:has-text('Choisir ce code')");
+  await pt.waitForURL(/\/accueil\?progression=ok/);
+  await pt.waitForSelector(`#rattachement:has-text("Progression rattachée à ${agentTuteur}")`);
+  assert.deepEqual(
+    await (await pt.request.post(BASE + "/api/progression", { data: { nature: "lecture", moduleId: "comportement-zac" } })).json(),
+    { ok: true },
+    "en formation : la lecture se conserve sous l'identifiant du tuteur",
+  );
+  await pt.goto(BASE + "/admin/personnel");
+  await pt.waitForURL(/\/accueil/);
+  // Une évaluation passée en formation : le rapport s'émet sous l'identifiant du tuteur.
+  await pt.goto(BASE + "/module/comportement-zac/evaluation");
+  await pt.check("input[name=difficulte] >> nth=2");
+  await pt.click("button:has-text('Commencer')");
+  await pt.waitForSelector("fieldset.question");
+  await pt.locator("fieldset.question label.option input").first().check();
+  await pt.click("button:has-text(\"Valider l'évaluation\")");
+  await pt.waitForSelector(".recap");
+  await pt.click(".recap button:has-text('Valider définitivement')");
+  await pt.waitForSelector(".resultat-entete");
+  // Le rapport s'émet depuis « Mes évaluations », relu depuis les traces de l'identifiant : rattaché, aucun
+  // identifiant à saisir.
+  await pt.goto(BASE + "/#rapport");
+  await pt.waitForSelector("#rapport");
+  await pt.click("button:has-text('Émettre et enregistrer')");
+  await pt.waitForSelector("text=émis sous le n° RAP-");
+  // Retour au tutorat par le bandeau : la session de tutorat revient, l'agent est détaché.
+  await pt.goto(BASE + "/accueil");
+  await pt.click(".bandeau-formation button:has-text('Revenir au tutorat')");
+  await pt.waitForURL(/\/accueil$/);
+  await pt.waitForSelector("h1:has-text('Le circuit')");
+  assert.equal(await pt.locator(".bandeau-formation").count(), 0, "formateur : plus de bandeau");
+  assert.equal(await basculeFormation().getAttribute("aria-checked"), "false", "éteinte de nouveau");
+  // Supervision : un tuteur lit la fiche d'un tuteur — la sienne — sans composer.
+  await pt.goto(urlFicheTuteur);
+  await pt.waitForSelector("text=Son parcours se compose et se retire par un pharmacien");
+  assert.equal(await pt.locator("button:has-text('Enregistrer le parcours de')").count(), 0, "tuteur : pas de composeur sur la fiche d'un tuteur");
+  await pt.waitForSelector("table.tableau td:has-text('Lecture')");
+  // Le rapport du tuteur : le pharmacien le vise ou l'arbitre ; un autre tuteur, ou lui-même, ne le peut pas.
+  await page.goto(BASE + "/admin/rapports");
+  const lienRapportTuteur = await page.locator(`tr:has(code:text-is("${agentTuteur}")) a[href^='/admin/rapports/']`).first().getAttribute("href");
+  assert.ok(lienRapportTuteur, "le rapport émis en formation est au registre, sous l'identifiant du tuteur");
+  await page.goto(BASE + lienRapportTuteur);
+  const boutonsDecision = (p) => p.locator("button:has-text('Apposer le visa tuteur'), button:has-text(\"l'arbitrage\")");
+  const decisionOuverte = (await boutonsDecision(page).count()) > 0;
+  await pt.goto(BASE + lienRapportTuteur);
+  assert.equal(await boutonsDecision(pt).count(), 0, "propre rapport : ni visa ni arbitrage");
+  if (decisionOuverte) await pt.waitForSelector("[role=status]:has-text('votre propre identifiant')");
+  await ctxTuteur.close();
+  const ctxAutreTuteur = await browser.newContext();
+  await ctxAutreTuteur.addCookies([{ name: "fp_intro", value: "1", url: BASE }]);
+  surveillerTiers(ctxAutreTuteur);
+  const pa = await ctxAutreTuteur.newPage();
+  pa.on("pageerror", (e) => console.log("ERREUR PAGE:", pa.url(), e.message));
+  await pa.goto(BASE + "/connexion");
+  await pa.fill("input[name=code]", codeTuteur);
+  await pa.click("button:has-text('Entrer')");
+  await pa.waitForURL(/\/accueil$/);
+  await pa.goto(BASE + lienRapportTuteur);
+  await pa.waitForSelector(`code:has-text("${agentTuteur}")`);
+  assert.equal(await boutonsDecision(pa).count(), 0, "rapport d'un tuteur : un autre tuteur ne vise ni n'arbitre");
+  if (decisionOuverte) await pa.waitForSelector("[role=status]:has-text(\"celui d'un tuteur\")");
+  await ctxAutreTuteur.close();
+  await page.goto(BASE + "/admin/journal");
+  await page.waitForSelector("code:text-is('formation:entree')");
+  await page.waitForSelector("code:text-is('formation:sortie')");
+  await page.goto(BASE + "/");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.click("button:has-text('quitter')");
+  await page.waitForURL(/\/connexion/);
+  ok("tuteur en formation (question 104, choix b) : code de tutorat créé relié depuis l'administration, identifiant marqué « tutorat », composeur réservé au pharmacien ; bascule « En formation » : code personnel choisi dès l'accueil, lecture et rapport conservés sous l'identifiant, administration fermée, retour au tutorat par le bandeau ; un tuteur lit la fiche d'un tuteur sans composer ; ni visa ni arbitrage par un tuteur sur le rapport d'un tuteur, ni sur son propre rapport ; bascules au journal");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)

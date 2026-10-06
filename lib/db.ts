@@ -447,14 +447,15 @@ export async function creerAcces(
 }
 
 /**
- * Relie un code de poste à un identifiant d'agent actif, ou le délie (`null`) — question 99,
- * choix a. Les règles sont redites dans la requête : un code d'un autre rôle, ou un identifiant
- * clos entre la lecture et l'écriture, ne change rien (null en retour).
+ * Relie un code de poste — ou de tutorat (question 104, choix b) — à un identifiant d'agent actif,
+ * ou le délie (`null`) — question 99, choix a. Les règles sont redites dans la requête : un code
+ * d'administration, ou un identifiant clos entre la lecture et l'écriture, ne change rien (null
+ * en retour).
  */
 export async function relierAcces(id: number, agentId: number | null): Promise<{ libelle: string } | null> {
   const r = await sql<{ libelle: string }>`
     UPDATE acces SET agent_id = ${agentId}
-    WHERE id = ${id} AND role = 'poste'
+    WHERE id = ${id} AND role IN ('poste', 'tuteur')
       AND (${agentId}::int IS NULL OR EXISTS (SELECT 1 FROM agents WHERE id = ${agentId}::int AND actif))
     RETURNING libelle`;
   return r.rows[0] ?? null;

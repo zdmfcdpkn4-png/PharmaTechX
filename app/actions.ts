@@ -125,10 +125,11 @@ export async function actionCreerCode(formData: FormData) {
   const programme = idProgramme ? await lireProgramme(idProgramme) : null;
   if (idProgramme && programme?.statut !== "valide") redirect("/admin?erreur=programme-non-valide");
   // Code de poste personnel (question 99, choix a) : la case crée l'identifiant d'agent suivant
-  // et le relie au code, dans la même transaction. Un code de tutorat ou d'administration ne se
-  // relie pas ; sans conservation des rapports, il n'y a pas d'identifiants d'agents.
+  // et le relie au code, dans la même transaction. Un code de tutorat se relie aussi (question 104,
+  // choix b : le tuteur en formation) ; un code d'administration ne se relie pas ; sans conservation
+  // des rapports, il n'y a pas d'identifiants d'agents.
   const avecAgent = String(formData.get("agent") ?? "") === CREER_ET_RELIER;
-  if (avecAgent && role !== "poste") redirect("/admin?erreur=agent-role");
+  if (avecAgent && role === "admin") redirect("/admin?erreur=agent-role");
   if (avecAgent && !conservationActive()) redirect("/admin?erreur=agent-indisponible");
 
   const code = genererCode();
@@ -158,12 +159,14 @@ export async function actionCreerCode(formData: FormData) {
 }
 
 /**
- * Relier un code de poste à un identifiant d'agent, ou le délier (question 99,
- * choix a). Même barrière que la révocation : le rôle de la cible est revérifié
- * ici, et un refus est journalisé. Seul un code de poste se relie, à un
- * identifiant actif ; la requête le redit. Le lien prend effet à la requête
- * suivante des sessions ouvertes avec ce code : sous un code relié, seul
- * l'agent du code se rattache (`lib/progression.ts`).
+ * Relier un code de poste — ou de tutorat (question 104, choix b) — à un
+ * identifiant d'agent, ou le délier (question 99, choix a). Même barrière que
+ * la révocation : le rôle de la cible est revérifié ici, et un refus est
+ * journalisé ; un code de tutorat ne se gère que depuis l'administration, qui
+ * supervise les tuteurs. Un code d'administration ne se relie pas, et seul un
+ * identifiant actif se relie ; la requête le redit. Le lien prend effet à la
+ * requête suivante des sessions ouvertes avec ce code : sous un code relié,
+ * seul l'agent du code se rattache (`lib/progression.ts`).
  */
 export async function actionRelierCode(formData: FormData) {
   const s = await sessionRequise("tuteur");
@@ -177,7 +180,7 @@ export async function actionRelierCode(formData: FormData) {
   const choix = lireChoixAgent(formData.get("agent"));
   if (!choix) redirect(retourListe(liste, "/admin", { erreur: "liaison-agent" }));
   const agent = choix.identifiant ? await agentParIdentifiant(choix.identifiant) : null;
-  const refus = choix.identifiant ? refusLiaison(cible, agent) : cible === "poste" ? null : "role";
+  const refus = choix.identifiant ? refusLiaison(cible, agent) : cible === "admin" ? "role" : null;
   if (refus) {
     if (refus === "role") await journaliser(s, "liaison-code-refusee", `acces:${id}`, { motif: "role" });
     redirect(retourListe(liste, "/admin", { erreur: refus === "role" ? "liaison-role" : "liaison-agent" }));

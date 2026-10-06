@@ -117,10 +117,21 @@ export default async function Personnel({
                     <span className={`etiquette ${a.actif ? "etiquette--ok" : "etiquette--neutre"}`}>{a.actif ? "actif" : "clos"}</span>
                     {!a.actif && a.clos_le ? <span className="legende"> le {date(a.clos_le)}</span> : null}
                   </td>
-                  {/* Codes de poste reliés à l'identifiant (question 99, choix a) ; vide : il se rattache sous un code partagé. */}
+                  {/* Codes reliés à l'identifiant (question 99, choix a) ; vide : il se rattache sous un code partagé. Un code de
+                      tutorat relié (question 104) : l'identifiant d'un tuteur, supervisé par les pharmaciens. */}
                   <td>
                     {a.codes_relies.length > 0 ? (
-                      a.codes_relies.join(", ")
+                      <>
+                        {a.codes_relies.join(", ")}
+                        {a.codes_tutorat.length > 0 ? (
+                          <>
+                            {" "}
+                            <span className="etiquette etiquette--neutre" title="Identifiant d'un tuteur : parcours, code personnel et rapports supervisés par un pharmacien">
+                              tutorat
+                            </span>
+                          </>
+                        ) : null}
+                      </>
                     ) : (
                       <span className="legende">partagé</span>
                     )}

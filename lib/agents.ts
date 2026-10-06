@@ -1,5 +1,5 @@
 import "server-only";
-import { sql, transaction, sqlSur } from "./db";
+import { sql, transaction, sqlSur, type Role } from "./db";
 import { formaterIdentifiant, normaliserIdentifiant } from "./identifiant";
 
 /**
@@ -23,8 +23,10 @@ export interface LigneAgent {
   /** Traces de progression (évaluations, entraînements, lectures) et dernière activité. */
   nb_traces: number;
   derniere_activite: string | null;
-  /** Codes de poste reliés à cet identifiant (question 99, choix a), par libellé. */
+  /** Codes reliés à cet identifiant (question 99, choix a ; de tutorat aussi depuis la question 104), par libellé. */
   codes_relies: string[];
+  /** Ceux d'entre eux qui sont des codes de tutorat : l'identifiant est celui d'un tuteur, supervisé par les pharmaciens. */
+  codes_tutorat: string[];
   /** Parcours fixé par le tutorat (question 103) : nombre de modules, dont fermés ; null sans parcours. */
   nb_parcours: number | null;
   nb_parcours_fermes: number | null;
@@ -50,6 +52,7 @@ export async function listerAgents(): Promise<LigneAgent[]> {
            (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
            (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite,
            ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies,
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id AND c.role = 'tuteur' ORDER BY c.libelle) AS codes_tutorat,
            (SELECT jsonb_array_length(pa.modules) FROM parcours_agent pa WHERE pa.agent_id = a.id)::int AS nb_parcours,
            (SELECT jsonb_array_length(pa.fermes) FROM parcours_agent pa WHERE pa.agent_id = a.id)::int AS nb_parcours_fermes
     FROM agents a ORDER BY a.id`;
@@ -100,7 +103,15 @@ export async function lireAgent(id: number): Promise<LigneAgent | null> {
            (a.code_hash IS NOT NULL) AS code_defini,
            (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
            (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite,
-           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies,
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id AND c.role = 'tuteur' ORDER BY c.libelle) AS codes_tutorat
     FROM agents a WHERE a.id = ${id}`;
   return r.rows[0] ?? null;
+}
+
+/** Codes d'accès reliés à un identifiant, avec leur rôle : supervision des tuteurs par les pharmaciens (question 104). */
+export async function codesDeLAgent(agentId: number): Promise<{ id: number; role: Role; libelle: string }[]> {
+  const r = await sql<{ id: number; role: Role; libelle: string }>`
+    SELECT id, role, libelle FROM acces WHERE agent_id = ${agentId} ORDER BY libelle`;
+  return r.rows;
 }

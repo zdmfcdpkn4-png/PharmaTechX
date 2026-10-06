@@ -8167,6 +8167,81 @@ et son titre atténué.
   ni erreur serveur ; l'étape du parcours lit le nom du premier module sous
   sa vignette.
 
+## Un code de tutorat relié à un identifiant : le tuteur en formation, supervisé par les pharmaciens (06/10/2026, question 104, choix b)
+
+**Question.** « Comment relier le tuteur à un agent : actuellement
+PREPARATEUR-1 non relié, PREPARATEUR-0 bien relié » — un code de tutorat
+créé pour un préparateur, sans bouton « Relier à un agent… » sur sa carte,
+puisque seul un code de poste se reliait (question 99, choix a).
+
+**Choix b.** Réponse : « b mais nécessite une bascule (interrupteur) pour
+passer de formateur à agent en formation. Supervision des tuteurs par les
+pharmaciens (Admin) ». Un code de tutorat se relie à un identifiant d'agent ;
+le tuteur a deux sessions sous un seul code, et une bascule entre elles ;
+tout ce qui le concerne comme agent relève des pharmaciens. Écartés : a (deux
+codes par tuteur), c (deux codes créés d'un coup).
+
+**Fait.**
+- Liaison : un code de tutorat se relie — case « Créer l'identifiant d'agent
+  suivant et le relier à ce code » à la création, « Relier à un agent… » sur
+  sa carte —, depuis l'administration seulement (un tuteur ne gère pas les
+  codes de tutorat). Un code d'administration ne se relie toujours pas
+  (`refusLiaison`, `relierAcces`).
+- Bascule : l'interrupteur du volet (celui de la vue apprenant de
+  l'administration, question 94), libellé « En formation », apparaît au
+  tuteur dont le code est relié. Allumé, la session devient celle d'un poste
+  relié — même code, même libellé, filière et niveau du code, identité du
+  formateur mise de côté (`sessionEnFormation`, `lib/formation.ts`) : la
+  question 99 s'applique telle quelle (code personnel demandé dès l'accueil,
+  seul l'agent du code se rattache), les traces, le parcours et les rapports
+  sont ceux de l'identifiant, l'administration redirige vers l'accueil. Un
+  bandeau le dit sur chaque page et ramène au tutorat. Éteint — ou par le
+  bandeau —, la session de tutorat revient telle quelle. La bascule détache
+  l'agent dans les deux sens et s'inscrit au journal (`formation:entree`,
+  `formation:sortie`). En mode formateur, le code relié n'identifie personne
+  (`agentRelieDeLaSession` ne vaut que pour une session de poste).
+- Supervision par les pharmaciens (`supervisionAdmise`, `refusVisa`) :
+  - Personnel marque l'identifiant d'un tuteur (« tutorat ») ; sa fiche se
+    lit par le tutorat, mais son parcours se compose et se retire, et son
+    code personnel se réinitialise, par un code d'administration (page et
+    actions) ;
+  - ses rapports ne se visent ni ne s'arbitrent par un tuteur ; nul ne vise
+    ni n'arbitre le rapport de son propre identifiant (le code de la session
+    est relié à l'identifiant du rapport) ; la page du rapport efface les
+    formulaires et le dit, l'action revérifie et journalise le refus
+    (`visa-refuse`, `arbitrage-refuse`).
+- Candidats au parcours d'un tuteur : les modules que son code de tutorat lui
+  ouvre (sa filière à son niveau ; le socle seul sans filière), puis le
+  catalogue hors périmètre ; un code dont le périmètre est vide compose à
+  partir du catalogue.
+- Codes d'accès : messages et légendes revus (« Un code d'administration ne
+  se relie pas… »). README et `RGPD.md` citent le lien et la bascule.
+
+**Coût.**
+- Un code de tutorat relié ne doit servir qu'à son tuteur, comme un code de
+  poste relié : la légende le dit.
+- La formation suit le profil du code de tutorat (filière et niveau du code,
+  tous niveaux sans niveau) : un pharmacien compose le parcours du tuteur
+  pour cibler autre chose.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 534 tests dont six nouveaux
+  (`test/formation.test.ts` : session en formation et retour, bascule
+  montrée au seul tuteur relié, supervision, refus de visa) et un revu
+  (`test/liaison.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 123 étapes, sans erreur de page
+  ni erreur serveur. L'étape ajoutée crée un code de tutorat relié depuis
+  l'administration, voit l'identifiant marqué « tutorat » et le composeur
+  ouvert au pharmacien ; le tuteur entre en tutorat (bascule éteinte, aucun
+  code personnel demandé, Personnel ouvert), bascule en formation (bandeau,
+  code personnel choisi dès l'accueil, lecture conservée, administration
+  renvoyée à l'accueil, évaluation émise sous son identifiant), revient par
+  le bandeau ; il lit la fiche d'un tuteur sans composer ; ni visa ni
+  arbitrage pour lui sur son propre rapport, ni pour un autre tuteur ; le
+  journal porte les bascules. L'étape de la question 99 refuse désormais un
+  code d'administration là où elle refusait un code de tutorat.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

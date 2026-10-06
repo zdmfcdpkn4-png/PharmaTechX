@@ -13,6 +13,7 @@ import { avancementParModule, libelleAvancement, type TraceAvancement } from "@/
 import { badgeEffectif } from "@/content/badges";
 import type { Module } from "@/content/types";
 import { candidatsDuParcours } from "@/lib/programme-poste";
+import { supervisionAdmise } from "@/lib/formation";
 import { actionFixerParcours, actionPurgerProgression, actionReinitialiserCode, actionRetirerParcours } from "../actions";
 import { LienModule } from "@/components/LienModule";
 import { etiquetteModule, moduleOuvrable } from "../../questions/commun";
@@ -81,6 +82,10 @@ export default async function ProgressionAgent({
     [...avancement].map(([mid, a]) => [mid, { etat: a.etat, libelle: libelleAvancement(a, jour) }]),
   );
   const acquisDuParcours = parcours ? parcours.modules.filter((mid) => avancement.get(mid)?.etat === "acquis").length : 0;
+  // Supervision des tuteurs par les pharmaciens (question 104, choix b) : l'identifiant relié à un code de tutorat
+  // est celui d'un tuteur ; son parcours et son code personnel relèvent d'un code d'administration.
+  const estTuteur = agent.codes_tutorat.length > 0;
+  const peutAgir = supervisionAdmise(session?.role ?? "poste", estTuteur);
   const nbPurge = Number(p.n ?? 0);
   const nbFermes = Number(p.f ?? 0);
   const nbHors = Number(p.h ?? 0);
@@ -116,6 +121,12 @@ export default async function ProgressionAgent({
       {p.erreur === "confirmation" && <p className="encart encart--attention">Recopiez l&apos;identifiant pour confirmer la purge.</p>}
       {p.erreur === "parcours-vide" && (
         <p className="encart encart--attention" role="alert">Cochez au moins un module « au parcours » avant d&apos;enregistrer.</p>
+      )}
+      {p.erreur === "supervision" && (
+        <p className="encart encart--attention" role="alert">
+          Cet identifiant est celui d&apos;un tuteur : son parcours et son code personnel relèvent d&apos;un pharmacien (code
+          d&apos;administration).
+        </p>
       )}
       {p.erreur === "parcours-sans-code" && (
         <p className="encart encart--attention" role="alert">
@@ -165,14 +176,23 @@ export default async function ProgressionAgent({
             Aucun code de poste actif n&apos;est relié à cet identifiant. Reliez-en un (Équipe › Codes d&apos;accès, « Relier à
             un agent ») : le parcours se compose à partir des modules que ce code lui ouvre.
           </p>
+        ) : !peutAgir ? (
+          <p className="encart">
+            Identifiant d&apos;un tuteur — code de tutorat {enumerer(agent.codes_tutorat)} relié. Son parcours se compose et se
+            retire par un pharmacien, depuis un code d&apos;administration ; le tutorat le lit ici sans y toucher.
+          </p>
         ) : (
           <>
             <p className="legende">
-              Code{candidats.codes.length > 1 ? "s" : ""} de poste relié{candidats.codes.length > 1 ? "s" : ""} :{" "}
+              Code{candidats.codes.length > 1 ? "s" : ""} relié{candidats.codes.length > 1 ? "s" : ""} :{" "}
               {enumerer(
-                candidats.codes.map((c) => `${c.libelle}${c.filiere ? ` — ${c.filiere}` : ""}${c.niveau ? ` · ${c.niveau}` : ""}`),
+                candidats.codes.map(
+                  (c) =>
+                    `${c.libelle}${c.role === "tuteur" ? " (tutorat)" : ""}${c.filiere ? ` — ${c.filiere}` : ""}${c.niveau ? ` · ${c.niveau}` : ""}`,
+                ),
               )}
-              . La liste propose les modules que ce code lui ouvre, chacun avec son avancement — la dernière trace
+              .{estTuteur ? " Identifiant d'un tuteur : son parcours, son code personnel et ses rapports relèvent des pharmaciens." : ""}{" "}
+              La liste propose les modules que ce code lui ouvre, chacun avec son avancement — la dernière trace
               conservée : verdict de la dernière évaluation, avant arbitrage, sinon entraînement, sinon lecture.
               {parcours
                 ? " Les modules cochés « au parcours » sont ceux que l'agent voit, dans cet ordre."
@@ -253,7 +273,7 @@ export default async function ProgressionAgent({
 
       <section className="carte" style={{ marginTop: "1rem" }}>
         <div className="actions" style={{ marginTop: 0 }}>
-          {agent.code_defini && (
+          {agent.code_defini && peutAgir && (
             <form action={actionReinitialiserCode}>
               <input type="hidden" name="id" value={agent.id} />
               <button type="submit" className="bouton bouton--compact bouton--secondaire">Réinitialiser le code personnel</button>

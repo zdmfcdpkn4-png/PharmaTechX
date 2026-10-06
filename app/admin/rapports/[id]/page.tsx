@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { codesDeLAgent } from "@/lib/agents";
+import { refusVisa } from "@/lib/formation";
 import { conservationActive, miseEnService } from "@/lib/config";
 import { CopierMention } from "@/components/CopierMention";
 import { LIBELLES_REFUS_MENTION, mentionDePreuve } from "@/lib/mention";
@@ -20,6 +22,8 @@ const MESSAGES: Record<string, string> = {
   arbitre: "Arbitrage enregistré : le verdict brut est conservé à côté du verdict arbitré.",
   annule: "Rapport annulé.",
   "deja-vise": "Ce visa est déjà porté.",
+  "propre-rapport": "Ce rapport est celui de votre propre identifiant : il se vise et s'arbitre par un autre code.",
+  "tuteur-supervise": "Ce rapport est celui d'un tuteur : il se vise et s'arbitre par un pharmacien (code d'administration).",
   "tuteur-d-abord": "Le visa du tuteur précède celui du pharmacien.",
   indisponible: "Ce rapport ne peut plus être visé.",
   "rapport-indisponible": "Ce rapport ne peut plus être visé.",
@@ -77,6 +81,9 @@ export default async function Rapport({
   const peutViserTuteur =
     r.statut === "emis" && !verrouSignalement && !ctx.arbitrageRequis && d.verdictBrut !== "non_concluant";
   const peutViserPharmacien = r.statut === "vise_tuteur" && !verrouSignalement && session.role === "admin";
+  // Supervision des tuteurs (question 104, choix b) : nul ne vise ni n'arbitre son propre rapport, et le rapport d'un
+  // tuteur relève d'un pharmacien ; les formulaires s'effacent, l'action revérifie.
+  const refus = refusVisa({ role: session.role, acces: session.acces ?? null }, await codesDeLAgent(r.agent_id).catch(() => []));
   const signatureDuPharmacien = peutViserPharmacien ? await signatureCourante(session.acces) : null;
   const signatureIncrustee = visaPharmacien?.signature_id ? await lireSignature(visaPharmacien.signature_id) : null;
   const message = p.ok ? MESSAGES[p.ok] : p.erreur ? MESSAGES[p.erreur] : null;
@@ -243,7 +250,7 @@ export default async function Rapport({
         )}
       </section>
 
-      {peutArbitrer && (
+      {peutArbitrer && !refus && (
         <section className="carte">
           <h3>Arbitrage du tuteur</h3>
           <p className="legende">
@@ -307,7 +314,7 @@ export default async function Rapport({
         </tbody>
       </table>
 
-      {peutViserTuteur && (
+      {peutViserTuteur && !refus && (
         <section className="carte">
           <h3>Visa du tuteur (N3)</h3>
           <p className="legende">
@@ -321,11 +328,14 @@ export default async function Rapport({
           </form>
         </section>
       )}
+      {refus && (peutArbitrer || peutViserTuteur || peutViserPharmacien) && (
+        <p className="encart encart--attention" role="status">{MESSAGES[refus]}</p>
+      )}
       {r.statut === "emis" && !peutViserTuteur && !verrouSignalement && ctx.arbitrageRequis && (
         <p className="encart">Le visa du tuteur attend l&apos;arbitrage ci-dessus.</p>
       )}
 
-      {peutViserPharmacien && (
+      {peutViserPharmacien && !refus && (
         <section className="carte">
           <h3>Visa du pharmacien responsable</h3>
           <p className="legende">Accuse réception de la preuve de l&apos;étape 2 pour le dossier d&apos;habilitation. Il ne prononce pas l&apos;habilitation (chapitre IV de la fiche). Il clôt le rapport et porte votre profil de session (« {session.libelle} »).</p>

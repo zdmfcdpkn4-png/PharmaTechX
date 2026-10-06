@@ -104,7 +104,11 @@ ouverture, et l'émission se fait sous cet identifiant. Un tuteur réinitialise
 un code oublié ; l'administrateur purge une progression, journalisé. Un code
 de poste peut être relié à un identifiant (question 99, choix a) : connecté
 par ce code, l'agent ne saisit plus que son code personnel, dès l'accueil, et
-aucun autre identifiant ne s'y rattache.
+aucun autre identifiant ne s'y rattache. Un code de tutorat se relie de même
+(question 104, choix b) : le tuteur bascule « En formation » vers une session
+de son identifiant, où tout se conserve sous lui, et revient à son tutorat ;
+le parcours, le code personnel et les rapports d'un tuteur relèvent des
+pharmaciens.
 
 **Sur décision seulement** (`CONSERVATION_RAPPORTS=pseudonyme`) : les
 rapports que l'apprenant choisit d'**émettre** sont enregistrés sous son

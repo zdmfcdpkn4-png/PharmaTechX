@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { LIBELLES_ROLE, sessionRequise } from "@/lib/auth";
-import { basculerAgent, creerAgent, lireAgent } from "@/lib/agents";
+import { basculerAgent, creerAgent, lireAgent, type LigneAgent } from "@/lib/agents";
+import { supervisionAdmise } from "@/lib/formation";
 import { journaliser } from "@/lib/journal";
 import { purgerProgression, reinitialiserCodePersonnel } from "@/lib/progression";
 import { candidatsDuParcours } from "@/lib/programme-poste";
@@ -44,6 +45,8 @@ export async function actionReinitialiserCode(formData: FormData) {
   const id = Number(formData.get("id"));
   const agent = Number.isInteger(id) && id > 0 ? await lireAgent(id) : null;
   if (!agent) redirect(retourListe(formData.get("liste"), "/admin/personnel"));
+  // Le code personnel d'un tuteur ne se réinitialise que par un pharmacien (question 104, choix b).
+  if (!supervisionAdmise(s.role, agent.codes_tutorat.length > 0)) redirect(`/admin/personnel/${agent.id}?erreur=supervision`);
   await reinitialiserCodePersonnel(agent.id);
   await journaliser(s, "progression:code-reinitialise", `agent:${agent.identifiant}`);
   revalidatePath("/admin/personnel");
@@ -51,7 +54,7 @@ export async function actionReinitialiserCode(formData: FormData) {
 }
 
 /** Agent désigné par le formulaire ; sinon, retour au répertoire. */
-async function agentDuFormulaire(formData: FormData): Promise<{ id: number; identifiant: string }> {
+async function agentDuFormulaire(formData: FormData): Promise<LigneAgent> {
   const id = Number(formData.get("id"));
   const agent = Number.isInteger(id) && id > 0 ? await lireAgent(id) : null;
   if (!agent) redirect("/admin/personnel");
@@ -67,8 +70,13 @@ async function agentDuFormulaire(formData: FormData): Promise<{ id: number; iden
 export async function actionFixerParcours(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const agent = await agentDuFormulaire(formData);
-  const { modules, horsPerimetre } = await candidatsDuParcours(agent.id);
-  if (modules.length === 0) redirect(`/admin/personnel/${agent.id}?erreur=parcours-sans-code`);
+  // Supervision des tuteurs par les pharmaciens (question 104, choix b) : le parcours d'un identifiant relié à
+  // un code de tutorat relève d'un code d'administration.
+  if (!supervisionAdmise(s.role, agent.codes_tutorat.length > 0)) redirect(`/admin/personnel/${agent.id}?erreur=supervision`);
+  const { codes, modules, horsPerimetre } = await candidatsDuParcours(agent.id);
+  // Sans code relié, pas de parcours ; un code dont le programme est vide (code de tutorat sans filière, p. ex.)
+  // compose à partir du catalogue, hors périmètre.
+  if (codes.length === 0) redirect(`/admin/personnel/${agent.id}?erreur=parcours-sans-code`);
   const p = composerParcours(
     formData.getAll("modules"),
     formData.getAll("parcours"),
@@ -89,6 +97,7 @@ export async function actionFixerParcours(formData: FormData) {
 export async function actionRetirerParcours(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const agent = await agentDuFormulaire(formData);
+  if (!supervisionAdmise(s.role, agent.codes_tutorat.length > 0)) redirect(`/admin/personnel/${agent.id}?erreur=supervision`);
   if (await supprimerParcoursAgent(agent.id)) {
     await journaliser(s, "parcours:agent-retire", `agent:${agent.identifiant}`);
   }

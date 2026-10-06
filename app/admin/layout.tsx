@@ -34,7 +34,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const session = await getSession();
-  if (!session || session.role === "poste") redirect("/connexion");
+  // Un tuteur « en formation » (question 104) est un poste le temps de sa formation : l'administration l'attend
+  // à son retour au tutorat, pas à la connexion.
+  if (!session) redirect("/connexion");
+  if (session.role === "poste") redirect(session.formation ? "/accueil" : "/connexion");
 
   return (
     <article>

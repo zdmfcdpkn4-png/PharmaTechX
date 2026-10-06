@@ -406,6 +406,21 @@ telle. Ordre : ce qui change le déploiement en premier.
       Contre : deux codes à retenir quand même, un formulaire de plus à
       expliquer.
 
+    Tranchée le 06/10/2026 (choix b, réponse « b mais nécessite une bascule
+    (interrupteur) pour passer de formateur à agent en formation. Supervision
+    des tuteurs par les pharmaciens (Admin) »). Un code de tutorat se relie à
+    un identifiant depuis l'administration ; le tuteur garde sa session de
+    tutorat, où rien ne s'enregistre sous l'identifiant, et bascule « En
+    formation » — l'interrupteur du volet, là où l'administration a sa vue
+    apprenant — vers une session de poste de son identifiant : code personnel
+    demandé, lectures, entraînements, évaluations et rapports conservés sous
+    lui, parcours appliqué, administration fermée ; le bandeau le dit et le
+    ramène au tutorat. Supervision : Personnel marque l'identifiant
+    « tutorat » ; son parcours et son code personnel relèvent d'un code
+    d'administration ; ses rapports ne se visent ni ne s'arbitrent par un
+    tuteur, et nul ne vise son propre rapport. Bascules et refus au journal.
+    Détail dans `DECISIONS.md`.
+
 103. **Parcours d'un agent : que règle « accessible ou inaccessible » ?** —
     posée le 05/10/2026, après la demande « Faire en sorte que depuis la vue
     équipe en sélection de l'agent on puisse sélectionner une sélection de

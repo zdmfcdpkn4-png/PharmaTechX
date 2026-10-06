@@ -3510,6 +3510,9 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
   flex-wrap: wrap;
 }
 .bandeau-essai-interne p { margin: 0; flex: 1 1 10rem; font-size: 0.875rem; }
+/* Tuteur en formation (question 104) : même bandeau, aux couleurs d'un état voulu plutôt que d'une alerte. */
+.bandeau-formation { background: var(--succes-fond); color: var(--succes); border-bottom-color: rgba(30, 110, 70, 0.3); }
+.bandeau-formation code { color: inherit; }
 @media (min-width: 62rem) {
   .bandeau-essai-interne { max-width: calc(var(--largeur) + 252px); }
 }

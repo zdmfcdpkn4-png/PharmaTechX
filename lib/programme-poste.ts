@@ -185,7 +185,8 @@ export function programmeDuPoste(session: { acces?: number | null }, impose: Pro
 export async function candidatsDuParcours(
   agentId: number,
 ): Promise<{ codes: LigneAcces[]; modules: Module[]; horsPerimetre: Module[]; ouverts: Set<string> }> {
-  const codes = (await listerAcces()).filter((c) => c.role === "poste" && c.agent_id === agentId && c.actif);
+  // Codes de poste reliés, et codes de tutorat reliés (question 104, choix b : le tuteur en formation).
+  const codes = (await listerAcces()).filter((c) => c.role !== "admin" && c.agent_id === agentId && c.actif);
   const programmes = await Promise.all(codes.map((c) => lire(c.id, c.filiere, c.niveau)));
   const vus = new Set<string>();
   const modules: Module[] = [];

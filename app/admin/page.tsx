@@ -38,10 +38,10 @@ const MESSAGES: Record<string, string> = {
   "confirmation-indisponible":
     "La confirmation n\u2019a pas pu être vérifiée : votre session n\u2019est plus rattachée à un code en cours de validité. Reconnectez-vous.",
   "agent-role":
-    "Seul un code de poste se relie à un identifiant d\u2019agent : un code de tutorat ou d\u2019administration n\u2019ouvre pas de progression. Rien n\u2019a été créé.",
+    "Un code d\u2019administration ne se relie pas à un identifiant d\u2019agent : il n\u2019ouvre pas de progression. Rien n\u2019a été créé.",
   "agent-indisponible":
     "Les identifiants d\u2019agents ne servent pas sur ce site : la conservation des rapports n\u2019est pas activée. Rien n\u2019a été créé.",
-  "liaison-role": "Seul un code de poste se relie à un identifiant d\u2019agent. Rien n\u2019a changé.",
+  "liaison-role": "Un code d\u2019administration ne se relie pas à un identifiant d\u2019agent. Rien n\u2019a changé.",
   "liaison-agent": "Identifiant inconnu ou clos : le code n\u2019a pas été relié.",
 };
 
@@ -248,11 +248,12 @@ export default async function Admin({
             <div className="cases" style={{ marginTop: ".75rem" }}>
               <label>
                 <input type="checkbox" name="agent" value={CREER_ET_RELIER} />
-                Créer l&apos;identifiant d&apos;agent suivant et le relier à ce code (codes de poste)
+                Créer l&apos;identifiant d&apos;agent suivant et le relier à ce code (codes de poste et de tutorat)
               </label>
               <small className="legende" style={{ display: "block" }}>
                 L&apos;agent ne saisira que son code personnel. Un code relié ne doit servir qu&apos;à cette personne ;
-                laissé vide, le code reste partagé.
+                laissé vide, le code reste partagé. Un code de tutorat relié donne au tuteur la bascule « En formation » :
+                sa propre progression, supervisée par un pharmacien.
               </small>
             </div>
           )}
@@ -409,8 +410,10 @@ export default async function Admin({
                     </form>
                   </details>
                 )}
-                {/* Question 99 (choix a) : un code de poste se relie à un identifiant actif, ou se délie. */}
-                {a.role === "poste" && conservation && (
+                {/* Question 99 (choix a) : un code de poste se relie à un identifiant actif, ou se délie ; un code de
+                    tutorat aussi (question 104, choix b), depuis l'administration seulement — la page le montre à qui
+                    peut l'actionner, l'action revérifie. */}
+                {a.role !== "admin" && conservation && (
                   <details className="suppression liaison-agent">
                     <summary className="bouton bouton--compact bouton--secondaire">
                       {a.agent_identifiant ? "Agent relié…" : "Relier à un agent…"}
@@ -434,8 +437,11 @@ export default async function Admin({
                       </label>
                       <span className="legende">
                         Relié, ce code ne doit servir qu&apos;à cet agent : il n&apos;y saisit que son code personnel, et
-                        aucun autre identifiant ne s&apos;y rattache. Créer un identifiant :{" "}
-                        <Link href="/admin/personnel">Personnel</Link>.
+                        aucun autre identifiant ne s&apos;y rattache.
+                        {a.role === "tuteur"
+                          ? " Code de tutorat : relié, il donne au tuteur la bascule « En formation » ; son parcours, son code personnel et ses rapports relèvent d'un pharmacien."
+                          : ""}{" "}
+                        Créer un identifiant : <Link href="/admin/personnel">Personnel</Link>.
                       </span>
                       <div className="actions">
                         <button type="submit" className="bouton bouton--compact">
