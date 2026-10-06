@@ -661,7 +661,10 @@ fieldset.question {
   flex-direction: column;
   gap: 0.75rem;
 }
-fieldset.question legend { padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+/* Numéro de la question (« Question 3 / 10 »), dans la carte (06/10/2026). La légende du fieldset, que
+   le navigateur pose sur le bord haut de la carte, se coupait au bord de la fenêtre ; elle reste, invisible,
+   pour nommer le groupe aux lecteurs d'écran. */
+.question-numero { font-size: 0.8125rem; font-weight: 650; color: var(--texte-doux); letter-spacing: 0.01em; }
 .question-enonce { font-size: 1.1875rem; font-weight: 650; line-height: 1.35; max-width: 60ch; color: var(--texte); }
 /* Le barème est annoncé sur chaque question : c'est ce qui distingue
    visuellement un QCM tout-ou-rien d'une QIM à la discordance. */

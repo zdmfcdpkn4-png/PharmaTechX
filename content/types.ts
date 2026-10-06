@@ -239,7 +239,7 @@ export function lireModeReponse(brut: unknown): ModeReponse {
   return brut === "choisir" || brut === "decouvrir" ? brut : "ecrire";
 }
 
-/** Image d'un schéma à compléter, servie par `/api/images/[id]`. */
+/** Image d'une question — schéma à compléter, ou illustration de tout format —, servie par `/api/images/[id]`. */
 export interface ImageQuestion {
   id: string;
   url: string;
@@ -310,7 +310,7 @@ export interface Question {
   references?: Reference[];
   /** Schéma à compléter : les légendes à écrire, avec leur place sur l'image. */
   legendes?: Legende[];
-  /** Schéma à compléter : l'image. */
+  /** L'image : celle d'un schéma à compléter, ou l'illustration d'une question de tout format (question 58). */
   image?: ImageQuestion;
   /** Schéma à compléter : écrire la légende, la choisir dans une liste, ou la découvrir. */
   modeReponse?: ModeReponse;

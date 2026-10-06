@@ -2598,11 +2598,15 @@ Justification : justification deux.`;
   await page.click("button:has-text('Publier')");
   await page.waitForURL(/ok=publie/);
 
+  // La séquence porte une illustration : elle doit arriver en passation et au corrigé (06/10/2026).
+  const DESCRIPTION_FORMATS = "Photographie d'essai : habillage en cours.";
   await page.goto(BASE + "/admin/questions/import?module=" + idFormats);
   await page.selectOption("select[name=moduleId]", idFormats);
   await page.fill(
     "textarea[name=texte]",
     `SÉQUENCE 1. Remettez dans l'ordre les étapes de l'habillage.
+Image : ${path.basename(PNG)}
+Description de l'image : ${DESCRIPTION_FORMATS}
 1. Hygiène des mains
 2. Surchaussures
 3. Combinaison
@@ -2615,8 +2619,10 @@ TEXTE 1. Le sas de {1} est en dépression par rapport à la {2}.
 Leurres : couloir
 Justification : cascade de pression.`,
   );
+  await page.setInputFiles("input[name=images]", PNG);
   await page.click("button:has-text('Analyser')");
   await page.waitForSelector("h2:has-text('Aperçu — 2 questions')");
+  await page.waitForSelector(".apercu-question .etiquette:has-text('Image appariée')");
   await page.waitForSelector(".apercu-question .etiquette:has-text('Séquence')");
   await page.waitForSelector(".apercu-question .etiquette:has-text('Texte à trous')");
   await page.waitForSelector(".apercu-options li:has-text('leurre')");
@@ -2645,6 +2651,37 @@ Justification : cascade de pression.`,
   await page.goto(BASE + "/module/" + idFormats + "/evaluation");
   await page.click("button:has-text('Commencer')");
   await page.waitForSelector("fieldset.question .sequence");
+  // Illustration en passation (06/10/2026) : l'image d'une question de tout format arrive avec elle ;
+  // avant, seule celle d'un schéma quittait la base, et les photographies du pool manquaient à l'écran.
+  const illustrationSeq = page.locator("fieldset.question:has(.sequence) img.illustration-question");
+  assert.equal(await illustrationSeq.count(), 1, "la séquence illustrée montre son image en passation");
+  assert.equal(await illustrationSeq.getAttribute("alt"), DESCRIPTION_FORMATS, "la description est lue à la place de l'image");
+  await page.waitForFunction(() => {
+    const im = document.querySelector("fieldset.question:has(.sequence) img.illustration-question");
+    return Boolean(im && im.complete && im.naturalWidth > 0);
+  });
+  // Numéro de la question dans la carte, première question sous l'en-tête gardé affiché (06/10/2026).
+  const demarrage = await page.evaluate(() => {
+    const entete = document.querySelector("header.entete");
+    const carte = document.querySelector(".passation fieldset.question");
+    const numero = carte.querySelector(".question-numero");
+    return {
+      enteteMasque: entete.classList.contains("entete--masque"),
+      enteteBas: Math.round(entete.getBoundingClientRect().bottom),
+      carteHaut: Math.round(carte.getBoundingClientRect().top),
+      numero: numero.textContent.trim(),
+      numeroHaut: Math.round(numero.getBoundingClientRect().top),
+      legende: carte.querySelector("legend").textContent.trim(),
+    };
+  });
+  assert.equal(demarrage.enteteMasque, false, "au démarrage, l'en-tête reste affiché");
+  assert.ok(
+    demarrage.carteHaut >= demarrage.enteteBas,
+    `la première question commence sous l'en-tête (${demarrage.carteHaut} ≥ ${demarrage.enteteBas})`,
+  );
+  assert.equal(demarrage.numero, "Question 1 / 2", "le numéro de la question est dans la carte");
+  assert.equal(demarrage.legende, "Question 1 / 2", "la légende du groupe, pour les lecteurs d'écran, dit le numéro");
+  assert.ok(demarrage.numeroHaut >= demarrage.carteHaut + 8, "le numéro est à l'intérieur de la carte, pas sur son bord");
   const lignesSequence = page.locator("fieldset.question .sequence .etape-sequence");
   const nbEtapes = await lignesSequence.count();
   assert.equal(nbEtapes, 3, "les trois étapes sont proposées");
@@ -2664,8 +2701,9 @@ Justification : cascade de pression.`,
   // la correction relit l'ordre attendu et les vignettes attendues
   await page.waitForSelector("text=1. Hygiène des mains");
   await page.waitForSelector("text=2 → zone à atmosphère contrôlée");
+  assert.equal(await page.locator(".correction img.illustration-question").count(), 1, "le corrigé de la séquence montre son image");
   await capture("formats-correction");
-  ok("séquence à ordonner et texte à trous : déposés, justification et extrait du document lus à la vérification, validés à quatre yeux, passés au menu déroulant, notés par éléments");
+  ok("séquence à ordonner et texte à trous : déposés, justification et extrait du document lus à la vérification, validés à quatre yeux, passés au menu déroulant, notés par éléments ; séquence illustrée en passation et au corrigé, numéro dans la carte sous l'en-tête gardé");
 
   // 12j bis. schéma à découvrir (question 52, choix b) : caches posés par le créateur,
   //          levés à l'écran, jugés par le tuteur présent qui confirme par son propre

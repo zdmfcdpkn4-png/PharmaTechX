@@ -461,6 +461,20 @@ function Signaler({ questionId, ficheId, moduleId }: { questionId?: string; fich
   );
 }
 
+/**
+ * Amène un élément juste sous l'en-tête fixe, en prévenant l'en-tête
+ * (`defilement-guide`, `components/Chrome.tsx`) pour qu'il reste affiché : ce
+ * saut n'est pas une descente de l'apprenant. La marge est celle de
+ * `scroll-margin-top` quand le navigateur la calcule, sinon `--decalage` plus
+ * 12 px, comme pour les ancres.
+ */
+function defilerSous(el: HTMLElement, comportement: ScrollBehavior = "instant") {
+  const entete = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--decalage")) || 0;
+  const marge = parseFloat(getComputedStyle(el).scrollMarginTop) || entete + 12;
+  window.dispatchEvent(new Event("defilement-guide"));
+  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - marge), behavior: comportement });
+}
+
 export function Evaluation({
   moduleId,
   moduleTitre,
@@ -689,6 +703,12 @@ export function Evaluation({
    * celle des ancres (`--decalage`). Saut immédiat, comme en mouvement
    * réduit : un défilement doux peut encore être interrompu par la page qui
    * se recompose, et la question resterait alors sous l'en-tête.
+   *
+   * Position calculée plutôt que `scrollIntoView` (06/10/2026) : la marge sous
+   * l'en-tête (`scroll-margin-top`) n'est pas appliquée par tous les
+   * navigateurs à ce défilement, et la question arrivait au ras du bord haut.
+   * L'en-tête, prévenu, reste affiché au lieu de se masquer comme à une
+   * descente de l'apprenant (`defilerSous`).
    */
   useEffect(() => {
     if (!demarre || resultat) return;
@@ -696,9 +716,8 @@ export function Evaluation({
       window.scrollTo({ top: 0, behavior: "instant" });
       return;
     }
-    refPassation.current
-      ?.querySelector<HTMLElement>(".encart, .vignette, fieldset.question")
-      ?.scrollIntoView({ behavior: "instant", block: "start" });
+    const cible = refPassation.current?.querySelector<HTMLElement>(".encart, .vignette, fieldset.question");
+    if (cible) defilerSous(cible);
   }, [demarre, resultat, entrainementFini, indexCourant]);
 
   /*
@@ -1299,13 +1318,16 @@ export function Evaluation({
       : null;
     return (
       <fieldset className="question" id={`question-${i + 1}`} disabled={verrouille}>
-        <legend>
-          <span className="legende">
-            Question {i + 1} / {total}
-          </span>
+        {/* Légende du groupe pour les lecteurs d'écran ; le numéro visible est dans la carte (06/10/2026) :
+            posé par le navigateur sur le bord haut de la carte, il se coupait au bord de la fenêtre. */}
+        <legend className="visually-hidden">
+          Question {i + 1} / {total}
         </legend>
 
         <div className="etape-tete">
+          <span className="question-numero" aria-hidden="true">
+            Question {i + 1} / {total}
+          </span>
           <span className="etiquette etiquette--site">{libelleFormat(q)}</span>
           {q.eliminatoire && <span className="etiquette etiquette--obligatoire">Éliminatoire</span>}
           {q.reservee && <span className="etiquette etiquette--neutre">Réservée à l&apos;évaluation</span>}
@@ -1617,7 +1639,7 @@ export function Evaluation({
     const el = document.getElementById(`question-${numero}`);
     if (!el) return;
     const doux = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: doux ? "smooth" : "auto", block: "start" });
+    defilerSous(el, doux ? "smooth" : "auto");
     el.querySelector<HTMLElement>("input, textarea, select, button")?.focus({
       preventScroll: true,
     });

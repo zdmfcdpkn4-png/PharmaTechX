@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { requete, sql, transaction, sqlSur, type Role } from "@/lib/db";
 import type { Legende } from "./schema";
 import { lireBlocs, lireIdentifiants } from "./rattachement-question";
+import { imageDeLaLigne } from "./image-question";
 import type { QuestionAuCompte } from "./arbre-banque";
 import { modulesAAjouter } from "./lot-questions";
 import { peutValider, validationParAuteur, type AuteurQuestion } from "./quatre-yeux";
@@ -204,16 +205,12 @@ export function versQuestion(l: LigneQuestion): Question {
   if (l.format === "SCH") {
     base.legendes = l.legendes;
     base.modeReponse = l.mode_reponse;
-    if (l.image_id) {
-      base.image = {
-        id: l.image_id,
-        url: `/api/images/${l.image_id}`,
-        largeur: l.image_largeur ?? 0,
-        hauteur: l.image_hauteur ?? 0,
-        alt: l.image_alt ?? "",
-      };
-    }
   }
+  // L'image part avec la question quel que soit son format (question 58) : schéma à compléter, ou
+  // illustration d'un QCM, d'une QIM, d'une séquence, d'un texte à trous. Jusqu'au 06/10/2026, elle ne
+  // partait qu'avec un schéma, et les photographies du pool de manipulation manquaient en passation.
+  const image = imageDeLaLigne(l);
+  if (image) base.image = image;
   return base;
 }
 

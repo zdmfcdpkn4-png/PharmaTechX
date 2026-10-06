@@ -13,7 +13,10 @@ import { useEffect, useRef } from "react";
  *  - un ResizeObserver écrit la hauteur réelle de l'en-tête dans la cale et
  *    dans `--decalage` — l'en-tête passe sur deux lignes sous 1000 px, une
  *    valeur en dur masquerait le haut de page ;
- *  - `prefers-reduced-motion` neutralise le défilement animé.
+ *  - `prefers-reduced-motion` neutralise le défilement animé ;
+ *  - un défilement guidé par la page (événement `defilement-guide`, envoyé par
+ *    l'évaluation qui amène la question sous l'en-tête) n'est pas une descente
+ *    de l'utilisateur : l'en-tête reste affiché (06/10/2026).
  *
  * `annonce` : bande pleine largeur au-dessus de la ligne d'en-tête (bandeau du
  * mode test). Dans l'en-tête, elle est comptée dans la cale et suit son
@@ -31,6 +34,12 @@ export function Chrome({ children, annonce }: { children: React.ReactNode; annon
 
     let dernier = window.scrollY;
     let enCours = false;
+    // Défilement guidé par la page : dans la demi-seconde qui suit, le défilement ne masque pas l'en-tête.
+    let guide = 0;
+    const surGuide = () => {
+      guide = Date.now();
+    };
+    window.addEventListener("defilement-guide", surGuide);
 
     const mesurer = () => {
       const h = el.offsetHeight;
@@ -61,7 +70,7 @@ export function Chrome({ children, annonce }: { children: React.ReactNode; annon
       // En-tête : masqué en descente, rétabli en montée
       const delta = y - dernier;
       el.classList.toggle("entete--decollee", y > 4);
-      if (y <= h + 8) {
+      if (y <= h + 8 || Date.now() - guide < 600) {
         el.classList.remove("entete--masque");
       } else if (delta > 6) {
         el.classList.add("entete--masque");
@@ -90,6 +99,7 @@ export function Chrome({ children, annonce }: { children: React.ReactNode; annon
     return () => {
       window.removeEventListener("scroll", onScroll, { capture: true });
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("defilement-guide", surGuide);
       observer.disconnect();
     };
   }, []);

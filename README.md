@@ -377,6 +377,8 @@ compléter, qui reste obligatoire pour ce format. Au dépôt, la ligne
 d'un schéma s'apparie à défaut par rang ou parce qu'elle est seule, jamais
 celle d'une illustration. Dans l'éditeur, le champ « Illustration » est offert
 pour les QCM et les QIM, avec sa description lue à la place de l'image.
+L'illustration s'affiche avec sa question en entraînement et en évaluation,
+puis au corrigé (depuis le 06/10/2026 pour les formats autres que le schéma).
 
 ## 8. Rapports et visas
 

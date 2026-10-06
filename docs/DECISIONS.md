@@ -8242,6 +8242,84 @@ codes par tuteur), c (deux codes créés d'un coup).
   journal porte les bascules. L'étape de la question 99 refuse désormais un
   code d'administration là où elle refusait un code de tutorat.
 
+## Illustrations en passation, numéro de la question dans la carte, en-tête gardé au démarrage (06/10/2026, retour d'usage)
+
+**Demande.** « Ajuster la mise en page : Question 1/10 déborde de la fenêtre.
+Vérifier que les illustrations, photos et schémas remontent bien dans les
+questions des modules 1 à 6 du pool. »
+
+**Constat sur les images du pool** (base de production, lecture seule). Les
+cinq modules du pool de manipulation présents (1, 2, 3, 4 et 6 : ce dépôt n'a
+pas de module 5) comptent 53 questions, toutes validées ; 6 portent une
+image : cinq QCM du module 4 (manomètres KIMO) et une QIM du module 6
+(Duoperf). Les six images sont, à l'octet près, la première image collée de
+leur question dans le fichier Word, avec sa description. Trois secondes
+images, le même tableau des plages de référence des KIMO, ont été écartées au
+dépôt comme tranché à la question 84 (choix a) : une question ne porte qu'une
+image ; pour les montrer ensemble, assembler photographie et tableau en une
+seule image avant le dépôt, ou changer l'image dans l'éditeur.
+« figure-p15-1.png », nommée dans la question sur la lecture de la réglette,
+n'était pas jointe au fichier.
+
+Mais aucune de ces images n'arrivait à l'écran, ni en entraînement ni en
+évaluation : `versQuestion` (`content/banque-db.ts`), qui convertit une ligne
+de la base en question, ne reprenait l'image que pour un schéma à compléter,
+depuis le squelette du 18/09/2026. La question 58 (23/09/2026) avait ouvert
+l'illustration à tout format : le dépôt, l'éditeur et la banque la lisaient
+par un autre chemin, et les parcours de bout en bout ne vérifiaient qu'eux.
+L'écran savait l'afficher (`illustration-question`) ; la question lui
+arrivait sans image.
+
+**Fait.**
+- `content/image-question.ts` : règle pure `imageDeLaLigne`, l'image d'une
+  ligne quel que soit le format ; `versQuestion` l'applique à toute question.
+  Trois tests.
+- Le numéro de la question (« Question 3 / 10 ») passe dans la carte, en tête
+  de la ligne des étiquettes (`.question-numero`). La légende du fieldset
+  reste, invisible, pour nommer le groupe aux lecteurs d'écran : posée par le
+  navigateur sur le bord haut de la carte, hors de son fond, elle se coupait
+  au bord de la fenêtre dès que la carte y touchait.
+- Démarrage et question suivante : position calculée (`defilerSous`,
+  `components/Evaluation.tsx`) plutôt que `scrollIntoView`, dont la prise en
+  compte de `scroll-margin-top` varie selon les navigateurs et leurs
+  versions ; l'en-tête, prévenu par l'événement `defilement-guide`
+  (`components/Chrome.tsx`), reste affiché au lieu de se masquer comme à une
+  descente de l'apprenant : la question arrive juste sous lui, sans bande
+  vide au-dessus. Même défilement depuis le récapitulatif.
+- Bout en bout (étape 12j) : la séquence du module des formats porte une
+  image ; elle s'affiche en passation (servie et chargée, description en
+  texte de remplacement) et au corrigé ; au démarrage, l'en-tête est affiché,
+  la première carte commence sous lui, le numéro est dans la carte et la
+  légende le dit.
+- README : l'illustration s'affiche avec sa question en passation et au
+  corrigé.
+
+**Mesuré sur le serveur de mesure** (Chromium, seul moteur disponible ici).
+Avant : au démarrage, la première carte se plaçait à 109 px du haut, l'en-tête
+masqué par le saut lui-même ; en remontant de 40 px, l'en-tête revenait
+au-dessus de la carte. Le débordement signalé ne s'y reproduisait pas : il
+tient à la légende posée sur le bord de la carte et à un défilement sans
+marge dans le navigateur de l'utilisateur, non mesuré ici ; les deux
+corrections rendent la position du numéro indifférente au navigateur.
+
+**Limites.**
+- Le tableau des plages des trois questions KIMO reste hors du site tant que
+  l'image n'est pas assemblée ou changée dans l'éditeur (question 84).
+- Les rapports imprimés ne reproduisent pas les illustrations des questions ;
+  inchangé.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : 537 tests, dont 3 nouveaux (`test/image-question.test.ts`).
+- `npm run build`.
+- Parcours de bout en bout, deux passes de 123 étapes, sans erreur de page ni
+  erreur serveur ; en console, les trois lignes attendues. L'étape 12j vérifie
+  la séquence illustrée en passation et au corrigé, l'en-tête affiché au
+  démarrage, la première carte sous lui, le numéro dans la carte.
+- Serveur de mesure, après correction (Chromium, 1280 × 800, 1098 × 543 et
+  390 × 844) : au démarrage comme à la question suivante, l'en-tête reste
+  affiché et la première carte commence 28 px sous lui (12 px sur téléphone) ;
+  le numéro est dans la carte.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
