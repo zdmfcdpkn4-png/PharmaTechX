@@ -4118,7 +4118,23 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
 .apercu-parcours-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; margin: 0.75rem 0 0.25rem; }
 .apercu-parcours-tete h3 { margin: 0; font-size: 1rem; }
 .apercu-parcours { list-style: none; margin: 0.5rem 0 1rem; padding: 0.375rem 0 0; display: flex; flex-wrap: wrap; gap: 0.875rem 0.75rem; }
-.apercu-parcours li { position: relative; display: grid; justify-items: center; gap: 0.2rem; width: 76px; text-align: center; }
+.apercu-parcours li { position: relative; display: grid; justify-items: center; align-content: start; gap: 0.2rem; width: 7.25rem; text-align: center; }
+/* Le nom du module sous la vignette (06/10/2026) : trois lignes au plus, le code et les marques en dessous. */
+.apercu-titre {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--texte);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.apercu-parcours li.est-ferme .apercu-titre { color: var(--texte-doux); }
+@media (max-width: 30rem) {
+  .apercu-parcours { gap: 0.75rem 0.5rem; }
+  .apercu-parcours li { width: calc((100% - 1rem) / 3); }
+}
 .apercu-rang {
   position: absolute;
   top: -6px;

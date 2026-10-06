@@ -8140,6 +8140,33 @@ parcours et sa purge.
 - Serveur d'essai, script de reproduction : les cinq gestes avant et après
   la correction.
 
+## Aperçu du parcours : le nom des modules sous les vignettes (06/10/2026, retour d'usage)
+
+**Retour.** « On ne voit pas le nom des modules sous le parcours », capture à
+l'appui : six vignettes de modules déposés, toutes légendées « Dépôt ».
+
+**Constat.** L'aperçu du parcours (fiche de l'agent) ne mettait sous chaque
+vignette que le code du module — le critère pour un module de la fiche,
+« Dépôt » pour un module déposé —, le titre n'étant donné qu'au survol et aux
+lecteurs d'écran. Pour un parcours de modules déposés, l'aperçu ne disait
+donc rien.
+
+**Décision.** Le titre du module s'affiche sous la vignette, sur trois lignes
+au plus (le titre entier reste au survol), puis le code et les marques
+(« fermé », « hors périmètre ») en dessous ; la case s'élargit (7,25 rem), et
+passe à trois par rangée sous 30 rem. Le module fermé garde sa vignette grisée
+et son titre atténué.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 528 tests.
+- `npm run build`.
+- Serveur d'essai : aperçu d'un parcours de quatorze modules capturé au
+  bureau et à 390 px, sans débordement horizontal, titres lisibles, module
+  fermé grisé.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur ; l'étape du parcours lit le nom du premier module sous
+  sa vignette.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

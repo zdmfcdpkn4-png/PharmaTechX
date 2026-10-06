@@ -6608,6 +6608,7 @@ Source : Procédure statistiques — section 5`;
   const apercuParcours = page.locator("ol.apercu-parcours li");
   assert.equal(await apercuParcours.count(), choisis.length, "aperçu : les modules cochés, dans l'ordre");
   assert.match(await apercuParcours.first().getAttribute("title"), /^1\. /);
+  assert.match(await apercuParcours.first().locator(".apercu-titre").innerText(), /Comportement et habillage/, "aperçu : le nom du module sous la vignette");
   assert.equal(await apercuParcours.last().getAttribute("class"), "est-ferme", "aperçu : le module fermé grisé");
   await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
   await page.waitForURL(new RegExp(`ok=parcours&n=${choisis.length}&f=1`));

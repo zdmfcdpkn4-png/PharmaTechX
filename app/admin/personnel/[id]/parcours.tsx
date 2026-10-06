@@ -260,15 +260,16 @@ export function ComposeurParcours({
                     {i + 1}
                   </span>
                   <VignetteModule badge={c.badge} taille={44} acquis={acquis} secours={<span className="vignette-vide">{c.code}</span>} />
+                  {/* Le nom du module sous la vignette (retour d'usage du 06/10/2026 : « Dépôt » seul ne disait rien) ;
+                      trois lignes au plus, le titre entier au survol. */}
+                  <span className="apercu-titre">
+                    <span className="visually-hidden">{i + 1}. </span>
+                    {c.titre}
+                  </span>
                   <span className="apercu-legende">
                     {c.code}
                     {marques}
-                  </span>
-                  <span className="visually-hidden">
-                    {i + 1}. {c.titre}
-                    {acquis ? ", acquis" : ""}
-                    {ferme ? ", fermé par le tutorat" : ""}
-                    {hors ? ", hors du périmètre de son code" : ""}
+                    {acquis ? <span className="visually-hidden"> · acquis</span> : null}
                   </span>
                 </li>
               );

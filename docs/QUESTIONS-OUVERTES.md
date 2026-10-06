@@ -377,6 +377,35 @@ telle. Ordre : ce qui change le déploiement en premier.
     métier, qui obligeait chaque rattachement à porter aussi le métier.
     Détail dans `DECISIONS.md`.
 
+104. **Un code de tutorat peut-il être relié à un identifiant d'agent ?** —
+    posée le 06/10/2026, après la question « Comment relier le tuteur à un
+    agent : actuellement PREPARATEUR-1 non relié, PREPARATEUR-0 bien relié »,
+    capture à l'appui (carte TUTEUR PREPARATEUR-1, toutes filières · N3, sans
+    bouton « Relier à un agent… »).
+
+    Aujourd'hui (question 99, choix a), seul un code de poste se relie à un
+    identifiant d'agent : relié, la session est celle de l'agent apprenant —
+    il ne saisit que son code personnel, sa progression se range sous son
+    identifiant. Un code de tutorat supervise (Personnel, visas, parcours des
+    agents) ; sa carte n'offre pas le lien. Un préparateur apprenant reçoit
+    donc un code de poste relié — case « Créer l'identifiant d'agent suivant
+    et le relier à ce code » à la création, ou « Relier à un agent… » sur la
+    carte d'un code de poste —, et un tuteur qui suit lui-même des modules a
+    deux codes, un par rôle.
+    - **a (recommandé)** : rien ne change ; la carte d'un code de tutorat dit
+      pourquoi elle ne se relie pas et renvoie à la création d'un code de
+      poste relié. Contre : un tuteur qui se forme aussi garde deux codes.
+    - **b** : un code de tutorat se relie aussi à un identifiant ; sa session
+      supervise et apprend à la fois, sa progression sous cet identifiant.
+      Contre : le même code ouvre Personnel et pose des traces d'apprenant ;
+      la règle « un code relié ne sert qu'à cette personne » s'étend à un
+      code que plusieurs tuteurs peuvent partager aujourd'hui ; menus,
+      parcours et refus du serveur à revoir pour une session double.
+    - **c** : à la création d'un code de tutorat, proposer de créer en même
+      temps son code de poste relié : deux codes d'un coup, remis ensemble.
+      Contre : deux codes à retenir quand même, un formulaire de plus à
+      expliquer.
+
 103. **Parcours d'un agent : que règle « accessible ou inaccessible » ?** —
     posée le 05/10/2026, après la demande « Faire en sorte que depuis la vue
     équipe en sélection de l'agent on puisse sélectionner une sélection de
