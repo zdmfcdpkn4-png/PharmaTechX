@@ -22,7 +22,9 @@ import { aDesQuestions, modulesDuCode, profilConnu, type ProfilDuCode } from "./
  *
  * Le parcours que le tutorat fixe à l'agent (question 103, choix a) s'applique
  * par-dessus : seuls ses modules restent proposés, dans son ordre, et ceux
- * qu'il tient fermés ne s'ouvrent pas (`parcours`).
+ * qu'il tient fermés ne s'ouvrent pas (`parcours`). Depuis le 06/10/2026, le
+ * parcours fait autorité : un module publié que le tutorat y ajoute hors du
+ * programme du code entre au programme de l'agent, et s'ouvre comme les autres.
  */
 export interface ProgrammePoste {
   /** Programme à la carte validé du code : il remplace la fiche (question 50). */
@@ -31,7 +33,8 @@ export interface ProgrammePoste {
    * Modules du programme : ceux du programme à la carte validé du code, sinon
    * ceux de la fiche au profil du code, sur les deux parcours — l'agent choisit
    * encore entre Intégration et Maintien d'habilitation. « Mes modules » les
-   * montre tous.
+   * montre tous. Avec un parcours : les mêmes, plus les modules que le parcours
+   * ajoute hors de ce programme (06/10/2026).
    */
   auProgramme: Set<string>;
   /** Les mêmes, dans l'ordre de « Mes modules » (programme à la carte, ou intégration puis maintien), sans doublon. */
@@ -56,24 +59,29 @@ export interface ProgrammePoste {
 }
 
 export interface ParcoursPoste {
-  /** Modules du parcours encore au programme du code, dans l'ordre conseillé. */
+  /** Modules du parcours encore publiés, dans l'ordre conseillé : ceux du programme du code et ceux ajoutés hors périmètre. */
   modules: Module[];
   ids: Set<string>;
   /** Ceux que le tutorat tient fermés. */
   fermes: Set<string>;
-  /** Modules du parcours que le programme du code ne contient plus : comptés, pas devinés. */
+  /** Modules du parcours qui ne sont plus publiés : comptés, pas devinés. */
   absents: number;
   modifiePar: string;
   modifieLe: string;
 }
 
+/** Questions validées en banque, par module ; lu une fois par requête. */
+const questionsValidees = cache(async (): Promise<Record<string, number>> => {
+  const comptes = await comptesParModule();
+  return Object.fromEntries(Object.entries(comptes).map(([id, c]) => [id, c.valides]));
+});
+
 const lire = cache(async (acces: number | null, filiere: string | null, niveau: string | null): Promise<ProgrammePoste> => {
-  const [{ filieres, niveaux }, idDuCode, comptes] = await Promise.all([
+  const [{ filieres, niveaux }, idDuCode, validees] = await Promise.all([
     getReferentiel(),
     acces ? programmeDuCode(acces).catch(() => null) : Promise.resolve(null),
-    comptesParModule(),
+    questionsValidees(),
   ]);
-  const validees = Object.fromEntries(Object.entries(comptes).map(([id, c]) => [id, c.valides]));
   const lesQuestionsOuvrent = (modules: Module[]) => new Set(modules.filter((m) => aDesQuestions(m, validees)).map((m) => m.id));
   const profil = profilConnu(
     { filiere, niveau },
@@ -114,6 +122,16 @@ export function programmeDuCodeDePoste(acces: number | null, filiere: string | n
 }
 
 /**
+ * Catalogue des modules publiés — ceux du code et les déposés publiés —, et
+ * ceux d'entre eux qui ont des questions : c'est là qu'un parcours prend un
+ * module hors du périmètre du code (06/10/2026). Lu une fois par requête.
+ */
+const catalogueOuvert = cache(async (): Promise<{ modules: Module[]; ouverts: Set<string> }> => {
+  const [modules, validees] = await Promise.all([getTousModulesAvecDeposes({ publiesSeulement: true }), questionsValidees()]);
+  return { modules, ouverts: new Set(modules.filter((m) => aDesQuestions(m, validees)).map((m) => m.id)) };
+});
+
+/**
  * Agent que la session identifie (question 103, choix a) : celui du code de
  * poste relié à son identifiant (question 99), sinon celui du rattachement.
  * null sous un code partagé sans rattachement, et en mode test : le parcours
@@ -131,9 +149,13 @@ const avecParcours = cache(async (acces: number | null, filiere: string | null, 
   const agentId = await agentIdentifie();
   const enregistre = agentId ? await lireParcoursAgent(agentId).catch(() => null) : null;
   if (!enregistre || enregistre.modules.length === 0) return base;
-  const applique = appliquerAuProgramme(base, enregistre);
+  const applique = appliquerAuProgramme(base, enregistre, await catalogueOuvert());
+  const ajoutes = applique.modules.filter((m) => applique.horsPerimetre.has(m.id));
   return {
     ...base,
+    // Le parcours fait autorité (06/10/2026) : un module qu'il ajoute hors du programme du code y entre.
+    auProgramme: new Set([...base.auProgramme, ...applique.ids]),
+    modules: [...base.modules, ...ajoutes],
     ouverts: applique.ouverts,
     parParcours: { integration: applique.modules, maintien: applique.modules },
     parcours: {
@@ -155,11 +177,14 @@ export function programmeDuPoste(session: { acces?: number | null }, impose: Pro
 /**
  * Candidats au parcours d'un agent, pour sa fiche (question 103, choix a) :
  * les modules que lui ouvrent ses codes de poste reliés et actifs (question
- * 99), dans l'ordre de « Mes modules », sans doublon ; `ouverts` dit lesquels
- * ont des questions. Sans code relié, rien : le parcours se compose parmi les
- * modules d'un code.
+ * 99), dans l'ordre de « Mes modules », sans doublon — son périmètre —, puis
+ * les autres modules publiés, `horsPerimetre`, que le tutorat peut ajouter au
+ * besoin (06/10/2026) ; `ouverts` dit lesquels ont des questions. Sans code
+ * relié, rien : le parcours se compose à partir des modules d'un code.
  */
-export async function candidatsDuParcours(agentId: number): Promise<{ codes: LigneAcces[]; modules: Module[]; ouverts: Set<string> }> {
+export async function candidatsDuParcours(
+  agentId: number,
+): Promise<{ codes: LigneAcces[]; modules: Module[]; horsPerimetre: Module[]; ouverts: Set<string> }> {
   const codes = (await listerAcces()).filter((c) => c.role === "poste" && c.agent_id === agentId && c.actif);
   const programmes = await Promise.all(codes.map((c) => lire(c.id, c.filiere, c.niveau)));
   const vus = new Set<string>();
@@ -173,5 +198,8 @@ export async function candidatsDuParcours(agentId: number): Promise<{ codes: Lig
     }
     for (const id of p.ouverts) ouverts.add(id);
   }
-  return { codes, modules, ouverts };
+  if (codes.length === 0) return { codes, modules, horsPerimetre: [], ouverts };
+  const catalogue = await catalogueOuvert();
+  for (const id of catalogue.ouverts) ouverts.add(id);
+  return { codes, modules, horsPerimetre: catalogue.modules.filter((m) => !vus.has(m.id)), ouverts };
 }

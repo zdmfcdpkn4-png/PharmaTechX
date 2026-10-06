@@ -6,6 +6,7 @@ import { inactif } from "./inactivite";
 import { baseConfiguree, requete, sql } from "./db";
 import type { ResultatEvaluation } from "@/app/api/evaluation/route";
 import { normaliserEtatEnCours, type EtatEnCours } from "@/content/en-cours";
+import type { TraceAvancement } from "@/content/avancement-agent";
 
 /**
  * Progression d'apprentissage sous identifiant d'agent — décision du
@@ -171,6 +172,20 @@ export async function enregistrerLecture(agentId: number, moduleId: string): Pro
     SELECT ${agentId}, ${moduleId}, 'lecture'
     WHERE EXISTS (SELECT 1 FROM agents WHERE id = ${agentId} AND actif)`;
   return r.rowCount > 0;
+}
+
+/**
+ * Dernière trace de chaque nature, par module (06/10/2026) : ce que la fiche
+ * de l'agent montre au tutorat comme avancement (`content/avancement-agent.ts`).
+ */
+export async function dernieresTraces(agentId: number): Promise<TraceAvancement[]> {
+  const r = await requete<TraceAvancement>(
+    `SELECT DISTINCT ON (module_id, nature) module_id, nature, verdict, score, cree_le::text
+     FROM progression WHERE agent_id = $1
+     ORDER BY module_id, nature, cree_le DESC, id DESC`,
+    [agentId],
+  );
+  return r.rows;
 }
 
 export async function historique(agentId: number, limite = 300): Promise<LigneProgression[]> {

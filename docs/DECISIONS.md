@@ -7838,7 +7838,10 @@ mécanismes à la fois (c).
   poste actif relié, la fiche le dit et ne propose rien : le parcours se
   compose parmi les modules d'un code. Un parcours vide ne s'enregistre pas.
   Les modules d'un parcours que le programme du code ne contient plus sont
-  comptés sur la fiche et sortent au prochain enregistrement.
+  comptés sur la fiche et sortent au prochain enregistrement (revu le
+  06/10/2026 : un module hors du programme du code peut être du parcours ;
+  seul un module dépublié en sort — voir « La fiche de l'agent : avancement
+  par module et modules hors périmètre »).
 - Règles pures `content/parcours-agent.ts`, testées : composition depuis le
   formulaire (rien d'étranger aux candidats, sans doublon, fermés pris parmi
   les cochés), relecture tolérante, application au programme du code
@@ -7878,9 +7881,9 @@ mécanismes à la fois (c).
 **Limites.**
 - Le parcours ne vaut que pour un agent identifié ; sous un code partagé,
   l'agent le retrouve en se rattachant.
-- Un parcours dont tous les modules ont quitté le programme du code laisse
-  l'agent sans module ouvert : « Mes modules » et la fiche le disent, plutôt
-  que de rouvrir ce que le tutorat n'a pas choisi.
+- Un parcours dont tous les modules ont été dépubliés laisse l'agent sans
+  module ouvert : « Mes modules » et la fiche le disent, plutôt que de
+  rouvrir ce que le tutorat n'a pas choisi.
 - Un module fermé compte « à venir » : il sort du compte des modules
   ouvrables du chemin de l'accueil tant qu'il est fermé ; son dernier
   résultat reste lisible sur sa carte.
@@ -7946,8 +7949,8 @@ illustration (numéro de critère, rang) porte la coche aussi.
 
 **Inchangé.** « Reprendre » n'a pas de coche : il ne propose jamais un
 module acquis. Les médaillons du chemin de l'accueil sont des étapes, pas des
-modules. La fiche de l'agent, côté tutorat, ne marque pas les modules acquis
-dans le composeur du parcours.
+modules. La fiche de l'agent, côté tutorat, marque depuis le même jour les
+modules acquis dans l'aperçu du parcours (section suivante).
 
 **Vérifié le 06/10/2026.**
 - `npm run verifier` : types, ESLint, 522 tests.
@@ -7960,6 +7963,96 @@ dans le composeur du parcours.
   recharger. Les captures du parcours (`CAPTURES=`) montrent la coche aux
   trois tailles ; une capture d'avant, mal ciblée depuis « Ma progression »,
   est recadrée sur la section du rapport.
+
+## La fiche de l'agent : avancement par module et modules hors périmètre (06/10/2026, demande directe)
+
+**Demande.** « Pour l'agent 1 il faut que le tuteur et l'admin puisse voir en
+cliquant dans la gestion du personnel les modules proposer et pouvoir voir son
+avancement et réorganiser le module à faire en priorité voir ajouter des
+modules hors périmètre si besoin et inactiver des modules si non nécessaire
+ou non vu pour le moment. »
+
+**Lecture retenue.** Tout se passe sur la fiche de l'agent (Équipe ›
+Personnel › identifiant), section « Parcours de l'agent », déjà le lieu du
+parcours (question 103, choix a) :
+- *voir les modules proposés* : la liste des modules que son code de poste
+  relié lui ouvre (question 101), inchangée ;
+- *voir son avancement* : chaque ligne porte l'avancement de l'agent sur le
+  module, lu dans ses traces conservées — le verdict brut de sa dernière
+  évaluation, daté, avec son score ; sinon « Entraîné le … », sinon « Lu le
+  … », sinon « Pas commencé » ; l'aperçu du parcours pose la coche de
+  validation sur les vignettes acquises, comme l'apprenant la voit ; le
+  résumé compte les acquis du parcours ;
+- *réorganiser le module à faire en priorité* : le rangement existant
+  (glisser, flèches, numéro), l'ordre restant conseillé à l'agent ;
+- *ajouter des modules hors périmètre si besoin* : un volet « Ajouter un
+  module hors du périmètre de son code » propose les autres modules publiés,
+  avec une recherche ; ajouté, le module entre dans la liste, marqué « hors
+  périmètre », coché, en fin d'ordre, et s'enregistre dans le parcours. Le
+  parcours fait alors autorité : ce module est au programme de l'agent,
+  s'ouvre, s'évalue, sert ses documents, laisse ses traces et permet
+  l'émission d'un rapport, comme un module du programme du code ; retiré du
+  parcours, il redevient « hors de votre programme » ;
+- *inactiver des modules* : deux états déjà là, nommés sur la fiche — un
+  module « non nécessaire » ne se coche pas « au parcours » et n'est plus
+  proposé ; un module « non vu pour le moment » se coche « fermé » : visible
+  grisé, refusé, rouvrable.
+
+**Ce qui est fait.**
+- `content/avancement-agent.ts` (pur, testé) : états (acquis, non acquis,
+  indéterminé, non concluant, entraîné, lu, pas commencé), dernière trace de
+  chaque nature par module, libellé daté ; `lib/progression.ts` :
+  `dernieresTraces` (une ligne par module et par nature).
+- `content/parcours-agent.ts` : `appliquerAuProgramme` prend le catalogue des
+  modules publiés : un module du parcours hors du programme du code y est
+  pris, compté `horsPerimetre`, ouvert s'il a des questions et n'est pas
+  fermé ; « absent » veut désormais dire dépublié ou retiré.
+  `composerParcours` reçoit comme candidats les modules du périmètre puis
+  les autres modules publiés.
+- `lib/programme-poste.ts` : avec un parcours, `auProgramme` s'étend aux
+  modules du parcours — `refusDuPoste`, `fermetureDeLaPage`, les documents
+  et l'émission d'un rapport suivent sans changer ; `candidatsDuParcours`
+  rend aussi `horsPerimetre`, les modules publiés que les codes reliés
+  n'ouvrent pas.
+- Fiche : la liste à ranger porte l'avancement de chaque module (étiquette
+  colorée par état), le volet d'ajout hors périmètre, l'aperçu avec la coche
+  et la mention « hors périmètre » ; le résumé dit « dont N fermés et M hors
+  périmètre » et « Avancement : K acquis sur N » ; le message
+  d'enregistrement compte les hors périmètre ; le journal `parcours:agent`
+  porte `horsPerimetre`. `ListeOrdonnable` accepte des éléments ajoutés en
+  cours de route, rangés à la suite sans défaire l'ordre saisi.
+- « Mes modules » : l'encart des modules absents parle désormais de modules
+  « plus publiés ».
+
+**Limites.**
+- L'avancement vu du tutorat est celui des traces conservées : une
+  évaluation passée sans rattachement n'y paraît pas (son rapport, s'il a été
+  émis, est dans Rapports) ; le verdict est celui d'avant arbitrage.
+- Un module hors périmètre s'évalue au niveau cible et à la filière du code
+  de l'agent : les étiquettes de profil des questions (question 74) continuent
+  de s'appliquer.
+- Sans code de poste actif relié, la fiche ne compose toujours rien : le
+  périmètre de départ est celui d'un code.
+- Rien ne distingue, pour l'agent, un module ajouté hors périmètre d'un
+  module de son programme.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 528 tests dont 4 nouveaux
+  (`test/avancement-agent.test.ts`) et 2 ajoutés à
+  `test/parcours-agent.test.ts` (catalogue et hors périmètre, candidats
+  élargis).
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur. L'étape du parcours vérifie en plus l'avancement de la
+  fiche (« Lu le … » hérité de l'étape précédente, « Pas commencé » sur un
+  module jamais ouvert, puis le verdict daté et chiffré de l'évaluation que
+  l'agent rattaché vient de passer, la coche de l'aperçu et le résumé suivant
+  ce verdict), l'ajout du module N1c hors du programme N1a (recherché, ajouté,
+  passé en tête, enregistré « dont 1 hors périmètre » ; l'agent le voit en
+  première carte, ouvre sa page au rang 1, son document, son évaluation, sa
+  correction, sa trace) et son retrait (hors programme de nouveau).
+- Captures du parcours de bout en bout (`CAPTURES=`) : la section « Parcours
+  de l'agent » avec les avancements et l'aperçu.
 
 ## Non fait
 

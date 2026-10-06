@@ -4168,3 +4168,20 @@ details.groupe-modules > summary::after { margin-left: 0.25rem; }
 @media (max-width: 34rem) {
   .titre-vignette .vignette-module .badge--illustration { width: 72px; height: 72px; }
 }
+
+/* ── Fiche de l'agent : avancement par module, ajout hors périmètre (06/10/2026) ── */
+/* L'avancement se lit sur chaque ligne à ranger : une étiquette en minuscules, datée. */
+.avancement-module { text-transform: none; letter-spacing: 0; font-weight: 600; white-space: nowrap; }
+.avancement-module--vierge { background: transparent; color: var(--texte-doux); border-color: var(--bord); }
+.avancement-module--lu,
+.avancement-module--entraine { background: var(--surface-douce); color: var(--texte); border-color: var(--bord); }
+/* Les modules hors du périmètre du code, à ajouter : un volet replié, une recherche, une ligne par module. */
+.ajout-hors-perimetre { margin: 0.25rem 0 0.75rem; padding: 0.375rem 0.75rem 0.5rem; border: 1px dashed var(--bord-fort); border-radius: var(--rayon-sm); }
+.ajout-hors-perimetre > summary { display: flex; align-items: center; min-height: var(--cible); font-weight: 600; cursor: pointer; }
+.ajout-hors-perimetre .champ { max-width: 24rem; margin: 0.25rem 0 0.5rem; }
+.hors-perimetre-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.375rem; max-height: 22rem; overflow-y: auto; }
+.hors-perimetre-liste li { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; background: var(--surface); border: 1px solid var(--bord); border-radius: var(--rayon-sm); }
+.hors-perimetre-liste li.legende { border: 0; background: transparent; }
+.hors-perimetre-liste .vignette-vide { width: 32px; height: 32px; font-size: 0.5rem; }
+.hors-perimetre-liste .bouton { flex: none; margin-left: auto; }
+/* Dans l'aperçu, un module hors périmètre garde son rang aux couleurs du site : rien ne le distingue à l'agent. */

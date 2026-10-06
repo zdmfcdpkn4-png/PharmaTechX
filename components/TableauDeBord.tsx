@@ -108,7 +108,7 @@ export interface ParcoursAffiche {
   modules: ModuleResume[];
   /** Identifiants des modules que le tutorat tient fermés : grisés, sans lien. */
   fermes: string[];
-  /** Modules du parcours que le programme du code ne contient plus : comptés, pas devinés. */
+  /** Modules du parcours qui ne sont plus publiés : comptés, pas devinés. */
   absents: number;
   /** Date du dernier enregistrement, déjà lisible. */
   fixeLe: string;
@@ -815,11 +815,11 @@ export function TableauDeBord({
           {parcoursAgent.absents > 0 && (
             <p className="encart">
               {parcoursAgent.absents} module{parcoursAgent.absents > 1 ? "s" : ""} de votre parcours{" "}
-              {parcoursAgent.absents > 1 ? "ne sont" : "n'est"} plus à votre programme : signalez-le à votre tuteur.
+              {parcoursAgent.absents > 1 ? "ne sont" : "n'est"} plus publié{parcoursAgent.absents > 1 ? "s" : ""} : signalez-le à votre tuteur.
             </p>
           )}
           {parcoursAgent.modules.length === 0 && (
-            <p className="encart">Aucun module de votre parcours n&apos;est à votre programme : voyez votre tuteur.</p>
+            <p className="encart">Aucun module de votre parcours n&apos;est publié : voyez votre tuteur.</p>
           )}
           <div className="grille">
             {parcoursAgent.modules.map((m, i) => (

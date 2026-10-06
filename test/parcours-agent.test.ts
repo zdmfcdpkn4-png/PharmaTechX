@@ -52,3 +52,30 @@ test("parcours dont plus aucun module n'est au programme : rien d'ouvert, les ab
   assert.deepEqual([...r.ouverts], []);
   assert.equal(r.absents, 2);
 });
+
+// ── 06/10/2026 : modules hors périmètre du code, ajoutés au parcours depuis la fiche
+
+test("parcours avec un module hors périmètre : présent s'il est publié, ouvert s'il a des questions, compté hors périmètre", () => {
+  const programme = { modules: [m("s1"), m("s2")], ouverts: new Set(["s1", "s2"]) };
+  const catalogue = { modules: [m("s1"), m("s2"), m("h1"), m("h2")], ouverts: new Set(["s1", "s2", "h1"]) };
+  const r = appliquerAuProgramme(programme, { modules: ["h1", "s2", "h2", "depublie"], fermes: ["h1"] }, catalogue);
+  assert.deepEqual(r.modules.map((x) => x.id), ["h1", "s2", "h2"], "l'ordre du parcours, modules du programme et hors périmètre mêlés");
+  assert.deepEqual([...r.horsPerimetre].sort(), ["h1", "h2"]);
+  assert.deepEqual([...r.ouverts], ["s2"], "h1 est fermé par le tutorat, h2 n'a pas de question");
+  assert.equal(r.absents, 1, "un module que le catalogue publié ne contient plus");
+  // Rouvert, le module hors périmètre s'ouvre comme les autres.
+  assert.deepEqual([...appliquerAuProgramme(programme, { modules: ["h1", "s2"], fermes: [] }, catalogue).ouverts], ["h1", "s2"]);
+  // Sans catalogue, la règle d'avant : un module hors du programme est absent.
+  const sans = appliquerAuProgramme(programme, { modules: ["h1", "s2"], fermes: [] });
+  assert.deepEqual(sans.modules.map((x) => x.id), ["s2"]);
+  assert.equal(sans.absents, 1);
+  assert.equal(sans.horsPerimetre.size, 0);
+});
+
+test("parcours saisi avec des candidats hors périmètre : retenus s'ils sont cochés, à la suite s'ils sont omis", () => {
+  const perimetre = ["s1", "s2"];
+  const hors = ["h1", "h2"];
+  const p = composerParcours(["h2", "s1"], ["s1", "h2", "h1"], ["h2"], [...perimetre, ...hors]);
+  assert.deepEqual(p, { modules: ["h2", "s1", "h1"], fermes: ["h2"] }, "h1 coché mais absent de la liste : à la suite, dans l'ordre des candidats");
+  assert.deepEqual(composerParcours(["z"], ["z"], [], [...perimetre, ...hors]), { modules: [], fermes: [] }, "un module qui n'est ni du périmètre ni publié n'est pas retenu");
+});

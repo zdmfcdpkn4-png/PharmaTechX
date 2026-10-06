@@ -4,17 +4,19 @@ import { getSession } from "@/lib/auth";
 import { conservationActive } from "@/lib/config";
 import { LIBELLES_COURTS_VERDICT, type Verdict } from "@/lib/decision";
 import { lireAgent } from "@/lib/agents";
-import { historique, statistiquesAgent, type ResumeEntrainement } from "@/lib/progression";
+import { dernieresTraces, historique, statistiquesAgent, type ResumeEntrainement } from "@/lib/progression";
 import { getTousModulesAvecDeposes } from "@/content/store";
 import { listerOrdresAgents, type OrdreAgent } from "@/content/ordres-db";
 import { requeteProfil } from "@/content/ordres";
 import { lireParcoursAgent } from "@/content/parcours-agent-db";
+import { avancementParModule, libelleAvancement, type TraceAvancement } from "@/content/avancement-agent";
 import { badgeEffectif } from "@/content/badges";
+import type { Module } from "@/content/types";
 import { candidatsDuParcours } from "@/lib/programme-poste";
 import { actionFixerParcours, actionPurgerProgression, actionReinitialiserCode, actionRetirerParcours } from "../actions";
 import { LienModule } from "@/components/LienModule";
 import { etiquetteModule, moduleOuvrable } from "../../questions/commun";
-import { ComposeurParcours, type CandidatParcours } from "./parcours";
+import { ComposeurParcours, type AvancementAffiche, type CandidatParcours } from "./parcours";
 
 export const dynamic = "force-dynamic";
 
@@ -24,26 +26,31 @@ function date(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
 }
 
+function jour(iso: string): string {
+  return new Date(iso).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+}
+
 /** « a », « a et b », « a, b et c ». */
 function enumerer(parts: string[]): string {
   return parts.length <= 1 ? (parts[0] ?? "") : `${parts.slice(0, -1).join(", ")} et ${parts[parts.length - 1]}`;
 }
 
-/** Progression d'un agent vue par le tutorat : traces conservées, parcours (question 103), code personnel, purge (administration). */
+/** Progression d'un agent vue par le tutorat : traces conservées, parcours (question 103) et avancement par module, code personnel, purge (administration). */
 export default async function ProgressionAgent({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ok?: string; erreur?: string; n?: string; f?: string }>;
+  searchParams: Promise<{ ok?: string; erreur?: string; n?: string; f?: string; h?: string }>;
 }) {
   const [{ id }, p, session] = await Promise.all([params, searchParams, getSession()]);
   if (!conservationActive()) notFound();
   const agent = await lireAgent(Number(id));
   if (!agent) notFound();
-  const [stats, traces, modules, ordres, parcours, candidats] = await Promise.all([
+  const [stats, traces, dernieres, modules, ordres, parcours, candidats] = await Promise.all([
     statistiquesAgent(agent.id),
     historique(agent.id),
+    dernieresTraces(agent.id).catch((): TraceAvancement[] => []),
     getTousModulesAvecDeposes(),
     listerOrdresAgents(agent.id).catch((): OrdreAgent[] => []),
     lireParcoursAgent(agent.id).catch(() => null),
@@ -51,18 +58,34 @@ export default async function ProgressionAgent({
   ]);
   const titre = (mid: string) => modules.find((m) => m.id === mid)?.titre ?? mid;
   // Parcours de l'agent (question 103, choix a) : candidats = les modules que ses codes de poste reliés lui
-  // ouvrent ; un module du parcours qui n'en est plus sortira à l'enregistrement.
-  const candidatsParcours: CandidatParcours[] = candidats.modules.map((m) => ({
+  // ouvrent — son périmètre — ; au besoin, les autres modules publiés s'ajoutent hors périmètre (06/10/2026).
+  // Un module du parcours qui n'est plus publié sortira à l'enregistrement.
+  const versCandidat = (m: Module): CandidatParcours => ({
     id: m.id,
     titre: m.titre,
     code: etiquetteModule(m),
     badge: badgeEffectif(m.badge, m.titre, m.objectif),
     sansQuestion: !candidats.ouverts.has(m.id),
-  }));
-  const idsCandidats = new Set(candidatsParcours.map((c) => c.id));
-  const absentsParcours = parcours ? parcours.modules.filter((mid) => !idsCandidats.has(mid)).length : 0;
+  });
+  const candidatsParcours = candidats.modules.map(versCandidat);
+  const horsPerimetre = candidats.horsPerimetre.map(versCandidat);
+  const idsPerimetre = new Set(candidatsParcours.map((c) => c.id));
+  const idsConnus = new Set([...idsPerimetre, ...horsPerimetre.map((c) => c.id)]);
+  const absentsParcours = parcours ? parcours.modules.filter((mid) => !idsConnus.has(mid)).length : 0;
+  const horsEnregistres = parcours ? parcours.modules.filter((mid) => idsConnus.has(mid) && !idsPerimetre.has(mid)).length : 0;
+  // Avancement par module (06/10/2026) : la dernière trace de chaque nature, résumée et déjà libellée.
+  const avancement = avancementParModule(dernieres);
+  const avancementAffiche: Record<string, AvancementAffiche> = Object.fromEntries(
+    [...avancement].map(([mid, a]) => [mid, { etat: a.etat, libelle: libelleAvancement(a, jour) }]),
+  );
+  const acquisDuParcours = parcours ? parcours.modules.filter((mid) => avancement.get(mid)?.etat === "acquis").length : 0;
   const nbPurge = Number(p.n ?? 0);
   const nbFermes = Number(p.f ?? 0);
+  const nbHors = Number(p.h ?? 0);
+  const complementsOk = [
+    nbFermes > 0 ? `${nbFermes} fermé${nbFermes > 1 ? "s" : ""}` : "",
+    nbHors > 0 ? `${nbHors} hors périmètre` : "",
+  ].filter(Boolean);
 
   return (
     <>
@@ -82,7 +105,7 @@ export default async function ProgressionAgent({
       {p.ok === "parcours" && (
         <p className="encart encart--ok" role="status">
           Parcours enregistré : {nbPurge} module{nbPurge > 1 ? "s" : ""}
-          {nbFermes > 0 ? `, dont ${nbFermes} fermé${nbFermes > 1 ? "s" : ""}` : ""}. L&apos;agent le voit dès sa prochaine page.
+          {complementsOk.length > 0 ? `, dont ${complementsOk.join(" et ")}` : ""}. L&apos;agent le voit dès sa prochaine page.
         </p>
       )}
       {p.ok === "parcours-retire" && (
@@ -94,7 +117,7 @@ export default async function ProgressionAgent({
       )}
       {p.erreur === "parcours-sans-code" && (
         <p className="encart encart--attention" role="alert">
-          Aucun code de poste actif n&apos;est relié à cet identifiant : le parcours se compose parmi les modules que ce code lui ouvre.
+          Aucun code de poste actif n&apos;est relié à cet identifiant : le parcours se compose à partir des modules que ce code lui ouvre.
         </p>
       )}
 
@@ -136,16 +159,25 @@ export default async function ProgressionAgent({
       </table>
 
       {/* Parcours de l'agent (question 103, choix a) : composé ici, parmi les modules que ses codes de poste
-          reliés lui ouvrent (question 101) ; rangé, chaque module ouvert ou fermé ; purgé avec sa progression. */}
+          reliés lui ouvrent (question 101) et, au besoin, les autres modules publiés (06/10/2026) ; rangé,
+          chaque module ouvert ou fermé, son avancement sur chaque ligne ; purgé avec sa progression. */}
       <section className="carte" style={{ marginTop: "1rem" }} aria-labelledby="t-parcours-agent">
         <h2 id="t-parcours-agent">Parcours de l&apos;agent</h2>
         {parcours ? (
           <p className="legende">
             Parcours fixé le {date(parcours.modifieLe)} par {parcours.modifiePar} : {parcours.modules.length} module
             {parcours.modules.length > 1 ? "s" : ""}
-            {parcours.fermes.length > 0 ? `, dont ${parcours.fermes.length} fermé${parcours.fermes.length > 1 ? "s" : ""}` : ""}.
+            {parcours.fermes.length > 0 || horsEnregistres > 0
+              ? `, dont ${enumerer(
+                  [
+                    parcours.fermes.length > 0 ? `${parcours.fermes.length} fermé${parcours.fermes.length > 1 ? "s" : ""}` : "",
+                    horsEnregistres > 0 ? `${horsEnregistres} hors périmètre` : "",
+                  ].filter(Boolean),
+                )}`
+              : ""}
+            . Avancement : {acquisDuParcours > 0 ? `${acquisDuParcours} acquis` : "aucun acquis"} sur {parcours.modules.length}.
             {absentsParcours > 0
-              ? ` ${absentsParcours} module${absentsParcours > 1 ? "s" : ""} du parcours ${absentsParcours > 1 ? "ne sont" : "n'est"} plus au programme de son code : ${absentsParcours > 1 ? "ils en sortiront" : "il en sortira"} au prochain enregistrement.`
+              ? ` ${absentsParcours} module${absentsParcours > 1 ? "s" : ""} du parcours ${absentsParcours > 1 ? "ne sont" : "n'est"} plus publié${absentsParcours > 1 ? "s" : ""} : ${absentsParcours > 1 ? "ils en sortiront" : "il en sortira"} au prochain enregistrement.`
               : ""}
           </p>
         ) : (
@@ -154,7 +186,7 @@ export default async function ProgressionAgent({
         {candidats.codes.length === 0 ? (
           <p className="encart">
             Aucun code de poste actif n&apos;est relié à cet identifiant. Reliez-en un (Équipe › Codes d&apos;accès, « Relier à
-            un agent ») : le parcours se compose parmi les modules que ce code lui ouvre.
+            un agent ») : le parcours se compose à partir des modules que ce code lui ouvre.
           </p>
         ) : (
           <>
@@ -163,9 +195,13 @@ export default async function ProgressionAgent({
               {enumerer(
                 candidats.codes.map((c) => `${c.libelle}${c.filiere ? ` — ${c.filiere}` : ""}${c.niveau ? ` · ${c.niveau}` : ""}`),
               )}
-              . Cochez « au parcours » les modules retenus parmi ceux que ce code lui ouvre, rangez-les — l&apos;ordre est
-              conseillé à l&apos;agent, qui peut faire autrement — et cochez « fermé » ceux qu&apos;il ne doit pas encore ouvrir :
-              il les verra grisés jusqu&apos;à ce que vous les rouvriez. Un module qu&apos;il ne coche pas ne lui est plus proposé.
+              . La liste propose les modules que ce code lui ouvre, chacun avec son avancement — la dernière trace
+              conservée : verdict de la dernière évaluation, avant arbitrage, sinon entraînement, sinon lecture. Cochez
+              « au parcours » les modules retenus et rangez-les : l&apos;ordre est conseillé à l&apos;agent, qui peut faire
+              autrement. Un module qu&apos;il ne doit pas encore ouvrir se coche « fermé » : il le verra grisé jusqu&apos;à ce
+              que vous le rouvriez. Un module qui ne lui est pas nécessaire ne se coche pas : il ne lui est plus proposé.
+              Au besoin, un module hors du périmètre de son code s&apos;ajoute à la liste, et entre au parcours comme les
+              autres.
             </p>
             {/* La clé suit le parcours enregistré : après « Enregistrer » ou « Retirer », le composeur repart de
                 ce que la base contient, et non de l'état que la page gardait en mémoire. */}
@@ -174,6 +210,8 @@ export default async function ProgressionAgent({
               agentId={agent.id}
               identifiant={agent.identifiant}
               candidats={candidatsParcours}
+              horsPerimetre={horsPerimetre}
+              avancement={avancementAffiche}
               initial={parcours ? { modules: parcours.modules, fermes: parcours.fermes } : null}
               action={actionFixerParcours}
               actionRetrait={actionRetirerParcours}

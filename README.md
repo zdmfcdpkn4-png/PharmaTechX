@@ -87,7 +87,8 @@ rattachée à un identifiant d'agent, décision du 18/09/2026, question 11 :
 `ordres_agent` (ordre des modules fixé par le tutorat pour un apprenant,
 question 56, purgé avec sa progression), `parcours_agent` (parcours fixé par
 le tutorat à un agent : modules choisis dans l'ordre conseillé et modules
-fermés, question 103, purgé avec sa progression), `signalements` (sans identité), `journal` (rôle et libellé de profil),
+fermés, y compris hors du programme de son code, question 103, purgé avec sa
+progression), `signalements` (sans identité), `journal` (rôle et libellé de profil),
 `tentatives_connexion` (empreintes d'adresse). Chaque table porte la sécurité
 au niveau des lignes sans politique et les rôles de l'API de données de
 Supabase n'y ont aucun droit : la base n'est lisible que par le service.
@@ -485,7 +486,8 @@ exclusions, arbitrage, bande de garde réglable), barème réglable
 en cours (contrôle de forme), identifiants d'agents,
 famille d'adresses et socket IPv4 vers la base, schéma (RLS sur chaque
 table), voisins du parcours, parcours d'un agent (composition, application
-au programme du code, motifs de fermeture), constructeur de rapport (identifiant, nom hors
+au programme du code et hors périmètre, motifs de fermeture), avancement par
+module, constructeur de rapport (identifiant, nom hors
 sceau, barème porté), registre CSV et JSON, archive zip, modèle vierge de
 la table de correspondance.
 `npm run verifier` enchaîne typecheck, lint et tests.
@@ -514,7 +516,8 @@ synthèse, question ratée rejouée, module suivant), progression rattachée
 reprise, traces vues du tutorat, purge, code réinitialisé), parcours d'un
 agent composé sur sa fiche (modules choisis parmi ceux de son code relié,
 ordre conseillé, module fermé grisé et refusé, hors-parcours refusé, module
-rouvert, parcours retiré, purgé avec la progression), connexion
+rouvert, avancement par module vu du tutorat, module hors périmètre ajouté
+puis retiré, parcours retiré, purgé avec la progression), connexion
 tuteur, mode entraînement, limiteur de connexion. Voir l'en-tête de
 `e2e/parcours.e2e.js`.
 

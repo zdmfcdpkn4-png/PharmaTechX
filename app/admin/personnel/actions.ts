@@ -60,26 +60,29 @@ async function agentDuFormulaire(formData: FormData): Promise<{ id: number; iden
 
 /**
  * Parcours de l'agent (question 103, choix a, 05/10/2026) : le tutorat ou l'administration cochent, parmi les
- * modules que ses codes de poste reliés lui ouvrent, ceux du parcours, les rangent et en ferment certains
- * (`composerParcours`). Rien d'étranger à ces modules n'est retenu ; un parcours vide ne s'enregistre pas.
+ * modules que ses codes de poste reliés lui ouvrent — et, au besoin, parmi les autres modules publiés, hors
+ * périmètre (06/10/2026) —, ceux du parcours, les rangent et en ferment certains (`composerParcours`). Rien
+ * d'étranger à ces modules n'est retenu ; un parcours vide ne s'enregistre pas.
  */
 export async function actionFixerParcours(formData: FormData) {
   const s = await sessionRequise("tuteur");
   const agent = await agentDuFormulaire(formData);
-  const { modules } = await candidatsDuParcours(agent.id);
+  const { modules, horsPerimetre } = await candidatsDuParcours(agent.id);
   if (modules.length === 0) redirect(`/admin/personnel/${agent.id}?erreur=parcours-sans-code`);
   const p = composerParcours(
     formData.getAll("modules"),
     formData.getAll("parcours"),
     formData.getAll("fermes"),
-    modules.map((m) => m.id),
+    [...modules, ...horsPerimetre].map((m) => m.id),
   );
   if (p.modules.length === 0) redirect(`/admin/personnel/${agent.id}?erreur=parcours-vide`);
+  const duPerimetre = new Set(modules.map((m) => m.id));
+  const hors = p.modules.filter((id) => !duPerimetre.has(id)).length;
   await ecrireParcoursAgent(agent.id, p, `${LIBELLES_ROLE[s.role]} · ${s.libelle}`);
-  await journaliser(s, "parcours:agent", `agent:${agent.identifiant}`, { n: p.modules.length, fermes: p.fermes.length });
+  await journaliser(s, "parcours:agent", `agent:${agent.identifiant}`, { n: p.modules.length, fermes: p.fermes.length, horsPerimetre: hors });
   revalidatePath("/");
   revalidatePath("/admin/personnel");
-  redirect(`/admin/personnel/${agent.id}?ok=parcours&n=${p.modules.length}&f=${p.fermes.length}`);
+  redirect(`/admin/personnel/${agent.id}?ok=parcours&n=${p.modules.length}&f=${p.fermes.length}&h=${hors}`);
 }
 
 /** Retour au programme entier du code : l'agent revoit tous ses modules, dans l'ordre d'avant. */

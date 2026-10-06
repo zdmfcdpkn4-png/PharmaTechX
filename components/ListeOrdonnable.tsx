@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { deplacer } from "@/content/ordres";
 import { Badge } from "./Badge";
 
@@ -32,7 +32,9 @@ export interface ElementOrdonnable {
  *
  * Chaque ligne peut porter la vignette de son module (`badge`) et des
  * commandes propres (`complement`, p. ex. les cases du parcours d'un agent,
- * question 103) ; `onChange` reçoit l'ordre après chaque déplacement.
+ * question 103) ; `onChange` reçoit l'ordre après chaque déplacement. Des
+ * éléments ajoutés en cours de route se rangent à la suite, sans défaire
+ * l'ordre déjà saisi.
  */
 export function ListeOrdonnable({
   nom,
@@ -57,6 +59,18 @@ export function ListeOrdonnable({
   const [enGlisse, setEnGlisse] = useState<string | null>(null);
   const lignes = useRef(new Map<string, HTMLLIElement>());
   const glisse = useRef<{ id: string; pointeur: number } | null>(null);
+
+  // Les éléments peuvent changer après le premier rendu — un module ajouté hors périmètre au parcours d'un
+  // agent (06/10/2026) : l'ordre courant est gardé, les nouveaux se rangent à la suite, les retirés sortent.
+  useEffect(() => {
+    setListe((courante) => {
+      const parId = new Map(elements.map((e) => [e.id, e]));
+      const gardes = courante.filter((e) => parId.has(e.id)).map((e) => parId.get(e.id)!);
+      const connus = new Set(gardes.map((e) => e.id));
+      const suite = [...gardes, ...elements.filter((e) => !connus.has(e.id))];
+      return suite.length === courante.length && suite.every((e, i) => e === courante[i]) ? courante : suite;
+    });
+  }, [elements]);
 
   const bouger = (id: string, vers: number) => {
     const de = liste.findIndex((x) => x.id === id);

@@ -6522,7 +6522,9 @@ Source : Procédure statistiques — section 5`;
   //          que ces modules, dans cet ordre, le module fermé grisé et refusé partout (page, évaluation,
   //          correction, trace), un module de son programme hors du parcours refusé aussi ; le module suivant
   //          saute le fermé ; rouvert, il s'ouvre ; parcours retiré, le programme entier revient ; purgé avec
-  //          la progression ; journalisé.
+  //          la progression ; journalisé. Depuis le 06/10/2026 : l'avancement de l'agent sur chaque ligne (lecture,
+  //          puis verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) et un module hors du
+  //          périmètre du code ajouté au parcours, ouvert à l'agent, puis retiré.
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/accueil$/);
@@ -6540,6 +6542,12 @@ Source : Procédure statistiques — section 5`;
   const ligneParcours = (id) => page.locator(`.liste-ordonnable li:has(input[name=modules][value='${id}'])`);
   assert.equal(await ligneParcours(idSansQuestion).locator(".etiquette:has-text('sans question')").count(), 1, "module sans question marqué");
   assert.ok((await ligneParcours("comportement-zac").locator(".ordonnable-vignette .badge").count()) === 1, "la vignette du module en tête de ligne");
+  // Avancement par module (06/10/2026) : la trace de lecture laissée à l'étape précédente, rien sur les autres ; le
+  // module N1c, hors du programme du code, n'est pas dans la liste tant qu'il n'y est pas ajouté.
+  const avancementDe = async (id) => (await ligneParcours(id).locator(".avancement-module").innerText()).trim();
+  assert.match(await avancementDe("comportement-zac"), /^Lu le \d{2}\/\d{2}\/\d{4}$/, "avancement : la lecture conservée, datée");
+  assert.equal(await avancementDe(idSansQuestion), "Pas commencé", "avancement : rien sur un module jamais ouvert");
+  assert.equal(await page.locator(`.liste-ordonnable li:has(input[name=modules][value='${idModule}'])`).count(), 0, "hors périmètre : absent de la liste avant d'être ajouté");
   const avecQuestions = [];
   for (const id of candidats) {
     if ((await ligneParcours(id).locator(".etiquette:has-text('sans question')").count()) === 0) avecQuestions.push(id);
@@ -6640,6 +6648,31 @@ Source : Procédure statistiques — section 5`;
   assert.match((await traceHors.json()).erreur, /hors de votre parcours/);
   assert.deepEqual(await (await traceParcours("comportement-zac")).json(), { ok: true }, "parcours : trace sur un module ouvert");
 
+  // Évaluation passée rattaché : la fiche la montre en avancement du module, verdict daté et chiffré ; la vignette de
+  // l'aperçu porte la coche quand ce verdict est « acquis » (06/10/2026).
+  await pp.goto(BASE + "/module/comportement-zac/evaluation");
+  await pp.check("input[name=difficulte] >> nth=2");
+  await pp.click("button:has-text('Commencer')");
+  await pp.waitForSelector("fieldset.question");
+  await pp.locator("fieldset.question label.option input").first().check();
+  await pp.click("button:has-text(\"Valider l'évaluation\")");
+  await pp.waitForSelector(".recap");
+  await pp.click(".recap button:has-text('Valider définitivement')");
+  await pp.waitForSelector(".resultat-entete");
+  await page.goto(urlFiche);
+  await page.waitForLoadState("networkidle");
+  const avancementZac = await avancementDe("comportement-zac");
+  assert.match(
+    avancementZac,
+    /^(Acquis|Non acquis|Indéterminé|Non concluant) le \d{2}\/\d{2}\/\d{4} · \d+ %$/,
+    "avancement : le verdict de la dernière évaluation, daté, avec son score : " + avancementZac,
+  );
+  const zacAcquis = avancementZac.startsWith("Acquis");
+  assert.equal(await apercuParcours.first().locator(".vignette-coche").count(), zacAcquis ? 1 : 0, "aperçu : la coche suit le verdict");
+  assert.match((await page.locator(".apercu-parcours-tete [role=status]").innerText()).trim(), zacAcquis ? /· 1 acquis$/ : /· aucun acquis$/);
+  assert.match(await page.locator("section[aria-labelledby='t-parcours-agent'] > p.legende").first().innerText(), zacAcquis ? /Avancement : 1 acquis sur/ : /Avancement : aucun acquis sur/);
+  await capture("fiche-parcours-avancement", page.locator("section[aria-labelledby='t-parcours-agent']"));
+
   // Le tutorat rouvre le module : il s'ouvre à l'agent.
   await page.goto(urlFiche);
   await page.waitForLoadState("networkidle");
@@ -6652,6 +6685,63 @@ Source : Procédure statistiques — section 5`;
   await pp.goto(BASE + "/");
   await pp.waitForSelector("#modules h2:has-text('Mon parcours')");
   assert.equal(await pp.locator("#modules .grille a.carte-lien").count(), choisis.length, "rouvert : toutes les cartes du parcours s'ouvrent");
+  // Hors périmètre (06/10/2026) : le module N1c, hors du programme N1a du code, s'ajoute au parcours depuis la
+  // fiche, en tête ; l'agent le voit, l'ouvre, s'y évalue et reçoit son document ; retiré du parcours, il lui est
+  // de nouveau refusé, hors programme.
+  await page.goto(urlFiche);
+  await page.waitForLoadState("networkidle");
+  const voletHors = page.locator("details.ajout-hors-perimetre");
+  assert.match(await voletHors.locator("summary").innerText(), /hors du périmètre de son code \(\d+ disponibles?\)/);
+  await voletHors.locator("summary").click();
+  await voletHors.locator("input[type=search]").fill("déposé test");
+  const aAjouter = voletHors.locator(`.hors-perimetre-liste li[data-module='${idModule}']`);
+  await aAjouter.waitFor();
+  assert.equal(await voletHors.locator(".hors-perimetre-liste li[data-module]").count(), 1, "recherche : le seul module « déposé test »");
+  await aAjouter.locator("button:has-text('Ajouter')").click();
+  const ligneHors = ligneParcours(idModule);
+  await ligneHors.waitFor();
+  assert.equal(await ligneHors.locator(".etiquette:has-text('hors périmètre')").count(), 1, "ajouté : marqué hors périmètre");
+  assert.equal(await page.locator(`input[name=parcours][value='${idModule}']`).isChecked(), true, "ajouté : coché au parcours");
+  assert.equal(await aAjouter.count(), 0, "ajouté : sorti de la liste à ajouter");
+  await ligneHors.locator("input.ordonnable-rang").fill("1");
+  await ligneHors.locator("input.ordonnable-rang").press("Enter");
+  assert.equal((await idsParcours())[0], idModule, "numéro saisi : le module hors périmètre en tête");
+  await page.waitForSelector(`.apercu-parcours-tete [role=status]:has-text('${choisis.length + 1} modules au parcours, dont 1 hors périmètre')`);
+  assert.equal(await apercuParcours.first().locator(".apercu-legende:has-text('hors périmètre')").count(), 1, "aperçu : le module hors périmètre marqué");
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${choisis.length + 1} modules, dont 1 hors périmètre.")`);
+  await page.waitForSelector("text=dont 1 hors périmètre. Avancement");
+  assert.equal((await idsParcours())[0], idModule, "parcours relu : le module hors périmètre en tête de la liste");
+  await pp.goto(BASE + "/");
+  await pp.waitForSelector("#modules h2:has-text('Mon parcours')");
+  const liensHors = await pp.locator("#modules .grille a.carte-lien").evaluateAll((l) => l.map((a) => a.getAttribute("href")));
+  assert.equal(liensHors.length, choisis.length + 1, "hors périmètre : une carte de plus, ouverte");
+  assert.equal(/\/module\/([^?#]+)/.exec(liensHors[0])[1], idModule, "hors périmètre : la première carte du parcours");
+  await pp.goto(BASE + "/module/" + idModule);
+  assert.doesNotMatch(await pp.locator(".panneau-titre h1").first().innerText(), /^Ce module/, "hors périmètre : la page du module s'ouvre");
+  assert.ok(
+    (await pp.locator("p.legende:has-text('Parcours :')").innerText()).includes(`Mon parcours, module 1 sur ${choisis.length + 1}`),
+    "hors périmètre : rang dans le parcours",
+  );
+  await pp.waitForSelector("a:has-text('Document hors programme')");
+  assert.equal((await pp.request.get(BASE + lienFerme)).status(), 200, "hors périmètre : le document du module est servi");
+  await pp.goto(BASE + "/module/" + idModule + "/evaluation");
+  await pp.waitForSelector("button:has-text('Commencer')");
+  const correctionHors = await pp.request.post(BASE + "/api/evaluation", {
+    data: { moduleId: idModule, reponses: {}, mode: "evaluation", difficulte: "complet" },
+  });
+  assert.equal(correctionHors.status(), 200, "hors périmètre : la correction est servie");
+  assert.deepEqual(await (await traceParcours(idModule)).json(), { ok: true }, "hors périmètre : la trace se pose");
+  // Retiré du parcours : hors programme de nouveau.
+  await page.goto(urlFiche);
+  await page.waitForLoadState("networkidle");
+  await cocher(page.locator(`input[name=parcours][value='${idModule}']`), false);
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${choisis.length} modules.")`);
+  await pp.goto(BASE + "/module/" + idModule);
+  await pp.waitForSelector("h1:has-text(\"Ce module n'est pas à votre programme\")");
   // Parcours retiré : le programme entier du code revient.
   await page.click("button:has-text('Retirer le parcours')");
   await page.waitForURL(/ok=parcours-retire/);
@@ -6679,7 +6769,7 @@ Source : Procédure statistiques — section 5`;
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("parcours d'un agent (question 103, choix a) : composé sur sa fiche parmi les modules de son code relié, rangé, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; retiré, le programme revient ; purgé avec la progression ; journalisé");
+  ok("parcours d'un agent (question 103, choix a) : composé sur sa fiche parmi les modules de son code relié, rangé, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; avancement par module sur la fiche (lecture, verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) ; module hors périmètre ajouté en tête (carte, page, document, évaluation, correction, trace) puis retiré, refusé hors programme ; retiré, le programme revient ; purgé avec la progression ; journalisé");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)

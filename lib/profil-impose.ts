@@ -56,7 +56,10 @@ export function aDesQuestions(
 
 /**
  * Pourquoi un module est fermé à la session ; null : il s'ouvre.
- *  - `hors-programme` : hors du programme du code de poste (question 101) ;
+ *  - `hors-programme` : hors du programme du code de poste (question 101) —
+ *    et, quand le tutorat a fixé un parcours, hors de ce parcours aussi : un
+ *    module qu'il y ajoute hors du périmètre du code est au programme de
+ *    l'agent (06/10/2026, `lib/programme-poste.ts`) ;
  *  - `hors-parcours` : au programme, mais le parcours que le tutorat a fixé à
  *    l'agent ne le nomme pas (question 103, choix a) ;
  *  - `ferme-tutorat` : au parcours, mais le tutorat le tient fermé ;
