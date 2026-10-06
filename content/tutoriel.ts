@@ -117,7 +117,7 @@ const TUTEUR: EtapeTutoriel[] = [
   {
     titre: "Le personnel et les visas",
     texte:
-      "Créez ici les identifiants d'agents (AG-001…) à remettre aux apprenants. C'est aussi d'ici que vous posez le visa du tutorat sur un rapport émis.",
+      "Créez ici les identifiants d'agents (AG-001…) à remettre aux apprenants ; chaque identifiant ouvre la fiche de l'agent, où se compose son parcours. C'est aussi d'ici que vous posez le visa du tutorat sur un rapport émis.",
     href: "/admin/personnel",
     lien: "Ouvrir le personnel",
     conservation: true,

@@ -25,6 +25,9 @@ export interface LigneAgent {
   derniere_activite: string | null;
   /** Codes de poste reliés à cet identifiant (question 99, choix a), par libellé. */
   codes_relies: string[];
+  /** Parcours fixé par le tutorat (question 103) : nombre de modules, dont fermés ; null sans parcours. */
+  nb_parcours: number | null;
+  nb_parcours_fermes: number | null;
 }
 
 /** Crée un identifiant ; le numéro vient de la séquence, sans trou concurrent. */
@@ -46,7 +49,9 @@ export async function listerAgents(): Promise<LigneAgent[]> {
            (a.code_hash IS NOT NULL) AS code_defini,
            (SELECT COUNT(*) FROM progression p WHERE p.agent_id = a.id)::int AS nb_traces,
            (SELECT MAX(p.cree_le) FROM progression p WHERE p.agent_id = a.id)::text AS derniere_activite,
-           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies
+           ARRAY(SELECT c.libelle FROM acces c WHERE c.agent_id = a.id ORDER BY c.libelle) AS codes_relies,
+           (SELECT jsonb_array_length(pa.modules) FROM parcours_agent pa WHERE pa.agent_id = a.id)::int AS nb_parcours,
+           (SELECT jsonb_array_length(pa.fermes) FROM parcours_agent pa WHERE pa.agent_id = a.id)::int AS nb_parcours_fermes
     FROM agents a ORDER BY a.id`;
   return r.rows;
 }

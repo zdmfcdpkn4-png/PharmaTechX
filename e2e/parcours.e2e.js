@@ -3717,7 +3717,7 @@ Justification : cf. procédure interne.`,
   await page.goto(BASE + "/admin/personnel");
   const ligneAg2 = page.locator("tr:has(code:has-text('AG-002'))");
   await ligneAg2.locator("td:has-text('défini')").waitFor();
-  await ligneAg2.locator("a[href^='/admin/personnel/']").click();
+  await ligneAg2.locator("a[href^='/admin/personnel/']").first().click();
   await page.waitForURL(/\/admin\/personnel\/\d+$/);
   await page.waitForSelector("h1:has-text('Progression de AG-002')");
   assert.ok((await page.locator("table.tableau tbody tr").count()) >= 2, "au moins deux évaluations conservées");
@@ -5478,7 +5478,7 @@ Justification : cf. procédure interne.`,
   assert.equal(await page.locator("#modules .compte:has-text('dans votre ordre')").count(), 0, "détaché : plus d'ordre propre");
   // La purge de la progression de l'apprenant emporte son ordre.
   await page.goto(BASE + "/admin/personnel");
-  await page.locator("tr:has(code:has-text('AG-002')) a[href^='/admin/personnel/']").click();
+  await page.locator("tr:has(code:has-text('AG-002')) a[href^='/admin/personnel/']").first().click();
   await page.waitForSelector("h2:has-text('Ordre propre des modules')");
   await page.fill("input[name=confirmation]", "AG-002");
   await page.click("button:has-text('Purger')");
@@ -6529,7 +6529,10 @@ Source : Procédure statistiques — section 5`;
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/accueil$/);
   await page.goto(BASE + "/admin/personnel");
-  await page.locator(`tr:has(code:has-text('${agentImpose}')) a[href^='/admin/personnel/']`).click();
+  // Depuis Personnel (06/10/2026) : la colonne « Parcours » dit « à composer » pour un identifiant relié à un code, et
+  // mène à la section de la fiche.
+  const ligneAgentImpose = page.locator(`tr:has(code:has-text('${agentImpose}'))`);
+  await ligneAgentImpose.locator("a[href$='#t-parcours-agent']:has-text('à composer')").click();
   await page.waitForSelector("h2:has-text(\"Parcours de l'agent\")");
   const urlFiche = page.url().replace(/[?#].*$/, "");
   await page.waitForSelector("text=Pas de parcours fixé");
@@ -6584,6 +6587,11 @@ Source : Procédure statistiques — section 5`;
   assert.deepEqual((await idsParcours()).slice(0, choisis.length), choisis, "parcours relu : ses modules d'abord, dans son ordre");
   assert.equal(await page.locator(`input[name=fermes][value='${verrou}']`).isChecked(), true, "module fermé relu");
   await page.waitForSelector("button:has-text('le parcours')");
+  // Personnel compte le parcours fixé et y mène.
+  await page.goto(BASE + "/admin/personnel");
+  await ligneAgentImpose.locator(`a[href$='#t-parcours-agent']:has-text('${choisis.length} modules, dont 1 fermé')`).waitFor();
+  await page.goto(urlFiche);
+  await page.waitForLoadState("networkidle");
 
   // L'agent, sous son code relié et sans rattachement : le parcours s'applique.
   const ctxParcours = await browser.newContext();

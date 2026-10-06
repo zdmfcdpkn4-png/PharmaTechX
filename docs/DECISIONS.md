@@ -8054,6 +8054,38 @@ parcours (question 103, choix a) :
 - Captures du parcours de bout en bout (`CAPTURES=`) : la section « Parcours
   de l'agent » avec les avancements et l'aperçu.
 
+## Fiche de l'agent : atteinte depuis Personnel, parcours en tête (06/10/2026, retour d'usage)
+
+**Retour.** « Sur le profil administrateur des pharmaciens on ne voit pas la
+partie du parcours de l'agent pour pouvoir également le composer. »
+
+**Constat.** En production, la table du parcours existe et l'identifiant en
+service a bien un code de poste relié : la fiche de l'agent affichait la
+section « Parcours de l'agent ». Mais cette fiche n'était atteignable, depuis
+Personnel, que par le lien « N traces » de la colonne Progression — « 0
+trace » pour un agent qui n'a encore rien fait —, et la section venait après
+la table des traces. Rien ne manquait au profil administrateur : le chemin
+n'était pas visible.
+
+**Ce qui est fait.**
+- Personnel : l'identifiant est le lien vers la fiche ; une colonne
+  « Parcours » dit le parcours fixé (« 3 modules, dont 1 fermé ») ou « à
+  composer » pour un identifiant relié à un code de poste (« — » sous un code
+  partagé), et mène à la section ; la légende de la section le dit
+  (`lib/agents.ts` compte le parcours sur chaque ligne).
+- Codes d'accès : « relié à AG-001 » mène à la fiche et au parcours.
+- Fiche : la section « Parcours de l'agent » vient avant la table des traces.
+- Visite guidée (Personnel) : « chaque identifiant ouvre la fiche de l'agent,
+  où se compose son parcours ».
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 528 tests.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur ; l'étape du parcours part désormais du lien « à
+  composer » de Personnel, et y relit « 3 modules, dont 1 fermé » une fois
+  le parcours enregistré.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un

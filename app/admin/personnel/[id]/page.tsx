@@ -128,36 +128,6 @@ export default async function ProgressionAgent({
         <div className="tuile"><span className="valeur">{agent.code_defini ? "défini" : "absent"}</span><span className="libelle">code personnel</span></div>
       </div>
 
-      <table className="tableau" style={{ marginTop: "1rem" }}>
-        <thead>
-          <tr><th>Date</th><th>Nature</th><th>Module</th><th>Résultat</th></tr>
-        </thead>
-        <tbody>
-          {[...traces].reverse().map((t) => {
-            const e = t.nature === "entrainement" ? (t.resultat as ResumeEntrainement | null) : null;
-            return (
-              <tr key={t.id}>
-                <td>{date(t.cree_le)}</td>
-                <td>{NATURES[t.nature] ?? t.nature}</td>
-                <td>
-                  <LienModule id={moduleOuvrable(modules, t.module_id)}>{titre(t.module_id)}</LienModule>
-                </td>
-                <td>
-                  {t.nature === "evaluation" && t.score !== null
-                    ? `${t.score} % · ${t.verdict ? LIBELLES_COURTS_VERDICT[t.verdict as Verdict] ?? t.verdict : ""}`
-                    : e
-                      ? `${e.justes} / ${e.total} justes`
-                      : "lu"}
-                </td>
-              </tr>
-            );
-          })}
-          {traces.length === 0 && (
-            <tr><td colSpan={4} className="legende">Aucune trace.</td></tr>
-          )}
-        </tbody>
-      </table>
-
       {/* Parcours de l'agent (question 103, choix a) : composé ici, parmi les modules que ses codes de poste
           reliés lui ouvrent (question 101) et, au besoin, les autres modules publiés (06/10/2026) ; rangé,
           chaque module ouvert ou fermé, son avancement sur chaque ligne ; purgé avec sa progression. */}
@@ -219,6 +189,36 @@ export default async function ProgressionAgent({
           </>
         )}
       </section>
+
+      <table className="tableau" style={{ marginTop: "1rem" }}>
+        <thead>
+          <tr><th>Date</th><th>Nature</th><th>Module</th><th>Résultat</th></tr>
+        </thead>
+        <tbody>
+          {[...traces].reverse().map((t) => {
+            const e = t.nature === "entrainement" ? (t.resultat as ResumeEntrainement | null) : null;
+            return (
+              <tr key={t.id}>
+                <td>{date(t.cree_le)}</td>
+                <td>{NATURES[t.nature] ?? t.nature}</td>
+                <td>
+                  <LienModule id={moduleOuvrable(modules, t.module_id)}>{titre(t.module_id)}</LienModule>
+                </td>
+                <td>
+                  {t.nature === "evaluation" && t.score !== null
+                    ? `${t.score} % · ${t.verdict ? LIBELLES_COURTS_VERDICT[t.verdict as Verdict] ?? t.verdict : ""}`
+                    : e
+                      ? `${e.justes} / ${e.total} justes`
+                      : "lu"}
+                </td>
+              </tr>
+            );
+          })}
+          {traces.length === 0 && (
+            <tr><td colSpan={4} className="legende">Aucune trace.</td></tr>
+          )}
+        </tbody>
+      </table>
 
       {/* Ordres de modules propres à cet apprenant (question 56) : fixés à l'écran
           Ordre, purgés avec sa progression. */}

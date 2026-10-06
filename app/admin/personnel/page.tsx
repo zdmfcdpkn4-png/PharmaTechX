@@ -91,7 +91,8 @@ export default async function Personnel({
           pharmacien responsable, hors du site. Un identifiant se clôt au départ de
           l&apos;agent ; il ne se supprime pas tant que des rapports s&apos;y rattachent. L&apos;agent
           rattache sa progression avec un code personnel qu&apos;il choisit (question 11) ; oublié,
-          il se réinitialise ici.
+          il se réinitialise ici. L&apos;identifiant ouvre la fiche de l&apos;agent : ses traces, et le parcours que
+          le tutorat lui compose (question 103) — la colonne « Parcours » y mène aussi.
         </p>
         <form action={actionCreerAgent}>
           <div className="actions" style={{ marginTop: 0 }}>
@@ -101,12 +102,16 @@ export default async function Personnel({
         {agents.length > 0 && (
           <table className="tableau" style={{ marginTop: "1rem" }}>
             <thead>
-              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Code de poste</th><th>Rapports</th><th>Progression</th><th>Code personnel</th><th></th></tr>
+              <tr><th>Identifiant</th><th>Créé le</th><th>État</th><th>Code de poste</th><th>Parcours</th><th>Rapports</th><th>Progression</th><th>Code personnel</th><th></th></tr>
             </thead>
             <tbody>
               {agents.map((a) => (
                 <tr key={a.id}>
-                  <td><code>{a.identifiant}</code></td>
+                  <td>
+                    <Link href={`/admin/personnel/${a.id}`} title={`Fiche de ${a.identifiant} : traces et parcours`}>
+                      <code>{a.identifiant}</code>
+                    </Link>
+                  </td>
                   <td>{date(a.cree_le)}</td>
                   <td>
                     <span className={`etiquette ${a.actif ? "etiquette--ok" : "etiquette--neutre"}`}>{a.actif ? "actif" : "clos"}</span>
@@ -118,6 +123,22 @@ export default async function Personnel({
                       a.codes_relies.join(", ")
                     ) : (
                       <span className="legende">partagé</span>
+                    )}
+                  </td>
+                  {/* Parcours fixé par le tutorat (question 103) : compté, et le lien vers la section de la fiche qui le
+                      compose (06/10/2026 : « on ne voit pas la partie du parcours de l'agent »). */}
+                  <td>
+                    {a.nb_parcours !== null ? (
+                      <Link href={`/admin/personnel/${a.id}#t-parcours-agent`}>
+                        {a.nb_parcours} module{a.nb_parcours > 1 ? "s" : ""}
+                        {a.nb_parcours_fermes ? `, dont ${a.nb_parcours_fermes} fermé${a.nb_parcours_fermes > 1 ? "s" : ""}` : ""}
+                      </Link>
+                    ) : a.codes_relies.length > 0 ? (
+                      <Link href={`/admin/personnel/${a.id}#t-parcours-agent`}>à composer</Link>
+                    ) : (
+                      <span className="legende" title="Un parcours se compose pour un identifiant relié à un code de poste">
+                        —
+                      </span>
                     )}
                   </td>
                   <td>

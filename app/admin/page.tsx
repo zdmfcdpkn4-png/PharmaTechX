@@ -321,7 +321,10 @@ export default async function Admin({
               {a.filiere ?? "toutes filières"} · {a.niveau ?? "tous niveaux"}
               {a.agent_identifiant ? (
                 <>
-                  {" "}· relié à <code>{a.agent_identifiant}</code>
+                  {" "}· relié à{" "}
+                  <Link href={`/admin/personnel/${a.agent_id}#t-parcours-agent`} title={`Fiche et parcours de ${a.agent_identifiant}`}>
+                    <code>{a.agent_identifiant}</code>
+                  </Link>
                 </>
               ) : null}{" "}
               · créé le{" "}
