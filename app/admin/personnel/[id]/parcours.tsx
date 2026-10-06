@@ -43,17 +43,24 @@ function plat(s: string): string {
 /**
  * Composeur du parcours d'un agent (question 103, choix a, 05/10/2026 ;
  * avancement et hors périmètre le 06/10/2026), sur sa fiche. Les candidats
- * sont les modules que ses codes de poste reliés lui ouvrent (question 101) ;
- * le tutorat coche ceux du parcours, les range — glisser, flèches, numéro
- * (`ListeOrdonnable`) — et en ferme certains. Chaque ligne dit l'avancement
- * de l'agent sur le module, lu dans ses traces conservées. Au besoin, un
- * module publié hors de ce périmètre s'ajoute à la liste et entre au parcours
- * comme les autres. L'aperçu montre le parcours tel que l'agent le verra : ses
- * vignettes, dans l'ordre, la coche sur les acquis, les fermés grisés.
+ * sont les modules que ses codes de poste reliés lui ouvrent (question 101).
+ * Sans parcours enregistré, tous sont cochés « au parcours » : c'est ce que
+ * l'agent voit, et le tutorat part de là — il range (glisser, flèches, numéro :
+ * `ListeOrdonnable`), décoche ce que l'agent n'a pas à faire, ferme ce qu'il
+ * ne doit pas encore ouvrir (retour d'usage du 06/10/2026 : l'ordre rangé
+ * s'enregistre ainsi d'emblée, là où rien de coché faisait refuser l'envoi et
+ * perdre l'ordre saisi). Chaque ligne dit l'avancement de l'agent sur le
+ * module, lu dans ses traces conservées. Au besoin, un module publié hors de
+ * ce périmètre s'ajoute à la liste et entre au parcours comme les autres.
+ * L'aperçu montre le parcours tel que l'agent le verra : ses vignettes, dans
+ * l'ordre, la coche sur les acquis, les fermés grisés.
  *
  * Le formulaire envoie l'ordre complet de la liste (`modules`), les modules
  * cochés (`parcours`) et les fermés (`fermes`) ; l'action les compose
- * (`composerParcours`), sans rien retenir d'étranger aux candidats.
+ * (`composerParcours`), sans rien retenir d'étranger aux candidats. Seul
+ * l'ordre des modules cochés est conservé : un module décoché n'est plus
+ * proposé, sa place dans la liste ne compte pas. Rien de coché : le bouton
+ * reste inactif, et le dit.
  */
 export function ComposeurParcours({
   agentId,
@@ -82,7 +89,10 @@ export function ComposeurParcours({
   const connus = useMemo(() => new Set([...candidats.map((c) => c.id), ...idsHors]), [candidats, idsHors]);
   // Modules hors périmètre présents dans la liste : ceux du parcours enregistré, puis ceux ajoutés ici.
   const [ajoutes, setAjoutes] = useState(() => new Set((initial?.modules ?? []).filter((id) => idsHors.has(id))));
-  const [coches, setCoches] = useState(() => new Set((initial?.modules ?? []).filter((id) => connus.has(id))));
+  // Sans parcours enregistré, tout le périmètre du code est au parcours : c'est ce que l'agent voit aujourd'hui.
+  const [coches, setCoches] = useState(
+    () => new Set(initial ? initial.modules.filter((id) => connus.has(id)) : candidats.map((c) => c.id)),
+  );
   const [fermes, setFermes] = useState(() => new Set((initial?.fermes ?? []).filter((id) => connus.has(id))));
   const proposes = useMemo(
     () => [...candidats, ...horsPerimetre.filter((h) => ajoutes.has(h.id))],
@@ -266,10 +276,14 @@ export function ComposeurParcours({
           </ol>
         )}
         <div className="actions" style={{ marginTop: 0 }}>
-          <button type="submit" className="bouton">
+          <button type="submit" className="bouton" disabled={apercu.length === 0}>
             Enregistrer le parcours de {identifiant}
           </button>
-          <span className="legende">Journalisé. L&apos;agent le voit dès sa prochaine page.</span>
+          <span className="legende">
+            {apercu.length === 0
+              ? "Cochez au moins un module « au parcours » pour enregistrer."
+              : "Journalisé. L'agent le voit dès sa prochaine page."}
+          </span>
         </div>
       </form>
       {initial && (

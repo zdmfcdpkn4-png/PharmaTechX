@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { deplacer } from "@/content/ordres";
 import { Badge } from "./Badge";
 
@@ -29,6 +29,12 @@ export interface ElementOrdonnable {
  * L'ordre part avec le formulaire qui englobe la liste : un champ caché par
  * élément, dans l'ordre affiché. Chaque déplacement est annoncé aux lecteurs
  * d'écran.
+ *
+ * Le glisser se suit sur la fenêtre, du pointeur enfoncé au relâché, et non
+ * par la capture du pointeur sur la poignée : la ligne déplacée est réinsérée
+ * ailleurs dans la page, et le navigateur retire sa capture à un élément qui
+ * sort du document, même remis aussitôt — le glisser s'arrêtait alors au
+ * premier déplacement (constaté le 06/10/2026 sur la fiche d'un agent).
  *
  * Chaque ligne peut porter la vignette de son module (`badge`) et des
  * commandes propres (`complement`, p. ex. les cases du parcours d'un agent,
@@ -59,6 +65,12 @@ export function ListeOrdonnable({
   const [enGlisse, setEnGlisse] = useState<string | null>(null);
   const lignes = useRef(new Map<string, HTMLLIElement>());
   const glisse = useRef<{ id: string; pointeur: number } | null>(null);
+  // La liste et le rappel, lus par les gestes de la fenêtre pendant un glisser : toujours à jour, même entre
+  // deux rendus — plusieurs mouvements du pointeur peuvent précéder le rendu qui suit le premier.
+  const listeRef = useRef(liste);
+  listeRef.current = liste;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   // Les éléments peuvent changer après le premier rendu — un module ajouté hors périmètre au parcours d'un
   // agent (06/10/2026) : l'ordre courant est gardé, les nouveaux se rangent à la suite, les retirés sortent.
@@ -72,16 +84,18 @@ export function ListeOrdonnable({
     });
   }, [elements]);
 
-  const bouger = (id: string, vers: number) => {
-    const de = liste.findIndex((x) => x.id === id);
+  const bouger = useCallback((id: string, vers: number) => {
+    const courante = listeRef.current;
+    const de = courante.findIndex((x) => x.id === id);
     if (de < 0) return;
-    const suite = deplacer(liste, de, vers);
+    const suite = deplacer(courante, de, vers);
     const place = suite.findIndex((x) => x.id === id) + 1;
     if (place === de + 1) return;
+    listeRef.current = suite;
     setListe(suite);
-    onChange?.(suite.map((x) => x.id));
+    onChangeRef.current?.(suite.map((x) => x.id));
     setAnnonce(`« ${suite[place - 1].titre} » en position ${place} sur ${suite.length}.`);
-  };
+  }, []);
 
   const oublier = (id: string) =>
     setSaisies((s) => {
@@ -117,38 +131,53 @@ export function ListeOrdonnable({
 
   const debutGlisse = (e: PointerEvent<HTMLButtonElement>, id: string) => {
     if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Annuler le pointeur enfoncé évite que le texte de la page se sélectionne sous le glisser ; la poignée
+    // prend le focus quand même — un numéro en cours de saisie se valide, et les flèches du clavier suivent.
+    e.preventDefault();
+    e.currentTarget.focus({ preventScroll: true });
     glisse.current = { id, pointeur: e.pointerId };
     setEnGlisse(id);
   };
 
-  const mouvement = (e: PointerEvent<HTMLButtonElement>) => {
-    const g = glisse.current;
-    if (!g || g.pointeur !== e.pointerId) return;
-    // Défilement instantané : le site défile en douceur, et une animation par
-    // mouvement du pointeur traînerait derrière le doigt.
-    if (e.clientY < 56) window.scrollBy({ top: -14, behavior: "instant" });
-    else if (e.clientY > window.innerHeight - 56) window.scrollBy({ top: 14, behavior: "instant" });
-    // L'élément se pose avant la première ligne dont le milieu est sous le
-    // pointeur ; il compte lui-même dans la liste, d'où le décalage vers le bas.
-    let avant = liste.length;
-    for (let i = 0; i < liste.length; i++) {
-      const r = lignes.current.get(liste[i].id)?.getBoundingClientRect();
-      if (r && e.clientY < r.top + r.height / 2) {
-        avant = i;
-        break;
+  // Pendant un glisser, la fenêtre suit le pointeur et son relâchement, où qu'ils aient lieu.
+  useEffect(() => {
+    if (!enGlisse) return;
+    const mouvement = (e: globalThis.PointerEvent) => {
+      const g = glisse.current;
+      if (!g || g.pointeur !== e.pointerId) return;
+      // Défilement instantané : le site défile en douceur, et une animation par
+      // mouvement du pointeur traînerait derrière le doigt.
+      if (e.clientY < 56) window.scrollBy({ top: -14, behavior: "instant" });
+      else if (e.clientY > window.innerHeight - 56) window.scrollBy({ top: 14, behavior: "instant" });
+      // L'élément se pose avant la première ligne dont le milieu est sous le
+      // pointeur ; il compte lui-même dans la liste, d'où le décalage vers le bas.
+      const courante = listeRef.current;
+      let avant = courante.length;
+      for (let i = 0; i < courante.length; i++) {
+        const r = lignes.current.get(courante[i].id)?.getBoundingClientRect();
+        if (r && e.clientY < r.top + r.height / 2) {
+          avant = i;
+          break;
+        }
       }
-    }
-    const de = liste.findIndex((x) => x.id === g.id);
-    bouger(g.id, avant > de ? avant - 1 : avant);
-  };
-
-  const finGlisse = (e: PointerEvent<HTMLButtonElement>) => {
-    const g = glisse.current;
-    if (!g || g.pointeur !== e.pointerId) return;
-    glisse.current = null;
-    setEnGlisse(null);
-  };
+      const de = courante.findIndex((x) => x.id === g.id);
+      bouger(g.id, avant > de ? avant - 1 : avant);
+    };
+    const fin = (e: globalThis.PointerEvent) => {
+      const g = glisse.current;
+      if (!g || g.pointeur !== e.pointerId) return;
+      glisse.current = null;
+      setEnGlisse(null);
+    };
+    window.addEventListener("pointermove", mouvement);
+    window.addEventListener("pointerup", fin);
+    window.addEventListener("pointercancel", fin);
+    return () => {
+      window.removeEventListener("pointermove", mouvement);
+      window.removeEventListener("pointerup", fin);
+      window.removeEventListener("pointercancel", fin);
+    };
+  }, [enGlisse, bouger]);
 
   return (
     <div className="liste-ordonnable">
@@ -170,9 +199,6 @@ export function ListeOrdonnable({
               className="ordonnable-poignee"
               aria-label={`Déplacer « ${el.titre} » : glisser, ou flèches haut et bas`}
               onPointerDown={(e) => debutGlisse(e, el.id)}
-              onPointerMove={mouvement}
-              onPointerUp={finGlisse}
-              onPointerCancel={finGlisse}
               onKeyDown={(e) => clavierPoignee(e, el.id, i)}
             >
               <span aria-hidden="true">⠿</span>

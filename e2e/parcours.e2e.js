@@ -6524,7 +6524,9 @@ Source : Procédure statistiques — section 5`;
   //          saute le fermé ; rouvert, il s'ouvre ; parcours retiré, le programme entier revient ; purgé avec
   //          la progression ; journalisé. Depuis le 06/10/2026 : l'avancement de l'agent sur chaque ligne (lecture,
   //          puis verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) et un module hors du
-  //          périmètre du code ajouté au parcours, ouvert à l'agent, puis retiré.
+  //          périmètre du code ajouté au parcours, ouvert à l'agent, puis retiré. Retour d'usage du 06/10/2026 :
+  //          tout le programme du code est coché au départ, l'ordre rangé s'enregistre sans rien d'autre, et le
+  //          glisser suit le pointeur jusqu'au bout, hors de la colonne des poignées.
   await page.fill("input[name=code]", codeAdmin);
   await page.click("button:has-text('Entrer')");
   await page.waitForURL(/\/accueil$/);
@@ -6568,23 +6570,51 @@ Source : Procédure statistiques — section 5`;
     }
     throw new Error("case du parcours récalcitrante");
   };
-  for (const id of choisis) await cocher(page.locator(`input[name=parcours][value='${id}']`), true);
-  await cocher(page.locator(`input[name=fermes][value='${verrou}']`), true);
-  assert.equal(await page.locator(`input[name=fermes][value='${candidats.find((id) => !choisis.includes(id))}']`).isDisabled(), true, "fermer suppose d'être au parcours");
-  // Le socle passe en tête du parcours, par le numéro saisi.
+  // Tout le programme du code est au parcours au départ (retour d'usage du 06/10/2026) : c'est ce que l'agent voit ;
+  // l'ordre rangé s'enregistre alors sans rien d'autre.
+  assert.equal(await page.locator("input[name=parcours]:checked").count(), candidats.length, "au départ : tout le programme coché « au parcours »");
+  await page.waitForSelector(`.apercu-parcours-tete [role=status]:has-text('${candidats.length} modules au parcours')`);
+  // Glisser : la ligne suit le pointeur jusqu'au bout, même hors de la colonne des poignées — la capture du pointeur
+  // se perdait dès que la ligne changeait de place dans la page, et le glisser s'arrêtait au premier déplacement.
+  const aGlisser = candidats.find((id, i) => i >= 3 && !choisis.includes(id));
+  assert.ok(aGlisser, "un module à glisser, hors des trois retenus");
+  await ligneParcours(candidats[1]).evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+  const poigneeP = await ligneParcours(aGlisser).locator(".ordonnable-poignee").boundingBox();
+  const teteP = await ligneParcours(candidats[0]).boundingBox();
+  await page.mouse.move(poigneeP.x + poigneeP.width / 2, poigneeP.y + poigneeP.height / 2);
+  await page.mouse.down();
+  // La ligne se pose avant la première ligne dont le milieu est sous le pointeur : viser le haut de la première.
+  await page.mouse.move(teteP.x + teteP.width / 2, poigneeP.y + poigneeP.height / 2 - 8, { steps: 4 });
+  await page.mouse.move(teteP.x + teteP.width / 2, teteP.y + 4, { steps: 16 });
+  await page.mouse.up();
+  assert.equal((await idsParcours())[0], aGlisser, "glisser par la colonne des titres : la ligne posée en tête");
+  assert.equal(await page.locator(".ordonnable--glisse").count(), 0, "glisser : l'état retombe au relâchement");
+  // Le socle passe en tête par le numéro saisi ; l'ordre seul s'enregistre, tout le programme au parcours.
   await ligneParcours("comportement-zac").locator("input.ordonnable-rang").fill("1");
   await ligneParcours("comportement-zac").locator("input.ordonnable-rang").press("Enter");
-  assert.equal((await idsParcours())[0], "comportement-zac", "numéro saisi : le socle en tête");
+  assert.deepEqual((await idsParcours()).slice(0, 2), ["comportement-zac", aGlisser], "numéro saisi : le socle en tête, la ligne glissée derrière");
+  await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
+  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${candidats.length} modules.")`);
+  await page.waitForSelector("text=Parcours fixé le");
+  assert.deepEqual((await idsParcours()).slice(0, 2), ["comportement-zac", aGlisser], "ordre relu : conservé, tout le programme au parcours");
+  assert.equal(await page.locator("input[name=parcours]:checked").count(), candidats.length, "relu : tout le programme encore au parcours");
+  // Le parcours se resserre : les autres modules se décochent — plus proposés —, le dernier des retenus se ferme.
+  for (const id of candidats) if (!choisis.includes(id)) await cocher(page.locator(`input[name=parcours][value='${id}']`), false);
+  await cocher(page.locator(`input[name=fermes][value='${verrou}']`), true);
+  assert.equal(await page.locator(`input[name=fermes][value='${candidats.find((id) => !choisis.includes(id))}']`).isDisabled(), true, "fermer suppose d'être au parcours");
+  assert.equal((await idsParcours())[0], "comportement-zac", "le socle reste en tête");
   await page.waitForSelector(`.apercu-parcours-tete [role=status]:has-text('${choisis.length} modules au parcours, dont 1 fermé')`);
   const apercuParcours = page.locator("ol.apercu-parcours li");
   assert.equal(await apercuParcours.count(), choisis.length, "aperçu : les modules cochés, dans l'ordre");
   assert.match(await apercuParcours.first().getAttribute("title"), /^1\. /);
   assert.equal(await apercuParcours.last().getAttribute("class"), "est-ferme", "aperçu : le module fermé grisé");
   await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
-  await page.waitForURL(/ok=parcours&n=/);
+  await page.waitForURL(new RegExp(`ok=parcours&n=${choisis.length}&f=1`));
   await page.waitForSelector(`[role=status]:has-text("Parcours enregistré : ${choisis.length} modules, dont 1 fermé")`);
-  await page.waitForSelector("text=Parcours fixé le");
+  await page.waitForSelector(`text=${candidats.length - choisis.length} modules de son code restent hors du parcours`);
   assert.deepEqual((await idsParcours()).slice(0, choisis.length), choisis, "parcours relu : ses modules d'abord, dans son ordre");
+  assert.equal(await page.locator("input[name=parcours]:checked").count(), choisis.length, "relu : les seuls modules retenus cochés");
   assert.equal(await page.locator(`input[name=fermes][value='${verrou}']`).isChecked(), true, "module fermé relu");
   await page.waitForSelector("button:has-text('le parcours')");
   // Personnel compte le parcours fixé et y mène.
@@ -6759,11 +6789,11 @@ Source : Procédure statistiques — section 5`;
   await pp.waitForSelector("h2:has-text('Socle transversal')");
   assert.equal(await pp.locator("#modules h2:has-text('Mon parcours')").count(), 0, "retiré : plus de parcours");
   await ctxParcours.close();
-  // Fixé de nouveau, le parcours part avec la purge de la progression.
+  // Fixé de nouveau — tout le programme, coché par défaut —, le parcours part avec la purge de la progression.
   await page.waitForLoadState("networkidle");
-  await cocher(page.locator("input[name=parcours][value='comportement-zac']"), true);
+  assert.equal(await page.locator("input[name=parcours]:checked").count(), candidats.length, "retiré : tout le programme de nouveau coché");
   await page.click(`button:has-text("Enregistrer le parcours de ${agentImpose}")`);
-  await page.waitForURL(/ok=parcours&n=1/);
+  await page.waitForURL(/ok=parcours&n=/);
   await page.waitForSelector("button:has-text('le parcours')");
   await page.fill("input[name=confirmation]", agentImpose);
   await page.click("button:has-text('Purger')");
@@ -6777,7 +6807,7 @@ Source : Procédure statistiques — section 5`;
   await page.waitForTimeout(300);
   await page.click("button:has-text('quitter')");
   await page.waitForURL(/\/connexion/);
-  ok("parcours d'un agent (question 103, choix a) : composé sur sa fiche parmi les modules de son code relié, rangé, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; avancement par module sur la fiche (lecture, verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) ; module hors périmètre ajouté en tête (carte, page, document, évaluation, correction, trace) puis retiré, refusé hors programme ; retiré, le programme revient ; purgé avec la progression ; journalisé");
+  ok("parcours d'un agent (question 103, choix a) : tout le programme du code coché au départ, l'ordre seul enregistré et relu, le glisser suivi jusqu'au bout ; resserré sur sa fiche à trois modules de son code relié, rangés, un module fermé, aperçu dans l'ordre ; l'agent identifié par son code voit ses seuls modules dans cet ordre, le fermé grisé et refusé (page, évaluation, correction, trace), le hors-parcours refusé, le suivant saute le fermé ; rouvert, il s'ouvre ; avancement par module sur la fiche (lecture, verdict daté de l'évaluation passée rattaché, coche de l'aperçu si acquis) ; module hors périmètre ajouté en tête (carte, page, document, évaluation, correction, trace) puis retiré, refusé hors programme ; retiré, le programme revient ; purgé avec la progression ; journalisé");
 
   // 14e. en-têtes de sécurité (19/09/2026) : la pile technique n'est plus annoncée, et aucune
   //      autre origine ne peut enfermer le site dans une iframe (détournement de clic)

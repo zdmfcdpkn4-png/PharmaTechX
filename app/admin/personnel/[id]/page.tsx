@@ -73,6 +73,8 @@ export default async function ProgressionAgent({
   const idsConnus = new Set([...idsPerimetre, ...horsPerimetre.map((c) => c.id)]);
   const absentsParcours = parcours ? parcours.modules.filter((mid) => !idsConnus.has(mid)).length : 0;
   const horsEnregistres = parcours ? parcours.modules.filter((mid) => idsConnus.has(mid) && !idsPerimetre.has(mid)).length : 0;
+  // Modules du périmètre du code que le parcours ne nomme pas : décochés, donc plus proposés à l'agent.
+  const ecartesDuPerimetre = parcours ? candidatsParcours.filter((c) => !parcours.modules.includes(c.id)).length : 0;
   // Avancement par module (06/10/2026) : la dernière trace de chaque nature, résumée et déjà libellée.
   const avancement = avancementParModule(dernieres);
   const avancementAffiche: Record<string, AvancementAffiche> = Object.fromEntries(
@@ -146,12 +148,17 @@ export default async function ProgressionAgent({
                 )}`
               : ""}
             . Avancement : {acquisDuParcours > 0 ? `${acquisDuParcours} acquis` : "aucun acquis"} sur {parcours.modules.length}.
+            {ecartesDuPerimetre > 0
+              ? ` ${ecartesDuPerimetre} module${ecartesDuPerimetre > 1 ? "s" : ""} de son code ${ecartesDuPerimetre > 1 ? "restent" : "reste"} hors du parcours : ${ecartesDuPerimetre > 1 ? "ils ne lui sont pas proposés" : "il ne lui est pas proposé"}.`
+              : ""}
             {absentsParcours > 0
               ? ` ${absentsParcours} module${absentsParcours > 1 ? "s" : ""} du parcours ${absentsParcours > 1 ? "ne sont" : "n'est"} plus publié${absentsParcours > 1 ? "s" : ""} : ${absentsParcours > 1 ? "ils en sortiront" : "il en sortira"} au prochain enregistrement.`
               : ""}
           </p>
         ) : (
-          <p className="legende">Pas de parcours fixé : l&apos;agent voit tout le programme de son code de poste.</p>
+          <p className="legende">
+            Pas de parcours fixé : l&apos;agent voit tout le programme de son code de poste, dans l&apos;ordre ci-dessous.
+          </p>
         )}
         {candidats.codes.length === 0 ? (
           <p className="encart">
@@ -166,12 +173,16 @@ export default async function ProgressionAgent({
                 candidats.codes.map((c) => `${c.libelle}${c.filiere ? ` — ${c.filiere}` : ""}${c.niveau ? ` · ${c.niveau}` : ""}`),
               )}
               . La liste propose les modules que ce code lui ouvre, chacun avec son avancement — la dernière trace
-              conservée : verdict de la dernière évaluation, avant arbitrage, sinon entraînement, sinon lecture. Cochez
-              « au parcours » les modules retenus et rangez-les : l&apos;ordre est conseillé à l&apos;agent, qui peut faire
-              autrement. Un module qu&apos;il ne doit pas encore ouvrir se coche « fermé » : il le verra grisé jusqu&apos;à ce
-              que vous le rouvriez. Un module qui ne lui est pas nécessaire ne se coche pas : il ne lui est plus proposé.
-              Au besoin, un module hors du périmètre de son code s&apos;ajoute à la liste, et entre au parcours comme les
-              autres.
+              conservée : verdict de la dernière évaluation, avant arbitrage, sinon entraînement, sinon lecture.
+              {parcours
+                ? " Les modules cochés « au parcours » sont ceux que l'agent voit, dans cet ordre."
+                : " Sans parcours fixé, tous sont cochés « au parcours » : c'est ce que l'agent voit aujourd'hui."}{" "}
+              Rangez-les et enregistrez : l&apos;ordre est conseillé à l&apos;agent, qui peut faire autrement. Un module
+              qu&apos;il ne doit pas encore ouvrir se coche « fermé » : il le verra grisé jusqu&apos;à ce que vous le
+              rouvriez. Un module qui ne lui est pas nécessaire se décoche : il ne lui est plus proposé, et sa place dans la
+              liste ne compte plus. Au besoin, un module hors du périmètre de son code s&apos;ajoute à la liste, et entre au
+              parcours comme les autres. Une fois le parcours fixé, un module publié plus tard dans le programme de son
+              code ne lui est pas proposé tant que vous ne le cochez pas ici.
             </p>
             {/* La clé suit le parcours enregistré : après « Enregistrer » ou « Retirer », le composeur repart de
                 ce que la base contient, et non de l'état que la page gardait en mémoire. */}

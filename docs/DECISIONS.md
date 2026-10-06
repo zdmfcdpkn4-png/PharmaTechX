@@ -8086,6 +8086,60 @@ n'était pas visible.
   composer » de Personnel, et y relit « 3 modules, dont 1 fermé » une fois
   le parcours enregistré.
 
+## Parcours de l'agent : l'ordre conservé d'emblée, le glisser suivi jusqu'au bout (06/10/2026, retour d'usage)
+
+**Retour.** « La modification de l'ordre du parcours n'est pas conservée
+après enregistrement », capture à l'appui : la fiche d'un agent au code
+PREPARATEUR N2R, six modules déposés proposés, aucun coché « au parcours »,
+« Pas de parcours fixé ».
+
+**Constat.** Deux causes, reproduites sur le serveur d'essai.
+- Le parcours n'enregistre que les modules cochés « au parcours », dans
+  l'ordre de la liste. Rien de coché, l'envoi était refusé (« Cochez au moins
+  un module… »), la page se rechargeait et l'ordre saisi était perdu. Or la
+  demande du matin lisait la liste comme le parcours lui-même — « réorganiser
+  le module à faire en priorité… inactiver des modules si non nécessaire »
+  suppose des modules actifs par défaut — et les cases partaient décochées.
+  Modules cochés, l'ordre était bien conservé, par les trois gestes (numéro
+  saisi puis Entrée, flèches, numéro saisi puis clic direct sur Enregistrer).
+- Le glisser s'arrêtait au premier déplacement : la poignée capturait le
+  pointeur, et le navigateur retire sa capture à un élément qui sort du
+  document — ce que fait la ligne quand React la réinsère plus haut
+  (`lostpointercapture` observé aussitôt après `gotpointercapture`). Le
+  parcours de bout en bout ne le voyait pas : son glisser restait dans la
+  colonne des poignées, dont chacune relaie le mouvement.
+
+**Décision.** Sans parcours fixé, tout le périmètre du code est coché « au
+parcours » : c'est ce que l'agent voit aujourd'hui, et le tutorat part de là.
+Il range et enregistre : l'ordre est conservé. « Inactiver » un module, c'est
+le décocher (plus proposé) ou le fermer (vu grisé, verrouillé). Le bouton
+reste inactif tant que rien n'est coché, et le dit. Le glisser se suit sur la
+fenêtre (`pointermove`, `pointerup`, `pointercancel`), sans capture : la ligne
+suit le pointeur jusqu'au relâchement, où qu'il ait lieu — l'écran Ordre
+(question 55) en profite aussi. Une fois le parcours fixé, la fiche dit
+combien de modules du code restent hors du parcours.
+
+**Conséquence à connaître.** Un parcours fixé fige la liste : un module
+publié plus tard dans le programme du code n'est pas proposé à l'agent tant
+que le tutorat ne le coche pas sur sa fiche — la légende le dit. Seul l'ordre
+des modules cochés est conservé : la place d'un module décoché ne compte pas.
+
+**Inchangé.** La règle pure (`composerParcours`), la table `parcours_agent`,
+l'application au programme du code, l'écran de l'agent, le retrait du
+parcours et sa purge.
+
+**Vérifié le 06/10/2026.**
+- `npm run verifier` : types, ESLint, 528 tests.
+- `npm run build`.
+- Parcours de bout en bout : deux passes de 122 étapes, sans erreur de page
+  ni erreur serveur. L'étape du parcours constate le programme entier coché
+  au départ, glisse une ligne en tête par la colonne des titres, passe le
+  socle en tête au numéro, enregistre l'ordre seul et le relit, puis
+  resserre le parcours à trois modules (les autres décochés, le dernier
+  fermé), relit « N modules de son code restent hors du parcours ».
+- Serveur d'essai, script de reproduction : les cinq gestes avant et après
+  la correction.
+
 ## Non fait
 
 - Éditeur du texte des modules en base : écarté (question 10, choix a) ; un
